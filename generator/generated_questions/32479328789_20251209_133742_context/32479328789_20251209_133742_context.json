@@ -1,0 +1,30 @@
+[
+  {
+    "original_expression": "11+12",
+    "priority_analysis": "11 + 12",
+    "word_problem": "Lily collected 11 seashells on Monday. On Tuesday, she found 12 more seashells at the beach. How many seashells did Lily collect in total over the two days?",
+    "answer": "23",
+    "analysis": "Add the seashells from both days: 11 + 12 = 23 seashells."
+  },
+  {
+    "original_expression": "16+1-8+7*7",
+    "priority_analysis": "7 * 7 -> 16 + 1 - 8 + 49",
+    "word_problem": "During a board game, Mia started with 16 points. She earned 1 point on her next turn, then lost 8 points on a challenge. Finally, she landed on a special square that gave her 7 times the points she had just before landing there, which was 7 points. How many points does Mia have at the end?",
+    "answer": "58",
+    "analysis": "First, calculate the points from the special square: 7 × 7 = 49 points. Then, calculate the running total: Start with 16, add 1 (16 + 1 = 17), subtract 8 (17 - 8 = 9). Finally, add the points from the special square: 9 + 49 = 58 points."
+  },
+  {
+    "original_expression": "14+4+2+12",
+    "priority_analysis": "14 + 4 + 2 + 12",
+    "word_problem": "For a school art project, Ben brought 14 red leaves, 4 yellow leaves, 2 orange leaves, and 12 brown leaves from his backyard. How many leaves did Ben bring for the project in total?",
+    "answer": "32",
+    "analysis": "Add all the leaves together: 14 + 4 = 18, 18 + 2 = 20, 20 + 12 = 32 leaves."
+  },
+  {
+    "original_expression": "11+2+13-9/13",
+    "priority_analysis": "9 / 13 -> 11 + 2 + 13 - (9/13)",
+    "word_problem": "A class is making friendship bracelets. They have 11 blue beads, 2 green beads, and 13 red beads. They decide to use 9 beads to make a sample bracelet, and then share the remaining beads equally among 13 students to finish their projects. How many beads will be left for the class to share after making the sample? (Give the answer as a decimal).",
+    "answer": "25.3076923077",
+    "analysis": "First, calculate the total beads: 11 + 2 + 13 = 26 beads. Next, calculate how many beads are used for the sample bracelet: 9 beads. Then, find the beads remaining: 26 - 9 = 17 beads. Finally, to find how many beads are left for the class to share (which is the result of the original expression), we perform the operations in order: 11 + 2 = 13, 13 + 13 = 26, 26 - (9 ÷ 13). Calculate 9 ÷ 13 ≈ 0.6923076923. Subtract this from 26: 26 - 0.6923076923 ≈ 25.3076923077 beads."
+  }
+]

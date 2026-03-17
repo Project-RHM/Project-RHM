@@ -1,0 +1,37 @@
+[
+  {
+    "original_expression": "0+18-18+9",
+    "priority_analysis": "No * or / present. Left-to-right: 0 + 18 -> 18 - 18 -> 0 + 9",
+    "word_problem": "Lily was collecting seashells on the beach. In the morning, she found 18 beautiful shells. Later, she gave 18 shells to her little brother to help him start his collection. In the afternoon, she found 9 more shells. How many seashells does Lily have now?",
+    "answer": "9",
+    "analysis": "First, Lily started with none, then found 18: 0 + 18 = 18 shells. Then, she gave 18 away: 18 - 18 = 0 shells. Finally, she found 9 more: 0 + 9 = 9 shells."
+  },
+  {
+    "original_expression": "5+1-10+18*9",
+    "priority_analysis": "18 * 9 -> 5 + 1 -> 6 - 10 -> -4 + 162",
+    "word_problem": "Leo had 5 trading cards. His friend gave him 1 more card. He then traded away 10 cards for a comic book. Later, he bought 18 packs of cards, with each pack containing 9 cards. How many trading cards does Leo have now?",
+    "answer": "158",
+    "analysis": "First, calculate the cards from the packs: 18 × 9 = 162 cards. Then, handle the other transactions: He started with 5, got 1: 5 + 1 = 6 cards. He traded away 10: 6 - 10 = -4 cards (meaning he owed 4 cards). Finally, add the cards from the packs to his situation: -4 + 162 = 158 cards."
+  },
+  {
+    "original_expression": "12+5+3+8*16",
+    "priority_analysis": "8 * 16 -> 12 + 5 -> 17 + 3 -> 20 + 128",
+    "word_problem": "For a school art project, Mia already had 12 sheets of colored paper. Her teacher gave her 5 more sheets, and a classmate shared 3 more. She then bought 8 packs of paper, with each pack containing 16 sheets. How many sheets of colored paper does Mia have for her project now?",
+    "answer": "148",
+    "analysis": "First, calculate the paper from the packs: 8 × 16 = 128 sheets. Then, add the paper she had and received: 12 + 5 = 17 sheets, then 17 + 3 = 20 sheets. Finally, add all the paper together: 20 + 128 = 148 sheets."
+  },
+  {
+    "original_expression": "9+8+19+14*15",
+    "priority_analysis": "14 * 15 -> 9 + 8 -> 17 + 19 -> 36 + 210",
+    "word_problem": "A soccer team was preparing for a tournament. They already had 9 soccer balls. The coach brought 8 more from storage, and a parent donated 19 new balls. The school then ordered 14 boxes of balls, with each box containing 15 balls. How many soccer balls does the team have available now?",
+    "answer": "246",
+    "analysis": "First, calculate the balls from the boxes: 14 × 15 = 210 balls. Then, add the balls they already had: 9 + 8 = 17 balls, then 17 + 19 = 36 balls. Finally, add all the balls together: 36 + 210 = 246 balls."
+  },
+  {
+    "original_expression": "5+7+18-14*4",
+    "priority_analysis": "14 * 4 -> 5 + 7 -> 12 + 18 -> 30 - 56",
+    "word_problem": "A group of friends were playing a board game. They started with 5 points. They earned 7 points in the first round and 18 points in the second round. In the final round, they lost points. The rule said they would lose 4 points for each of the 14 wrong moves they made. What was their final score?",
+    "answer": "-26",
+    "analysis": "First, calculate the points lost in the final round: 14 × 4 = 56 points lost. Then, calculate their points before the final round: 5 + 7 = 12 points, then 12 + 18 = 30 points. Finally, subtract the points lost: 30 - 56 = -26 points. This means their final score was 26 points below zero."
+  }
+]

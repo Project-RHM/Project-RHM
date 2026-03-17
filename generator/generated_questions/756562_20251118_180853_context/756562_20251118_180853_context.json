@@ -1,0 +1,16 @@
+[
+  {
+    "original_expression": "14+9-17+11",
+    "priority_analysis": "14+9 -> 23-17 -> 6+11",
+    "word_problem": "Lily collected 14 seashells on Monday morning. In the afternoon, she found 9 more beautiful shells. On Tuesday, she gave 17 shells to her friend for an art project. On Wednesday, she discovered 11 more shells while walking on the beach. How many seashells does Lily have now?",
+    "answer": "17",
+    "analysis": "First, calculate the total after Monday: 14 + 9 = 23 shells. Then subtract the shells given away: 23 - 17 = 6 shells. Finally, add the new shells found: 6 + 11 = 17 shells."
+  },
+  {
+    "original_expression": "16+2-18-13/2",
+    "priority_analysis": "13/2 -> 16+2 -> 18-18 -> 0-6.5",
+    "word_problem": "Tom had 16 trading cards. His brother gave him 2 more cards. Later, he traded away 18 cards to his friend. Then he decided to share half of his remaining 13 cards equally between his two cousins. After giving away these cards, how many more cards does Tom need to reach zero cards?",
+    "answer": "-6.5",
+    "analysis": "First, calculate the cards to share: 13 ÷ 2 = 6.5 cards. Then calculate Tom's initial total: 16 + 2 = 18 cards. After trading: 18 - 18 = 0 cards. Finally, after sharing: 0 - 6.5 = -6.5 cards, meaning Tom needs 6.5 more cards to reach zero."
+  }
+]

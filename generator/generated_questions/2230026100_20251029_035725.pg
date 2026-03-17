@@ -1,0 +1,30 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+Context()->operators->undefine('+','-','*','/');
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+[`14+11+16+4*4`] is equal to [_____]{answer=>Real(57.),width=>6}
+---
+
+What is the value of [`15+0-1+8*15`]? [_____]{134}
+---
+
+What is the value of [`6+1-11`]? [_____]{Formula("-4")}
+---
+
+What is the value of [`14+4-17-0`]? [_____]{Real(1.)}
+---
+
+[`7+19-12-10*16`] is equal to [_____]{answer=>-146,width=>9}
+---
+END_PGML
+ENDDOCUMENT();

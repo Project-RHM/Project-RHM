@@ -1,0 +1,13 @@
+Doc_No_Sol(LoadMacros(None),
+Context_Setup_No_Vars_Last(Context_With_Config("Numeric", Cfg_Last(Operators,
+CM_Undefine([Add_Op; Sub_Op; Mul_Op; Div_Op])))),
+Problem([Q_Item(Q_IsEqual(IC_Math(ME_Sub(ME_Add(ME_Add(ME_Term(T_Fac(F_Int(18))),
+T_Fac(F_Int(5))), T_Fac(F_Int(12))), T_Div(T_Fac(F_Int(17)), F_Int(17))))),
+A_Var(Var_Method(M_Formula(ME_Term(T_Fac(F_Int(34)))))), Some(10));
+Q_Item(Q_Value(IC_Math(ME_Add(ME_Term(T_Div(T_Fac(F_Int(11)), F_Int(11))),
+T_Div(T_Fac(F_Int(1)), F_Int(12))))), A_Var(Var_Value(VNum(1.083333))),
+Some(4));
+Q_Item(Q_IsEqual(IC_Math(ME_Sub(ME_Sub(ME_Add(ME_Term(T_Fac(F_Int(0))),
+T_Fac(F_Int(12))), T_Fac(F_Int(16))), T_Div(T_Fac(F_Int(10)), F_Int(5))))),
+A_Var(Var_Value(VInt(-6))),
+Some(8))]))

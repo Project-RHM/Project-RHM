@@ -1,0 +1,107 @@
+Doc_No_Sol(LoadMacros(None),
+Context_Setup_Vars_Cons(Context_With_Config("Numeric", Cfg_Cons(flags,
+CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"), VInt(0)))]),
+Cfg_Last(flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),
+VInt(0)))])))), AnswerVars([VarDecl("fun_2",
+Var_Method(M_Formula_Fun(Trig_Fun(Trig_Cos(Func(Exp_Fun(Exp(Var_X))))))));
+VarDecl("fun_1",
+Var_Method(M_Formula_Fun(Radical_Fun(Radi_Root(Func(Trig_Fun(Trig_Cos(Func(Rational_Fun(Int_Div_Fun(5, Var_X)))))), 4)))))]),
+Context_Setup_Vars_Cons(Context_Only("Interval"),
+AnswerVars([VarDecl("set_ans_4",
+Var_Method(M_Compute(Set_Compute_Union(Set_Compute_Union(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Enum([-7;
+2; 4; 7]))),
+Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Union(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Enum([-7;
+2; 4; 7]))),
+Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Enum([-9;
+-8; -2; 4; 5; 10]))))))))), Set_Compute_Factor(Set_Compute_Enum([-7; 2; 4;
+7])))))); VarDecl("set_ans_5",
+Var_Method(M_Compute(Set_Compute_Union(Set_Compute_Union(Set_Compute_Union(Set_Compute_Union(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Enum([-7;
+2; 4; 7]))),
+Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Enum([-7;
+2; 4; 7])))))), Set_Compute_Factor(Set_Compute_Enum([-7; 2; 4; 7]))),
+Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Enum([-9;
+-8; -2; 4; 5; 10])))))), Set_Compute_Factor(Set_Compute_Enum([-7; -5; 0;
+9])))))); VarDecl("set_ans_6",
+Var_Method(M_Compute(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Diff(Set_Compute_Factor(Set_Compute_Enum([-7;
+2; 4; 7])), Set_Compute_Enum([-7; 2; 4; 7]))))))))); VarDecl("set_ans_1",
+Var_Method(M_Compute(Set_Compute_Union(Set_Compute_Term(Set_Compute_Diff(Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Interval(LNEQ_RNEQ(I_Int(1),
+I_Int(7))))))),
+Set_Compute_Paren(Set_Compute_Term(Set_Compute_Diff(Set_Compute_Factor(Set_Compute_Interval(LNEQ_RNEQ(I_NegInfinity,
+I_Infinity))),
+Set_Compute_Paren(Set_Compute_Union(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Union(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Enum([-1;
+2; 10]))),
+Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Enum([-1;
+2; 10])))))))))))), Set_Compute_Factor(Set_Compute_Enum([-1; 2; 10]))))))))),
+Set_Compute_Factor(Set_Compute_Interval(LNEQ_RNEQ(I_Int(1), I_Int(7))))))));
+VarDecl("set_ans_2",
+Var_Method(M_Compute(Set_Compute_Union(Set_Compute_Union(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Enum([-1;
+2; 10]))), Set_Compute_Factor(Set_Compute_Enum([-1; 2; 10]))),
+Set_Compute_Diff(Set_Compute_Factor(Set_Compute_Enum([-1; 2; 10])),
+Set_Compute_Paren(Set_Compute_Term(Set_Compute_Diff(Set_Compute_Factor(Set_Compute_Interval(LNEQ_RNEQ(I_NegInfinity,
+I_Infinity))), Set_Compute_Interval(LNEQ_RNEQ(I_Int(1), I_Int(7)))))))))));
+VarDecl("set_ans_3",
+Var_Method(M_Compute(Set_Compute_Union(Set_Compute_Union(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Interval(LNEQ_RNEQ(I_Int(1),
+I_Int(7))))), Set_Compute_Factor(Set_Compute_Enum([-1; 2; 10]))),
+Set_Compute_Factor(Set_Compute_Interval(LNEQ_RNEQ(I_Int(1),
+I_Int(7))))))))]), Context_Setup_No_Vars_Last(Context_Only("Vector")))),
+Problem([Q_Item(Q_IsEqual(IC_Math(ME_Add(ME_Term(T_Mul(T_Fac(F_Int(7)),
+F_Int(10))), T_Fac(F_Int(5))))), A_Var(Var_Method(M_Real(VNum(75.000000)))),
+Some(6));
+Q_Item(Q_IsEqual(IC_Math(ME_Sub(ME_Sub(ME_Add(ME_Term(T_Fac(F_Int(1))),
+T_Fac(F_Int(4))), T_Fac(F_Int(16))), T_Mul(T_Fac(F_Num(16.860000)),
+F_Int(13))))), A_Var(Var_Method(M_Real(VNum(-230.180000)))), None);
+Q_Given_Set(Set_List_Cons("A", Set_Expr_Enum([-1; 2; 10]), Set_List_Last("B",
+Set_Expr_interval(Set_Interval(Between_Open(1, 7))))),
+Set_Prob_List_Cons(Set_Op_Union(Set_Op_Term(Set_Op_Inter(Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("B"))))))),
+Set_Op_Primary(Set_Op_Paren(Set_Op_Union(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Union(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A")))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A")))))))))))))))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A")))))))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Var("B")))),
+A_Var(Var_Value(VIdent("set_ans_1"))),
+Set_Prob_List_Cons(Set_Op_Union(Set_Op_Union(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A")))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A")))),
+Set_Op_Inter(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A"))),
+Set_Op_Primary(Set_Op_Var("B")))), A_Var(Var_Value(VIdent("set_ans_2"))),
+Set_Prob_List_Last(Set_Op_Union(Set_Op_Union(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("B")))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A")))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Var("B")))),
+A_Var(Var_Value(VIdent("set_ans_3"))))))); Q_Given_Set(Set_List_Cons("A",
+Set_Expr_Enum([-7; -5; 0; 9]), Set_List_Cons("B", Set_Expr_Enum([-9; -8; -2;
+4; 5; 10]), Set_List_Last("C", Set_Expr_Enum([-7; 2; 4; 7])))),
+Set_Prob_List_Cons(Set_Op_Union(Set_Op_Union(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("C")))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Union(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("C")))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("B")))))))))))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Var("C")))),
+A_Var(Var_Value(VIdent("set_ans_4"))),
+Set_Prob_List_Cons(Set_Op_Union(Set_Op_Union(Set_Op_Union(Set_Op_Union(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("C")))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("C")))))))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Var("C")))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("B")))))))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A")))),
+A_Var(Var_Value(VIdent("set_ans_5"))),
+Set_Prob_List_Last(Set_Op_Term(Set_Op_Factor(Set_Op_Diff(Set_Op_Primary(Set_Op_Var("C")),
+Set_Op_Var("C")))), A_Var(Var_Value(VIdent("set_ans_6")))))));
+Q_Suppose_Vector(Vector_List_Cons("u", [9; -8; -2], Vector_List_Cons("v",
+[-2; 4; 8], Vector_List_Last("w", [-8; 5; 3]))),
+Vector_Prob_List_Cons(Parallel_Vectors("u", [9; -8; -2]),
+Vector_Prob_List_Cons(Dot_Product("u","w", [9; -8; -2], [-8; 5; 3]),
+Vector_Prob_List_Cons(Dot_Product("v","w", [-2; 4; 8], [-8; 5; 3]),
+Vector_Prob_List_Cons(Vector_Norm("w", [-8; 5; 3]),
+Vector_Prob_List_Cons(Unit_Vector("u", [9; -8; -2]),
+Vector_Prob_List_Last(Same_Dir_Vectors("v", [-2; 4; 8]))))))));
+Q_Suppose_Vector(Vector_List_Cons("u", [4; 4; -3], Vector_List_Cons("v", [-7;
+4; 10], Vector_List_Last("w", [7; -7; 0]))),
+Vector_Prob_List_Cons(Same_Dir_Vectors("w", [7; -7; 0]),
+Vector_Prob_List_Cons(Dot_Product("w","u", [7; -7; 0], [4; 4; -3]),
+Vector_Prob_List_Cons(Cross_Product("v","u", [-7; 4; 10], [4; 4; -3]),
+Vector_Prob_List_Cons(Parallel_Vectors("u", [4; 4; -3]),
+Vector_Prob_List_Last(Unit_Vector("w", [7; -7; 0])))))));
+Q_Given_Function("fun_1",
+Derivative_Prob_List_Cons(First_Derivative("fun_1"),
+Derivative_Prob_List_Cons(Second_Derivative("fun_1"),
+Derivative_Prob_List_Last(Derivative_Algebra(2,"fun_1",2)))));
+Q_Given_Function("fun_2",
+Derivative_Prob_List_Cons(First_Derivative("fun_2"),
+Derivative_Prob_List_Cons(Second_Derivative("fun_2"),
+Derivative_Prob_List_Cons(Derivative_Algebra(3,"fun_2",3),
+Derivative_Prob_List_Last(Derivative_Algebra(6,"fun_2",6))))))]))

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Settings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="config-modal-body">
+    <!-- 加载覆盖层 -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <div class="loading-text">Saving Configuration...</div>
+            <div class="build-status" id="buildStatus">Building OCaml project...</div>
+        </div>
+    </div>
+
+    <div class="container config-modal-container">
+        <h1>Generator Settings</h1>
+        <p>Adjust parameters of the generator to control the behavior of question generation.</p>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('general')">General settings</button>
+            <button class="nav-tab" onclick="showTab('arithmetic')">Arithmetic problem</button>
+            <button class="nav-tab" onclick="showTab('set')">Set problem</button>
+            <button class="nav-tab" onclick="showTab('vector')">Vector problem</button>
+            <button class="nav-tab" onclick="showTab('derivative')">Derivative problem</button>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <form id="configForm">
+            <!-- General settings -->
+            <div id="general" class="tab-content active">
+                <div class="config-section">
+                    <h3>Basic Settings</h3>
+                    <div class="form-row">
+                        <!--
+                        <div class="form-group">
+                            <label for="min_cfg_depth">Min depth of context config</label>
+                            <input type="number" id="min_cfg_depth" name="min_cfg_depth" 
+                                   value="{{ config.min_cfg_depth }}" min="1" max="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="max_cfg_depth">Max depth of context config</label>
+                            <input type="number" id="max_cfg_depth" name="max_cfg_depth" 
+                                   value="{{ config.max_cfg_depth }}" min="1" max="10">
+                        </div>
+                        -->
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="min_question_num">Min number of questions</label>
+                            <input type="number" id="min_question_num" name="min_question_num" 
+                                   value="{{ config.min_question_num }}" min="1" max="20">
+                        </div>
+                        <div class="form-group">
+                            <label for="max_question_num">Max number of questions</label>
+                            <input type="number" id="max_question_num" name="max_question_num" 
+                                   value="{{ config.max_question_num }}" min="1" max="20">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>Question Type Configuration</h3>
+                    <div class="form-group">
+                        <label for="problem_type">Question Type</label>
+                        <select id="problem_type" name="problem_type">
+                            <option value="0" {% if config.problem_type == 0 %}selected{% endif %}>All Types</option>
+                            <option value="1" {% if config.problem_type == 1 %}selected{% endif %}>Arithmetic Only</option>
+                            <option value="2" {% if config.problem_type == 2 %}selected{% endif %}>Set Only</option>
+                            <option value="3" {% if config.problem_type == 3 %}selected{% endif %}>Vector Only</option>
+                            <option value="4" {% if config.problem_type == 4 %}selected{% endif %}>Derivative Only</option>
+                        </select>
+                    </div>
+                    <div id="all-types-settings">
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="question_random_amounts" name="question_random_amounts" 
+                                    value="true" {% if config.question_random_amounts %}checked{% endif %}>
+                                <label for="question_random_amounts">Randomly allocate the number of questions for each type</label>
+                            </div>
+                        </div>
+
+                        <div id="question-type-amounts-container">
+                            <div class="form-row">
+                                {% set type_names = ["Arithmetic", "Set", "Vector", "Derivative"] %}
+                                {% for i in range(4) %}
+                                <div class="form-group">
+                                    <label for="question_type_amounts_{{ i }}">{{ type_names[i] }} num</label>
+                                    <input type="number" id="question_type_amounts_{{ i }}" 
+                                        name="question_type_amounts_{{ i }}" 
+                                        value="{{ config.question_type_amounts[i] if config.question_type_amounts and i < config.question_type_amounts|length else 0 }}" 
+                                        min="0" max="10">
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="shuffle_questions_for_0_type" name="shuffle_questions_for_0_type" 
+                                    value="true" {% if config.shuffle_questions_for_0_type %}checked{% endif %}>
+                                <label for="shuffle_questions_for_0_type">Shuffle the order of generated questions</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Arithmetic problem configs -->
+            <div id="arithmetic" class="tab-content">
+                <div class="config-section">
+                    <h3>Arithmetic Problem Configs</h3>
+                    <div class="form-group">
+                        <label for="max_expr_depth">Max depth of math expression</label>
+                        <input type="number" id="max_expr_depth" name="max_expr_depth" 
+                               value="{{ config.max_expr_depth }}" min="1" max="100">
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="allow_float" name="allow_float" 
+                                   value="true" {% if config.allow_float %}checked{% endif %}>
+                            <label for="allow_float">Allow floating-point numbers</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Set problem configs -->
+            <div id="set" class="tab-content">
+                <div class="config-section">
+                    <h3>Set Problem Configs</h3>
+                    
+                    <!-- Set operation expression section -->
+                    <div class="form-section">
+                        <h4>Set Operation Expression Depth</h4>
+                        <p class="config-description">Control the depth of set expressions. Depth refers to the nested level of set operations.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_set_expr_depth">Min depth</label>
+                                <input type="number" id="min_set_expr_depth" name="min_set_expr_depth" 
+                                    value="{{ config.min_set_expr_depth }}" min="1" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_set_expr_depth">Max depth</label>
+                                <input type="number" id="max_set_expr_depth" name="max_set_expr_depth" 
+                                    value="{{ config.max_set_expr_depth }}" min="1" max="100">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Set elements range section -->
+                    <div class="form-section">
+                        <h4>Set Elements Range</h4>
+                        <p class="config-description">Define the range of integer values that can appear as elements in sets.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_set_element">Min value</label>
+                                <input type="number" id="min_set_element" name="min_set_element" 
+                                    value="{{ config.min_set_element }}" min="-1000" max="1000">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_set_element">Max value</label>
+                                <input type="number" id="max_set_element" name="max_set_element" 
+                                    value="{{ config.max_set_element }}" min="-1000" max="1000">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Remaining set configuration fields -->
+                    <div class="form-group">
+                        <label for="max_set_def_num">Maximum quantity of set definitions</label>
+                        <input type="number" id="max_set_def_num" name="max_set_def_num" 
+                            value="{{ config.max_set_def_num }}" min="1" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="set_variables">Available variable names (separated by commas)</label>
+                        <input type="text" id="set_variables" name="set_variables" 
+                            value="{{ config.set_variables | join(', ') }}">
+                    </div>
+                    
+                    <!-- Set problem quantity section -->
+                    <div class="form-section">
+                        <h4>Set Problem Quantity</h4>
+                        <p class="config-description">Control the amount of set problems generated in each set question.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_set_prob_num">Min number</label>
+                                <input type="number" id="min_set_prob_num" name="min_set_prob_num" 
+                                    value="{{ config.min_set_prob_num }}" min="1" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_set_prob_num">Max number</label>
+                                <input type="number" id="max_set_prob_num" name="max_set_prob_num" 
+                                    value="{{ config.max_set_prob_num }}" min="1" max="100">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vector problem configs -->
+            <div id="vector" class="tab-content">
+                <div class="config-section">
+                    <h3>Vector Problem Configs</h3>
+                    
+                    <div class="form-group">
+                        <label for="vector_dimension">Vector dimension</label>
+                        <input type="number" id="vector_dimension" name="vector_dimension" 
+                            value="{{ config.vector_dimension }}" min="2" max="10">
+                    </div>
+                    
+                    <!-- Vector elements range section -->
+                    <div class="form-section">
+                        <h4>Vector Elements Range</h4>
+                        <p class="config-description">Define the range of values for vector components.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_vector_element">Min value</label>
+                                <input type="number" id="min_vector_element" name="min_vector_element" 
+                                    value="{{ config.min_vector_element }}" min="-1000" max="1000">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_vector_element">Max value</label>
+                                <input type="number" id="max_vector_element" name="max_vector_element" 
+                                    value="{{ config.max_vector_element }}" min="-1000" max="1000">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Remaining vector configuration fields -->
+                    <div class="form-group">
+                        <label for="max_vector_def_num">Max quantity of vector definition</label>
+                        <input type="number" id="max_vector_def_num" name="max_vector_def_num" 
+                            value="{{ config.max_vector_def_num }}" min="1" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="vector_variables">Available variable names (separated by commas)</label>
+                        <input type="text" id="vector_variables" name="vector_variables" 
+                            value="{{ config.vector_variables | join(', ') }}">
+                    </div>
+                    
+                    <!-- Vector problem quantity section -->
+                    <div class="form-section">
+                        <h4>Vector Problem Quantity</h4>
+                        <p class="config-description">Control the number of vector problems generated in each vector question.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_vector_prob_num">Min number</label>
+                                <input type="number" id="min_vector_prob_num" name="min_vector_prob_num" 
+                                    value="{{ config.min_vector_prob_num }}" min="1" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_vector_prob_num">Max number</label>
+                                <input type="number" id="max_vector_prob_num" name="max_vector_prob_num" 
+                                    value="{{ config.max_vector_prob_num }}" min="1" max="100">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Derivative problem configs -->
+            <div id="derivative" class="tab-content">
+                <div class="config-section">
+                    <h3>Derivative Problem Configs</h3>
+
+                    <!-- Function expression section -->
+                    <div class="form-section">
+                        <h4>Function Expression Depth</h4>
+                        <p class="config-description">Control the depth of generated function expressions. Depth refers to the nested level of function operations.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_fun_expr_depth">Min depth</label>
+                                <input type="number" id="min_fun_expr_depth" name="min_fun_expr_depth" 
+                                    value="{{ config.min_fun_expr_depth }}" min="1" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_fun_expr_depth">Max depth</label>
+                                <input type="number" id="max_fun_expr_depth" name="max_fun_expr_depth" 
+                                    value="{{ config.max_fun_expr_depth }}" min="1" max="100">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Derivative problem quantity section -->
+                    <div class="form-section">
+                        <h4>Derivative Problem Quantity</h4>
+                        <p class="config-description">Control the number of derivative problems generated in each derivative question.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_derivative_prob_num">Min number</label>
+                                <input type="number" id="min_derivative_prob_num" name="min_derivative_prob_num" 
+                                    value="{{ config.min_derivative_prob_num }}" min="1" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_derivative_prob_num">Max number</label>
+                                <input type="number" id="max_derivative_prob_num" name="max_derivative_prob_num" 
+                                    value="{{ config.max_derivative_prob_num }}" min="1" max="100">
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="config-actions">
+                <button type="submit" class="btn btn-primary" id="saveBtn">Save</button>
+                <button type="button" class="btn btn-secondary" id="closeConfigBtn">Close</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // 隐藏所有标签页内容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            // 移除所有标签页的活动状态
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            // 显示选中的标签页内容
+            document.getElementById(tabName).classList.add('active');
+            // 设置选中的标签页为活动状态
+            event.target.classList.add('active');
+        }
+
+        function showLoading(message = 'Saving Configuration...') {
+            document.getElementById('buildStatus').textContent = message;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            document.getElementById('saveBtn').disabled = true;
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('saveBtn').disabled = false;
+        }
+
+        function updateBuildStatus(message) {
+            document.getElementById('buildStatus').textContent = message;
+        }
+
+        document.getElementById('configForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const messageDiv = document.getElementById('message');
+            
+            // 显示加载提示
+            showLoading('Saving configuration...');
+            
+            fetch('/config', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                
+                if (data.success) {
+                    messageDiv.textContent = data.message;
+                    messageDiv.className = 'message success';
+                    messageDiv.style.display = 'block';
+                    
+                    // 如果有构建错误信息，也显示出来
+                    if (data.build_error) {
+                        messageDiv.textContent += ' Build error: ' + data.build_error;
+                    }
+                    
+                    // 保存成功后通知父窗口关闭模态窗口
+                    setTimeout(() => {
+                        if (window.parent !== window) {
+                            window.parent.postMessage('closeConfigModal', '*');
+                        }
+                    }, 2000);
+                } else {
+                    messageDiv.textContent = data.error;
+                    messageDiv.className = 'message error';
+                    messageDiv.style.display = 'block';
+                }
+                
+                // 5秒后隐藏消息
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
+            })
+            .catch(error => {
+                hideLoading();
+                messageDiv.textContent = 'Network error: ' + error.message;
+                messageDiv.className = 'message error';
+                messageDiv.style.display = 'block';
+                
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
+            });
+        });
+
+        // 根据问题类型显示/隐藏相关配置
+        document.getElementById('problem_type').addEventListener('change', function() {
+            const isAllTypes = this.value === '0';
+            const allTypesSettings = document.getElementById('all-types-settings');
+            
+            if (allTypesSettings) {
+                allTypesSettings.style.display = isAllTypes ? 'block' : 'none';
+            }
+            
+            // 如果显示All Types设置，则根据随机分配复选框的状态更新显示
+            if (isAllTypes) {
+                updateQuestionTypeAmountsVisibility();
+            }
+        });
+
+        // 为"Randomly allocate"复选框添加事件监听
+        document.getElementById('question_random_amounts').addEventListener('change', function() {
+            updateQuestionTypeAmountsVisibility();
+        });
+
+        // 更新问题类型数量输入框的显示状态
+        function updateQuestionTypeAmountsVisibility() {
+            const isRandomAllocation = document.getElementById('question_random_amounts').checked;
+            const questionTypeAmountsContainer = document.getElementById('question-type-amounts-container');
+            
+            if (questionTypeAmountsContainer) {
+                questionTypeAmountsContainer.style.display = isRandomAllocation ? 'none' : 'block';
+            }
+        }
+
+        // 关闭按钮事件
+        document.getElementById('closeConfigBtn').addEventListener('click', function() {
+            if (window.parent !== window) {
+                window.parent.postMessage('closeConfigModal', '*');
+            }
+        });
+
+        // 初始状态设置
+        document.getElementById('problem_type').dispatchEvent(new Event('change'));
+        // 初始更新问题类型数量输入框的显示状态
+        updateQuestionTypeAmountsVisibility();
+    </script>
+</body>
+</html>

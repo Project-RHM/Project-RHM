@@ -1,0 +1,87 @@
+Doc_No_Sol(LoadMacros(None),
+Context_Setup_Vars_Cons(Context_With_Config("Numeric", Cfg_Cons(flags,
+CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"), VInt(0)))]),
+Cfg_Last(flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),
+VInt(0)))])))), AnswerVars([VarDecl("fun_2",
+Var_Method(M_Formula_Fun(Power_Fun(Power_Fun_Int(Func(Power_Fun(Power_Fun_Int(Func(Rational_Fun(Fun_Div_Int(Var_X, 5))), 4))), 5)))));
+VarDecl("fun_1",
+Var_Method(M_Formula_Fun(Power_Fun(Power_Fun_Int(Func(Log_Fun(Ln_Fun(Func(Rational_Fun(Fun_Div_Int(Var_X, 9)))))), 4)))))]),
+Context_Setup_Vars_Cons(Context_Only("Interval"),
+AnswerVars([VarDecl("set_ans_3",
+Var_Method(M_Compute(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Diff(Set_Compute_Factor(Set_Compute_Interval(LNEQ_REQ(I_NegInfinity,
+I_Int(13)))),
+Set_Compute_Paren(Set_Compute_Union(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Interval(LNEQ_REQ(I_NegInfinity,
+I_Int(13))))), Set_Compute_Factor(Set_Compute_Enum([-10; 0; 5;
+8])))))))))))); VarDecl("set_ans_4",
+Var_Method(M_Compute(Set_Compute_Union(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Interval(LNEQ_REQ(I_NegInfinity,
+I_Int(16))))), Set_Compute_Factor(Set_Compute_Enum([-10; 0; 5; 8]))))));
+VarDecl("set_ans_1",
+Var_Method(M_Compute(Set_Compute_Union(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Diff(Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Enum([-8;
+-2; 1; 3; 9])))))))),
+Set_Compute_Paren(Set_Compute_Term(Set_Compute_Diff(Set_Compute_Factor(Set_Compute_Interval(LNEQ_RNEQ(I_NegInfinity,
+I_Infinity))), Set_Compute_Enum([-8; -2; 1; 3; 9]))))))))),
+Set_Compute_Factor(Set_Compute_Interval(LNEQ_REQ(I_NegInfinity,
+I_Int(13)))))))); VarDecl("set_ans_2",
+Var_Method(M_Compute(Set_Compute_Union(Set_Compute_Union(Set_Compute_Term(Set_Compute_Diff(Set_Compute_Factor(Set_Compute_Enum([-8;
+-2; 1; 3; 9])),
+Set_Compute_Paren(Set_Compute_Term(Set_Compute_Diff(Set_Compute_Factor(Set_Compute_Interval(LNEQ_RNEQ(I_NegInfinity,
+I_Infinity))), Set_Compute_Enum([-10; -5; 5; 8; 9])))))),
+Set_Compute_Factor(Set_Compute_Enum([-8; -2; 1; 3; 9]))),
+Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Union(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Enum([-10;
+-5; 5; 8; 9]))),
+Set_Compute_Diff(Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Paren(Set_Compute_Term(Set_Compute_Factor(Set_Compute_Enum([-10;
+-5; 5; 8; 9])))))))),
+Set_Compute_Paren(Set_Compute_Term(Set_Compute_Diff(Set_Compute_Factor(Set_Compute_Interval(LNEQ_RNEQ(I_NegInfinity,
+I_Infinity))), Set_Compute_Enum([-8; -2; 1; 3; 9]))))))))))))]),
+Context_Setup_No_Vars_Last(Context_Only("Vector")))),
+Problem([Q_Item(Q_Value(IC_Math(ME_Add(ME_Term(T_Div(T_Fac(F_Int(1)),
+F_Int(14))), T_Fac(F_Int(11))))), A_Var(Var_Value(VNum(11.071429))), None);
+Q_Item(Q_IsEqual(IC_Math(ME_Add(ME_Add(ME_Term(T_Fac(F_Int(3))),
+T_Fac(F_Int(7))), T_Mul(T_Fac(F_Int(15)), F_Int(8))))),
+A_Var(Var_Method(M_Real(VNum(130.000000)))), None);
+Q_Given_Set(Set_List_Cons("A", Set_Expr_Enum([-8; -2; 1; 3; 9]),
+Set_List_Cons("B", Set_Expr_Enum([-10; -5; 5; 8; 9]), Set_List_Last("C",
+Set_Expr_interval(Set_Interval(Less_Equal(13)))))),
+Set_Prob_List_Cons(Set_Op_Union(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Term(Set_Op_Inter(Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A"))))))))))),
+Set_Op_Primary(Set_Op_Var("A")))))))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Var("C")))),
+A_Var(Var_Value(VIdent("set_ans_1"))),
+Set_Prob_List_Last(Set_Op_Union(Set_Op_Union(Set_Op_Term(Set_Op_Inter(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A"))),
+Set_Op_Primary(Set_Op_Var("B")))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A")))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Union(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("B")))),
+Set_Op_Inter(Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Paren(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("B"))))))))))),
+Set_Op_Primary(Set_Op_Var("A")))))))),
+A_Var(Var_Value(VIdent("set_ans_2")))))); Q_Given_Set(Set_List_Cons("A",
+Set_Expr_Enum([-10; 0; 5; 8]), Set_List_Cons("B",
+Set_Expr_interval(Set_Interval(Less_Equal(13))), Set_List_Last("C",
+Set_Expr_interval(Set_Interval(Less_Equal(16)))))),
+Set_Prob_List_Cons(Set_Op_Term(Set_Op_Factor(Set_Op_Diff(Set_Op_Primary(Set_Op_Var("B")),
+Set_Op_Paren(Set_Op_Union(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("B")))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A")))))))),
+A_Var(Var_Value(VIdent("set_ans_3"))),
+Set_Prob_List_Last(Set_Op_Union(Set_Op_Term(Set_Op_Factor(Set_Op_Primary(Set_Op_Var("C")))),
+Set_Op_Factor(Set_Op_Primary(Set_Op_Var("A")))),
+A_Var(Var_Value(VIdent("set_ans_4"))))));
+Q_Suppose_Vector(Vector_List_Cons("u", [6; 5; -4], Vector_List_Cons("v", [7;
+-2; 8], Vector_List_Last("w", [-7; -8; 3]))),
+Vector_Prob_List_Cons(Cross_Product("v","u", [7; -2; 8], [6; 5; -4]),
+Vector_Prob_List_Cons(Dot_Product("w","v", [-7; -8; 3], [7; -2; 8]),
+Vector_Prob_List_Cons(Same_Dir_Vectors("w", [-7; -8; 3]),
+Vector_Prob_List_Cons(Cross_Product("v","w", [7; -2; 8], [-7; -8; 3]),
+Vector_Prob_List_Cons(Cross_Product("w","u", [-7; -8; 3], [6; 5; -4]),
+Vector_Prob_List_Last(Dot_Product("v","u", [7; -2; 8], [6; 5; -4]))))))));
+Q_Suppose_Vector(Vector_List_Cons("u", [3; 4; -1], Vector_List_Cons("v", [-8;
+-10; -2], Vector_List_Last("w", [-2; 4; 1]))),
+Vector_Prob_List_Cons(Unit_Vector("v", [-8; -10; -2]),
+Vector_Prob_List_Cons(Cross_Product("u","v", [3; 4; -1], [-8; -10; -2]),
+Vector_Prob_List_Cons(Same_Dir_Vectors("w", [-2; 4; 1]),
+Vector_Prob_List_Last(Same_Dir_Vectors("u", [3; 4; -1]))))));
+Q_Given_Function("fun_1",
+Derivative_Prob_List_Cons(First_Derivative("fun_1"),
+Derivative_Prob_List_Cons(Derivative_Algebra(7,"fun_1",7),
+Derivative_Prob_List_Last(Second_Derivative("fun_1")))));
+Q_Given_Function("fun_2",
+Derivative_Prob_List_Cons(First_Derivative("fun_2"),
+Derivative_Prob_List_Cons(Derivative_Algebra(9,"fun_2",9),
+Derivative_Prob_List_Last(Second_Derivative("fun_2")))))]))

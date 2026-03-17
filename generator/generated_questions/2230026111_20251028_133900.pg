@@ -1,0 +1,53 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Interval");
+
+$set_ans_6 = Compute("(-infinity, 13) U {0, 4, 5, 6, 17}");
+$set_ans_7 = Compute("(-infinity, 13) U {0, 4, 5, 6, 17}");
+$set_ans_3 = Compute("((-infinity, 18]) U (-infinity, 18] U (-infinity, 18]");
+$set_ans_4 = Compute("{1, 10, 12, 19} U (-infinity, 18]");
+$set_ans_5 = Compute("{1, 10, 12, 19} U {1, 10, 12, 19} U ({1, 10, 12, 19} U (-infinity, 18] U (((-infinity, 18] - ((-infinity, infinity) - (-infinity, 18])))) U (-infinity, 18]");
+$set_ans_1 = Compute("(({7, 8, 15} U [4, 5])) - ((-infinity, infinity) - {8, 15, 16, 17}) - ((-infinity, infinity) - {7, 8, 15})");
+$set_ans_2 = Compute("(({7, 8, 15})) U [4, 5] U {7, 8, 15}");
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+Given the sets:
+- [`A = \{8, 15, 16, 17\}`]
+- [`B = \{7, 8, 15\}`]
+- [`C = \{x | 4 \leq x \leq 5\}`]
+
+Compute:
+- [`((B \cup C)) \cap A \cap B = `] [_____]{$set_ans_1}
+- [`((B)) \cup C \cup B = `] [_____]{$set_ans_2}
+
+---
+
+Given the sets:
+- [`A = \{x | x \leq 18\}`]
+- [`B = \{1, 10, 12, 19\}`]
+
+Compute:
+- [`(A) \cup A \cup A = `] [_____]{$set_ans_3}
+- [`B \cup A = `] [_____]{$set_ans_4}
+- [`B \cup B \cup (B \cup A \cup ((A \cap A))) \cup A = `] [_____]{$set_ans_5}
+
+---
+
+Given the sets:
+- [`A = \{x | x < 13\}`]
+- [`B = \{0, 4, 5, 6, 17\}`]
+
+Compute:
+- [`A \cup B = `] [_____]{$set_ans_6}
+- [`A \cup B = `] [_____]{$set_ans_7}
+
+---
+END_PGML
+ENDDOCUMENT();

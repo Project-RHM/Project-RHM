@@ -1,0 +1,117 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+Context()->flags->set(reduceConstantFunctions=>0);
+Context()->flags->set(reduceConstants=>0);
+
+$fun_2 = Formula("((10/(x)))^2");
+$fun_1 = Formula("((x^2+2*x+1)^4)+9");
+
+Context("Interval");
+
+$set_ans_3 = Compute("[0, infinity) U {-9, -8, -6, 1, 4, 5} U {-9, -8, -6, 1, 4, 5} U (({-9, -8, -6, 1, 4, 5}) U [0, infinity) U {-9, -8, -6, 1, 4, 5})");
+$set_ans_4 = Compute("({-9, -8, -6, 1, 4, 5}) U ({-9, 1, 5, 10} U {-9, -8, -6, 1, 4, 5} - ((-infinity, infinity) - {-9, -8, -6, 1, 4, 5}))");
+$set_ans_1 = Compute("{-10, -7, -6, 4, 6} U {-10, -7, -6, 4, 6} U {-10, -7, -6, 4, 6}");
+$set_ans_2 = Compute("((((4, 9) U {-10, -7, -6, 4, 6}) U {-10, 7}) U (({-10, -7, -6, 4, 6} - ((-infinity, infinity) - (({-10, 7} U ({-10, 7} - ((-infinity, infinity) - {-10, -7, -6, 4, 6}))) - ((-infinity, infinity) - {-10, 7})))))) U {-10, 7} U ((4, 9) U {-10, -7, -6, 4, 6}) U (4, 9) - ((-infinity, infinity) - (((((4, 9)) U ({-10, -7, -6, 4, 6})))))");
+
+Context("Vector");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+During a classroom game, Team A started with [`16`] points. They earned [`9`] more points for completing a challenge, but lost [`7`] points for a rule violation. Meanwhile, Team B scored points by solving [`3`] sets of problems, with each set worth [`14`] points. If we compare Team A's final score to Team B's score, how many more points does Team B have?
+
+[_____]{-24}
+[%
+16+9-7-3*14
+
+First, calculate Team B's score: 3 × 14 = 42 points. Then, calculate Team A's score: 16 + 9 = 25 points, then 25 - 7 = 18 points. Finally, compare the teams: 18 - 42 = -24 points. This means Team A has 24 fewer points than Team B, or Team B leads by 24 points.
+%]
+---
+
+Lily had [`1`] pencil in her pencil case. Her teacher gave her [`12`] more pencils for good behavior. Later that day, she discovered that [`13`] of her classmates each needed to borrow [`13`] pencils from her for an art project. After lending them out, how many pencils does Lily have?
+
+[_____]{-156}
+[%
+1+12-13*13
+
+First, calculate how many pencils Lily lent out: 13 × 13 = 169 pencils. Then, calculate how many pencils she had before lending: 1 + 12 = 13 pencils. Finally, subtract the pencils lent from what she had: 13 - 169 = -156 pencils. This means Lily is short 156 pencils and needs to get that many more to fulfill her lending commitment.
+%]
+---
+
+Given the sets:
+- [`A = \{x | 4 < x < 9\}`]
+- [`B = \{-10, 7\}`]
+- [`C = \{-10, -7, -6, 4, 6\}`]
+
+Compute:
+- [`C \cup C \cup C = `] [_____]{$set_ans_1}
+- [`(((A \cup C) \cup B) \cup ((C \cap ((B \cup (B \cap C)) \cap B)))) \cup B \cup (A \cup C) \cup A \cap ((((A) \cup (C)))) = `] [_____]{$set_ans_2}
+
+---
+
+Given the sets:
+- [`A = \{-9, 1, 5, 10\}`]
+- [`B = \{x | x \geq 0\}`]
+- [`C = \{-9, -8, -6, 1, 4, 5\}`]
+
+Compute:
+- [`B \cup C \cup C \cup ((C) \cup B \cup C) = `] [_____]{$set_ans_3}
+- [`(C) \cup (A \cup C \cap C) = `] [_____]{$set_ans_4}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -10, 5, -4 \rangle `]
+- [` \vec{v} = \langle -5, 0, 7 \rangle `]
+
+Compute:
+- [` \vec{v} \times \vec{u} = `] [_____]{Compute("<-5, 0, 7>") x Compute("<-10, 5, -4>")}
+- [` \vec{u} \cdot \vec{v} = `] [_____]{Compute("<-10, 5, -4>") . Compute("<-5, 0, 7>")}
+- Enter a unit vector in the direction of [` \vec{v} `]. [_____]{unit(Compute("<-5, 0, 7>"))}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<-5, 0, 7>"))}
+- Enter a vector parallel to [` \vec{u} `]. [_____]{Compute("<-10, 5, -4>")->cmp(parallel=>1)}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -3, -10, -7 \rangle `]
+- [` \vec{v} = \langle 0, -8, -3 \rangle `]
+
+Compute:
+- Enter a vector in the same direction as [` \vec{v} `]. [_____]{Compute("<0, -8, -3>")->cmp(parallel=>1,sameDirection=>1)}
+- Enter a vector parallel to [` \vec{u} `]. [_____]{Compute("<-3, -10, -7>")->cmp(parallel=>1)}
+- [` \vec{u} \times \vec{v} = `] [_____]{Compute("<-3, -10, -7>") x Compute("<0, -8, -3>")}
+- Enter a vector in the same direction as [` \vec{u} `]. [_____]{Compute("<-3, -10, -7>")->cmp(parallel=>1,sameDirection=>1)}
+- [` \vec{v} \times \vec{u} = `] [_____]{Compute("<0, -8, -3>") x Compute("<-3, -10, -7>")}
+- Enter a unit vector in the direction of [` \vec{v} `]. [_____]{unit(Compute("<0, -8, -3>"))}
+
+---
+
+Given this function:
+
+>> [`[$fun_1]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_1->D()}
+- [`f''(x) =`] [_____]{$fun_1->D()->D()}
+
+---
+
+Given this function:
+
+>> [`[$fun_2]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_2->D()}
+- [`f'(0) =`] [_____]{$fun_2->D()->eval(x=>0)}
+
+---
+END_PGML
+ENDDOCUMENT();

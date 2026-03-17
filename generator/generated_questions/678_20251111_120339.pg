@@ -1,0 +1,104 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+Context()->flags->set(reduceConstantFunctions=>0);
+Context()->flags->set(reduceConstants=>0);
+
+$fun_2 = Formula("((e^(x)))^(1/3)");
+$fun_1 = Formula("e^((x/4))");
+
+Context("Interval");
+
+$set_ans_4 = Compute("(({-9, -3, 2, 4, 5, 7}) U {0, 4, 7}) U {-9, -3, 2, 4, 5, 7} U ({0, 4, 7})");
+$set_ans_5 = Compute("{-9, -3, 2, 4, 5, 7} U ({0, 4, 7} U (({0, 4, 7})) U {-9, -3, 2, 4, 5, 7}) U {0, 4, 7}");
+$set_ans_1 = Compute("((-infinity, 16) U [7, infinity)) U ((-infinity, 16) - ((-infinity, infinity) - (-infinity, 16)))");
+$set_ans_2 = Compute("(-infinity, 16) U (-infinity, 16)");
+$set_ans_3 = Compute("((((-infinity, 16)))) U [7, infinity) U (-infinity, 16) U [7, infinity)");
+
+Context("Vector");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+What is the value of [`12.82+5+8`]? [_____]{Real(25.82)}
+---
+
+[`11.85+9.8-15.91*4.22`] is equal to [_____]{Formula('-45.4902')}
+---
+
+Given the sets:
+- [`A = \{x | x < 16\}`]
+- [`B = \{x | x \geq 7\}`]
+
+Compute:
+- [`(A \cup B) \cup (A \cap A) = `] [_____]{$set_ans_1}
+- [`A \cup A = `] [_____]{$set_ans_2}
+- [`(((A))) \cup B \cup A \cup B = `] [_____]{$set_ans_3}
+
+---
+
+Given the sets:
+- [`A = \{-7, 0\}`]
+- [`B = \{-9, -3, 2, 4, 5, 7\}`]
+- [`C = \{0, 4, 7\}`]
+
+Compute:
+- [`((B) \cup C) \cup B \cup (C) = `] [_____]{$set_ans_4}
+- [`B \cup (C \cup ((C)) \cup B) \cup C = `] [_____]{$set_ans_5}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -10, -9, 5 \rangle `]
+- [` \vec{v} = \langle -4, -10, -9 \rangle `]
+- [` \vec{w} = \langle 7, 7, 8 \rangle `]
+
+Compute:
+- [` \left\| \vec{u} \right\| = `] [_____]{norm(Compute("<-10, -9, 5>"))}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<-4, -10, -9>"))}
+- Enter a vector in the same direction as [` \vec{u} `]. [_____]{Compute("<-10, -9, 5>")->cmp(parallel=>1,sameDirection=>1)}
+- Enter a unit vector in the direction of [` \vec{w} `]. [_____]{unit(Compute("<7, 7, 8>"))}
+- Enter a vector in the same direction as [` \vec{w} `]. [_____]{Compute("<7, 7, 8>")->cmp(parallel=>1,sameDirection=>1)}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -6, -4, 5 \rangle `]
+- [` \vec{v} = \langle 9, 3, -6 \rangle `]
+
+Compute:
+- Enter a unit vector in the direction of [` \vec{v} `]. [_____]{unit(Compute("<9, 3, -6>"))}
+- [` \vec{u} \cdot \vec{v} = `] [_____]{Compute("<-6, -4, 5>") . Compute("<9, 3, -6>")}
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<-6, -4, 5>"))}
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<9, 3, -6>")->cmp(parallel=>1)}
+
+---
+
+Given this function:
+
+>> [`[$fun_1]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_1->D()}
+- [`f''(x) =`] [_____]{$fun_1->D()->D()}
+- [`f'(4) =`] [_____]{$fun_1->D()->eval(x=>4)}
+
+---
+
+Given this function:
+
+>> [`[$fun_2]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_2->D()}
+- [`f''(x) =`] [_____]{$fun_2->D()->D()}
+
+---
+END_PGML
+ENDDOCUMENT();

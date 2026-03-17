@@ -1,0 +1,106 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+Context()->flags->set(reduceConstantFunctions=>0);
+Context()->flags->set(reduceConstants=>0);
+
+$fun_2 = Formula("cos((x^2-3*x+1))");
+$fun_1 = Formula("1*(ln((x/4)))");
+
+Context("Interval");
+
+$set_ans_3 = Compute("[3, 5] U (-infinity, 18)");
+$set_ans_4 = Compute("([3, 5] - ([3, 5] U (((-infinity, 18) U (((-infinity, 18))) U ((-infinity, 18)) - ((-infinity, infinity) - (((-infinity, 18)) U [3, 5] - ((-infinity, infinity) - [3, 5]))))) - ((-infinity, infinity) - (-infinity, 18))))");
+$set_ans_5 = Compute("([3, 5] - ([3, 5]))");
+$set_ans_1 = Compute("[9, infinity) U (([9, infinity) - ((-infinity, infinity) - [9, infinity)))) U [9, infinity) - ((-infinity, infinity) - ({3, 4, 6}))");
+$set_ans_2 = Compute("[9, infinity) - ((-infinity, infinity) - ({3, 4, 6})) - ((-infinity, infinity) - [9, infinity))");
+
+Context("Vector");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+What is the value of [`10*1+10*19`]? [_____]{Real(200.)}
+---
+
+What is the value of [`8+17+10/10`]? [_____]{Formula('26')}
+---
+
+Given the sets:
+- [`A = \{3, 4, 6\}`]
+- [`B = \{x | x \geq 9\}`]
+
+Compute:
+- [`B \cup ((B \cap B)) \cup B \cap (A) = `] [_____]{$set_ans_1}
+- [`B \cap (A) \cap B = `] [_____]{$set_ans_2}
+
+---
+
+Given the sets:
+- [`A = \{x | 3 \leq x \leq 5\}`]
+- [`B = \{x | x < 18\}`]
+
+Compute:
+- [`A \cup B = `] [_____]{$set_ans_3}
+- [`A - (A \cup ((B \cup ((B)) \cup (B) \cap ((B) \cup A \cap A))) \cap B) = `] [_____]{$set_ans_4}
+- [`A - (A) = `] [_____]{$set_ans_5}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 3, 8, 7 \rangle `]
+- [` \vec{v} = \langle 2, -8, 7 \rangle `]
+
+Compute:
+- [` \vec{v} \times \vec{u} = `] [_____]{Compute("<2, -8, 7>") x Compute("<3, 8, 7>")}
+- Enter a vector in the same direction as [` \vec{v} `]. [_____]{Compute("<2, -8, 7>")->cmp(parallel=>1,sameDirection=>1)}
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<2, -8, 7>")->cmp(parallel=>1)}
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<3, 8, 7>"))}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<2, -8, 7>"))}
+- [` \vec{u} \cdot \vec{v} = `] [_____]{Compute("<3, 8, 7>") . Compute("<2, -8, 7>")}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -1, -4, -8 \rangle `]
+- [` \vec{v} = \langle 8, 6, 8 \rangle `]
+
+Compute:
+- [` \left\| \vec{u} \right\| = `] [_____]{norm(Compute("<-1, -4, -8>"))}
+- Enter a unit vector in the direction of [` \vec{v} `]. [_____]{unit(Compute("<8, 6, 8>"))}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<8, 6, 8>"))}
+- [` \vec{u} \times \vec{v} = `] [_____]{Compute("<-1, -4, -8>") x Compute("<8, 6, 8>")}
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<-1, -4, -8>"))}
+- Enter a vector in the same direction as [` \vec{u} `]. [_____]{Compute("<-1, -4, -8>")->cmp(parallel=>1,sameDirection=>1)}
+
+---
+
+Given this function:
+
+>> [`[$fun_1]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_1->D()}
+- [`f'(1) =`] [_____]{$fun_1->D()->eval(x=>1)}
+
+---
+
+Given this function:
+
+>> [`[$fun_2]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_2->D()}
+- [`f''(x) =`] [_____]{$fun_2->D()->D()}
+- [`f'(1) =`] [_____]{$fun_2->D()->eval(x=>1)}
+- [`f'(7) =`] [_____]{$fun_2->D()->eval(x=>7)}
+
+---
+END_PGML
+ENDDOCUMENT();

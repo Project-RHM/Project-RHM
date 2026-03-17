@@ -1,0 +1,16 @@
+[
+  {
+    "original_expression": "15+10-9+19",
+    "priority_analysis": "15+10 -> 25-9 -> 16+19",
+    "word_problem": "Lily collected 15 seashells on Monday morning. In the afternoon, she found 10 more beautiful ones. On Tuesday, she gave 9 seashells to her best friend as a birthday gift. On Wednesday, she discovered 19 additional seashells during a beach walk. How many seashells does Lily have now?",
+    "answer": "35",
+    "analysis": "First, calculate the total after Monday: 15 + 10 = 25 seashells. Then, subtract the seashells given away: 25 - 9 = 16 seashells. Finally, add the new findings: 16 + 19 = 35 seashells."
+  },
+  {
+    "original_expression": "9+4+14+13/12",
+    "priority_analysis": "13/12 -> 9+4 -> 13+14 -> 27+1.0833333333",
+    "word_problem": "During a reading challenge, Emma read 9 pages on Monday, 4 pages on Tuesday, and 14 pages on Wednesday. On Thursday, she read for exactly 13 minutes, and her reading speed was 1 page every 12 minutes. How many pages did Emma read in total during these four days?",
+    "answer": "28.0833333333",
+    "analysis": "First, calculate Thursday's pages: 13 ÷ 12 ≈ 1.0833333333 pages. Then, add Monday and Tuesday: 9 + 4 = 13 pages. Next, add Wednesday: 13 + 14 = 27 pages. Finally, add Thursday's pages: 27 + 1.0833333333 ≈ 28.0833333333 pages."
+  }
+]

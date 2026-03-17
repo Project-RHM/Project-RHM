@@ -1,0 +1,74 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+Given this function:
+
+[`[$fun_1]`]
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_1->D()}
+
+---
+
+Given this function:
+
+[`[$fun_2]`]
+
+Compute:
+- [`f'(8) =`] [_____]{$fun_2->D()->eval(x=>8)}
+- [`f'(x) =`] [_____]{$fun_2->D()}
+- [`f''(x) =`] [_____]{$fun_2->D()->D()}
+
+---
+
+Given this function:
+
+[`[$fun_3]`]
+
+Compute:
+- [`f''(x) =`] [_____]{$fun_3->D()->D()}
+- [`f''(x) =`] [_____]{$fun_3->D()->D()}
+
+---
+
+Given this function:
+
+[`[$fun_4]`]
+
+Compute:
+- [`f'(5) =`] [_____]{$fun_4->D()->eval(x=>5)}
+- [`f''(x) =`] [_____]{$fun_4->D()->D()}
+
+---
+
+Given this function:
+
+[`[$fun_5]`]
+
+Compute:
+- [`f''(x) =`] [_____]{$fun_5->D()->D()}
+- [`f'(6) =`] [_____]{$fun_5->D()->eval(x=>6)}
+- [`f''(x) =`] [_____]{$fun_5->D()->D()}
+
+---
+
+Given this function:
+
+[`[$fun_6]`]
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_6->D()}
+
+---
+END_PGML
+ENDDOCUMENT();

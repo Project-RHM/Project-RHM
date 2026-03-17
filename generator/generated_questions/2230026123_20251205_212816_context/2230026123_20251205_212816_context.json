@@ -1,0 +1,23 @@
+[
+  {
+    "original_expression": "11/11+1/12",
+    "priority_analysis": "11/11 -> 1/12 -> 1 + 0.08333333333",
+    "word_problem": "Lily baked a large pizza for her family. She cut it into 11 equal slices. She ate one slice herself, which was 1/11 of the whole pizza. Then, she decided to share another slice equally among her 12 classmates. How much of the whole pizza did Lily eat and share in total?",
+    "answer": "1.08333333333",
+    "analysis": "First, calculate the fraction of the pizza Lily ate: 11/11 simplifies to 1 whole slice, which is 1/11 of the pizza. As a decimal, 1/11 ≈ 0.090909..., but in the context of the original expression, 11/11 = 1. Next, calculate the fraction shared with classmates: 1 slice divided among 12 people is 1/12 ≈ 0.08333333333. Finally, add the two fractions: 1 + 0.08333333333 = 1.08333333333."
+  },
+  {
+    "original_expression": "18+5+12-17/17",
+    "priority_analysis": "17/17 -> 18+5+12-1",
+    "word_problem": "During a school sports day, Team A scored 18 points in the first game, 5 points in the second, and 12 points in the third. In the final game, they had a penalty where they lost points equal to one whole point (since 17/17 equals 1). What was Team A's final score?",
+    "answer": "34",
+    "analysis": "First, calculate the penalty: 17/17 = 1 point lost. Then, add the points from the first three games: 18 + 5 + 12 = 35 points. Finally, subtract the penalty: 35 - 1 = 34 points."
+  },
+  {
+    "original_expression": "0+12-16-10/5",
+    "priority_analysis": "10/5 -> 0+12-16-2",
+    "word_problem": "A group of friends started a board game with no points. In the first round, they earned 12 points. In the second round, they lost 16 points. Then, they had to split a penalty of 10 points equally among 5 players, and each lost that share. What is the group's final score?",
+    "answer": "-6",
+    "analysis": "First, calculate the penalty per player: 10 ÷ 5 = 2 points lost per player. Since the group shares the penalty, the total penalty is 2 points. Then, calculate the running total: Start with 0, add 12 (0 + 12 = 12), subtract 16 (12 - 16 = -4), and finally subtract the penalty of 2 (-4 - 2 = -6). The final score is -6, meaning they owe 6 points."
+  }
+]

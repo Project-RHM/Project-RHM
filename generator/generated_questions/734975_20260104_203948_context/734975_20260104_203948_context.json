@@ -1,0 +1,30 @@
+[
+  {
+    "original_expression": "17/15+1",
+    "priority_analysis": "17/15 -> 1.133... + 1",
+    "word_problem": "Lily had a long piece of ribbon that was 17 meters long. She needed to cut it into 15 equal pieces for her art project. After cutting, she found another single meter of ribbon in her craft box. What is the total length of ribbon she has now?",
+    "answer": "2.13333333333",
+    "analysis": "First, calculate the length of each piece from the long ribbon: 17 ÷ 15 ≈ 1.133333 meters. Then, add the extra meter found: 1.133333 + 1 = 2.133333 meters."
+  },
+  {
+    "original_expression": "14+5/17",
+    "priority_analysis": "5/17 -> 14 + 0.294...",
+    "word_problem": "During a school book fair, Mia had saved 14 dollars. She found a special offer where she could buy 5 bookmarks for 17 dollars. She decided to buy just one bookmark's worth of the offer. How much money does she have in total now?",
+    "answer": "14.2941176471",
+    "analysis": "First, calculate the cost of one bookmark from the offer: 5 ÷ 17 ≈ 0.294118 dollars. This is the amount she spent. Then, add this cost to her original savings: 14 + 0.294118 = 14.294118 dollars."
+  },
+  {
+    "original_expression": "19+6+4-19/10",
+    "priority_analysis": "19/10 -> 19 + 6 + 4 - 1.9",
+    "word_problem": "Leo collected 19 seashells on Monday, 6 on Tuesday, and 4 on Wednesday. On Thursday, he decided to share his total collection equally among his 10 friends. After giving them their share, how many seashells did Leo have left?",
+    "answer": "27.1",
+    "analysis": "First, calculate the total seashells collected: 19 + 6 + 4 = 29 seashells. Then, calculate how many he gave to each friend: 19 ÷ 10 = 1.9 seashells per friend (using Monday's count as the share). Finally, subtract this amount from the total: 29 - 1.9 = 27.1 seashells left."
+  },
+  {
+    "original_expression": "9/13+11/7",
+    "priority_analysis": "9/13 -> 11/7 -> 0.692... + 1.571...",
+    "word_problem": "For a school baking project, Sarah needed to measure ingredients. One recipe required 9 cups of flour to be divided equally among 13 batches. Another recipe required 11 cups of sugar to be divided equally among 7 batches. If she makes one batch from each recipe, what is the total amount of flour and sugar she needs for those two single batches?",
+    "answer": "2.26373626374",
+    "analysis": "First, calculate the flour for one batch: 9 ÷ 13 ≈ 0.692308 cups. Then, calculate the sugar for one batch: 11 ÷ 7 ≈ 1.571429 cups. Finally, add the amounts for the two single batches: 0.692308 + 1.571429 ≈ 2.263737 cups."
+  }
+]

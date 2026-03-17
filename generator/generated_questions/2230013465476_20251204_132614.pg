@@ -1,0 +1,83 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Vector");
+
+BEGIN_PGML
+# Questions:
+
+- _For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+- _For derivative problems, if the result is undefined, then *leave the blank empty*._
+
+Suppose the vectors:
+- [` \vec{u} = \langle 3, 8, -2 \rangle `]
+- [` \vec{v} = \langle 10, -1, 3 \rangle `]
+
+Compute:
+- Enter a vector parallel to [` \vec{u} `]. [_____]{Compute("<3, 8, -2>")->cmp(parallel=>1)}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<10, -1, 3>"))}
+- Enter a vector in the same direction as [` \vec{u} `]. [_____]{Compute("<3, 8, -2>")->cmp(parallel=>1,sameDirection=>1)}
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<3, 8, -2>"))}
+- [` \vec{u} \times \vec{v} = `] [_____]{Compute("<3, 8, -2>") x Compute("<10, -1, 3>")}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 8, 5, -7 \rangle `]
+- [` \vec{v} = \langle 9, -10, -5 \rangle `]
+- [` \vec{w} = \langle -10, 10, -4 \rangle `]
+
+Compute:
+- Enter a unit vector in the direction of [` \vec{w} `]. [_____]{unit(Compute("<-10, 10, -4>"))}
+- [` \left\| \vec{u} \right\| = `] [_____]{norm(Compute("<8, 5, -7>"))}
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<9, -10, -5>")->cmp(parallel=>1)}
+- Enter a unit vector in the direction of [` \vec{v} `]. [_____]{unit(Compute("<9, -10, -5>"))}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 7, -4, -3 \rangle `]
+- [` \vec{v} = \langle -10, 5, 4 \rangle `]
+- [` \vec{w} = \langle 4, 6, 9 \rangle `]
+
+Compute:
+- [` \vec{u} \cdot \vec{w} = `] [_____]{Compute("<7, -4, -3>") . Compute("<4, 6, 9>")}
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<-10, 5, 4>")->cmp(parallel=>1)}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<-10, 5, 4>"))}
+- Enter a unit vector in the direction of [` \vec{v} `]. [_____]{unit(Compute("<-10, 5, 4>"))}
+- Enter a vector in the same direction as [` \vec{v} `]. [_____]{Compute("<-10, 5, 4>")->cmp(parallel=>1,sameDirection=>1)}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 8, -5, 6 \rangle `]
+- [` \vec{v} = \langle -4, 6, -8 \rangle `]
+
+Compute:
+- Enter a vector in the same direction as [` \vec{u} `]. [_____]{Compute("<8, -5, 6>")->cmp(parallel=>1,sameDirection=>1)}
+- Enter a vector parallel to [` \vec{u} `]. [_____]{Compute("<8, -5, 6>")->cmp(parallel=>1)}
+- [` \left\| \vec{u} \right\| = `] [_____]{norm(Compute("<8, -5, 6>"))}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<-4, 6, -8>"))}
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<-4, 6, -8>")->cmp(parallel=>1)}
+- Enter a unit vector in the direction of [` \vec{v} `]. [_____]{unit(Compute("<-4, 6, -8>"))}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -10, 0, -1 \rangle `]
+- [` \vec{v} = \langle 8, -1, 8 \rangle `]
+- [` \vec{w} = \langle -8, 6, 5 \rangle `]
+
+Compute:
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<-10, 0, -1>"))}
+- [` \vec{w} \times \vec{u} = `] [_____]{Compute("<-8, 6, 5>") x Compute("<-10, 0, -1>")}
+- Enter a vector in the same direction as [` \vec{v} `]. [_____]{Compute("<8, -1, 8>")->cmp(parallel=>1,sameDirection=>1)}
+- [` \vec{w} \times \vec{v} = `] [_____]{Compute("<-8, 6, 5>") x Compute("<8, -1, 8>")}
+- Enter a unit vector in the direction of [` \vec{w} `]. [_____]{unit(Compute("<-8, 6, 5>"))}
+
+---
+END_PGML
+ENDDOCUMENT();

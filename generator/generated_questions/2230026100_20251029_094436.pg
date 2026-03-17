@@ -1,0 +1,95 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Interval");
+
+$set_ans_13 = Compute("{0, 7, 8, 12, 15, 19} U (((7, infinity)))");
+$set_ans_14 = Compute("(-infinity, 11) U ((-infinity, 11) U ((-infinity, 11) U ((-infinity, 11)))) U ((7, infinity) U (7, infinity)) U ((7, infinity))");
+$set_ans_11 = Compute("[3, infinity) U ({2, 15})");
+$set_ans_12 = Compute("[3, infinity) U [3, infinity) U [3, infinity) U [3, infinity)");
+$set_ans_8 = Compute("[6, infinity) U ([6, infinity) - ((-infinity, infinity) - {4, 7, 10, 11, 18, 19})) U [6, infinity)");
+$set_ans_9 = Compute("{4, 7, 10, 11, 18, 19} U [6, infinity) U {6, 10, 13, 14, 15}");
+$set_ans_10 = Compute("{4, 7, 10, 11, 18, 19} - ((-infinity, infinity) - [6, infinity)) - ((-infinity, infinity) - {4, 7, 10, 11, 18, 19})");
+$set_ans_5 = Compute("{3, 7, 8, 13, 15} U {3, 7, 8, 13, 15} U ({1, 2, 12, 15, 17})");
+$set_ans_6 = Compute("{1, 2, 12, 15, 17} U {3, 7, 8, 13, 15} U {1, 2, 12, 15, 17} - ((-infinity, infinity) - (({3, 7, 8, 13, 15}) U ({3, 7, 8, 13, 15}) - ((-infinity, infinity) - {3, 7, 8, 13, 15}))) U {1, 2, 12, 15, 17} U {1, 2, 12, 15, 17}");
+$set_ans_7 = Compute("({1, 2, 12, 15, 17}) U ({3, 7, 8, 13, 15} - ((-infinity, infinity) - {3, 7, 8, 13, 15})) U {3, 7, 8, 13, 15} - ((-infinity, infinity) - {3, 7, 8, 13, 15}) U {3, 7, 8, 13, 15} U {3, 7, 8, 13, 15}");
+$set_ans_3 = Compute("(4, 10) U [6, infinity)");
+$set_ans_4 = Compute("([6, infinity) U {6, 9, 11, 15, 17}) U {6, 9, 11, 15, 17} U (4, 10)");
+$set_ans_1 = Compute("(6, infinity) U (-infinity, 13]");
+$set_ans_2 = Compute("({3, 7}) U (({3, 7} - ((-infinity, infinity) - (((6, infinity) U (6, infinity))))))");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+Given the sets:
+- [`E = \{x | x > 5\}`]
+- [`F = \{x | x \leq 13\}`]
+- [`G = \{3, 7\}`]
+
+Compute:
+- [`E \cup F = `] [_____]{$set_ans_1}
+- [`(G) \cup ((G \cap ((E \cup E)))) = `] [_____]{$set_ans_2}
+
+---
+
+Given the sets:
+- [`E = \{x | x \geq 6\}`]
+- [`F = \{x | 4 < x < 10\}`]
+- [`G = \{6, 9, 11, 15, 17\}`]
+
+Compute:
+- [`F \cup E = `] [_____]{$set_ans_3}
+- [`(E \cup G) \cup G \cup F = `] [_____]{$set_ans_4}
+
+---
+
+Given the sets:
+- [`E = \{1, 2, 12, 15, 17\}`]
+- [`F = \{3, 7, 8, 13, 15\}`]
+
+Compute:
+- [`F \cup F \cup (E) = `] [_____]{$set_ans_5}
+- [`E \cup F \cup E \cap ((F) \cup (F) \cap F) \cup E \cup E = `] [_____]{$set_ans_6}
+- [`(E) \cup (F \cap F) \cup F \cap F \cup F \cup F = `] [_____]{$set_ans_7}
+
+---
+
+Given the sets:
+- [`E = \{x | x \geq 6\}`]
+- [`F = \{4, 7, 10, 11, 18, 19\}`]
+- [`G = \{6, 10, 13, 14, 15\}`]
+
+Compute:
+- [`E \cup (E \cap F) \cup E = `] [_____]{$set_ans_8}
+- [`F \cup E \cup G = `] [_____]{$set_ans_9}
+- [`F \cap E \cap F = `] [_____]{$set_ans_10}
+
+---
+
+Given the sets:
+- [`E = \{2, 15\}`]
+- [`F = \{x | x \geq 3\}`]
+
+Compute:
+- [`F \cup (E) = `] [_____]{$set_ans_11}
+- [`F \cup F \cup F \cup F = `] [_____]{$set_ans_12}
+
+---
+
+Given the sets:
+- [`E = \{x | x > 6\}`]
+- [`F = \{0, 7, 8, 12, 15, 19\}`]
+- [`G = \{x | x < 11\}`]
+
+Compute:
+- [`F \cup ((E)) = `] [_____]{$set_ans_13}
+- [`G \cup (G \cup (G \cup (G))) \cup (E \cup E) \cup (E) = `] [_____]{$set_ans_14}
+
+---
+END_PGML
+ENDDOCUMENT();

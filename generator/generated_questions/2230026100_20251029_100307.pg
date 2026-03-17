@@ -1,0 +1,130 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Interval");
+
+$set_ans_7 = Compute("((-infinity, 10) - ((-infinity, 10)))");
+$set_ans_8 = Compute("((-infinity, 10) - ((-infinity, infinity) - {-9, -3, 10})) U (-infinity, 10) U (-infinity, 10)");
+$set_ans_9 = Compute("{-9, -3, 10} U {-9, -3, 10} - ((-infinity, infinity) - ((-infinity, 10))) U {-9, -3, 10}");
+$set_ans_5 = Compute("{-9, -4, 2, 5, 7, 10} U [6, infinity)");
+$set_ans_6 = Compute("{1, 10} U [6, infinity) U {-9, -4, 2, 5, 7, 10}");
+$set_ans_3 = Compute("[3, infinity) U ({-10, -6})");
+$set_ans_4 = Compute("[3, infinity) U [3, infinity) U [3, infinity) U [3, infinity)");
+$set_ans_1 = Compute("(7, infinity) U (7, infinity)");
+$set_ans_2 = Compute("(7, infinity) U ((7, infinity)) U ((7, infinity) U {-8, -5, 5, 6, 7}) U ({-8, -5, 5, 6, 7})");
+
+Context("Vector");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+What is the value of [`19+12-19+16/18`]? [_____]{answer=>Formula("12.8888888889"),width=>1}
+---
+
+What is the value of [`14+4-17+0/11`]? [_____]{Real(1.)}
+---
+
+Given the sets:
+- [`A = \{-8, -5, 5, 6, 7\}`]
+- [`B = \{x | x > 6\}`]
+
+Compute:
+- [`B \cup B = `] [_____]{$set_ans_1}
+- [`B \cup (B) \cup (B \cup A) \cup (A) = `] [_____]{$set_ans_2}
+
+---
+
+Given the sets:
+- [`A = \{-10, -6\}`]
+- [`B = \{x | x \geq 3\}`]
+
+Compute:
+- [`B \cup (A) = `] [_____]{$set_ans_3}
+- [`B \cup B \cup B \cup B = `] [_____]{$set_ans_4}
+
+---
+
+Given the sets:
+- [`A = \{x | x \geq 6\}`]
+- [`B = \{-9, -4, 2, 5, 7, 10\}`]
+- [`C = \{1, 10\}`]
+
+Compute:
+- [`B \cup A = `] [_____]{$set_ans_5}
+- [`C \cup A \cup B = `] [_____]{$set_ans_6}
+
+---
+
+Given the sets:
+- [`A = \{x | x < 10\}`]
+- [`B = \{-9, -3, 10\}`]
+
+Compute:
+- [`A - (A) = `] [_____]{$set_ans_7}
+- [`(A \cap B) \cup A \cup A = `] [_____]{$set_ans_8}
+- [`B \cup B \cap (A) \cup B = `] [_____]{$set_ans_9}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -8, 2, 2 \rangle `]
+- [` \vec{v} = \langle 5, 9, 1 \rangle `]
+- [` \vec{w} = \langle -7, -9, -10 \rangle `]
+
+Compute:
+- Enter a unit vector in the direction of [` \vec{w} `]. [_____]{unit(Compute("<-7, -9, -10>"))}
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<5, 9, 1>")->cmp(parallel=>1)}
+- [` \vec{v} \cdot \vec{u} = `] [_____]{Compute("<5, 9, 1>") . Compute("<-8, 2, 2>")}
+- [` \vec{w} \cdot \vec{v} = `] [_____]{Compute("<-7, -9, -10>") . Compute("<5, 9, 1>")}
+- Enter a vector in the same direction as [` \vec{v} `]. [_____]{Compute("<5, 9, 1>")->cmp(parallel=>1,sameDirection=>1)}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 2, -3, -8 \rangle `]
+- [` \vec{v} = \langle 4, -5, 10 \rangle `]
+- [` \vec{w} = \langle -5, 6, -3 \rangle `]
+
+Compute:
+- [` \left\| \vec{u} \right\| = `] [_____]{norm(Compute("<2, -3, -8>"))}
+- Enter a unit vector in the direction of [` \vec{w} `]. [_____]{unit(Compute("<-5, 6, -3>"))}
+- [` \vec{w} \cdot \vec{u} = `] [_____]{Compute("<-5, 6, -3>") . Compute("<2, -3, -8>")}
+- Enter a vector in the same direction as [` \vec{u} `]. [_____]{Compute("<2, -3, -8>")->cmp(parallel=>1,sameDirection=>1)}
+- [` \vec{u} \cdot \vec{w} = `] [_____]{Compute("<2, -3, -8>") . Compute("<-5, 6, -3>")}
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<2, -3, -8>"))}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -4, 0, -3 \rangle `]
+- [` \vec{v} = \langle 8, 10, 9 \rangle `]
+
+Compute:
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<-4, 0, -3>"))}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<8, 10, 9>"))}
+- Enter a vector in the same direction as [` \vec{v} `]. [_____]{Compute("<8, 10, 9>")->cmp(parallel=>1,sameDirection=>1)}
+- [` \left\| \vec{u} \right\| = `] [_____]{norm(Compute("<-4, 0, -3>"))}
+- Enter a vector in the same direction as [` \vec{u} `]. [_____]{Compute("<-4, 0, -3>")->cmp(parallel=>1,sameDirection=>1)}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 0, -9, 4 \rangle `]
+- [` \vec{v} = \langle -2, 9, 3 \rangle `]
+
+Compute:
+- [` \vec{v} \times \vec{u} = `] [_____]{Compute("<-2, 9, 3>") x Compute("<0, -9, 4>")}
+- [` \vec{u} \cdot \vec{v} = `] [_____]{Compute("<0, -9, 4>") . Compute("<-2, 9, 3>")}
+- Enter a unit vector in the direction of [` \vec{v} `]. [_____]{unit(Compute("<-2, 9, 3>"))}
+- Enter a vector parallel to [` \vec{u} `]. [_____]{Compute("<0, -9, 4>")->cmp(parallel=>1)}
+- [` \vec{u} \times \vec{v} = `] [_____]{Compute("<0, -9, 4>") x Compute("<-2, 9, 3>")}
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<0, -9, 4>"))}
+
+---
+END_PGML
+ENDDOCUMENT();

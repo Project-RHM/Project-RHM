@@ -1,0 +1,16 @@
+[
+  {
+    "original_expression": "13/5+2/11",
+    "priority_analysis": "13/5 -> 2/11 -> 2.6 + 0.181818...",
+    "word_problem": "Lily had 13 meters of ribbon to make hair bows. She needed 5 meters for each large bow. After making the bows, she found 2 meters of leftover ribbon and decided to share it equally among 11 friends for small crafts. How many meters of ribbon was used for each project in total?",
+    "answer": "2.78181818182",
+    "analysis": "First, calculate the ribbon used per large bow: 13 ÷ 5 = 2.6 meters. Then, calculate the ribbon each friend gets from the leftover: 2 ÷ 11 ≈ 0.181818 meters. Finally, add these amounts: 2.6 + 0.181818 ≈ 2.781818 meters."
+  },
+  {
+    "original_expression": "0+17+19",
+    "priority_analysis": "0+17 -> 17+19",
+    "word_problem": "During a classroom cleanup day, the teacher brought 17 new markers for the art supplies. The students also found 19 markers that were still good in the storage box. How many markers are available for art class now?",
+    "answer": "36",
+    "analysis": "First, the teacher brought 17 markers. Then, the students found 19 more markers. Adding them together: 17 + 19 = 36 markers."
+  }
+]

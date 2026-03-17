@@ -1,0 +1,119 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+Context()->flags->set(reduceConstantFunctions=>0);
+Context()->flags->set(reduceConstants=>0);
+
+$fun_2 = Formula("(e^((x^2+3*x+2)))^4");
+$fun_1 = Formula("(x*4)^2-4*((x)^(1/3))+1");
+
+Context("Interval");
+
+$set_ans_3 = Compute("((((1, 12) U {-10, -7, -5, 0, 1, 6} U {-9, -4, 9})) - (((1, 12))))");
+$set_ans_4 = Compute("{-10, -7, -5, 0, 1, 6} U ({-10, -7, -5, 0, 1, 6}) U {-9, -4, 9} - ((-infinity, infinity) - (1, 12))");
+$set_ans_5 = Compute("((1, 12) - (1, 12))");
+$set_ans_1 = Compute("(3, 10) U [4, 10] U [4, 10] U [4, 10]");
+$set_ans_2 = Compute("((3, 10)) U [4, 10]");
+
+Context("Vector");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+Lily was preparing for a school picnic. She packed [`10`] cookies and [`13`] cupcakes. Then she found a small container that could hold [`5`] pieces of snacks, but she could only fill it [`8`] times throughout the day. If she counts all the snacks she has available, how many treats does Lily have for the picnic?
+
+[_____]{23.625}
+[%
+10+13+5/8
+
+First, calculate the snacks from the container: 5 ÷ 8 = 0.625 treats. Then add all the snacks together: 10 + 13 + 0.625 = 23.625 treats.
+%]
+---
+
+During art class, Mia had [`9`] colored pencils. Her friend gave her [`14`] more, but then she lent [`19`] pencils to classmates who forgot theirs. The teacher noticed her kindness and rewarded her with [`9`] pencils to be shared equally among [`4`] projects she was working on. How many pencils does Mia have left?
+
+[_____]{6.25}
+[%
+9+14-19+9/4
+
+First, calculate the pencils from the teacher: 9 ÷ 4 = 2.25 pencils. Then calculate step by step: Start with 9 + 14 = 23 pencils, subtract 19 = 4 pencils, then add 2.25 = 6.25 pencils.
+%]
+---
+
+Given the sets:
+- [`A = \{x | 4 \leq x \leq 10\}`]
+- [`B = \{x | 3 < x < 10\}`]
+
+Compute:
+- [`B \cup A \cup A \cup A = `] [_____]{$set_ans_1}
+- [`(B) \cup A = `] [_____]{$set_ans_2}
+
+---
+
+Given the sets:
+- [`A = \{-10, -7, -5, 0, 1, 6\}`]
+- [`B = \{x | 1 < x < 12\}`]
+- [`C = \{-9, -4, 9\}`]
+
+Compute:
+- [`((B \cup A \cup C)) - ((B)) = `] [_____]{$set_ans_3}
+- [`A \cup (A) \cup C \cap B = `] [_____]{$set_ans_4}
+- [`B - B = `] [_____]{$set_ans_5}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -3, -3, 2 \rangle `]
+- [` \vec{v} = \langle 10, -2, 8 \rangle `]
+- [` \vec{w} = \langle -2, 10, 2 \rangle `]
+
+Compute:
+- Enter a unit vector in the direction of [` \vec{w} `]. [_____]{unit(Compute("<-2, 10, 2>"))}
+- Enter a vector parallel to [` \vec{u} `]. [_____]{Compute("<-3, -3, 2>")->cmp(parallel=>1)}
+- [` \vec{u} \cdot \vec{v} = `] [_____]{Compute("<-3, -3, 2>") . Compute("<10, -2, 8>")}
+- Enter a vector parallel to [` \vec{w} `]. [_____]{Compute("<-2, 10, 2>")->cmp(parallel=>1)}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<10, -2, 8>"))}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 3, -3, 5 \rangle `]
+- [` \vec{v} = \langle -5, -9, 8 \rangle `]
+
+Compute:
+- Enter a vector in the same direction as [` \vec{u} `]. [_____]{Compute("<3, -3, 5>")->cmp(parallel=>1,sameDirection=>1)}
+- [` \vec{u} \times \vec{v} = `] [_____]{Compute("<3, -3, 5>") x Compute("<-5, -9, 8>")}
+- [` \vec{u} \cdot \vec{v} = `] [_____]{Compute("<3, -3, 5>") . Compute("<-5, -9, 8>")}
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<3, -3, 5>"))}
+- [` \vec{v} \times \vec{u} = `] [_____]{Compute("<-5, -9, 8>") x Compute("<3, -3, 5>")}
+- Enter a unit vector in the direction of [` \vec{v} `]. [_____]{unit(Compute("<-5, -9, 8>"))}
+
+---
+
+Given this function:
+
+>> [`[$fun_1]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_1->D()}
+- [`f'(2) =`] [_____]{$fun_1->D()->eval(x=>2)}
+
+---
+
+Given this function:
+
+>> [`[$fun_2]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_2->D()}
+- [`f''(x) =`] [_____]{$fun_2->D()->D()}
+
+---
+END_PGML
+ENDDOCUMENT();

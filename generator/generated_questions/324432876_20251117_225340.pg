@@ -1,0 +1,94 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Interval");
+
+$set_ans_12 = Compute("{-7, 0, 9} U ([4, 7] - ((-infinity, infinity) - {-7, 0, 9}))");
+$set_ans_13 = Compute("{-7, 0, 9} U [4, 7]");
+$set_ans_9 = Compute("(0, 11) U (0, 11) - ((-infinity, infinity) - {-2, 1, 4}) U {-2, 1, 4}");
+$set_ans_10 = Compute("{-2, 1, 4} U {-2, 1, 4}");
+$set_ans_11 = Compute("((0, 11)) - ((-infinity, infinity) - (0, 11)) U {-8, -6, -3, -2, 4}");
+$set_ans_7 = Compute("({-7, 6} - ((-infinity, infinity) - [4, 13])) U (-infinity, 15) U {-7, 6}");
+$set_ans_8 = Compute("(-infinity, 15) U [4, 13] U [4, 13] - ((-infinity, infinity) - {-7, 6})");
+$set_ans_5 = Compute("(4, infinity) U (4, infinity) U (-infinity, 13] - ((-infinity, infinity) - (4, infinity))");
+$set_ans_6 = Compute("((-infinity, 13]) U ((4, infinity) U ((4, infinity) U (-infinity, 13]))");
+$set_ans_3 = Compute("(6, infinity) U ((6, infinity) U [2, 13])");
+$set_ans_4 = Compute("((([2, 13] U [2, 13] U (2, infinity) - ((-infinity, infinity) - [2, 13])))) - ((-infinity, infinity) - (6, infinity)) U (2, infinity)");
+$set_ans_1 = Compute("((-infinity, 12)) U {-10, -8, 4, 7}");
+$set_ans_2 = Compute("(-infinity, 12) U (((-infinity, 12) U (-infinity, 12)) - ((-infinity, infinity) - (-infinity, 12))) U ({-10, -8, 4, 7}) U (-infinity, 12) U (-infinity, 12) - ((-infinity, infinity) - {-10, -8, 4, 7})");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+Given the sets:
+- [`A = \{x | x < 12\}`]
+- [`B = \{x | 2 < x < 5\}`]
+- [`C = \{-10, -8, 4, 7\}`]
+
+Compute:
+- [`(A) \cup C = `] [_____]{$set_ans_1}
+- [`A \cup ((A \cup A) \cap A) \cup (C) \cup A \cup A \cap C = `] [_____]{$set_ans_2}
+
+---
+
+Given the sets:
+- [`A = \{x | 2 \leq x \leq 13\}`]
+- [`B = \{x | x > 1\}`]
+- [`C = \{x | x > 5\}`]
+
+Compute:
+- [`C \cup (C \cup A) = `] [_____]{$set_ans_3}
+- [`(((A \cup A \cup B \cap A))) \cap C \cup B = `] [_____]{$set_ans_4}
+
+---
+
+Given the sets:
+- [`A = \{x | x \leq 13\}`]
+- [`B = \{x | x > 3\}`]
+
+Compute:
+- [`B \cup B \cup A \cap B = `] [_____]{$set_ans_5}
+- [`(A) \cup (B \cup (B \cup A)) = `] [_____]{$set_ans_6}
+
+---
+
+Given the sets:
+- [`A = \{x | 4 \leq x \leq 13\}`]
+- [`B = \{-7, 6\}`]
+- [`C = \{x | x < 15\}`]
+
+Compute:
+- [`(B \cap A) \cup C \cup B = `] [_____]{$set_ans_7}
+- [`C \cup A \cup A \cap B = `] [_____]{$set_ans_8}
+
+---
+
+Given the sets:
+- [`A = \{-2, 1, 4\}`]
+- [`B = \{x | 0 < x < 11\}`]
+- [`C = \{-8, -6, -3, -2, 4\}`]
+
+Compute:
+- [`B \cup B \cap A \cup A = `] [_____]{$set_ans_9}
+- [`A \cup A = `] [_____]{$set_ans_10}
+- [`(B) \cap B \cup C = `] [_____]{$set_ans_11}
+
+---
+
+Given the sets:
+- [`A = \{x | 4 \leq x \leq 7\}`]
+- [`B = \{-5, -1, 2, 3, 4\}`]
+- [`C = \{-7, 0, 9\}`]
+
+Compute:
+- [`C \cup (A \cap C) = `] [_____]{$set_ans_12}
+- [`C \cup A = `] [_____]{$set_ans_13}
+
+---
+END_PGML
+ENDDOCUMENT();

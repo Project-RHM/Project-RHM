@@ -1,0 +1,16 @@
+[
+  {
+    "original_expression": "10+13+5/8",
+    "priority_analysis": "5/8 -> 10+13+0.625",
+    "word_problem": "Lily was preparing for a school picnic. She packed 10 cookies and 13 cupcakes. Then she found a small container that could hold 5 pieces of snacks, but she could only fill it 8 times throughout the day. If she counts all the snacks she has available, how many treats does Lily have for the picnic?",
+    "answer": "23.625",
+    "analysis": "First, calculate the snacks from the container: 5 ÷ 8 = 0.625 treats. Then add all the snacks together: 10 + 13 + 0.625 = 23.625 treats."
+  },
+  {
+    "original_expression": "9+14-19+9/4",
+    "priority_analysis": "9/4 -> 9+14-19+2.25",
+    "word_problem": "During art class, Mia had 9 colored pencils. Her friend gave her 14 more, but then she lent 19 pencils to classmates who forgot theirs. The teacher noticed her kindness and rewarded her with 9 pencils to be shared equally among 4 projects she was working on. How many pencils does Mia have left?",
+    "answer": "6.25",
+    "analysis": "First, calculate the pencils from the teacher: 9 ÷ 4 = 2.25 pencils. Then calculate step by step: Start with 9 + 14 = 23 pencils, subtract 19 = 4 pencils, then add 2.25 = 6.25 pencils."
+  }
+]

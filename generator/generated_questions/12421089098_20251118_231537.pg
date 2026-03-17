@@ -1,0 +1,109 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+Context()->flags->set(reduceConstantFunctions=>0);
+Context()->flags->set(reduceConstants=>0);
+
+$fun_2 = Formula("(((x)^2))^(1/4)");
+$fun_1 = Formula("cos((ln((x*4))))");
+
+Context("Interval");
+
+$set_ans_3 = Compute("(-infinity, 13] U [9, infinity)");
+$set_ans_4 = Compute("((-infinity, 13] - (-infinity, 13])");
+$set_ans_5 = Compute("[9, infinity) - ((-infinity, infinity) - [9, infinity)) - ((-infinity, infinity) - [9, infinity))");
+$set_ans_1 = Compute("{-10, -4, 0, 9} - ((-infinity, infinity) - ({-8, -6, -3})) U ((8, infinity))");
+$set_ans_2 = Compute("({-10, -4, 0, 9}) U {-8, -6, -3} U {-8, -6, -3}");
+
+Context("Vector");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+What is the value of [`13/5+2/11`]? [_____]{Real(2.78181818182)}
+---
+
+[`0+17+19`] is equal to [_____]{answer=>36,width=>7}
+---
+
+Given the sets:
+- [`A = \{-8, -6, -3\}`]
+- [`B = \{-10, -4, 0, 9\}`]
+- [`C = \{x | x > 7\}`]
+
+Compute:
+- [`B \cap (A) \cup (C) = `] [_____]{$set_ans_1}
+- [`(B) \cup A \cup A = `] [_____]{$set_ans_2}
+
+---
+
+Given the sets:
+- [`A = \{x | x \leq 13\}`]
+- [`B = \{x | x \geq 9\}`]
+
+Compute:
+- [`A \cup B = `] [_____]{$set_ans_3}
+- [`A - A = `] [_____]{$set_ans_4}
+- [`B \cap B \cap B = `] [_____]{$set_ans_5}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -10, -3, 3 \rangle `]
+- [` \vec{v} = \langle -1, -2, 5 \rangle `]
+- [` \vec{w} = \langle 4, -6, -9 \rangle `]
+
+Compute:
+- [` \left\| \vec{w} \right\| = `] [_____]{norm(Compute("<4, -6, -9>"))}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<-1, -2, 5>"))}
+- [` \vec{u} \cdot \vec{v} = `] [_____]{Compute("<-10, -3, 3>") . Compute("<-1, -2, 5>")}
+- [` \vec{w} \times \vec{v} = `] [_____]{Compute("<4, -6, -9>") x Compute("<-1, -2, 5>")}
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<-1, -2, 5>")->cmp(parallel=>1)}
+- [` \vec{v} \times \vec{u} = `] [_____]{Compute("<-1, -2, 5>") x Compute("<-10, -3, 3>")}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 8, 5, 9 \rangle `]
+- [` \vec{v} = \langle -1, 1, 5 \rangle `]
+- [` \vec{w} = \langle 8, 5, -3 \rangle `]
+
+Compute:
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<-1, 1, 5>")->cmp(parallel=>1)}
+- [` \vec{w} \cdot \vec{u} = `] [_____]{Compute("<8, 5, -3>") . Compute("<8, 5, 9>")}
+- [` \vec{w} \times \vec{u} = `] [_____]{Compute("<8, 5, -3>") x Compute("<8, 5, 9>")}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<-1, 1, 5>"))}
+- Enter a vector parallel to [` \vec{w} `]. [_____]{Compute("<8, 5, -3>")->cmp(parallel=>1)}
+- Enter a unit vector in the direction of [` \vec{v} `]. [_____]{unit(Compute("<-1, 1, 5>"))}
+
+---
+
+Given this function:
+
+>> [`[$fun_1]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_1->D()}
+- [`f''(x) =`] [_____]{$fun_1->D()->D()}
+- [`f'(3) =`] [_____]{$fun_1->D()->eval(x=>3)}
+- [`f'(9) =`] [_____]{$fun_1->D()->eval(x=>9)}
+
+---
+
+Given this function:
+
+>> [`[$fun_2]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_2->D()}
+- [`f''(x) =`] [_____]{$fun_2->D()->D()}
+
+---
+END_PGML
+ENDDOCUMENT();

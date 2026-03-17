@@ -1,0 +1,16 @@
+[
+  {
+    "original_expression": "10*1+10*19",
+    "priority_analysis": "10*1 -> 10*19 -> 10+190",
+    "word_problem": "Lily was organizing her book collection. She had 10 shelves in her room, each with 1 book. Her parents bought her 10 new bookshelves, and each new shelf could hold 19 books. How many books can Lily store in total on all her shelves?",
+    "answer": "200",
+    "analysis": "First, calculate the book capacity of the original shelves: 10 × 1 = 10 books. Then, calculate the book capacity of the new shelves: 10 × 19 = 190 books. Finally, add both capacities together: 10 + 190 = 200 books."
+  },
+  {
+    "original_expression": "8+17+10/10",
+    "priority_analysis": "10/10 -> 8+17+1",
+    "word_problem": "During a classroom activity, Emma collected 8 colorful paper stars from one table and 17 stars from another table. Her teacher then gave her a special sheet with 10 stars and told her to share them equally among 10 students, keeping one share for herself. How many stars does Emma have in total?",
+    "answer": "26",
+    "analysis": "First, calculate the stars from the special sheet: 10 ÷ 10 = 1 star. Then, add all the stars together: 8 + 17 + 1 = 26 stars."
+  }
+]

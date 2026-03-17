@@ -1,0 +1,69 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Interval");
+Context()->operators->undefine('+','-','*','/');
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+Suppose the vectors:
+- [` \vec{u} = \langle 4, 5, -6 \rangle `]
+- [` \vec{v} = \langle 8, -5, -5 \rangle `]
+- [` \vec{w} = \langle 0, 0, -9 \rangle `]
+
+Compute:
+- Enter a vector in the same direction as [` \vec{w} `]. [_____]{Compute("<8, 8, 1>")->cmp(parallel=>1,sameDirection=>1)}
+- [` \left\| \vec{w} \right\| = `] [_____]{norm(Compute("<-9, -4, 5>"))}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 8, 6, 1 \rangle `]
+- [` \vec{v} = \langle -6, -10, 9 \rangle `]
+- [` \vec{w} = \langle 3, 4, -1 \rangle `]
+
+Compute:
+- [` \left\| \vec{u} \right\| = `] [_____]{norm(Compute("<-4, 3, -6>"))}
+- [` \vec{u} \cdot \vec{v} = `] [_____]{Compute("<6, -1, -4>") . Compute("<-10, -1, -10>")}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 0, 7, 2 \rangle `]
+- [` \vec{v} = \langle -10, -7, -6 \rangle `]
+- [` \vec{w} = \langle -4, -5, -4 \rangle `]
+
+Compute:
+- [` \vec{w} \times \vec{v} = `] [_____]{Compute("<10, 5, 2>") x Compute("<1, 5, 1>")}
+- [` \left\| \vec{u} \right\| = `] [_____]{norm(Compute("<-6, 0, 9>"))}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -8, 0, -9 \rangle `]
+- [` \vec{v} = \langle 7, 7, 0 \rangle `]
+- [` \vec{w} = \langle 5, 6, -8 \rangle `]
+
+Compute:
+- Enter a vector in the same direction as [` \vec{w} `]. [_____]{Compute("<5, 2, 7>")->cmp(parallel=>1,sameDirection=>1)}
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<10, -10, 0>"))}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 2, -4, -9 \rangle `]
+- [` \vec{v} = \langle 6, -3, -9 \rangle `]
+- [` \vec{w} = \langle 2, -8, -5 \rangle `]
+
+Compute:
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<-2, 6, 8>")->cmp(parallel=>1)}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<4, -6, -1>"))}
+
+---
+END_PGML
+ENDDOCUMENT();

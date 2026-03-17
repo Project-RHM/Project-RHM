@@ -1,0 +1,46 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+
+$fun_1 = Formula("sqrt(x)");
+$fun_2 = Formula("x^4");
+$fun_3 = Formula("e^(x)");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+Given this function:
+
+[`[$fun_1]`]
+
+Compute:
+- [`f'(8) =`] [_____]{$fun_1->D()->eval(x=>8)}
+- [`f'(9) =`] [_____]{$fun_1->D()->eval(x=>9)}
+
+---
+
+Given this function:
+
+[`[$fun_2]`]
+
+Compute:
+- [`f'(2) =`] [_____]{$fun_2->D()->eval(x=>2)}
+
+---
+
+Given this function:
+
+[`[$fun_3]`]
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_3->D()}
+
+---
+END_PGML
+ENDDOCUMENT();

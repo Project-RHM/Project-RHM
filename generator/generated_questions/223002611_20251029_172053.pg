@@ -1,0 +1,25 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+
+$fun_1 = Formula("(2/((sin(x))))^2+5*((e^(x))*2)+2");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+Given this function:
+
+[`[$fun_1]`]
+
+Compute:
+- [`f'(0) =`] [_____]{$fun_1->D()->eval(x=>0)}
+
+---
+END_PGML
+ENDDOCUMENT();

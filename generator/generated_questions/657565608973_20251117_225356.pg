@@ -1,0 +1,24 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+Context()->operators->undefine('+','-','*','/');
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+[`6+11+10+11`] is equal to [_____]{answer=>Real(38.),width=>2}
+---
+
+What is the value of [`6+7-19/3`]? [_____]{6.66666666667}
+---
+
+[`19+13+17`] is equal to [_____]{answer=>Formula('49'),width=>2}
+---
+END_PGML
+ENDDOCUMENT();

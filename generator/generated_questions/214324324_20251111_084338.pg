@@ -1,0 +1,102 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+Context()->flags->set(reduceConstantFunctions=>0);
+Context()->flags->set(reduceConstants=>0);
+
+$fun_2 = Formula("e^((5-x))");
+$fun_1 = Formula("sqrt((((x)^(1/2))+10))");
+
+Context("Interval");
+
+$set_ans_3 = Compute("(-infinity, 10) U ([1, 14])");
+$set_ans_4 = Compute("((-infinity, 10)) - ((-infinity, infinity) - ({-1, 1} U (-infinity, 10))) - ((-infinity, infinity) - ({-1, 1} - ((-infinity, infinity) - [1, 14])))");
+$set_ans_1 = Compute("({4, 5, 6, 10}) U {4, 5, 6, 10}");
+$set_ans_2 = Compute("[2, 7] U ({4, 5, 6, 10} - ((-infinity, infinity) - {4, 5, 6, 10}))");
+
+Context("Vector");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+[`15/3+14`] is equal to [_____]{answer=>Real(19.),width=>9}
+---
+
+What is the value of [`16+9*6`]? [_____]{Real(70.)}
+---
+
+Given the sets:
+- [`A = \{x | 2 \leq x \leq 7\}`]
+- [`B = \{4, 5, 6, 10\}`]
+
+Compute:
+- [`(B) \cup B = `] [_____]{$set_ans_1}
+- [`A \cup (B \cap B) = `] [_____]{$set_ans_2}
+
+---
+
+Given the sets:
+- [`A = \{x | x < 10\}`]
+- [`B = \{-1, 1\}`]
+- [`C = \{x | 1 \leq x \leq 14\}`]
+
+Compute:
+- [`A \cup (C) = `] [_____]{$set_ans_3}
+- [`(A) \cap (B \cup A) \cap (B \cap C) = `] [_____]{$set_ans_4}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 3, -4, -3 \rangle `]
+- [` \vec{v} = \langle -5, 7, -6 \rangle `]
+
+Compute:
+- Enter a vector in the same direction as [` \vec{u} `]. [_____]{Compute("<3, -4, -3>")->cmp(parallel=>1,sameDirection=>1)}
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<3, -4, -3>"))}
+- [` \vec{v} \times \vec{u} = `] [_____]{Compute("<-5, 7, -6>") x Compute("<3, -4, -3>")}
+- Enter a vector parallel to [` \vec{u} `]. [_____]{Compute("<3, -4, -3>")->cmp(parallel=>1)}
+- [` \vec{u} \cdot \vec{v} = `] [_____]{Compute("<3, -4, -3>") . Compute("<-5, 7, -6>")}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 4, -4, -6 \rangle `]
+- [` \vec{v} = \langle 7, 6, 2 \rangle `]
+- [` \vec{w} = \langle -6, -10, -7 \rangle `]
+
+Compute:
+- [` \vec{v} \cdot \vec{w} = `] [_____]{Compute("<7, 6, 2>") . Compute("<-6, -10, -7>")}
+- Enter a unit vector in the direction of [` \vec{w} `]. [_____]{unit(Compute("<-6, -10, -7>"))}
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<4, -4, -6>"))}
+- Enter a vector parallel to [` \vec{w} `]. [_____]{Compute("<-6, -10, -7>")->cmp(parallel=>1)}
+- [` \vec{u} \times \vec{v} = `] [_____]{Compute("<4, -4, -6>") x Compute("<7, 6, 2>")}
+
+---
+
+Given this function:
+
+>> [`[$fun_1]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_1->D()}
+- [`f'(2) =`] [_____]{$fun_1->D()->eval(x=>2)}
+
+---
+
+Given this function:
+
+>> [`[$fun_2]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_2->D()}
+- [`f''(x) =`] [_____]{$fun_2->D()->D()}
+
+---
+END_PGML
+ENDDOCUMENT();

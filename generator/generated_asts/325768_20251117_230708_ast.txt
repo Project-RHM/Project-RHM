@@ -1,0 +1,28 @@
+Doc_No_Sol(LoadMacros(None),
+Context_Setup_Vars_Last(Context_With_Config("Numeric", Cfg_Cons(flags,
+CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"), VInt(0)))]),
+Cfg_Last(flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),
+VInt(0)))])))), AnswerVars([VarDecl("fun_1",
+Var_Method(M_Formula_Fun(Log_Fun(Ln_Fun(Func(Exp_Fun(Exp(Func(Trig_Fun(Trig_Cos(Var_X)))))))))));
+VarDecl("fun_2",
+Var_Method(M_Formula_Fun(Trig_Fun(Trig_Sin(Func(Log_Fun(Ln_Fun(Func(Rational_Fun(Int_Div_Fun(7, Var_X)))))))))));
+VarDecl("fun_3",
+Var_Method(M_Formula_Fun(Trig_Fun(Trig_Sin(Func(Log_Fun(Ln_Fun(Var_X))))))));
+VarDecl("fun_4",
+Var_Method(M_Formula_Fun(Log_Fun(Ln_Fun(Func(Trig_Fun(Trig_Sin(Var_X))))))))])),
+Problem([Q_Given_Function("fun_1",
+Derivative_Prob_List_Cons(First_Derivative("fun_1"),
+Derivative_Prob_List_Cons(Derivative_Algebra(0,"fun_1",0),
+Derivative_Prob_List_Cons(Second_Derivative("fun_1"),
+Derivative_Prob_List_Last(Derivative_Algebra(7,"fun_1",7))))));
+Q_Given_Function("fun_2",
+Derivative_Prob_List_Cons(First_Derivative("fun_2"),
+Derivative_Prob_List_Cons(Second_Derivative("fun_2"),
+Derivative_Prob_List_Last(Derivative_Algebra(5,"fun_2",5)))));
+Q_Given_Function("fun_3",
+Derivative_Prob_List_Cons(First_Derivative("fun_3"),
+Derivative_Prob_List_Last(Derivative_Algebra(2,"fun_3",2))));
+Q_Given_Function("fun_4",
+Derivative_Prob_List_Cons(First_Derivative("fun_4"),
+Derivative_Prob_List_Cons(Second_Derivative("fun_4"),
+Derivative_Prob_List_Last(Derivative_Algebra(8,"fun_4",8)))))]))

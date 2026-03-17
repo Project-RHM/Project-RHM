@@ -1,0 +1,37 @@
+Doc_No_Sol(LoadMacros(None),
+Context_Setup_No_Vars_Last(Context_Only("Vector")),
+Problem([Q_Suppose_Vector(Vector_List_Cons("u", [3; 8; -2],
+Vector_List_Last("v", [10; -1; 3])),
+Vector_Prob_List_Cons(Parallel_Vectors("u", [3; 8; -2]),
+Vector_Prob_List_Cons(Vector_Norm("v", [10; -1; 3]),
+Vector_Prob_List_Cons(Same_Dir_Vectors("u", [3; 8; -2]),
+Vector_Prob_List_Cons(Unit_Vector("u", [3; 8; -2]),
+Vector_Prob_List_Last(Cross_Product("u","v", [3; 8; -2], [10; -1; 3])))))));
+Q_Suppose_Vector(Vector_List_Cons("u", [8; 5; -7], Vector_List_Cons("v", [9;
+-10; -5], Vector_List_Last("w", [-10; 10; -4]))),
+Vector_Prob_List_Cons(Unit_Vector("w", [-10; 10; -4]),
+Vector_Prob_List_Cons(Vector_Norm("u", [8; 5; -7]),
+Vector_Prob_List_Cons(Parallel_Vectors("v", [9; -10; -5]),
+Vector_Prob_List_Last(Unit_Vector("v", [9; -10; -5]))))));
+Q_Suppose_Vector(Vector_List_Cons("u", [7; -4; -3], Vector_List_Cons("v",
+[-10; 5; 4], Vector_List_Last("w", [4; 6; 9]))),
+Vector_Prob_List_Cons(Dot_Product("u","w", [7; -4; -3], [4; 6; 9]),
+Vector_Prob_List_Cons(Parallel_Vectors("v", [-10; 5; 4]),
+Vector_Prob_List_Cons(Vector_Norm("v", [-10; 5; 4]),
+Vector_Prob_List_Cons(Unit_Vector("v", [-10; 5; 4]),
+Vector_Prob_List_Last(Same_Dir_Vectors("v", [-10; 5; 4])))))));
+Q_Suppose_Vector(Vector_List_Cons("u", [8; -5; 6], Vector_List_Last("v", [-4;
+6; -8])), Vector_Prob_List_Cons(Same_Dir_Vectors("u", [8; -5; 6]),
+Vector_Prob_List_Cons(Parallel_Vectors("u", [8; -5; 6]),
+Vector_Prob_List_Cons(Vector_Norm("u", [8; -5; 6]),
+Vector_Prob_List_Cons(Vector_Norm("v", [-4; 6; -8]),
+Vector_Prob_List_Cons(Parallel_Vectors("v", [-4; 6; -8]),
+Vector_Prob_List_Last(Unit_Vector("v", [-4; 6; -8]))))))));
+Q_Suppose_Vector(Vector_List_Cons("u", [-10; 0; -1], Vector_List_Cons("v",
+[8; -1; 8], Vector_List_Last("w", [-8; 6; 5]))),
+Vector_Prob_List_Cons(Unit_Vector("u", [-10; 0; -1]),
+Vector_Prob_List_Cons(Cross_Product("w","u", [-8; 6; 5], [-10; 0; -1]),
+Vector_Prob_List_Cons(Same_Dir_Vectors("v", [8; -1; 8]),
+Vector_Prob_List_Cons(Cross_Product("w","v", [-8; 6; 5], [8; -1; 8]),
+Vector_Prob_List_Last(Unit_Vector("w", [-8; 6;
+5])))))))]))

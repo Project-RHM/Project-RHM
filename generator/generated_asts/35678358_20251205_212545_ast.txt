@@ -1,0 +1,20 @@
+Doc_No_Sol(LoadMacros(None),
+Context_Setup_Vars_Last(Context_With_Config("Numeric", Cfg_Cons(flags,
+CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"), VInt(0)))]),
+Cfg_Last(flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),
+VInt(0)))])))), AnswerVars([VarDecl("fun_1",
+Var_Method(M_Formula_Fun(Rational_Fun(Int_Div_Fun(10, Func(Trig_Fun(Trig_Sin(Var_X))))))));
+VarDecl("fun_2",
+Var_Method(M_Formula_Fun(Linear_Fun(Int_Mul_Fun(1, Var_X)))));
+VarDecl("fun_3",
+Var_Method(M_Formula_Fun(Rational_Fun(Fun_Div_Int(Var_X, 5)))))])),
+Problem([Q_Given_Function("fun_1",
+Derivative_Prob_List_Cons(First_Derivative("fun_1"),
+Derivative_Prob_List_Cons(Derivative_Algebra(2,"fun_1",2),
+Derivative_Prob_List_Last(Derivative_Algebra(9,"fun_1",9)))));
+Q_Given_Function("fun_2",
+Derivative_Prob_List_Cons(First_Derivative("fun_2"),
+Derivative_Prob_List_Last(Derivative_Algebra(6,"fun_2",6))));
+Q_Given_Function("fun_3",
+Derivative_Prob_List_Cons(First_Derivative("fun_3"),
+Derivative_Prob_List_Last(Second_Derivative("fun_3"))))]))

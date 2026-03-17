@@ -1,0 +1,69 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+
+$fun_1 = Formula("(e^(x))^2+5*(x*2)+2");
+$fun_2 = Formula("(ln(x))^5");
+$fun_3 = Formula("ln((ln(x)))");
+$fun_4 = Formula("cos((e^(x)))");
+$fun_5 = Formula("e^((e^(x)))");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+Given this function:
+
+[`[$fun_1]`]
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_1->D()}
+
+---
+
+Given this function:
+
+[`[$fun_2]`]
+
+Compute:
+- [`f''(x) =`] [_____]{$fun_2->D()->D()}
+- [`f'(x) =`] [_____]{$fun_2->D()}
+
+---
+
+Given this function:
+
+[`[$fun_3]`]
+
+Compute:
+- [`f'(4) =`] [_____]{$fun_3->D()->eval(x=>4)}
+- [`f'(6) =`] [_____]{$fun_3->D()->eval(x=>6)}
+- [`f''(x) =`] [_____]{$fun_3->D()->D()}
+
+---
+
+Given this function:
+
+[`[$fun_4]`]
+
+Compute:
+- [`f''(x) =`] [_____]{$fun_4->D()->D()}
+- [`f''(x) =`] [_____]{$fun_4->D()->D()}
+
+---
+
+Given this function:
+
+[`[$fun_5]`]
+
+Compute:
+- [`f''(x) =`] [_____]{$fun_5->D()->D()}
+
+---
+END_PGML
+ENDDOCUMENT();

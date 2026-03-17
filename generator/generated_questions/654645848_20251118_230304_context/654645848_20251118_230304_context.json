@@ -1,0 +1,16 @@
+[
+  {
+    "original_expression": "3+8/2",
+    "priority_analysis": "8/2 -> 3+4",
+    "word_problem": "Lily had 3 colored pencils. Her teacher gave her 8 more pencils and asked her to share them equally with her best friend. After sharing, how many colored pencils does Lily have in total?",
+    "answer": "7",
+    "analysis": "First, calculate how many pencils Lily gets from sharing: 8 ÷ 2 = 4 pencils. Then, add the pencils she originally had: 3 + 4 = 7 pencils."
+  },
+  {
+    "original_expression": "4+11",
+    "priority_analysis": "4+11",
+    "word_problem": "During art class, Emma brought 4 sheets of origami paper. Her tablemate gave her 11 more sheets to help with her project. How many sheets of origami paper does Emma have now?",
+    "answer": "15",
+    "analysis": "Add the two amounts together: 4 + 11 = 15 sheets of origami paper."
+  }
+]

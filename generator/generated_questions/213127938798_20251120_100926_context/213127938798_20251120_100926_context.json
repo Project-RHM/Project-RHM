@@ -1,0 +1,16 @@
+[
+  {
+    "original_expression": "8+16-13*3",
+    "priority_analysis": "13 * 3 -> 8 + 16 -> 24 - 39",
+    "word_problem": "Lily had 8 colored pencils. Her friend Amy gave her 16 more pencils. Later, Lily decided to organize her art supplies and put pencils into boxes. She had 3 boxes and wanted to put 13 pencils in each box. After filling the boxes, how many pencils would Lily have left (or need more)?",
+    "answer": "-15",
+    "analysis": "First, calculate the pencils needed for the boxes: 13 × 3 = 39 pencils. Then, calculate the total pencils Lily had: 8 + 16 = 24 pencils. Finally, compare what she had with what she needed: 24 - 39 = -15 pencils. This means Lily needs 15 more pencils to fill all the boxes."
+  },
+  {
+    "original_expression": "1+1+11+19*15",
+    "priority_analysis": "19 * 15 -> 1 + 1 -> 2 + 11 -> 13 + 285",
+    "word_problem": "During a school reading challenge, Mia read 1 book on Monday, 1 book on Tuesday, and 11 books on Wednesday. On Thursday and Friday, she read from a special series where each book had 15 chapters, and she completed 19 books from this series. How many reading units (books and chapters combined as equal units) did Mia complete during the week?",
+    "answer": "298",
+    "analysis": "First, calculate the reading units from the special series: 19 × 15 = 285 units. Then, calculate the books from the first three days: 1 + 1 + 11 = 13 books. Finally, add all reading units together: 13 + 285 = 298 units."
+  }
+]

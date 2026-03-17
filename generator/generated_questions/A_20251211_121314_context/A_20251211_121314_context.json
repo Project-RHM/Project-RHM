@@ -1,0 +1,30 @@
+[
+  {
+    "original_expression": "10+17-10",
+    "priority_analysis": "10 + 17 -> 27 - 10",
+    "word_problem": "Lily had 10 colored pencils. Her teacher gave her 17 more for a class project. After finishing the project, she returned 10 pencils to the teacher. How many colored pencils does Lily have now?",
+    "answer": "17",
+    "analysis": "First, calculate the total pencils after receiving more: 10 + 17 = 27 pencils. Then, subtract the pencils she returned: 27 - 10 = 17 pencils."
+  },
+  {
+    "original_expression": "10+9-10+18",
+    "priority_analysis": "10 + 9 -> 19 - 10 -> 9 + 18",
+    "word_problem": "During a board game, Tom earned 10 points in the first round. In the second round, he earned 9 more points. In the third round, he lost 10 points. In the final round, he earned 18 points. What is Tom's final score?",
+    "answer": "27",
+    "analysis": "First, calculate the score after the first two rounds: 10 + 9 = 19 points. Then, subtract the points lost in the third round: 19 - 10 = 9 points. Finally, add the points from the final round: 9 + 18 = 27 points."
+  },
+  {
+    "original_expression": "8+5+19-2/18",
+    "priority_analysis": "2 / 18 -> 8 + 5 -> 13 + 19 -> 32 - 0.1111111111",
+    "word_problem": "A school is collecting books for a charity drive. Class A brought 8 books, Class B brought 5 books, and Class C brought 19 books. The organizers decided to share 2 books equally among 18 volunteers to take home as a thank you. How many books are left for the charity drive?",
+    "answer": "31.8888888889",
+    "analysis": "First, calculate the books given to volunteers: 2 ÷ 18 ≈ 0.1111111111 books per volunteer (this is the total amount taken). Then, calculate the total books collected: 8 + 5 = 13, then 13 + 19 = 32 books. Finally, subtract the books taken by volunteers: 32 - 0.1111111111 ≈ 31.8888888889 books."
+  },
+  {
+    "original_expression": "13*1+10*16",
+    "priority_analysis": "13 * 1 -> 10 * 16 -> 13 + 160",
+    "word_problem": "For a school fair, Emma is selling bracelets. She makes simple bracelets that sell for 13 cents each and fancy bracelets that sell for 10 cents each. On Monday, she sold 1 simple bracelet. On Tuesday, she sold 16 fancy bracelets. How much money did Emma earn in total from these sales?",
+    "answer": "173",
+    "analysis": "First, calculate the earnings from simple bracelets: 13 × 1 = 13 cents. Then, calculate the earnings from fancy bracelets: 10 × 16 = 160 cents. Finally, add the earnings together: 13 + 160 = 173 cents."
+  }
+]

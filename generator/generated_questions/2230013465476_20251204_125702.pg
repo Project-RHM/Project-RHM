@@ -1,0 +1,40 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+Context()->operators->undefine('+','-','*','/');
+
+BEGIN_PGML
+# Questions:
+
+- _For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+- _For derivative problems, if the result is undefined, then *leave the blank empty*._
+
+What is the value of [`18+9-6+13`]? [_____]{answer=>Formula('34'),width=>5}
+---
+
+What is the value of [`18+3-10+13`]? [_____]{24}
+---
+
+What is the value of [`5+7-11+16/19`]? [_____]{Real(1.84210526316)}
+---
+
+What is the value of [`8+18+18-14*19`]? [_____]{Formula('-222')}
+---
+
+What is the value of [`12/14+0/8`]? [_____]{Real(0.857142857143)}
+---
+
+What is the value of [`1+0/5`]? [_____]{Real(1.)}
+---
+
+[`13+18-11+9/19`] is equal to [_____]{answer=>20.4736842105,width=>9}
+---
+
+What is the value of [`5+17+12+14/18`]? [_____]{answer=>Formula('34.7777777778'),width=>6}
+---
+END_PGML
+ENDDOCUMENT();

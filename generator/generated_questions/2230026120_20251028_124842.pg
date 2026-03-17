@@ -1,0 +1,56 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Vector");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+Suppose the vectors:
+- [` \vec{u} = \langle -6, 0, 6 \rangle `]
+- [` \vec{v} = \langle 6, -3, 6 \rangle `]
+
+Compute:
+- [` \left\| \vec{u} \right\| = `] [_____]{norm(Compute("<-6, 0, 6>"))}
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<6, -3, 6>")->cmp(parallel=>1)}
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<-6, 0, 6>"))}
+- [` \vec{u} \times \vec{v} = `] [_____]{Compute("<-6, 0, 6>") x Compute("<6, -3, 6>")}
+- Enter a vector in the same direction as [` \vec{v} `]. [_____]{Compute("<6, -3, 6>")->cmp(parallel=>1,sameDirection=>1)}
+- Enter a vector in the same direction as [` \vec{u} `]. [_____]{Compute("<-6, 0, 6>")->cmp(parallel=>1,sameDirection=>1)}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle 4, -5, -4 \rangle `]
+- [` \vec{v} = \langle 10, 9, 10 \rangle `]
+- [` \vec{w} = \langle -1, 1, -10 \rangle `]
+
+Compute:
+- [` \vec{u} \times \vec{w} = `] [_____]{Compute("<4, -5, -4>") x Compute("<-1, 1, -10>")}
+- Enter a unit vector in the direction of [` \vec{v} `]. [_____]{unit(Compute("<10, 9, 10>"))}
+- Enter a vector parallel to [` \vec{u} `]. [_____]{Compute("<4, -5, -4>")->cmp(parallel=>1)}
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<10, 9, 10>")->cmp(parallel=>1)}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -8, -4, 2 \rangle `]
+- [` \vec{v} = \langle 5, -5, -3 \rangle `]
+- [` \vec{w} = \langle 4, 6, 10 \rangle `]
+
+Compute:
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<5, -5, -3>"))}
+- [` \vec{v} \cdot \vec{w} = `] [_____]{Compute("<5, -5, -3>") . Compute("<4, 6, 10>")}
+- [` \vec{w} \cdot \vec{v} = `] [_____]{Compute("<4, 6, 10>") . Compute("<5, -5, -3>")}
+- [` \vec{v} \times \vec{w} = `] [_____]{Compute("<5, -5, -3>") x Compute("<4, 6, 10>")}
+- [` \vec{w} \cdot \vec{u} = `] [_____]{Compute("<4, 6, 10>") . Compute("<-8, -4, 2>")}
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<5, -5, -3>")->cmp(parallel=>1)}
+
+---
+END_PGML
+ENDDOCUMENT();

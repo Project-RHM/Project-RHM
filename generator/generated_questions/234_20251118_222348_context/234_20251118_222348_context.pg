@@ -1,0 +1,119 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+Context()->flags->set(reduceConstantFunctions=>0);
+Context()->flags->set(reduceConstants=>0);
+
+$fun_2 = Formula("e^((sin(x)))");
+$fun_1 = Formula("sqrt((ln((10/(x)))))");
+
+Context("Interval");
+
+$set_ans_3 = Compute("(-infinity, 10] - ((-infinity, infinity) - (((4, 14) U [4, 10]))) U ((4, 14))");
+$set_ans_4 = Compute("[4, 10] U [4, 10] U ((4, 14) - ((-infinity, infinity) - ((-infinity, 10]))) U (4, 14)");
+$set_ans_1 = Compute("{-10, -4, -2} U ({-1, 1, 9} U {-10, -4, -2}) U {-3, 2}");
+$set_ans_2 = Compute("({-1, 1, 9} U {-1, 1, 9}) U {-1, 1, 9} U {-3, 2} - ((-infinity, infinity) - {-10, -4, -2})");
+
+Context("Vector");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+Lily was collecting colorful erasers for her art project. On Monday, she found [`4`] erasers in her desk. On Tuesday, her friend gave her [`6`] more erasers. On Wednesday, she discovered [`12`] erasers in her art box. However, on Thursday, she used [`3`] erasers to create a special drawing for her teacher. How many erasers does Lily have left for her art project?
+
+[_____]{19}
+[%
+4+6+12-3
+
+First, add the erasers from Monday and Tuesday: 4 + 6 = 10 erasers. Then add Wednesday's erasers: 10 + 12 = 22 erasers. Finally, subtract the erasers used on Thursday: 22 - 3 = 19 erasers.
+%]
+---
+
+During a classroom pizza party, Tom started with [`2`] slices on his plate. His teacher added [`12`] more slices to his plate. Tom then shared [`13`] slices equally among his classmates. Later, he received [`11`] small cookie pieces that were divided equally among [`14`] students, and Tom got his fair share. How many pizza slices and cookie pieces does Tom have in total?
+
+[_____]{1.78571428571}
+[%
+2+12-13+11/14
+
+First, calculate the cookie portion: 11 ÷ 14 ≈ 0.78571428571 pieces. Then calculate the pizza: 2 + 12 = 14 slices, minus 13 shared slices equals 1 slice. Finally, add the cookie portion to the remaining pizza: 1 + 0.78571428571 ≈ 1.78571428571 total items.
+%]
+---
+
+Given the sets:
+- [`A = \{-10, -4, -2\}`]
+- [`B = \{-1, 1, 9\}`]
+- [`C = \{-3, 2\}`]
+
+Compute:
+- [`A \cup (B \cup A) \cup C = `] [_____]{$set_ans_1}
+- [`(B \cup B) \cup B \cup C \cap A = `] [_____]{$set_ans_2}
+
+---
+
+Given the sets:
+- [`A = \{x | 4 \leq x \leq 10\}`]
+- [`B = \{x | 4 < x < 14\}`]
+- [`C = \{x | x \leq 10\}`]
+
+Compute:
+- [`C \cap ((B \cup A)) \cup (B) = `] [_____]{$set_ans_3}
+- [`A \cup A \cup (B \cap (C)) \cup B = `] [_____]{$set_ans_4}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -6, 0, 9 \rangle `]
+- [` \vec{v} = \langle 10, -4, -8 \rangle `]
+- [` \vec{w} = \langle -3, -9, 1 \rangle `]
+
+Compute:
+- Enter a unit vector in the direction of [` \vec{u} `]. [_____]{unit(Compute("<-6, 0, 9>"))}
+- Enter a vector parallel to [` \vec{u} `]. [_____]{Compute("<-6, 0, 9>")->cmp(parallel=>1)}
+- Enter a unit vector in the direction of [` \vec{v} `]. [_____]{unit(Compute("<10, -4, -8>"))}
+- [` \vec{u} \cdot \vec{v} = `] [_____]{Compute("<-6, 0, 9>") . Compute("<10, -4, -8>")}
+- [` \vec{w} \times \vec{u} = `] [_____]{Compute("<-3, -9, 1>") x Compute("<-6, 0, 9>")}
+
+---
+
+Suppose the vectors:
+- [` \vec{u} = \langle -1, 0, 7 \rangle `]
+- [` \vec{v} = \langle -3, -9, 6 \rangle `]
+
+Compute:
+- [` \vec{v} \cdot \vec{u} = `] [_____]{Compute("<-3, -9, 6>") . Compute("<-1, 0, 7>")}
+- [` \left\| \vec{v} \right\| = `] [_____]{norm(Compute("<-3, -9, 6>"))}
+- Enter a vector parallel to [` \vec{v} `]. [_____]{Compute("<-3, -9, 6>")->cmp(parallel=>1)}
+- [` \vec{u} \cdot \vec{v} = `] [_____]{Compute("<-1, 0, 7>") . Compute("<-3, -9, 6>")}
+
+---
+
+Given this function:
+
+>> [`[$fun_1]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_1->D()}
+- [`f''(x) =`] [_____]{$fun_1->D()->D()}
+- [`f'(1) =`] [_____]{$fun_1->D()->eval(x=>1)}
+
+---
+
+Given this function:
+
+>> [`[$fun_2]`] <<
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_2->D()}
+- [`f''(x) =`] [_____]{$fun_2->D()->D()}
+- [`f'(2) =`] [_____]{$fun_2->D()->eval(x=>2)}
+- [`f'(7) =`] [_____]{$fun_2->D()->eval(x=>7)}
+
+---
+END_PGML
+ENDDOCUMENT();

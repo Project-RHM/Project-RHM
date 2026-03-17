@@ -1,0 +1,69 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+
+$fun_1 = Formula("x-7");
+$fun_2 = Formula("(x)^(1/3)");
+$fun_3 = Formula("(x)^2");
+$fun_4 = Formula("x*5");
+$fun_5 = Formula("ln(x)");
+
+BEGIN_PGML
+# Questions:
+
+_For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+
+Given this function:
+
+[`[$fun_1]`]
+
+Compute:
+- [`f''(x) =`] [_____]{$fun_1->D()->D()}
+
+---
+
+Given this function:
+
+[`[$fun_2]`]
+
+Compute:
+- [`f'(0) =`] [_____]{$fun_2->D()->eval(x=>0)}
+- [`f''(x) =`] [_____]{$fun_2->D()->D()}
+
+---
+
+Given this function:
+
+[`[$fun_3]`]
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_3->D()}
+- [`f'(2) =`] [_____]{$fun_3->D()->eval(x=>2)}
+- [`f'(x) =`] [_____]{$fun_3->D()}
+
+---
+
+Given this function:
+
+[`[$fun_4]`]
+
+Compute:
+- [`f''(x) =`] [_____]{$fun_4->D()->D()}
+
+---
+
+Given this function:
+
+[`[$fun_5]`]
+
+Compute:
+- [`f'(x) =`] [_____]{$fun_5->D()}
+- [`f'(8) =`] [_____]{$fun_5->D()->eval(x=>8)}
+
+---
+END_PGML
+ENDDOCUMENT();
