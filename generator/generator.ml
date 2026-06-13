@@ -837,22 +837,18 @@ and gen_boolean_question () : question_item =
   match boolean_question_mode with
   | 1 -> gen_boolean_eval_question ()
   | 2 -> gen_boolean_equiv_question ()
-  | 3 -> gen_prop_equiv_question ()
   | _ ->
       let eval_weight = max 0 boolean_eval_weight in
       let equiv_weight = max 0 boolean_equiv_weight in
-      let prop_weight = max 0 boolean_prop_weight in
-      let total = eval_weight + equiv_weight + prop_weight in
+      let total = eval_weight + equiv_weight in
       if total = 0 then
         if Random.bool () then gen_boolean_eval_question () else gen_boolean_equiv_question ()
       else
         let r = Random.int total in
         if r < eval_weight then
           gen_boolean_eval_question ()
-        else if r < eval_weight + equiv_weight then
-          gen_boolean_equiv_question ()
         else
-          gen_prop_equiv_question ()
+          gen_boolean_equiv_question ()
 
 and gen_boolean_eval_question () : question_item =
   let vars = gen_boolean_vars () in

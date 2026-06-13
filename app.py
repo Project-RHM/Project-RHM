@@ -140,11 +140,10 @@ def config():
             'min_set_element', 'max_set_element', 'max_set_def_num', 'min_set_prob_num',
             'max_set_prob_num', 'vector_dimension', 'min_vector_element', 'max_vector_element',
             'max_vector_def_num', 'min_vector_prob_num', 'max_vector_prob_num',
-            'min_fun_expr_depth', 'max_fun_expr_depth', 'min_derivative_prob_num',
+            'min_fun_expr_depth', 'max_fun_expr_depth',             'min_derivative_prob_num',
             'max_derivative_prob_num', 'boolean_question_mode', 'boolean_eval_weight',
-            'boolean_equiv_weight', 'boolean_prop_weight', 'min_bool_expr_depth', 'max_bool_expr_depth',
-            'min_bool_var_num', 'max_bool_var_num', 'min_prop_expr_depth', 'max_prop_expr_depth',
-            'min_prop_equiv_prob_num', 'max_prop_equiv_prob_num'
+            'boolean_equiv_weight', 'min_bool_expr_depth', 'max_bool_expr_depth',
+            'min_bool_var_num', 'max_bool_var_num'
         ]
         
         for param in int_params:
@@ -175,10 +174,6 @@ def config():
         boolean_vars_str = request.form.get('boolean_variables', '')
         if boolean_vars_str:
             config_data['boolean_variables'] = [var.strip() for var in boolean_vars_str.split(',') if var.strip()]
-        
-        prop_vars_str = request.form.get('prop_variables', '')
-        if prop_vars_str:
-            config_data['prop_variables'] = [var.strip() for var in prop_vars_str.split(',') if var.strip()]
         
         # Difficulty level (string parameter)
         difficulty_level = request.form.get('difficulty_level', 'medium')

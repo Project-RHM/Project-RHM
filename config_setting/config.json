@@ -26,7 +26,6 @@
   "boolean_question_mode": 0,
   "boolean_eval_weight": 1,
   "boolean_equiv_weight": 1,
-  "boolean_prop_weight": 1,
   "min_bool_expr_depth": 2,
   "max_bool_expr_depth": 6,
   "min_bool_var_num": 2,
@@ -37,16 +36,6 @@
     "C",
     "D",
     "E"
-  ],
-  "min_prop_expr_depth": 1,
-  "max_prop_expr_depth": 2,
-  "min_prop_equiv_prob_num": 2,
-  "max_prop_equiv_prob_num": 4,
-  "prop_variables": [
-    "P",
-    "Q",
-    "R",
-    "S"
   ],
   "question_type_amounts": [
     4,
