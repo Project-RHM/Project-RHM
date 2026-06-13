@@ -27,7 +27,6 @@
             <button class="nav-tab" onclick="showTab('vector')">Vector problem</button>
             <button class="nav-tab" onclick="showTab('derivative')">Derivative problem</button>
             <button class="nav-tab" onclick="showTab('boolean')">Boolean problem</button>
-            <button class="nav-tab" onclick="showTab('propositional')">Propositional Logic</button>
         </div>
 
         <div id="message" class="message"></div>
@@ -315,16 +314,18 @@
             <div id="boolean" class="tab-content">
                 <div class="config-section">
                     <h3>Boolean Algebra Configs</h3>
+                    <p class="config-description">Configure Boolean Algebra questions, including evaluation, equivalence, and propositional logic equivalence.</p>
 
                     <div class="form-section">
                         <h4>Question Mode</h4>
-                        <p class="config-description">Control whether Boolean Algebra generation creates evaluation questions, equivalence questions, or a weighted mix of both.</p>
+                        <p class="config-description">Select the type of Boolean questions to generate. Use weights in mixed mode to control the ratio.</p>
                         <div class="form-group">
                             <label for="boolean_question_mode">Boolean question mode</label>
                             <select id="boolean_question_mode" name="boolean_question_mode">
-                                <option value="0" {% if config.get('boolean_question_mode', 0) == 0 %}selected{% endif %}>Mixed</option>
+                                <option value="0" {% if config.get('boolean_question_mode', 0) == 0 %}selected{% endif %}>Mixed (Evaluation + Equivalence + Propositional)</option>
                                 <option value="1" {% if config.get('boolean_question_mode', 0) == 1 %}selected{% endif %}>Evaluation only</option>
                                 <option value="2" {% if config.get('boolean_question_mode', 0) == 2 %}selected{% endif %}>Equivalence only</option>
+                                <option value="3" {% if config.get('boolean_question_mode', 0) == 3 %}selected{% endif %}>Propositional Logic Equivalence only</option>
                             </select>
                         </div>
                         <div class="form-row">
@@ -337,6 +338,11 @@
                                 <label for="boolean_equiv_weight">Equivalence weight</label>
                                 <input type="number" id="boolean_equiv_weight" name="boolean_equiv_weight"
                                     value="{{ config.get('boolean_equiv_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="boolean_prop_weight">Propositional weight</label>
+                                <input type="number" id="boolean_prop_weight" name="boolean_prop_weight"
+                                    value="{{ config.get('boolean_prop_weight', 1) }}" min="0" max="20">
                             </div>
                         </div>
                     </div>
@@ -379,22 +385,12 @@
                                 value="{{ config.boolean_variables | join(', ') }}">
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Propositional Logic Equivalence configs -->
-            <div id="propositional" class="tab-content">
-                <div class="config-section">
-                    <h3>Propositional Logic Equivalence Configs</h3>
-                    <p class="config-description">Configure propositional logic equivalence questions (e.g., P → Q ≡ ¬P ∨ Q).</p>
-
+                    <!-- Propositional Logic Configuration (subset of Boolean Algebra) -->
                     <div class="form-section">
-                        <h4>Expression Depth</h4>
-                        <p class="config-description">Control the complexity of propositional logic expressions:
-                            <br>• <strong>Easy (1-2):</strong> P, Q, ¬P, P ∧ Q, P ∨ Q (simple)
-                            <br>• <strong>Medium (2-3):</strong> P ∧ (Q ∨ R), ¬(P ∧ Q), P → Q (moderate)
-                            <br>• <strong>Hard (3-5):</strong> Complex nested expressions (advanced)
-                        </p>
+                        <h4>Propositional Logic Configuration</h4>
+                        <p class="config-description">Configure propositional logic equivalence questions (e.g., P → Q ≡ ¬P ∨ Q). These use a separate variable set.</p>
+
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="min_prop_expr_depth">Min depth</label>
@@ -407,10 +403,7 @@
                                     value="{{ config.max_prop_expr_depth }}" min="1" max="5">
                             </div>
                         </div>
-                    </div>
 
-                    <div class="form-section">
-                        <h4>Question Quantity</h4>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="min_prop_equiv_prob_num">Min questions</label>
@@ -423,12 +416,9 @@
                                     value="{{ config.max_prop_equiv_prob_num }}" min="1" max="10">
                             </div>
                         </div>
-                    </div>
 
-                    <div class="form-section">
-                        <h4>Propositional Variables</h4>
                         <div class="form-group">
-                            <label for="prop_variables">Available variable names (separated by commas)</label>
+                            <label for="prop_variables">Propositional variable names (separated by commas)</label>
                             <input type="text" id="prop_variables" name="prop_variables"
                                 value="{{ config.prop_variables | join(', ') }}">
                         </div>

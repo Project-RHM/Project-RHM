@@ -142,8 +142,9 @@ def config():
             'max_vector_def_num', 'min_vector_prob_num', 'max_vector_prob_num',
             'min_fun_expr_depth', 'max_fun_expr_depth', 'min_derivative_prob_num',
             'max_derivative_prob_num', 'boolean_question_mode', 'boolean_eval_weight',
-            'boolean_equiv_weight', 'min_bool_expr_depth', 'max_bool_expr_depth',
-            'min_bool_var_num', 'max_bool_var_num'
+            'boolean_equiv_weight', 'boolean_prop_weight', 'min_bool_expr_depth', 'max_bool_expr_depth',
+            'min_bool_var_num', 'max_bool_var_num', 'min_prop_expr_depth', 'max_prop_expr_depth',
+            'min_prop_equiv_prob_num', 'max_prop_equiv_prob_num'
         ]
         
         for param in int_params:
