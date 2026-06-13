@@ -68,9 +68,20 @@ rule read =
   | "Enter a unit vector in the direction of "  { VECTOR_UNIT_PROB }
   | "Enter a vector parallel to "               { VECTOR_PARA_PROB }
   | "Enter a vector in the same direction as "  { VECTOR_SAME_PROB }
-  (* ------------------- NEW CODE START ------------------- *)
-  | "Given this function:"                      { GIVEN_FUN }
-  (* ------------------- NEW CODE END ------------------- *)
+	  (* ------------------- NEW CODE START ------------------- *)
+	  | "Given this function:"                      { GIVEN_FUN }
+	  (* ------------------- NEW CODE END ------------------- *)
+	  | "Evaluate the Boolean expression:"          { EVALUATE_BOOL_PROB }
+	  | "When:"                                    { WHEN_WORD }
+	  | "Enter 1 for True and 0 for False."         { BOOL_ANSWER_HINT }
+	  | "True"                                     { TRUE_WORD }
+	  | "False"                                    { FALSE_WORD }
+	  | "AND"                                      { AND_WORD }
+	  | "OR"                                       { OR_WORD }
+	  | "NOT"                                      { NOT_WORD }
+	  | "XOR"                                      { XOR_WORD }
+	  | "IMPLIES"                                  { IMPLIES_WORD }
+	  | "IFF"                                      { IFF_WORD }
 
   | "infinity"                      { INFINITY }
   | "-infinity"                     { NEG_INFINITY }
@@ -163,9 +174,17 @@ rule read =
       | "Compute"     -> COMPUTE_METH
       | "intersect"   -> INTERSECT_METH
       | "norm"     -> NORM_METH
-      | "unit"     -> UNIT_METH
-      | _          -> ID (Lexing.lexeme lexbuf)
-    }
+	      | "unit"     -> UNIT_METH
+	      | "True"     -> TRUE_WORD
+	      | "False"    -> FALSE_WORD
+	      | "AND"      -> AND_WORD
+	      | "OR"       -> OR_WORD
+	      | "NOT"      -> NOT_WORD
+	      | "XOR"      -> XOR_WORD
+	      | "IMPLIES"  -> IMPLIES_WORD
+	      | "IFF"      -> IFF_WORD
+	      | _          -> ID (Lexing.lexeme lexbuf)
+	    }
 
   | "cmp(parallel=>1)"                  { CMP_1 }
   | "cmp(parallel=>1,sameDirection=>1)" { CMP_2 }

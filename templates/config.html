@@ -26,6 +26,7 @@
             <button class="nav-tab" onclick="showTab('set')">Set problem</button>
             <button class="nav-tab" onclick="showTab('vector')">Vector problem</button>
             <button class="nav-tab" onclick="showTab('derivative')">Derivative problem</button>
+            <button class="nav-tab" onclick="showTab('boolean')">Boolean problem</button>
         </div>
 
         <div id="message" class="message"></div>
@@ -73,6 +74,7 @@
                             <option value="2" {% if config.problem_type == 2 %}selected{% endif %}>Set Only</option>
                             <option value="3" {% if config.problem_type == 3 %}selected{% endif %}>Vector Only</option>
                             <option value="4" {% if config.problem_type == 4 %}selected{% endif %}>Derivative Only</option>
+                            <option value="5" {% if config.problem_type == 5 %}selected{% endif %}>Boolean Evaluation Only</option>
                         </select>
                     </div>
                     <div id="all-types-settings">
@@ -86,11 +88,11 @@
 
                         <div id="question-type-amounts-container">
                             <div class="form-row">
-                                {% set type_names = ["Arithmetic", "Set", "Vector", "Derivative"] %}
-                                {% for i in range(4) %}
+                                {% set type_names = ["Arithmetic", "Set", "Vector", "Derivative", "Boolean"] %}
+                                {% for i in range(5) %}
                                 <div class="form-group">
                                     <label for="question_type_amounts_{{ i }}">{{ type_names[i] }} num</label>
-                                    <input type="number" id="question_type_amounts_{{ i }}" 
+                                    <input type="number" id="question_type_amounts_{{ i }}"
                                         name="question_type_amounts_{{ i }}" 
                                         value="{{ config.question_type_amounts[i] if config.question_type_amounts and i < config.question_type_amounts|length else 0 }}" 
                                         min="0" max="10">
@@ -304,6 +306,52 @@
                         </div>
                     </div>
                     
+                </div>
+            </div>
+
+            <!-- Boolean problem configs -->
+            <div id="boolean" class="tab-content">
+                <div class="config-section">
+                    <h3>Boolean Expression Evaluation Configs</h3>
+
+                    <div class="form-section">
+                        <h4>Boolean Expression Depth</h4>
+                        <p class="config-description">Control the nested depth of generated Boolean expressions.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_bool_expr_depth">Min depth</label>
+                                <input type="number" id="min_bool_expr_depth" name="min_bool_expr_depth"
+                                    value="{{ config.min_bool_expr_depth }}" min="1" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_bool_expr_depth">Max depth</label>
+                                <input type="number" id="max_bool_expr_depth" name="max_bool_expr_depth"
+                                    value="{{ config.max_bool_expr_depth }}" min="1" max="20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Boolean Variables</h4>
+                        <p class="config-description">Choose how many variables may appear and which variable names are available.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_bool_var_num">Min variables</label>
+                                <input type="number" id="min_bool_var_num" name="min_bool_var_num"
+                                    value="{{ config.min_bool_var_num }}" min="1" max="10">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_bool_var_num">Max variables</label>
+                                <input type="number" id="max_bool_var_num" name="max_bool_var_num"
+                                    value="{{ config.max_bool_var_num }}" min="1" max="10">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="boolean_variables">Available variable names (separated by commas)</label>
+                            <input type="text" id="boolean_variables" name="boolean_variables"
+                                value="{{ config.boolean_variables | join(', ') }}">
+                        </div>
+                    </div>
                 </div>
             </div>
 

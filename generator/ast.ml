@@ -111,6 +111,7 @@ and question_item =
 (* ------------------- NEW CODE START ------------------- *)
   | Q_Given_Function of string * derivative_prob_list
 (* ------------------- NEW CODE END ------------------- *)
+  | Q_Boolean_Eval of bool_expr * bool_assignment list * answer_item * int option
 
 and question_text =
   | Q_Value     of intext_call
@@ -231,6 +232,18 @@ and derivative_prob =
   | Second_Derivative   of string
 
 (* ------------------- NEW CODE END ------------------- *)
+
+and bool_assignment = string * bool
+
+and bool_expr =
+  | Bool_Const   of bool
+  | Bool_Var     of string
+  | Bool_Not     of bool_expr
+  | Bool_And     of bool_expr * bool_expr
+  | Bool_Or      of bool_expr * bool_expr
+  | Bool_Xor     of bool_expr * bool_expr
+  | Bool_Implies of bool_expr * bool_expr
+  | Bool_Iff     of bool_expr * bool_expr
 
 (*
 and solution_section = Solution of solution_list

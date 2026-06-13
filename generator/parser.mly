@@ -40,6 +40,8 @@
 
 %token WHAT_WORD IS_WORD THE_WORD VALUE_WORD OF_WORD EQUAL_WORD TO_WORD QUESTION_MARK
 %token GIVEN_PROB COMPUTE_PROB GIVEN_FUN
+%token EVALUATE_BOOL_PROB WHEN_WORD BOOL_ANSWER_HINT
+%token TRUE_WORD FALSE_WORD AND_WORD OR_WORD NOT_WORD XOR_WORD IMPLIES_WORD IFF_WORD
 %token SUPPOSE_PROB PERIOD VECTOR_UNIT_PROB VECTOR_PARA_PROB VECTOR_SAME_PROB
 
 %token UNION CUP CAP
@@ -92,6 +94,13 @@
 %token <int> INT
 %token <string> MACRO
 %token <string> ID
+
+%right IFF_WORD
+%right IMPLIES_WORD
+%left OR_WORD
+%left XOR_WORD
+%left AND_WORD
+%right NOT_WORD
 
 %start <Ast.document> main
 %%
@@ -469,6 +478,20 @@ question_item:
     [@name qderivative]
   (* ------------------- NEW CODE END ------------------- *)
 
+  | EVALUATE_BOOL_PROB; NEWLINE; IT_MATH_OPEN; expr = bool_expr; IT_MATH_CLOSE; NEWLINE;
+    WHEN_WORD; NEWLINE; assignments = bool_assignment_list;
+    BOOL_ANSWER_HINT; NEWLINE;
+    BLANK; LBRACE; ans = answer_item; RBRACE
+      { Q_Boolean_Eval (expr, assignments, ans, None) }
+    [@name qbool_eval]
+
+  | EVALUATE_BOOL_PROB; NEWLINE; IT_MATH_OPEN; expr = bool_expr; IT_MATH_CLOSE; NEWLINE;
+    WHEN_WORD; NEWLINE; assignments = bool_assignment_list;
+    BOOL_ANSWER_HINT; NEWLINE;
+    BLANK; LBRACE; ANSWER_WORD; FAT_COMMA; ans = answer_item; COMMA; WIDTH_WORD; FAT_COMMA; w = INT; RBRACE
+      { Q_Boolean_Eval (expr, assignments, ans, Some w) }
+    [@name qbool_eval_width]
+
 question_text:
   | WHAT_WORD; IS_WORD; THE_WORD; VALUE_WORD; OF_WORD; call = intext_call; QUESTION_MARK
       { Q_Value call }
@@ -553,6 +576,68 @@ factor:
   | n = INT
       { F_Int n }
     [@name fint]
+
+(* -------------------------------------------------------------------------- *)
+(* Boolean expression evaluation parsing rules                                *)
+(* -------------------------------------------------------------------------- *)
+bool_assignment_list:
+  | assignment = bool_assignment; NEWLINE; rest = bool_assignment_list
+      { assignment :: rest }
+    [@name bool_assignment_list_cons]
+
+  | assignment = bool_assignment; NEWLINE
+      { [assignment] }
+    [@name bool_assignment_list_last]
+
+bool_assignment:
+  | SUB_OP; name = ID; EQ; TRUE_WORD
+      { (name, true) }
+    [@name bool_assignment_true]
+
+  | SUB_OP; name = ID; EQ; FALSE_WORD
+      { (name, false) }
+    [@name bool_assignment_false]
+
+bool_expr:
+  | left = bool_expr; AND_WORD; right = bool_expr
+      { Bool_And (left, right) }
+    [@name bool_and]
+
+  | left = bool_expr; OR_WORD; right = bool_expr
+      { Bool_Or (left, right) }
+    [@name bool_or]
+
+  | left = bool_expr; XOR_WORD; right = bool_expr
+      { Bool_Xor (left, right) }
+    [@name bool_xor]
+
+  | left = bool_expr; IMPLIES_WORD; right = bool_expr
+      { Bool_Implies (left, right) }
+    [@name bool_implies]
+
+  | left = bool_expr; IFF_WORD; right = bool_expr
+      { Bool_Iff (left, right) }
+    [@name bool_iff]
+
+  | NOT_WORD; expr = bool_expr
+      { Bool_Not expr }
+    [@name bool_not]
+
+  | LPAREN; expr = bool_expr; RPAREN
+      { expr }
+    [@name bool_paren]
+
+  | TRUE_WORD
+      { Bool_Const true }
+    [@name bool_true]
+
+  | FALSE_WORD
+      { Bool_Const false }
+    [@name bool_false]
+
+  | name = ID
+      { Bool_Var name }
+    [@name bool_var]
 
 (* -------------------------------------------------------------------------- *)
 (* Set-related parsing rules                                                  *)

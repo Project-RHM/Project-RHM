@@ -274,12 +274,17 @@ let rec gen_document () : document =
       let context_setup_list = gen_context_setup_list () in
       let problem_section = gen_problem_section () in
         Doc_No_Sol (header, context_setup_list, problem_section)
-    | 4 -> (* derivative only *)
-      let header = gen_header () in
-      let context_setup_list = gen_context_setup_list () in
-      let (problem_section, answer_vars) = gen_derivative_problem_section () in
-      let modified_context_setup_list = convert_context_setup_list context_setup_list answer_vars in
-        Doc_No_Sol (header, modified_context_setup_list, problem_section)
+	    | 4 -> (* derivative only *)
+	      let header = gen_header () in
+	      let context_setup_list = gen_context_setup_list () in
+	      let (problem_section, answer_vars) = gen_derivative_problem_section () in
+	      let modified_context_setup_list = convert_context_setup_list context_setup_list answer_vars in
+	        Doc_No_Sol (header, modified_context_setup_list, problem_section)
+	    | 5 -> (* Boolean expression evaluation only *)
+	      let header = gen_header () in
+	      let context_setup_list = gen_context_setup_list () in
+	      let problem_section = gen_problem_section () in
+	        Doc_No_Sol (header, context_setup_list, problem_section)
     | _ -> (* all type of questions only *)
       let header = gen_header () in
       let context_setup_list = gen_context_setup_list () in
@@ -306,10 +311,12 @@ and gen_context_setup_list () : context_setup_list =
       Context_Setup_No_Vars_Last (Context_Only "Interval")
     | 3 -> (* vector only *)
       Context_Setup_No_Vars_Last (Context_Only "Vector")
-    | 4 -> (* derivative only *)
-      Context_Setup_No_Vars_Last (Context_With_Config ("Numeric", Cfg_Cons(Flags, CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"),VInt(0)))]), Cfg_Last(Flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),VInt(0)))])))))
-    | _ -> (* all type of questions only *)
-      Context_Setup_No_Vars_Cons (Context_With_Config ("Numeric", Cfg_Cons(Flags, CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"),VInt(0)))]), Cfg_Last(Flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),VInt(0)))])))), Context_Setup_No_Vars_Cons (Context_Only "Interval", Context_Setup_No_Vars_Last (Context_Only "Vector")))
+	    | 4 -> (* derivative only *)
+	      Context_Setup_No_Vars_Last (Context_With_Config ("Numeric", Cfg_Cons(Flags, CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"),VInt(0)))]), Cfg_Last(Flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),VInt(0)))])))))
+	    | 5 -> (* Boolean expression evaluation only *)
+	      Context_Setup_No_Vars_Last (Context_Only "Numeric")
+	    | _ -> (* all type of questions only *)
+	      Context_Setup_No_Vars_Cons (Context_With_Config ("Numeric", Cfg_Cons(Flags, CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"),VInt(0)))]), Cfg_Last(Flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),VInt(0)))])))), Context_Setup_No_Vars_Cons (Context_Only "Interval", Context_Setup_No_Vars_Last (Context_Only "Vector")))
 (*
 and gen_context_config () : context_config =
   let modules = [ Variables; Constants; Strings; Operators; Flags ] in
@@ -523,30 +530,34 @@ and gen_question_list () : question_item list =
   match problem_type with
   | 0 ->  (* All type of questions *)
     if question_random_amounts = false then
-      (* List: [arithmetic_amount; set_amount; vector_amount; derivative_amount] *)
+      (* List: [arithmetic_amount; set_amount; vector_amount; derivative_amount; boolean_amount] *)
       let arithmetic_count = List.nth question_type_amounts 0 in
       let set_count = List.nth question_type_amounts 1 in
       let vector_count = List.nth question_type_amounts 2 in
       let derivative_count = List.nth question_type_amounts 3 in
-      
+      let boolean_count = List.nth question_type_amounts 4 in
+
       (* Generate each question type *)
-      let arithmetic_questions = 
-        List.init arithmetic_count (fun _ -> gen_arithmetic_question ()) 
+      let arithmetic_questions =
+        List.init arithmetic_count (fun _ -> gen_arithmetic_question ())
       in
-      let set_questions = 
-        List.init set_count (fun _ -> gen_set_question ()) 
+      let set_questions =
+        List.init set_count (fun _ -> gen_set_question ())
       in
       let vector_questions = 
         List.init vector_count (fun _ -> gen_vector_question ()) 
       in
-      let derivative_questions = 
-        List.init derivative_count (fun _ -> 
+      let derivative_questions =
+        List.init derivative_count (fun _ ->
           let (q, _) = gen_derivative_question () in
           q
-        ) 
+        )
       in
-        let all_questions = arithmetic_questions @ set_questions @ vector_questions @ derivative_questions in
-        if shuffle_questions_for_0_type = true then 
+      let boolean_questions =
+        List.init boolean_count (fun _ -> gen_boolean_eval_question ())
+      in
+      let all_questions = arithmetic_questions @ set_questions @ vector_questions @ derivative_questions @ boolean_questions in
+        if shuffle_questions_for_0_type = true then
           shuffle_list all_questions
         else
           all_questions
@@ -581,23 +592,26 @@ and gen_question_item () : question_item =
   match problem_type with
   | 0 ->  (* All type of questions *)
       (* if randomly choose *)
-      (match Random.int 3 with
+      (match Random.int 5 with
           | 0 -> gen_arithmetic_question ()
           | 1 -> gen_set_question ()
           | 2 -> gen_vector_question ()
-          | _ -> 
+          | 3 ->
               let (q, _) = gen_derivative_question () in
-              q)
+              q
+          | _ -> gen_boolean_eval_question ())
   | 1 ->  (* Arithmetic only *)
       gen_arithmetic_question ()
   | 2 ->  (* Set only *)
       gen_set_question ()
   | 3 ->  (* Vector only *)
       gen_vector_question ()
-  | 4 ->  (* Derivative only *)
-      let (q, _) = gen_derivative_question () in
-      q
-  | _ -> gen_arithmetic_question ()  (* Default to arithmetic *)
+	  | 4 ->  (* Derivative only *)
+	      let (q, _) = gen_derivative_question () in
+	      q
+	  | 5 ->  (* Boolean expression evaluation only *)
+	      gen_boolean_eval_question ()
+	  | _ -> gen_arithmetic_question ()  (* Default to arithmetic *)
   
 and gen_arithmetic_question () : question_item =
   (* 1) pick exactly one in-text call *)
@@ -638,7 +652,104 @@ and gen_arithmetic_question () : question_item =
     else Q_IsEqual icall
   in
 
-  Q_Item (qtext, ans, width)
+	  Q_Item (qtext, ans, width)
+
+and gen_boolean_eval_question () : question_item =
+  let take n lst =
+    let rec aux i acc rest =
+      if i = 0 then List.rev acc
+      else
+        match rest with
+        | [] -> List.rev acc
+        | x :: xs -> aux (i - 1) (x :: acc) xs
+    in
+    aux n [] lst
+  in
+  let shuffle_names names =
+    let arr = Array.of_list names in
+    let len = Array.length arr in
+    for i = 0 to len - 1 do
+      let j = i + Random.int (len - i) in
+      let temp = arr.(i) in
+      arr.(i) <- arr.(j);
+      arr.(j) <- temp
+    done;
+    Array.to_list arr
+  in
+  let dedupe_names names =
+    List.fold_right
+      (fun name acc -> if List.mem name acc then acc else name :: acc)
+      names []
+  in
+  let available_vars =
+    match dedupe_names boolean_variables with
+    | [] -> ["A"; "B"; "C"; "D"]
+    | vars -> vars
+  in
+  let available_count = List.length available_vars in
+  let max_vars = max 1 (min max_bool_var_num available_count) in
+  let min_vars = max 1 (min min_bool_var_num max_vars) in
+  let var_count = min_vars + Random.int (max_vars - min_vars + 1) in
+  let vars = take var_count (shuffle_names available_vars) in
+  let max_depth = max min_bool_expr_depth max_bool_expr_depth in
+  let depth = min_bool_expr_depth + Random.int (max_depth - min_bool_expr_depth + 1) in
+  let gen_leaf () =
+    if Random.int 12 = 0 then
+      Bool_Const (Random.bool ())
+    else
+      Bool_Var (pick_one vars)
+  in
+  let rec gen_expr d =
+    if d <= 0 then gen_leaf ()
+    else
+      match Random.int 100 with
+      | n when n < 14 ->
+          Bool_Not (gen_expr (d - 1))
+      | n when n < 34 ->
+          Bool_And (gen_expr (d - 1), gen_expr (d - 1))
+      | n when n < 54 ->
+          Bool_Or (gen_expr (d - 1), gen_expr (d - 1))
+      | n when n < 70 ->
+          Bool_Xor (gen_expr (d - 1), gen_expr (d - 1))
+      | n when n < 85 ->
+          Bool_Implies (gen_expr (d - 1), gen_expr (d - 1))
+      | _ ->
+          Bool_Iff (gen_expr (d - 1), gen_expr (d - 1))
+  in
+  let unique_names names =
+    List.fold_left
+      (fun acc name -> if List.mem name acc then acc else name :: acc)
+      [] names
+  in
+  let rec bool_expr_stats = function
+    | Bool_Const _ -> (0, [])
+    | Bool_Var name -> (0, [name])
+    | Bool_Not expr ->
+        let (ops, names) = bool_expr_stats expr in
+        (ops + 1, names)
+    | Bool_And (left, right)
+    | Bool_Or (left, right)
+    | Bool_Xor (left, right)
+    | Bool_Implies (left, right)
+    | Bool_Iff (left, right) ->
+        let (left_ops, left_names) = bool_expr_stats left in
+        let (right_ops, right_names) = bool_expr_stats right in
+        (left_ops + right_ops + 1, left_names @ right_names)
+  in
+  let rec choose_expr attempts =
+    let expr = gen_expr depth in
+    let (op_count, used_vars) = bool_expr_stats expr in
+    let distinct_var_count = List.length (unique_names used_vars) in
+    if attempts <= 0 || (op_count >= 2 && distinct_var_count >= min 2 var_count) then
+      expr
+    else
+      choose_expr (attempts - 1)
+  in
+  let expr = choose_expr 30 in
+  let assignments = List.map (fun name -> (name, Random.bool ())) vars in
+  let answer = if eval_bool_expr assignments expr then 1 else 0 in
+  let width = if Random.bool () then Some 1 else None in
+  Q_Boolean_Eval (expr, assignments, A_Var (Var_Value (VInt answer)), width)
 
 and gen_set_question () : question_item =
   let set_list = gen_set_list () in
@@ -958,9 +1069,11 @@ and convert_problem_section (problem_section : problem_section) : problem_sectio
             Q_Given_Function (fun_name, derivative_prob_list)
         | Q_Item (qtext, ans, width) as item ->
             item (* Keep arithmetic questions unchanged *)
-        | Q_Suppose_Vector (_, _) as item -> 
-            item (* Keep vector questions unchanged *)
-      in
+	        | Q_Suppose_Vector (_, _) as item ->
+	            item (* Keep vector questions unchanged *)
+	        | Q_Boolean_Eval (_, _, _, _) as item ->
+	            item (* Keep Boolean evaluation questions unchanged *)
+	      in
       
       let modified_question_list = List.map convert_question_item question_list in
       (Problem modified_question_list, !answer_vars)

@@ -141,7 +141,8 @@ def config():
             'max_set_prob_num', 'vector_dimension', 'min_vector_element', 'max_vector_element',
             'max_vector_def_num', 'min_vector_prob_num', 'max_vector_prob_num',
             'min_fun_expr_depth', 'max_fun_expr_depth', 'min_derivative_prob_num',
-            'max_derivative_prob_num'
+            'max_derivative_prob_num', 'min_bool_expr_depth', 'max_bool_expr_depth',
+            'min_bool_var_num', 'max_bool_var_num'
         ]
         
         for param in int_params:
@@ -151,13 +152,13 @@ def config():
         
         # 列表参数
         question_amounts = []
-        for i in range(4):
+        for i in range(5):
             amount = request.form.get(f'question_type_amounts_{i}')
             if amount and amount.strip():
                 question_amounts.append(int(amount))
-        
-        if len(question_amounts) != 4:
-            question_amounts = [0, 0, 0, 0]
+
+        if len(question_amounts) != 5:
+            question_amounts = [0, 0, 0, 0, 0]
         
         config_data['question_type_amounts'] = question_amounts
         
@@ -168,6 +169,10 @@ def config():
         vector_vars_str = request.form.get('vector_variables', '')
         if vector_vars_str:
             config_data['vector_variables'] = [var.strip() for var in vector_vars_str.split(',') if var.strip()]
+
+        boolean_vars_str = request.form.get('boolean_variables', '')
+        if boolean_vars_str:
+            config_data['boolean_variables'] = [var.strip() for var in boolean_vars_str.split(',') if var.strip()]
         
         # 写入JSON配置并生成OCaml配置
         if write_config(config_data) and generate_ml_config():

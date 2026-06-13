@@ -24,8 +24,9 @@ let max_question_num = 10
     0 = all question type, 
     1 = arithmetic only, 
     2 = set only, 
-    3 = vector only
-    4 = derivative only *)
+	    3 = vector only
+	    4 = derivative only
+	    5 = Boolean expression evaluation only *)
 let problem_type = 0
 
 (* For problem type is 0 (all question type):
@@ -35,10 +36,10 @@ let problem_type = 0
    *)
 let question_random_amounts = false
 (* The amount of each question type:
-   - [arithmetic_amount; set_amount; vector_amount; derivative_amount]
+	   - [arithmetic_amount; set_amount; vector_amount; derivative_amount; boolean_amount]
    - the total amount of questions should be within the interval [min_question_num, max_question_num]
    *)
-let question_type_amounts = [4; 2; 2; 2]
+let question_type_amounts = [4; 2; 2; 2; 2]
 (* Set shuffle_questions_for_0_type as true if you want to shuffle the order of the questions. *)
 let shuffle_questions_for_0_type = false
 
@@ -111,5 +112,21 @@ let max_fun_expr_depth = 5
 (* Derivative problem configuration *)
 let min_derivative_prob_num = 2
 let max_derivative_prob_num = 4
+
+(* ----------------------------------------------- *)
+
+(* ============================================== *)
+(* === Boolean Expression Evaluation Difficulty == *)
+(* ============================================== *)
+(* The min and max depth of a Boolean expression. *)
+let min_bool_expr_depth = 2
+let max_bool_expr_depth = 4
+
+(* The number of Boolean variables used in one problem. *)
+let min_bool_var_num = 2
+let max_bool_var_num = 4
+
+(* The Boolean variable names used in Boolean expression questions. *)
+let boolean_variables = ["A"; "B"; "C"; "D"; "E"]
 
 (* ----------------------------------------------- *)

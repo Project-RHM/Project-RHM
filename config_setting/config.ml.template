@@ -24,8 +24,9 @@ let max_question_num = {{ max_question_num }}
     0 = all question type, 
     1 = arithmetic only, 
     2 = set only, 
-    3 = vector only
-    4 = derivative only *)
+	    3 = vector only
+	    4 = derivative only
+	    5 = Boolean expression evaluation only *)
 let problem_type = {{ problem_type }}
 
 (* For problem type is 0 (all question type):
@@ -35,7 +36,7 @@ let problem_type = {{ problem_type }}
    *)
 let question_random_amounts = {{ question_random_amounts }}
 (* The amount of each question type:
-   - [arithmetic_amount; set_amount; vector_amount; derivative_amount]
+	   - [arithmetic_amount; set_amount; vector_amount; derivative_amount; boolean_amount]
    - the total amount of questions should be within the interval [min_question_num, max_question_num]
    *)
 let question_type_amounts = {{ question_type_amounts }}
@@ -111,5 +112,21 @@ let max_fun_expr_depth = {{ max_fun_expr_depth }}
 (* Derivative problem configuration *)
 let min_derivative_prob_num = {{ min_derivative_prob_num }}
 let max_derivative_prob_num = {{ max_derivative_prob_num }}
+
+(* ----------------------------------------------- *)
+
+(* ============================================== *)
+(* === Boolean Expression Evaluation Difficulty == *)
+(* ============================================== *)
+(* The min and max depth of a Boolean expression. *)
+let min_bool_expr_depth = {{ min_bool_expr_depth }}
+let max_bool_expr_depth = {{ max_bool_expr_depth }}
+
+(* The number of Boolean variables used in one problem. *)
+let min_bool_var_num = {{ min_bool_var_num }}
+let max_bool_var_num = {{ max_bool_var_num }}
+
+(* The Boolean variable names used in Boolean expression questions. *)
+let boolean_variables = {{ boolean_variables }}
 
 (* ----------------------------------------------- *)

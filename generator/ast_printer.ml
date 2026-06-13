@@ -373,8 +373,14 @@ and pp_question_item fmt = function
     fprintf fmt "Q_Given_Set(%a,@ %a)" pp_set_list s_list pp_set_prob_list sp_list
   | Ast.Q_Suppose_Vector (vec_list, vecp_list) -> 
     fprintf fmt "Q_Suppose_Vector(%a,@ %a)" pp_vector_list vec_list pp_vector_prob_list vecp_list
-  | Ast.Q_Given_Function (fun_name, derp_list) -> 
+  | Ast.Q_Given_Function (fun_name, derp_list) ->
     fprintf fmt "Q_Given_Function(%S,@ %a)" fun_name pp_derivative_prob_list derp_list
+  | Ast.Q_Boolean_Eval (expr, assignments, ans, oi) ->
+    fprintf fmt "Q_Boolean_Eval(%a,@ %a,@ %a,@ %a)"
+      pp_bool_expr expr
+      pp_bool_assignments assignments
+      pp_answer_item ans
+      pp_int_option oi
 
 and pp_question_text fmt = function
   | Ast.Q_Value  ic -> fprintf fmt "Q_Value(%a)"   pp_intext_call ic
@@ -405,3 +411,27 @@ and pp_factor fmt = function
 and pp_int_option fmt = function
   | None   -> fprintf fmt "None"
   | Some i -> fprintf fmt "Some(%d)" i
+
+and pp_bool_assignments fmt assignments =
+  pp_list pp_bool_assignment fmt assignments
+
+and pp_bool_assignment fmt (name, value) =
+  fprintf fmt "(%S,@ %B)" name value
+
+and pp_bool_expr fmt = function
+  | Ast.Bool_Const b ->
+      fprintf fmt "Bool_Const(%B)" b
+  | Ast.Bool_Var name ->
+      fprintf fmt "Bool_Var(%S)" name
+  | Ast.Bool_Not expr ->
+      fprintf fmt "Bool_Not(%a)" pp_bool_expr expr
+  | Ast.Bool_And (left, right) ->
+      fprintf fmt "Bool_And(%a,@ %a)" pp_bool_expr left pp_bool_expr right
+  | Ast.Bool_Or (left, right) ->
+      fprintf fmt "Bool_Or(%a,@ %a)" pp_bool_expr left pp_bool_expr right
+  | Ast.Bool_Xor (left, right) ->
+      fprintf fmt "Bool_Xor(%a,@ %a)" pp_bool_expr left pp_bool_expr right
+  | Ast.Bool_Implies (left, right) ->
+      fprintf fmt "Bool_Implies(%a,@ %a)" pp_bool_expr left pp_bool_expr right
+  | Ast.Bool_Iff (left, right) ->
+      fprintf fmt "Bool_Iff(%a,@ %a)" pp_bool_expr left pp_bool_expr right
