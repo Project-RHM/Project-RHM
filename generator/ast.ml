@@ -110,9 +110,9 @@ and question_item =
   | Q_Suppose_Vector of vector_list * vector_prob_list
 (* ------------------- NEW CODE START ------------------- *)
   | Q_Given_Function of string * derivative_prob_list
+  | Q_Given_Prop_Equiv of prop_equiv_prob_list
 (* ------------------- NEW CODE END ------------------- *)
   | Q_Boolean_Eval of bool_expr * bool_assignment list * answer_item * int option
-
 and question_text =
   | Q_Value     of intext_call
   | Q_IsEqual   of intext_call
@@ -232,6 +232,9 @@ and derivative_prob =
   | Second_Derivative   of string
 
 (* ------------------- NEW CODE END ------------------- *)
+(* ================================================================ *)
+(* ============== Propositional Logic Types ======================== *)
+(* ================================================================ *)
 
 and bool_assignment = string * bool
 
@@ -244,6 +247,47 @@ and bool_expr =
   | Bool_Xor     of bool_expr * bool_expr
   | Bool_Implies of bool_expr * bool_expr
   | Bool_Iff     of bool_expr * bool_expr
+
+and prop_variable = string  (* "P", "Q", "R", "S" *)
+
+and prop_expr =
+  | Prop_Var        of prop_variable
+  | Prop_True
+  | Prop_False
+  | Prop_Not        of prop_expr
+  | Prop_And        of prop_expr * prop_expr
+  | Prop_Or         of prop_expr * prop_expr
+  | Prop_Imp        of prop_expr * prop_expr  (* Implication: P -> Q *)
+  | Prop_Equiv      of prop_expr * prop_expr  (* Equivalence: P <-> Q *)
+
+and prop_equiv_rule =
+  | Rule_Implication       (* P -> Q  <->  ¬P ∨ Q *)
+  | Rule_DeMorgan_And     (* ¬(P ∧ Q)  <->  ¬P ∨ ¬Q *)
+  | Rule_DeMorgan_Or      (* ¬(P ∨ Q)  <->  ¬P ∧ ¬Q *)
+  | Rule_Double_Neg       (* ¬¬P  <->  P *)
+  | Rule_Idempotent_And   (* P ∧ P  <->  P *)
+  | Rule_Idempotent_Or    (* P ∨ P  <->  P *)
+  | Rule_Comm_And         (* P ∧ Q  <->  Q ∧ P *)
+  | Rule_Comm_Or          (* P ∨ Q  <->  Q ∨ P *)
+  | Rule_Assoc_And        (* (P ∧ Q) ∧ R  <->  P ∧ (Q ∧ R) *)
+  | Rule_Assoc_Or         (* (P ∨ Q) ∨ R  <->  P ∨ (Q ∨ R) *)
+  | Rule_Distrib_And_Or   (* P ∧ (Q ∨ R)  <->  (P ∧ Q) ∨ (P ∧ R) *)
+  | Rule_Distrib_Or_And   (* P ∨ (Q ∧ R)  <->  (P ∨ Q) ∧ (P ∨ R) *)
+  | Rule_Absorption_And   (* P ∧ (P ∨ Q)  <->  P *)
+  | Rule_Absorption_Or    (* P ∨ (P ∧ Q)  <->  P *)
+  | Rule_Contrapositive   (* P -> Q  <->  ¬Q -> ¬P *)
+  | Rule_Equiv_Def        (* (P -> Q) ∧ (Q -> P)  <->  P <-> Q *)
+
+and prop_equiv_question =
+  | Prop_Equiv_Judge of prop_expr * prop_expr * bool  (* judge if two exprs are equivalent, bool = answer (true/false) *)
+  | Prop_Equiv_Choice of prop_expr * prop_expr * prop_expr list * int
+                        (* given expr, equivalent expr, list of 3 wrong options, correct index *)
+
+and prop_equiv_prob_list =
+  | Prop_Equiv_Prob_List_Cons of prop_equiv_question * prop_equiv_prob_list
+  | Prop_Equiv_Prob_List_Last of prop_equiv_question
+
+
 
 (*
 and solution_section = Solution of solution_list

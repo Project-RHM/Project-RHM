@@ -478,6 +478,12 @@ class print = object (self)
      ^^ string ">> [`[$" ^^ string fun_name ^^ string "]`] <<" ^^ hardline ^^ hardline
     ^^ self#visit_COMPUTE_PROB ^^ hardline
     ^^ super#visit_derivative_prob_list derp_list
+
+  method! case_qprop_equiv
+      prob_list =
+    self#visit_GIVEN_PROP_EQUIV ^^ hardline ^^ hardline
+    ^^ self#visit_COMPUTE_PROP_EQUIV ^^ hardline
+    ^^ super#visit_prop_equiv_prob_list prob_list
   (* ------------------- NEW CODE END ------------------- *)
 
   method! case_qbool_eval
@@ -1038,12 +1044,83 @@ class print = object (self)
 
   method! case_der_prob_3
       fun_name =
-    string "[`f\'\'(x) =`] [_____]{$" 
-    ^^ string fun_name 
+    string "[`f\'\'(x) =`] [_____]{$"
+    ^^ string fun_name
     ^^ string "->D()->D()}"
 (* ------------------- NEW CODE END ------------------- *)
 
-end
+(* ================================================================ *)
+(* ============== Propositional Logic Printing =================== *)
+(* ================================================================ *)
+
+  (* Prop expr printing *)
+  method! case_prop_var v =
+    string v
+
+  method! case_prop_true () =
+    string "T"
+
+  method! case_prop_false () =
+    string "F"
+
+  method! case_prop_not e =
+    string "\\neg " ^^ e
+
+  method! case_prop_and l r =
+    l ^^ string " \\land " ^^ r
+
+  method! case_prop_or l r =
+    l ^^ string " \\lor " ^^ r
+
+  method! case_prop_imp l r =
+    l ^^ string " \\to " ^^ r
+
+  method! case_prop_equiv l r =
+    l ^^ string " \\leftrightarrow " ^^ r
+
+  (* Question printing *)
+  method! case_qprop_equiv prob_list =
+    self#visit_GIVEN_PROP_EQUIV ^^ hardline ^^ hardline
+    ^^ self#visit_COMPUTE_PROP_EQUIV ^^ hardline
+    ^^ super#visit_prop_equiv_prob_list prob_list
+
+  method! case_prop_equiv_prob_list_cons q rest =
+    string "- " ^^ super#visit_prop_equiv_question q ^^ hardline
+    ^^ super#visit_prop_equiv_prob_list rest
+
+  method! case_prop_equiv_prob_list_last q =
+    string "- " ^^ super#visit_prop_equiv_question q ^^ hardline
+    ^^ hardline ^^ string "---"
+
+  method! case_prop_equiv_judge e1 e2 is_equiv =
+    string "[`" ^^ e1 ^^ string "`] and [`" ^^ e2 
+    ^^ string "`] are equivalent? [_____]{"
+    ^^ (if is_equiv then string "1" else string "0")
+    ^^ string "}"
+
+  method! case_prop_equiv_choice e1 correct wrongs idx =
+    let rec build_options opts i =
+      match opts with
+      | [] -> empty
+      | opt :: rest ->
+          let label = match i with
+            | 0 -> string "A. "
+            | 1 -> string "B. "
+            | 2 -> string "C. "
+            | 3 -> string "D. "
+            | _ -> string (string_of_int (i + 1) ^ ". ")
+          in
+          let correct_mark = if opt = correct then string " *" else empty in
+          label ^^ string "[`" ^^ opt ^^ string "`]" ^^ correct_mark 
+          ^^ (if rest = [] then empty else hardline)
+          ^^ build_options rest (i + 1)
+    in
+    string "Which of the following is equivalent to [`" ^^ e1 ^^ string "`]?" 
+    ^^ hardline ^^ hardline
+    ^^ build_options (e1 :: wrongs) 0
+
+  method visit_GIVEN_PROP_EQUIV = string "Determine whether the following propositions are equivalent:"
+  method visit_COMPUTE_PROP_EQUIV = string ""
 
 let to_doc (cst : CST.main) : PPrint.document =
   (new print)#visit_main cst

@@ -88,6 +88,7 @@
 %token DIV_OP
 (* ------------------- NEW CODE START ------------------- *)
 %token POWER_OP SQRT_OP LN_OP SIN_OP COS_OP
+%token AND_OP OR_OP IMP_OP EQUIV_OP NOT_OP TRUE_OP FALSE_OP
 (* ------------------- NEW CODE END ------------------- *)
 
 %token <float> NUMBER
@@ -476,6 +477,10 @@ question_item:
   | GIVEN_FUN; NEWLINE; NEWLINE; IT_VAR_OPEN; NAMING; fun_name = ID; IT_VAR_CLOSE; NEWLINE; NEWLINE; COMPUTE_PROB; NEWLINE; derp_list = derivative_prob_list
       { Q_Given_Function (fun_name, derp_list) }
     [@name qderivative]
+
+  | GIVEN_PROP_EQUIV; NEWLINE; NEWLINE; COMPUTE_PROP_EQUIV; NEWLINE; peq_list = prop_equiv_prob_list
+      { Q_Given_Prop_Equiv peq_list }
+    [@name qprop_equiv]
   (* ------------------- NEW CODE END ------------------- *)
 
   | EVALUATE_BOOL_PROB; NEWLINE; IT_MATH_OPEN; expr = bool_expr; IT_MATH_CLOSE; NEWLINE;
@@ -1005,6 +1010,60 @@ derivative_prob:
   | IT_MATH_OPEN; F_FUN; SINGLE_QUOTE; SINGLE_QUOTE; LPAREN; X_VAR; RPAREN; EQ; IT_MATH_CLOSE; BLANK; LBRACE; NAMING; fun_name = ID; ARROW; D_METH; LPAREN; RPAREN; ARROW; D_METH; LPAREN; RPAREN; RBRACE
       { Second_Derivative fun_name }
     [@name der_prob_3]
+
+(* -------------------------------------------------------------------------- *)
+(* Propositional Logic Equivalence parsing rules                               *)
+(* -------------------------------------------------------------------------- *)
+prop_expr:
+  | v = ID
+      { Prop_Var v }
+    [@name prop_var]
+
+  | v = ID
+      { Prop_Var v }
+    [@name prop_var_true]
+
+  | SUB_OP; e = prop_expr
+      { Prop_Not e }
+    [@name prop_not]
+
+  | LPAREN; e = prop_expr; RPAREN
+      { e }
+    [@name prop_paren]
+
+  | l = prop_expr; AND_OP; r = prop_expr
+      { Prop_And (l, r) }
+    [@name prop_and]
+
+  | l = prop_expr; OR_OP; r = prop_expr
+      { Prop_Or (l, r) }
+    [@name prop_or]
+
+  | l = prop_expr; IMP_OP; r = prop_expr
+      { Prop_Imp (l, r) }
+    [@name prop_imp]
+
+  | l = prop_expr; EQUIV_OP; r = prop_expr
+      { Prop_Equiv (l, r) }
+    [@name prop_equiv]
+
+prop_equiv_question:
+  | e1 = prop_expr; AND; e2 = prop_expr; AND; is_equiv = INT
+      { Prop_Equiv_Judge (e1, e2, is_equiv = 1) }
+    [@name prop_equiv_judge]
+
+  | e1 = prop_expr; AND; correct = prop_expr; AND; wrongs = separated_list(AND_OP, prop_expr); AND; idx = INT
+      { Prop_Equiv_Choice (e1, correct, wrongs, idx) }
+    [@name prop_equiv_choice]
+
+prop_equiv_prob_list:
+  | q = prop_equiv_question; NEWLINE; rest = prop_equiv_prob_list
+      { Prop_Equiv_Prob_List_Cons (q, rest) }
+    [@name prop_equiv_prob_list_cons]
+
+  | q = prop_equiv_question; NEWLINE
+      { Prop_Equiv_Prob_List_Last q }
+    [@name prop_equiv_prob_list_last]
 
 (* ------------------- NEW CODE END ------------------- *)
 
