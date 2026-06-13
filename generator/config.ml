@@ -118,12 +118,13 @@ let max_derivative_prob_num = 4
 (* ============================================== *)
 (* ======= Boolean Algebra Difficulty =========== *)
 (* ============================================== *)
-(* 0 = mixed, 1 = evaluation only, 2 = equivalence only. *)
+(* 0 = mixed, 1 = evaluation only, 2 = equivalence only, 3 = propositional logic equivalence only. *)
 let boolean_question_mode = 0
 
 (* Used when boolean_question_mode = 0. *)
 let boolean_eval_weight = 1
 let boolean_equiv_weight = 1
+let boolean_prop_weight = 1
 
 (* The min and max depth of a Boolean expression. *)
 let min_bool_expr_depth = 2
@@ -139,12 +140,12 @@ let boolean_variables = ["A"; "B"; "C"; "D"; "E"]
 (* ----------------------------------------------- *)
 
 (* ====================================================== *)
-(* ======= Propositional Logic Equivalence Difficulty ======= *)
+(* ======= Propositional Logic Equivalence (subset of Boolean Algebra) ======= *)
 (* ====================================================== *)
 (* The depth of propositional logic expressions:
-   - Depth 0-1: P, Q, ¬P, P ∧ Q, P ∨ Q (simple)
-   - Depth 2-3: P ∧ (Q ∨ R), ¬(P ∧ Q), P → Q (moderate)
-   - Depth 3-5: Complex nested expressions (advanced) *)
+   - Depth 1-2: P, Q, ¬P, P ∧ Q, P ∨ Q (simple)
+   - Depth 3-4: P ∧ (Q ∨ R), ¬(P ∧ Q), P → Q (moderate)
+   - Depth 5-6: Complex nested expressions (advanced) *)
 let min_prop_expr_depth = 1
 let max_prop_expr_depth = 2
 
@@ -152,7 +153,7 @@ let max_prop_expr_depth = 2
 let min_prop_equiv_prob_num = 2
 let max_prop_equiv_prob_num = 4
 
-(* Propositional variables to use *)
+(* Propositional variables to use (subset of boolean_variables) *)
 let prop_variables = ["P"; "Q"; "R"; "S"]
 
 (* ----------------------------------------------- *)
