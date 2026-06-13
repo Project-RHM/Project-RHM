@@ -5,6 +5,7 @@
   "min_question_num": 4,
   "max_question_num": 10,
   "problem_type": 0,
+  "difficulty_level": "medium",
   "max_expr_depth": 2,
   "min_set_expr_depth": 1,
   "max_set_expr_depth": 2,
@@ -27,6 +28,10 @@
   "max_bool_expr_depth": 4,
   "min_bool_var_num": 2,
   "max_bool_var_num": 4,
+  "min_prop_expr_depth": 1,
+  "max_prop_expr_depth": 2,
+  "min_prop_equiv_prob_num": 2,
+  "max_prop_equiv_prob_num": 4,
   "question_type_amounts": [
     4,
     2,
@@ -64,5 +69,11 @@
     "C",
     "D",
     "E"
+  ],
+  "prop_variables": [
+    "P",
+    "Q",
+    "R",
+    "S"
   ]
 }

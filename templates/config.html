@@ -27,6 +27,7 @@
             <button class="nav-tab" onclick="showTab('vector')">Vector problem</button>
             <button class="nav-tab" onclick="showTab('derivative')">Derivative problem</button>
             <button class="nav-tab" onclick="showTab('boolean')">Boolean problem</button>
+            <button class="nav-tab" onclick="showTab('propositional')">Propositional Logic</button>
         </div>
 
         <div id="message" class="message"></div>
@@ -75,8 +76,10 @@
                             <option value="3" {% if config.problem_type == 3 %}selected{% endif %}>Vector Only</option>
                             <option value="4" {% if config.problem_type == 4 %}selected{% endif %}>Derivative Only</option>
                             <option value="5" {% if config.problem_type == 5 %}selected{% endif %}>Boolean Evaluation Only</option>
+                            <option value="6" {% if config.problem_type == 6 %}selected{% endif %}>Propositional Logic Equivalence Only</option>
                         </select>
                     </div>
+                    
                     <div id="all-types-settings">
                         <div class="form-group">
                             <div class="checkbox-group">
@@ -350,6 +353,60 @@
                             <label for="boolean_variables">Available variable names (separated by commas)</label>
                             <input type="text" id="boolean_variables" name="boolean_variables"
                                 value="{{ config.boolean_variables | join(', ') }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Propositional Logic Equivalence configs -->
+            <div id="propositional" class="tab-content">
+                <div class="config-section">
+                    <h3>Propositional Logic Equivalence Configs</h3>
+                    <p class="config-description">Configure propositional logic equivalence questions (e.g., P → Q ≡ ¬P ∨ Q).</p>
+
+                    <div class="form-section">
+                        <h4>Expression Depth</h4>
+                        <p class="config-description">Control the complexity of propositional logic expressions:
+                            <br>• <strong>Easy (1-2):</strong> P, Q, ¬P, P ∧ Q, P ∨ Q (simple)
+                            <br>• <strong>Medium (2-3):</strong> P ∧ (Q ∨ R), ¬(P ∧ Q), P → Q (moderate)
+                            <br>• <strong>Hard (3-5):</strong> Complex nested expressions (advanced)
+                        </p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_prop_expr_depth">Min depth</label>
+                                <input type="number" id="min_prop_expr_depth" name="min_prop_expr_depth"
+                                    value="{{ config.min_prop_expr_depth }}" min="1" max="5">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_prop_expr_depth">Max depth</label>
+                                <input type="number" id="max_prop_expr_depth" name="max_prop_expr_depth"
+                                    value="{{ config.max_prop_expr_depth }}" min="1" max="5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Question Quantity</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_prop_equiv_prob_num">Min questions</label>
+                                <input type="number" id="min_prop_equiv_prob_num" name="min_prop_equiv_prob_num"
+                                    value="{{ config.min_prop_equiv_prob_num }}" min="1" max="10">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_prop_equiv_prob_num">Max questions</label>
+                                <input type="number" id="max_prop_equiv_prob_num" name="max_prop_equiv_prob_num"
+                                    value="{{ config.max_prop_equiv_prob_num }}" min="1" max="10">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Propositional Variables</h4>
+                        <div class="form-group">
+                            <label for="prop_variables">Available variable names (separated by commas)</label>
+                            <input type="text" id="prop_variables" name="prop_variables"
+                                value="{{ config.prop_variables | join(', ') }}">
                         </div>
                     </div>
                 </div>

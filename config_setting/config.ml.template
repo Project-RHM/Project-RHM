@@ -24,10 +24,17 @@ let max_question_num = {{ max_question_num }}
     0 = all question type, 
     1 = arithmetic only, 
     2 = set only, 
-	    3 = vector only
-	    4 = derivative only
-	    5 = Boolean expression evaluation only *)
+    3 = vector only
+    4 = derivative only
+    5 = Boolean expression evaluation only
+    6 = Propositional Logic Equivalence only *)
 let problem_type = {{ problem_type }}
+
+(* Difficulty level:
+    "easy"   = Basic level (depth 1-2, simple expressions)
+    "medium" = Intermediate level (depth 2-4, moderate complexity)
+    "hard"   = Advanced level (depth 3-5, complex expressions) *)
+let difficulty_level = "{{ difficulty_level }}"
 
 (* For problem type is 0 (all question type):
    you can set the amount of each question type.
@@ -36,8 +43,8 @@ let problem_type = {{ problem_type }}
    *)
 let question_random_amounts = {{ question_random_amounts }}
 (* The amount of each question type:
-	   - [arithmetic_amount; set_amount; vector_amount; derivative_amount; boolean_amount]
-   - the total amount of questions should be within the interval [min_question_num, max_question_num]
+     - [arithmetic_amount; set_amount; vector_amount; derivative_amount; boolean_amount]
+     - the total amount of questions should be within the interval [min_question_num, max_question_num]
    *)
 let question_type_amounts = {{ question_type_amounts }}
 (* Set shuffle_questions_for_0_type as true if you want to shuffle the order of the questions. *)
@@ -128,5 +135,24 @@ let max_bool_var_num = {{ max_bool_var_num }}
 
 (* The Boolean variable names used in Boolean expression questions. *)
 let boolean_variables = {{ boolean_variables }}
+
+(* ----------------------------------------------- *)
+
+(* ====================================================== *)
+(* ======= Propositional Logic Equivalence Difficulty ======= *)
+(* ====================================================== *)
+(* The depth of propositional logic expressions:
+   - Depth 0-1: P, Q, ¬P, P ∧ Q, P ∨ Q (simple)
+   - Depth 2-3: P ∧ (Q ∨ R), ¬(P ∧ Q), P → Q (moderate)
+   - Depth 3-5: Complex nested expressions (advanced) *)
+let min_prop_expr_depth = {{ min_prop_expr_depth }}
+let max_prop_expr_depth = {{ max_prop_expr_depth }}
+
+(* Number of propositional logic equivalence questions per problem *)
+let min_prop_equiv_prob_num = {{ min_prop_equiv_prob_num }}
+let max_prop_equiv_prob_num = {{ max_prop_equiv_prob_num }}
+
+(* Propositional variables to use *)
+let prop_variables = {{ prop_variables }}
 
 (* ----------------------------------------------- *)

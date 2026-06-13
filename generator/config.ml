@@ -26,8 +26,15 @@ let max_question_num = 10
     2 = set only, 
 	    3 = vector only
 	    4 = derivative only
-	    5 = Boolean expression evaluation only *)
+	    5 = Boolean expression evaluation only
+	    6 = Propositional Logic Equivalence only *)
 let problem_type = 0
+
+(* Difficulty level:
+    "easy"   = Basic level (depth 1-2, simple expressions)
+    "medium" = Intermediate level (depth 2-4, moderate complexity)
+    "hard"   = Advanced level (depth 3-5, complex expressions) *)
+let difficulty_level = "medium"
 
 (* For problem type is 0 (all question type):
    you can set the amount of each question type.
@@ -128,5 +135,24 @@ let max_bool_var_num = 4
 
 (* The Boolean variable names used in Boolean expression questions. *)
 let boolean_variables = ["A"; "B"; "C"; "D"; "E"]
+
+(* ----------------------------------------------- *)
+
+(* ====================================================== *)
+(* ======= Propositional Logic Equivalence Difficulty ======= *)
+(* ====================================================== *)
+(* The depth of propositional logic expressions:
+   - Depth 0-1: P, Q, ¬P, P ∧ Q, P ∨ Q (simple)
+   - Depth 2-3: P ∧ (Q ∨ R), ¬(P ∧ Q), P → Q (moderate)
+   - Depth 3-5: Complex nested expressions (advanced) *)
+let min_prop_expr_depth = 1
+let max_prop_expr_depth = 2
+
+(* Number of propositional logic equivalence questions per problem *)
+let min_prop_equiv_prob_num = 2
+let max_prop_equiv_prob_num = 4
+
+(* Propositional variables to use *)
+let prop_variables = ["P"; "Q"; "R"; "S"]
 
 (* ----------------------------------------------- *)

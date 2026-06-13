@@ -133,7 +133,7 @@ def config():
         config_data['shuffle_questions_for_0_type'] = request.form.get('shuffle_questions_for_0_type') == 'true'
         config_data['allow_float'] = request.form.get('allow_float') == 'true'
         
-        # Delete 'max_cfg_depth', 'min_cfg_depth', 
+        # Delete 'max_cfg_depth', 'min_cfg_depth',
         int_params = [
             'min_question_num', 'max_question_num',
             'problem_type', 'max_expr_depth', 'min_set_expr_depth', 'max_set_expr_depth',
@@ -142,7 +142,9 @@ def config():
             'max_vector_def_num', 'min_vector_prob_num', 'max_vector_prob_num',
             'min_fun_expr_depth', 'max_fun_expr_depth', 'min_derivative_prob_num',
             'max_derivative_prob_num', 'min_bool_expr_depth', 'max_bool_expr_depth',
-            'min_bool_var_num', 'max_bool_var_num'
+            'min_bool_var_num', 'max_bool_var_num',
+            'min_prop_expr_depth', 'max_prop_expr_depth',
+            'min_prop_equiv_prob_num', 'max_prop_equiv_prob_num'
         ]
         
         for param in int_params:
@@ -173,6 +175,14 @@ def config():
         boolean_vars_str = request.form.get('boolean_variables', '')
         if boolean_vars_str:
             config_data['boolean_variables'] = [var.strip() for var in boolean_vars_str.split(',') if var.strip()]
+        
+        prop_vars_str = request.form.get('prop_variables', '')
+        if prop_vars_str:
+            config_data['prop_variables'] = [var.strip() for var in prop_vars_str.split(',') if var.strip()]
+        
+        # Difficulty level (string parameter)
+        difficulty_level = request.form.get('difficulty_level', 'medium')
+        config_data['difficulty_level'] = difficulty_level
         
         # 写入JSON配置并生成OCaml配置
         if write_config(config_data) and generate_ml_config():
