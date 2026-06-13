@@ -74,7 +74,7 @@
                             <option value="2" {% if config.problem_type == 2 %}selected{% endif %}>Set Only</option>
                             <option value="3" {% if config.problem_type == 3 %}selected{% endif %}>Vector Only</option>
                             <option value="4" {% if config.problem_type == 4 %}selected{% endif %}>Derivative Only</option>
-                            <option value="5" {% if config.problem_type == 5 %}selected{% endif %}>Boolean Evaluation Only</option>
+                            <option value="5" {% if config.problem_type == 5 %}selected{% endif %}>Boolean Algebra Only</option>
                         </select>
                     </div>
                     <div id="all-types-settings">
@@ -312,7 +312,32 @@
             <!-- Boolean problem configs -->
             <div id="boolean" class="tab-content">
                 <div class="config-section">
-                    <h3>Boolean Expression Evaluation Configs</h3>
+                    <h3>Boolean Algebra Configs</h3>
+
+                    <div class="form-section">
+                        <h4>Question Mode</h4>
+                        <p class="config-description">Control whether Boolean Algebra generation creates evaluation questions, equivalence questions, or a weighted mix of both.</p>
+                        <div class="form-group">
+                            <label for="boolean_question_mode">Boolean question mode</label>
+                            <select id="boolean_question_mode" name="boolean_question_mode">
+                                <option value="0" {% if config.get('boolean_question_mode', 0) == 0 %}selected{% endif %}>Mixed</option>
+                                <option value="1" {% if config.get('boolean_question_mode', 0) == 1 %}selected{% endif %}>Evaluation only</option>
+                                <option value="2" {% if config.get('boolean_question_mode', 0) == 2 %}selected{% endif %}>Equivalence only</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="boolean_eval_weight">Evaluation weight</label>
+                                <input type="number" id="boolean_eval_weight" name="boolean_eval_weight"
+                                    value="{{ config.get('boolean_eval_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="boolean_equiv_weight">Equivalence weight</label>
+                                <input type="number" id="boolean_equiv_weight" name="boolean_equiv_weight"
+                                    value="{{ config.get('boolean_equiv_weight', 1) }}" min="0" max="20">
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="form-section">
                         <h4>Boolean Expression Depth</h4>

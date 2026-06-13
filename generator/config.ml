@@ -20,14 +20,14 @@ let min_cfg_depth = 1
 let min_question_num = 4
 let max_question_num = 10
 
-(* Problem type: 
-    0 = all question type, 
-    1 = arithmetic only, 
-    2 = set only, 
+(* Problem type:
+    0 = all question type,
+    1 = arithmetic only,
+    2 = set only,
 	    3 = vector only
 	    4 = derivative only
-	    5 = Boolean expression evaluation only *)
-let problem_type = 0
+	    5 = Boolean Algebra only *)
+let problem_type = 5
 
 (* For problem type is 0 (all question type):
    you can set the amount of each question type.
@@ -116,15 +116,22 @@ let max_derivative_prob_num = 4
 (* ----------------------------------------------- *)
 
 (* ============================================== *)
-(* === Boolean Expression Evaluation Difficulty == *)
+(* ======= Boolean Algebra Difficulty =========== *)
 (* ============================================== *)
+(* 0 = mixed, 1 = evaluation only, 2 = equivalence only. *)
+let boolean_question_mode = 0
+
+(* Used when boolean_question_mode = 0. *)
+let boolean_eval_weight = 1
+let boolean_equiv_weight = 1
+
 (* The min and max depth of a Boolean expression. *)
 let min_bool_expr_depth = 2
-let max_bool_expr_depth = 4
+let max_bool_expr_depth = 6
 
 (* The number of Boolean variables used in one problem. *)
 let min_bool_var_num = 2
-let max_bool_var_num = 4
+let max_bool_var_num = 6
 
 (* The Boolean variable names used in Boolean expression questions. *)
 let boolean_variables = ["A"; "B"; "C"; "D"; "E"]

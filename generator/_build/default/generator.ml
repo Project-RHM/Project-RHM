@@ -22,7 +22,7 @@ let pick_one lst =
 (* generate a macro‐tree without repeats *)
 let rec gen_macro_from = function
   | [] -> failwith "internal error: no more macros to pick"
-  | [x] -> 
+  | [x] ->
       (* only one left, must end here *)
       Macro_Atom x
   | choices ->
@@ -55,7 +55,7 @@ let rec gen_math_expr_root depth : math_expr =
     match Random.int 3 with
     | 0 -> ME_Add (gen_math_expr_root (depth-1), gen_term (depth-1))
     | 1 -> ME_Sub (gen_math_expr_root (depth-1), gen_term (depth-1))
-    | _ -> 
+    | _ ->
         (* Ensure we don't generate single-term expressions here either *)
         ME_Add (ME_Term (gen_term (depth-1)), gen_term (depth-1))
 
@@ -65,7 +65,7 @@ and gen_term depth : term =
   else
     match Random.int 3 with
     | 0 -> T_Mul (gen_term (depth-1), gen_factor (depth-1))
-    | 1 -> 
+    | 1 ->
         let divisor = gen_factor (depth-1) in
         if is_zero_factor divisor then
          (* re-generate both term and factor to avoid stuck in zero forever *)
@@ -114,7 +114,7 @@ and gen_factor depth : factor =
 (* Transform set_expr to set_compute AST *)
 let rec set_expr_to_set_compute (expr : set_expr) : set_compute_factor =
   match expr with
-  | Set_Expr_Enum enum -> 
+  | Set_Expr_Enum enum ->
       Set_Compute_Enum enum
   | Set_Expr_interval interval ->
       Set_Compute_Interval (set_interval_to_set_compute_interval interval)
@@ -125,21 +125,21 @@ and set_interval_to_set_compute_interval (interval : set_interval) : set_compute
 
 and predicate_to_set_compute_interval (pred : predicate) : set_compute_interval =
   match pred with
-  | Greater_Than i -> 
+  | Greater_Than i ->
       LNEQ_RNEQ (I_Int (i + 1), I_Infinity)
-  | Less_Than i -> 
+  | Less_Than i ->
       LNEQ_RNEQ (I_NegInfinity, I_Int i)
-  | Greater_Equal i -> 
+  | Greater_Equal i ->
       LEQ_RNEQ (I_Int i, I_Infinity)
-  | Less_Equal i -> 
+  | Less_Equal i ->
       LNEQ_REQ (I_NegInfinity, I_Int i)
-  | Between_Open (i1, i2) -> 
+  | Between_Open (i1, i2) ->
       LNEQ_RNEQ (I_Int i1, I_Int i2)
-  | Between_Left_Closed (i1, i2) -> 
+  | Between_Left_Closed (i1, i2) ->
       LEQ_RNEQ (I_Int i1, I_Int i2)
-  | Between_Right_Closed (i1, i2) -> 
+  | Between_Right_Closed (i1, i2) ->
       LNEQ_REQ (I_Int i1, I_Int i2)
-  | Between_Closed (i1, i2) -> 
+  | Between_Closed (i1, i2) ->
       LEQ_REQ (I_Int i1, I_Int i2)
 
 let rec set_operation_to_set_compute (op : set_operation) (env : (string * set_expr) list) : set_compute =
@@ -148,7 +148,7 @@ let rec set_operation_to_set_compute (op : set_operation) (env : (string * set_e
       let left_compute = set_operation_to_set_compute left env in
       let right_compute = set_term_to_set_compute_term right env in
       Set_Compute_Union (left_compute, right_compute)
-  | Set_Op_Term term -> 
+  | Set_Op_Term term ->
       Set_Compute_Term (set_term_to_set_compute_term term env)
 
 and set_term_to_set_compute_term (term : set_term) (env : (string * set_expr) list) : set_compute_term =
@@ -157,21 +157,21 @@ and set_term_to_set_compute_term (term : set_term) (env : (string * set_expr) li
       (* Change intersection A ∩ B into A - (R - B) *)
       let left_compute = set_term_to_set_compute_term left env in
       let right_compute = set_factor_to_set_compute_factor right env in
-      
+
       (* Define universal set R = (-∞, ∞) *)
       let universal_set = Set_Compute_Interval (LNEQ_RNEQ (I_NegInfinity, I_Infinity)) in
-      
+
       (* R - B *)
-      let universal_minus_b = 
+      let universal_minus_b =
         Set_Compute_Diff (
           Set_Compute_Factor universal_set,
           right_compute
         )
       in
-      
+
       (* A - (R - B) *)
       Set_Compute_Diff (left_compute, Set_Compute_Paren (Set_Compute_Term universal_minus_b))
-  | Set_Op_Factor factor -> 
+  | Set_Op_Factor factor ->
       Set_Compute_Factor (set_factor_to_set_compute_factor factor env)
 
 and set_factor_to_set_compute_factor (factor : set_factor) (env : (string * set_expr) list) : set_compute_factor =
@@ -183,18 +183,18 @@ and set_factor_to_set_compute_factor (factor : set_factor) (env : (string * set_
         Set_Compute_Factor left_compute,
         right_compute
       )))
-  | Set_Op_Primary primary -> 
+  | Set_Op_Primary primary ->
       set_primary_to_set_compute_factor primary env
 
 and set_primary_to_set_compute_factor (primary : set_primary) (env : (string * set_expr) list) : set_compute_factor =
   match primary with
-  | Set_Op_Paren op -> 
+  | Set_Op_Paren op ->
       Set_Compute_Paren (set_operation_to_set_compute op env)
   | Set_Op_Var var_name ->
       try
         let set_expr = List.assoc var_name env in
         set_expr_to_set_compute set_expr
-      with Not_found -> 
+      with Not_found ->
         (* If the variable is not in env, return an empty set *)
         Set_Compute_Enum []
 
@@ -230,13 +230,13 @@ and convert_context_setup_list (context_setup_list : context_setup_list) (answer
       (* Split answer_vars into function definitions and set answer variables *)
       let function_vars = List.filter (fun (name, _) -> String.length name >= 4 && String.sub name 0 4 = "fun_") answer_vars in
       let set_vars = List.filter (fun (name, _) -> String.length name >= 8 && String.sub name 0 8 = "set_ans_") answer_vars in
-      
+
       (match context_setup_list with
       | Context_Setup_No_Vars_Cons (csetup1, Context_Setup_No_Vars_Cons (csetup2, rest)) ->
         (* Add function vars to the first context setup (numeric context) *)
         (* Add set vars to the second context setup (interval context) *)
         (* Keep rest (vector context) without vars *)
-        Context_Setup_Vars_Cons (csetup1, function_vars, 
+        Context_Setup_Vars_Cons (csetup1, function_vars,
           Context_Setup_Vars_Cons (csetup2, set_vars, rest))
       | other -> other)
 
@@ -280,6 +280,11 @@ let rec gen_document () : document =
       let (problem_section, answer_vars) = gen_derivative_problem_section () in
       let modified_context_setup_list = convert_context_setup_list context_setup_list answer_vars in
         Doc_No_Sol (header, modified_context_setup_list, problem_section)
+    | 5 -> (* Boolean Algebra only *)
+	      let header = gen_header () in
+	      let context_setup_list = gen_context_setup_list () in
+	      let problem_section = gen_problem_section () in
+	        Doc_No_Sol (header, context_setup_list, problem_section)
     | _ -> (* all type of questions only *)
       let header = gen_header () in
       let context_setup_list = gen_context_setup_list () in
@@ -308,6 +313,8 @@ and gen_context_setup_list () : context_setup_list =
       Context_Setup_No_Vars_Last (Context_Only "Vector")
     | 4 -> (* derivative only *)
       Context_Setup_No_Vars_Last (Context_With_Config ("Numeric", Cfg_Cons(Flags, CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"),VInt(0)))]), Cfg_Last(Flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),VInt(0)))])))))
+    | 5 -> (* Boolean Algebra only *)
+	      Context_Setup_No_Vars_Last (Context_Only "Numeric")
     | _ -> (* all type of questions only *)
       Context_Setup_No_Vars_Cons (Context_With_Config ("Numeric", Cfg_Cons(Flags, CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"),VInt(0)))]), Cfg_Last(Flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),VInt(0)))])))), Context_Setup_No_Vars_Cons (Context_Only "Interval", Context_Setup_No_Vars_Last (Context_Only "Vector")))
 (*
@@ -361,7 +368,7 @@ and gen_entry () : entry =
   else
     if Random.bool () then
       Entry_Map (gen_key (), Some (gen_properties ()))
-    else 
+    else
       Entry_Map (gen_key (), None)
 
 and gen_properties () : property list =
@@ -403,7 +410,7 @@ and gen_operator_list () : operator list =
     else aux (i - 1) (pick opts :: acc)
   in
   aux n []
-  
+
 and gen_variable () : variable =
   if allow_float then
     match Random.int 2 (*4*) with
@@ -439,7 +446,7 @@ and gen_math_object_method () : math_object_method =
     (*| 3 ->
         if Random.bool () then
           M_D        (Some (pick ["t"; "x"; "y"]))
-        else 
+        else
           M_D        (None)
     | 4 ->
         M_Eval       (gen_property ())
@@ -456,7 +463,7 @@ and gen_set_enum () : set_enum =
   let n = 2 + Random.int 5 in  (* Generate 2-6 elements *)
   let rec aux i acc =
     if i = 0 then acc
-    else 
+    else
       (* Only consider integer elements *)
       let elem = min_set_element + Random.int (max_set_element - min_set_element + 1) in
       if List.mem elem acc then
@@ -499,19 +506,19 @@ and gen_set_compute_factor depth : set_compute_factor =
 
 and gen_set_compute_interval () : set_compute_interval =
   match Random.int 4 with
-  | 0 -> 
+  | 0 ->
       let left = I_Int (Random.int 10) in
       let right = I_Int (10 + Random.int 10) in
       LNEQ_RNEQ (left, right)
-  | 1 -> 
+  | 1 ->
       let left = I_Int (Random.int 10) in
       let right = I_Int (10 + Random.int 10) in
       LNEQ_REQ (left, right)
-  | 2 -> 
+  | 2 ->
       let left = I_Int (Random.int 10) in
       let right = I_Int (10 + Random.int 10) in
       LEQ_RNEQ (left, right)
-  | _ -> 
+  | _ ->
       let left = I_Int (Random.int 10) in
       let right = I_Int (10 + Random.int 10) in
       LEQ_REQ (left, right)
@@ -523,30 +530,34 @@ and gen_question_list () : question_item list =
   match problem_type with
   | 0 ->  (* All type of questions *)
     if question_random_amounts = false then
-      (* List: [arithmetic_amount; set_amount; vector_amount; derivative_amount] *)
+      (* List: [arithmetic_amount; set_amount; vector_amount; derivative_amount; boolean_amount] *)
       let arithmetic_count = List.nth question_type_amounts 0 in
       let set_count = List.nth question_type_amounts 1 in
       let vector_count = List.nth question_type_amounts 2 in
       let derivative_count = List.nth question_type_amounts 3 in
-      
+      let boolean_count = List.nth question_type_amounts 4 in
+
       (* Generate each question type *)
-      let arithmetic_questions = 
-        List.init arithmetic_count (fun _ -> gen_arithmetic_question ()) 
+      let arithmetic_questions =
+        List.init arithmetic_count (fun _ -> gen_arithmetic_question ())
       in
-      let set_questions = 
-        List.init set_count (fun _ -> gen_set_question ()) 
+      let set_questions =
+        List.init set_count (fun _ -> gen_set_question ())
       in
-      let vector_questions = 
-        List.init vector_count (fun _ -> gen_vector_question ()) 
+      let vector_questions =
+        List.init vector_count (fun _ -> gen_vector_question ())
       in
-      let derivative_questions = 
-        List.init derivative_count (fun _ -> 
+      let derivative_questions =
+        List.init derivative_count (fun _ ->
           let (q, _) = gen_derivative_question () in
           q
-        ) 
+        )
       in
-        let all_questions = arithmetic_questions @ set_questions @ vector_questions @ derivative_questions in
-        if shuffle_questions_for_0_type = true then 
+      let boolean_questions =
+        List.init boolean_count (fun _ -> gen_boolean_question ())
+      in
+      let all_questions = arithmetic_questions @ set_questions @ vector_questions @ derivative_questions @ boolean_questions in
+        if shuffle_questions_for_0_type = true then
           shuffle_list all_questions
         else
           all_questions
@@ -581,24 +592,27 @@ and gen_question_item () : question_item =
   match problem_type with
   | 0 ->  (* All type of questions *)
       (* if randomly choose *)
-      (match Random.int 3 with
+      (match Random.int 5 with
           | 0 -> gen_arithmetic_question ()
           | 1 -> gen_set_question ()
           | 2 -> gen_vector_question ()
-          | _ -> 
+          | 3 ->
               let (q, _) = gen_derivative_question () in
-              q)
+              q
+          | _ -> gen_boolean_question ())
   | 1 ->  (* Arithmetic only *)
       gen_arithmetic_question ()
   | 2 ->  (* Set only *)
       gen_set_question ()
   | 3 ->  (* Vector only *)
       gen_vector_question ()
-  | 4 ->  (* Derivative only *)
-      let (q, _) = gen_derivative_question () in
-      q
-  | _ -> gen_arithmetic_question ()  (* Default to arithmetic *)
-  
+	  | 4 ->  (* Derivative only *)
+	      let (q, _) = gen_derivative_question () in
+	      q
+	  | 5 ->  (* Boolean Algebra only *)
+	      gen_boolean_question ()
+	  | _ -> gen_arithmetic_question ()  (* Default to arithmetic *)
+
 and gen_arithmetic_question () : question_item =
   (* 1) pick exactly one in-text call *)
   let icall = gen_intext_call () in
@@ -638,7 +652,226 @@ and gen_arithmetic_question () : question_item =
     else Q_IsEqual icall
   in
 
-  Q_Item (qtext, ans, width)
+	  Q_Item (qtext, ans, width)
+
+and take_string_list n lst =
+  let rec aux i acc rest =
+    if i = 0 then List.rev acc
+    else
+      match rest with
+      | [] -> List.rev acc
+      | x :: xs -> aux (i - 1) (x :: acc) xs
+  in
+  aux n [] lst
+
+and dedupe_string_list names =
+  List.fold_right
+    (fun name acc -> if List.mem name acc then acc else name :: acc)
+    names []
+
+and shuffle_string_list names =
+  let arr = Array.of_list names in
+  let len = Array.length arr in
+  for i = 0 to len - 1 do
+    let j = i + Random.int (len - i) in
+    let temp = arr.(i) in
+    arr.(i) <- arr.(j);
+    arr.(j) <- temp
+  done;
+  Array.to_list arr
+
+and gen_boolean_vars () =
+  let available_vars =
+    match dedupe_string_list boolean_variables with
+    | [] -> ["A"; "B"; "C"; "D"]
+    | vars -> vars
+  in
+  let available_count = List.length available_vars in
+  let max_vars = max 1 (min max_bool_var_num available_count) in
+  let min_vars = max 1 (min min_bool_var_num max_vars) in
+  let var_count = min_vars + Random.int (max_vars - min_vars + 1) in
+  take_string_list var_count (shuffle_string_list available_vars)
+
+and gen_boolean_depth () =
+  let min_depth = max 0 min_bool_expr_depth in
+  let max_depth = max min_depth max_bool_expr_depth in
+  min_depth + Random.int (max_depth - min_depth + 1)
+
+and gen_boolean_leaf vars =
+  if Random.int 12 = 0 then
+    Bool_Const (Random.bool ())
+  else
+    Bool_Var (pick_one vars)
+
+and gen_boolean_expr_at_depth vars depth =
+  if depth <= 0 then gen_boolean_leaf vars
+  else
+    match Random.int 100 with
+    | n when n < 14 ->
+        Bool_Not (gen_boolean_expr_at_depth vars (depth - 1))
+    | n when n < 34 ->
+        Bool_And (
+          gen_boolean_expr_at_depth vars (depth - 1),
+          gen_boolean_expr_at_depth vars (depth - 1)
+        )
+    | n when n < 54 ->
+        Bool_Or (
+          gen_boolean_expr_at_depth vars (depth - 1),
+          gen_boolean_expr_at_depth vars (depth - 1)
+        )
+    | n when n < 70 ->
+        Bool_Xor (
+          gen_boolean_expr_at_depth vars (depth - 1),
+          gen_boolean_expr_at_depth vars (depth - 1)
+        )
+    | n when n < 85 ->
+        Bool_Implies (
+          gen_boolean_expr_at_depth vars (depth - 1),
+          gen_boolean_expr_at_depth vars (depth - 1)
+        )
+    | _ ->
+        Bool_Iff (
+          gen_boolean_expr_at_depth vars (depth - 1),
+          gen_boolean_expr_at_depth vars (depth - 1)
+        )
+
+and bool_expr_stats expr =
+  match expr with
+  | Bool_Const _ -> (0, [])
+  | Bool_Var name -> (0, [name])
+  | Bool_Not inner ->
+      let (ops, names) = bool_expr_stats inner in
+      (ops + 1, names)
+  | Bool_And (left, right)
+  | Bool_Or (left, right)
+  | Bool_Xor (left, right)
+  | Bool_Implies (left, right)
+  | Bool_Iff (left, right) ->
+      let (left_ops, left_names) = bool_expr_stats left in
+      let (right_ops, right_names) = bool_expr_stats right in
+      (left_ops + right_ops + 1, left_names @ right_names)
+
+and gen_boolean_expr vars =
+  let depth = gen_boolean_depth () in
+  let min_distinct_vars = min 2 (List.length vars) in
+  let rec choose_expr attempts =
+    let expr = gen_boolean_expr_at_depth vars depth in
+    let (op_count, used_vars) = bool_expr_stats expr in
+    let distinct_var_count = List.length (dedupe_string_list used_vars) in
+    if attempts <= 0 || (op_count >= 2 && distinct_var_count >= min_distinct_vars) then
+      expr
+    else
+      choose_expr (attempts - 1)
+  in
+  choose_expr 30
+
+and gen_boolean_atom_or_small_expr vars preferred_var =
+  if Random.int 3 = 0 then
+    gen_boolean_expr_at_depth vars 1
+  else
+    Bool_Var preferred_var
+
+and pick_distinct_bool_vars vars =
+  match shuffle_string_list vars with
+  | a :: b :: c :: _ -> (a, b, c)
+  | a :: b :: [] -> (a, b, a)
+  | a :: [] -> (a, a, a)
+  | [] -> ("A", "A", "A")
+
+and gen_boolean_equiv_pair vars =
+  let (v1, v2, v3) = pick_distinct_bool_vars vars in
+  let p = gen_boolean_atom_or_small_expr vars v1 in
+  let q = gen_boolean_atom_or_small_expr vars v2 in
+  let r = gen_boolean_atom_or_small_expr vars v3 in
+  match Random.int 14 with
+  | 0 -> (Bool_Implies (p, q), Bool_Or (Bool_Not p, q))
+  | 1 -> (Bool_Not (Bool_And (p, q)), Bool_Or (Bool_Not p, Bool_Not q))
+  | 2 -> (Bool_Not (Bool_Or (p, q)), Bool_And (Bool_Not p, Bool_Not q))
+  | 3 -> (Bool_Not (Bool_Not p), p)
+  | 4 -> (Bool_And (p, p), p)
+  | 5 -> (Bool_Or (p, p), p)
+  | 6 -> (Bool_And (p, q), Bool_And (q, p))
+  | 7 -> (Bool_Or (p, q), Bool_Or (q, p))
+  | 8 -> (Bool_And (Bool_And (p, q), r), Bool_And (p, Bool_And (q, r)))
+  | 9 -> (Bool_Or (Bool_Or (p, q), r), Bool_Or (p, Bool_Or (q, r)))
+  | 10 -> (Bool_And (p, Bool_Or (p, q)), p)
+  | 11 -> (Bool_Or (p, Bool_And (p, q)), p)
+  | 12 -> (Bool_Iff (p, q), Bool_And (Bool_Implies (p, q), Bool_Implies (q, p)))
+  | _ ->
+      (Bool_Xor (p, q), Bool_And (Bool_Or (p, q), Bool_Not (Bool_And (p, q))))
+
+and make_boolean_non_equiv expr =
+  match expr with
+  | Bool_Const value -> Bool_Const (not value)
+  | Bool_Var name -> Bool_Not (Bool_Var name)
+  | Bool_Not inner -> inner
+  | Bool_And (left, right) -> Bool_Or (left, right)
+  | Bool_Or (left, right) -> Bool_And (left, right)
+  | Bool_Xor (left, right) -> Bool_Iff (left, right)
+  | Bool_Implies (left, right) -> Bool_Implies (right, left)
+  | Bool_Iff (left, right) -> Bool_Xor (left, right)
+
+and gen_boolean_non_equiv_pair vars =
+  let rec try_generate attempts =
+    if attempts <= 0 then
+      match vars with
+      | name :: _ -> (Bool_Var name, Bool_Not (Bool_Var name))
+      | [] -> (Bool_Const true, Bool_Const false)
+    else
+      let (left, right) =
+        if Random.bool () then
+          let (l, r) = gen_boolean_equiv_pair vars in
+          (l, make_boolean_non_equiv r)
+        else
+          let expr = gen_boolean_expr vars in
+          (expr, make_boolean_non_equiv expr)
+      in
+      if bool_expr_equivalent left right then
+        try_generate (attempts - 1)
+      else
+        (left, right)
+  in
+  try_generate 40
+
+and gen_boolean_question () : question_item =
+  match boolean_question_mode with
+  | 1 -> gen_boolean_eval_question ()
+  | 2 -> gen_boolean_equiv_question ()
+  | _ ->
+      let eval_weight = max 0 boolean_eval_weight in
+      let equiv_weight = max 0 boolean_equiv_weight in
+      let total = eval_weight + equiv_weight in
+      if total = 0 then
+        if Random.bool () then gen_boolean_eval_question () else gen_boolean_equiv_question ()
+      else if Random.int total < eval_weight then
+        gen_boolean_eval_question ()
+      else
+        gen_boolean_equiv_question ()
+
+and gen_boolean_eval_question () : question_item =
+  let vars = gen_boolean_vars () in
+  let expr = gen_boolean_expr vars in
+  let assignments = List.map (fun name -> (name, Random.bool ())) vars in
+  let answer = if eval_bool_expr assignments expr then 1 else 0 in
+  let width = if Random.bool () then Some 1 else None in
+  Q_Boolean_Eval (expr, assignments, A_Var (Var_Value (VInt answer)), width)
+
+and gen_boolean_equiv_question () : question_item =
+  let vars = gen_boolean_vars () in
+  let want_equiv = Random.bool () in
+  let rec choose_equiv attempts =
+    let (left, right) = gen_boolean_equiv_pair vars in
+    if attempts <= 0 || bool_expr_equivalent left right then
+      (left, right)
+    else
+      choose_equiv (attempts - 1)
+  in
+  let (left, right) =
+    if want_equiv then choose_equiv 20 else gen_boolean_non_equiv_pair vars
+  in
+  let answer = if bool_expr_equivalent left right then 1 else 0 in
+  let width = if Random.bool () then Some 1 else None in
+  Q_Boolean_Equiv (left, right, A_Var (Var_Value (VInt answer)), width)
 
 and gen_set_question () : question_item =
   let set_list = gen_set_list () in
@@ -657,12 +890,12 @@ and get_set_vars_from_set_list set_list =
 and gen_set_list () : set_list =
   let n = 2 + Random.int (max_set_def_num - 1) in  (* at least 2, at most 10 sets *)
   let rec aux i remaining_vars =
-    if i <= 0 then 
+    if i <= 0 then
       failwith "Should not happen: i <= 0"
     else if i = 1 then
       match remaining_vars with
       | [] -> failwith "Not enough variables"
-      | var :: _ -> 
+      | var :: _ ->
           let set_expr = gen_set_expr () in
           Set_List_Last (var, set_expr)
     else
@@ -689,11 +922,11 @@ and gen_predicate () : predicate =
   | 1 -> Less_Than (10 + Random.int 10)
   | 2 -> Greater_Equal (Random.int 10)
   | 3 -> Less_Equal (10 + Random.int 10)
-  | 4 -> 
+  | 4 ->
       let i1 = Random.int 5 in
       let i2 = 5 + Random.int 10 in
       Between_Open (i1, i2)
-  | _ -> 
+  | _ ->
       let i1 = Random.int 5 in
       let i2 = 5 + Random.int 10 in
       Between_Closed (i1, i2)
@@ -701,12 +934,12 @@ and gen_predicate () : predicate =
 and gen_set_prob_list (available_vars : string list) (set_list : set_list) : set_prob_list =
   let env = build_env_from_set_list set_list in
   let n = min_set_prob_num + Random.int (max_set_prob_num - min_set_prob_num + 1) in  (* generate 2-3 set questions (by default) *)
-  
+
   (* track generated set operations to avoid duplicates *)
   let used_set_ops = ref [] in
-  
+
   let rec aux i =
-    if i <= 0 then 
+    if i <= 0 then
       failwith "Should not happen: i <= 0"
     else
       let set_op = gen_unique_set_operation_non_trivial available_vars used_set_ops in
@@ -786,11 +1019,11 @@ and gen_set_operation_root_non_trivial (available_vars : string list) depth : se
   else
     (* When the depth is greater than 1, randomly select the operation type *)
     match Random.int 2 with
-    | 0 -> 
+    | 0 ->
         let left = gen_set_operation_root_non_trivial available_vars (depth-1) in
         let right = gen_set_term available_vars (depth-1) in
         Set_Op_Union (left, right)
-    | _ -> 
+    | _ ->
         (* Generate an item that includes an intersection or a difference set *)
         Set_Op_Term (gen_set_term_non_trivial available_vars (depth-1))
 
@@ -803,11 +1036,11 @@ and gen_set_term_non_trivial (available_vars : string list) depth : set_term =
     Set_Op_Inter (left, right)
   else
     match Random.int 2 with
-    | 0 -> 
+    | 0 ->
         let left = gen_set_term_non_trivial available_vars (depth-1) in
         let right = gen_set_factor available_vars (depth-1) in
         Set_Op_Inter (left, right)
-    | _ -> 
+    | _ ->
         (* Generate a factor that includes the difference set *)
         Set_Op_Factor (gen_set_factor_non_trivial available_vars (depth-1))
 
@@ -820,11 +1053,11 @@ and gen_set_factor_non_trivial (available_vars : string list) depth : set_factor
     Set_Op_Diff (left, right)
   else
     match Random.int 3 with
-    | 0 -> 
+    | 0 ->
         let left = gen_set_factor_non_trivial available_vars (depth-1) in
         let right = gen_set_primary available_vars in
         Set_Op_Diff (left, right)
-    | _ -> 
+    | _ ->
         (* Generate an operation with parentheses *)
         Set_Op_Primary (Set_Op_Paren (gen_set_operation_non_trivial available_vars))
 
@@ -838,7 +1071,7 @@ and gen_set_operation_root (available_vars : string list) depth : set_operation 
     Set_Op_Term (gen_set_term available_vars 0)
   else
     match Random.int 3 with
-    | 0 -> 
+    | 0 ->
         let left = gen_set_operation_root available_vars (depth-1) in
         let right = gen_set_term available_vars (depth-1) in
         Set_Op_Union (left, right)
@@ -849,7 +1082,7 @@ and gen_set_term (available_vars : string list) depth : set_term =
     Set_Op_Factor (gen_set_factor available_vars 0)
   else
     match Random.int 3 with
-    | 0 -> 
+    | 0 ->
         let left = gen_set_term available_vars (depth-1) in
         let right = gen_set_factor available_vars (depth-1) in
         Set_Op_Inter (left, right)
@@ -860,7 +1093,7 @@ and gen_set_factor (available_vars : string list) depth : set_factor =
     Set_Op_Primary (gen_set_primary available_vars)
   else
     match Random.int 3 with
-    | 0 -> 
+    | 0 ->
         let left = gen_set_factor available_vars (depth-1) in
         let right = gen_set_primary available_vars in
         Set_Op_Diff (left, right)
@@ -869,7 +1102,7 @@ and gen_set_factor (available_vars : string list) depth : set_factor =
 and gen_set_primary (available_vars : string list) : set_primary =
   match Random.int 4 with
   | 0 -> Set_Op_Paren (gen_set_operation available_vars)
-  | _ -> 
+  | _ ->
       (* Randomly select one from the available variables *)
       let var = List.nth available_vars (Random.int (List.length available_vars)) in
       Set_Op_Var var
@@ -913,7 +1146,7 @@ and convert_problem_section (problem_section : problem_section) : problem_sectio
   | Problem question_list ->
       let counter = ref 0 in
       let answer_vars = ref [] in
-      
+
       (* Helper function to convert set_prob_list *)
       let rec convert_set_prob_list set_prob_list counter_ref =
         match set_prob_list with
@@ -924,7 +1157,7 @@ and convert_problem_section (problem_section : problem_section) : problem_sectio
             let (modified_ans, var_name, var_decl) = convert_answer_item ans_item counter_ref in
             let (modified_rest, rest_vars) = convert_set_prob_list rest counter_ref in
             (Set_Prob_List_Cons (set_op, modified_ans, modified_rest), var_decl :: rest_vars)
-      
+
       (* Helper function to convert answer_item *)
       and convert_answer_item ans_item counter_ref =
         match ans_item with
@@ -943,7 +1176,7 @@ and convert_problem_section (problem_section : problem_section) : problem_sectio
             let var_decl = (var_name, gen_variable ()) in (* Fallback variable *)
             (other_ans, var_name, var_decl)
       in
-      
+
       (* Convert each question item *)
       let convert_question_item = function
         | Q_Given_Set (set_list, set_prob_list) ->
@@ -958,10 +1191,14 @@ and convert_problem_section (problem_section : problem_section) : problem_sectio
             Q_Given_Function (fun_name, derivative_prob_list)
         | Q_Item (qtext, ans, width) as item ->
             item (* Keep arithmetic questions unchanged *)
-        | Q_Suppose_Vector (_, _) as item -> 
-            item (* Keep vector questions unchanged *)
-      in
-      
+	        | Q_Suppose_Vector (_, _) as item ->
+	            item (* Keep vector questions unchanged *)
+	        | Q_Boolean_Eval (_, _, _, _) as item ->
+	            item (* Keep Boolean evaluation questions unchanged *)
+	        | Q_Boolean_Equiv (_, _, _, _) as item ->
+	            item (* Keep Boolean equivalence questions unchanged *)
+	      in
+
       let modified_question_list = List.map convert_question_item question_list in
       (Problem modified_question_list, !answer_vars)
 
@@ -973,7 +1210,7 @@ and gen_vector_enum () : set_enum =
   let n = vector_dimension in
   let rec aux i acc =
     if i = 0 then acc
-    else 
+    else
       let elem = min_vector_element + Random.int (max_vector_element - min_vector_element + 1) in  (* Generate numbers from -10 to 10 (by default) *)
       aux (i - 1) (elem :: acc)
   in
@@ -983,12 +1220,12 @@ and gen_vector_enum () : set_enum =
 and gen_vector_list () : vector_list =
   let n = 2 + Random.int (max_vector_def_num - 1) in  (* at least 2, at most 10 vectors *)
   let rec aux i remaining_vars =
-    if i <= 0 then 
+    if i <= 0 then
       failwith "Should not happen: i <= 0"
     else if i = 1 then
       match remaining_vars with
       | [] -> failwith "Not enough variables"
-      | var :: _ -> 
+      | var :: _ ->
           let vec_enum = gen_vector_enum () in
           Vector_List_Last (var, vec_enum)
     else
@@ -1013,12 +1250,12 @@ and get_vector_vars_from_vector_list vec_list =
 (* Generate vector problem list using the actual vector definitions, avoiding duplicates *)
 and gen_vector_prob_list (available_vars : string list) (env : (string * set_enum) list) : vector_prob_list =
   let n = min_vector_prob_num + Random.int (max_vector_prob_num - min_vector_prob_num + 1) in  (* generate 4-6 vector questions (by default) *)
-  
+
   (* Track generated problem types to avoid duplicates *)
   let used_problem_types = ref [] in
-  
+
   let rec aux i =
-    if i <= 0 then 
+    if i <= 0 then
       failwith "Should not happen: i <= 0"
     else
       let vec_prob = gen_vector_prob available_vars env used_problem_types in
@@ -1034,31 +1271,31 @@ and gen_vector_prob_list (available_vars : string list) (env : (string * set_enu
 and gen_vector_prob (available_vars : string list) (env : (string * set_enum) list) (used_types : string list ref) : vector_prob =
   let get_vector_enum var_name =
     try List.assoc var_name env
-    with Not_found -> 
+    with Not_found ->
       (* Fallback: generate a random vector if not found (shouldn't happen) *)
       gen_vector_enum ()
   in
-  
+
   (* Helper function to check if a problem type with the same vectors has been used *)
   let is_duplicate problem_type vec1 vec2 =
-    let key = 
+    let key =
       match problem_type with
       | "Dot_Product" | "Cross_Product" -> problem_type ^ ":" ^ vec1 ^ ":" ^ vec2
       | _ -> problem_type ^ ":" ^ vec1
     in
     List.mem key !used_types
   in
-  
+
   (* Helper function to mark a problem type as used *)
   let mark_used problem_type vec1 vec2 =
-    let key = 
+    let key =
       match problem_type with
       | "Dot_Product" | "Cross_Product" -> problem_type ^ ":" ^ vec1 ^ ":" ^ vec2
       | _ -> problem_type ^ ":" ^ vec1
     in
     used_types := key :: !used_types
   in
-  
+
   (* Try to generate a non-duplicate problem *)
   let rec try_generate attempts =
     if attempts <= 0 then
@@ -1068,7 +1305,7 @@ and gen_vector_prob (available_vars : string list) (env : (string * set_enum) li
       Same_Dir_Vectors (vec, enum)
     else
       match Random.int 6 with
-      | 0 -> 
+      | 0 ->
           (* Dot Product *)
           let vec1 = pick_one available_vars in
           let vec2 = pick_one (List.filter ((<>) vec1) available_vars) in
@@ -1079,7 +1316,7 @@ and gen_vector_prob (available_vars : string list) (env : (string * set_enum) li
             let enum2 = get_vector_enum vec2 in
             mark_used "Dot_Product" vec1 vec2;
             Dot_Product (vec1, vec2, enum1, enum2)
-      | 1 -> 
+      | 1 ->
           (* Cross Product *)
           let vec1 = pick_one available_vars in
           let vec2 = pick_one (List.filter ((<>) vec1) available_vars) in
@@ -1090,7 +1327,7 @@ and gen_vector_prob (available_vars : string list) (env : (string * set_enum) li
             let enum2 = get_vector_enum vec2 in
             mark_used "Cross_Product" vec1 vec2;
             Cross_Product (vec1, vec2, enum1, enum2)
-      | 2 -> 
+      | 2 ->
           (* Vector Norm *)
           let vec = pick_one available_vars in
           if is_duplicate "Vector_Norm" vec "" then
@@ -1099,7 +1336,7 @@ and gen_vector_prob (available_vars : string list) (env : (string * set_enum) li
             let enum = get_vector_enum vec in
             mark_used "Vector_Norm" vec "";
             Vector_Norm (vec, enum)
-      | 3 -> 
+      | 3 ->
           (* Unit Vector *)
           let vec = pick_one available_vars in
           if is_duplicate "Unit_Vector" vec "" then
@@ -1108,7 +1345,7 @@ and gen_vector_prob (available_vars : string list) (env : (string * set_enum) li
             let enum = get_vector_enum vec in
             mark_used "Unit_Vector" vec "";
             Unit_Vector (vec, enum)
-      | 4 -> 
+      | 4 ->
           (* Parallel Vectors *)
           let vec = pick_one available_vars in
           if is_duplicate "Parallel_Vectors" vec "" then
@@ -1117,7 +1354,7 @@ and gen_vector_prob (available_vars : string list) (env : (string * set_enum) li
             let enum = get_vector_enum vec in
             mark_used "Parallel_Vectors" vec "";
             Parallel_Vectors (vec, enum)
-      | _ -> 
+      | _ ->
           (* Same Direction Vectors *)
           let vec = pick_one available_vars in
           if is_duplicate "Same_Dir_Vectors" vec "" then
@@ -1127,7 +1364,7 @@ and gen_vector_prob (available_vars : string list) (env : (string * set_enum) li
             mark_used "Same_Dir_Vectors" vec "";
             Same_Dir_Vectors (vec, enum)
   in
-  
+
   try_generate 10  (* Try up to 10 times to generate a non-duplicate problem *)
 
 (* Build an environment mapping from vector variable names to their enums *)
@@ -1155,32 +1392,32 @@ and gen_derivative_question () : question_item * answer_vars =
   incr fun_counter;
   let fun_name = Printf.sprintf "fun_%d" !fun_counter in
   let func_expr = gen_function_expr () in
-  
+
   (* Create the variable declaration for answer_vars *)
   let answer_var = (fun_name, Var_Method (M_Formula_Fun func_expr)) in
-  
+
   (* Generate derivative problem list using the function name *)
   let derivative_prob_list = gen_derivative_prob_list fun_name in
-  
+
   (* Create the question item *)
   let question_item = Q_Given_Function (fun_name, derivative_prob_list) in
-  
+
   (question_item, [answer_var])
 
 (* Generate derivative problem list with first problem always being First_Derivative and no duplicates *)
 and gen_derivative_prob_list (fun_name : string) : derivative_prob_list =
   let n = min_derivative_prob_num + Random.int (max_derivative_prob_num - min_derivative_prob_num + 1) in
-  
+
   (* Ensure first problem is always First_Derivative *)
   let first_prob = First_Derivative fun_name in
-  
+
   if n = 1 then
     Derivative_Prob_List_Last first_prob
   else
     (* Generate the rest questions *)
     let rest_count = n - 1 in
     let rec gen_rest i used_types =
-      if i <= 0 then 
+      if i <= 0 then
         failwith "Should not happen: i <= 0"
       else if i = 1 then
         let next_prob = gen_derivative_prob_non_repeat fun_name (first_prob :: used_types) in
@@ -1190,7 +1427,7 @@ and gen_derivative_prob_list (fun_name : string) : derivative_prob_list =
         let rest_list = gen_rest (i - 1) (next_prob :: used_types) in
         Derivative_Prob_List_Cons (next_prob, rest_list)
     in
-    
+
     (* Let First_Derivative be the first question *)
     Derivative_Prob_List_Cons (first_prob, gen_rest rest_count [])
 
@@ -1206,7 +1443,7 @@ and gen_derivative_prob_non_repeat (fun_name : string) (used_types : derivative_
         else
           point
       in
-      let used_points = 
+      let used_points =
         List.fold_left (fun acc used ->
           match used with
           | Derivative_Algebra (p, _, _) -> p :: acc
@@ -1216,16 +1453,16 @@ and gen_derivative_prob_non_repeat (fun_name : string) (used_types : derivative_
       let point = find_unique_point used_points in
       Derivative_Algebra (point, fun_name, point)
     else
-      let candidate = 
+      let candidate =
         match Random.int 3 with
         | 0 -> First_Derivative fun_name
-        | 1 -> 
+        | 1 ->
             let point = Random.int 10 in
             Derivative_Algebra (point, fun_name, point)
         | _ -> Second_Derivative fun_name
       in
       (* Check if this problem has already been used *)
-      if List.exists (fun used -> 
+      if List.exists (fun used ->
            match (used, candidate) with
            | (First_Derivative _, First_Derivative _) -> true
            | (Second_Derivative _, Second_Derivative _) -> true
@@ -1286,22 +1523,22 @@ and gen_linear_function depth : linear_function =
 and gen_quadratic_function depth : quadratic_function =
   if depth <= 0 then
     match Random.int 3 with
-    | 0 -> 
+    | 0 ->
         let coeff1 = 1 + Random.int 5 in
         let coeff2 = 1 + Random.int 5 in
         Quad_Add (Var_X, coeff1, Var_X, coeff2)
-    | 1 -> 
+    | 1 ->
         let coeff1 = 1 + Random.int 5 in
         let coeff2 = 1 + Random.int 5 in
         Quad_Sub (Var_X, coeff1, Var_X, coeff2)
     | _ -> Quad_Square Var_X
   else
     match Random.int 3 with
-    | 0 -> 
+    | 0 ->
         let coeff1 = 1 + Random.int 5 in
         let coeff2 = 1 + Random.int 5 in
         Quad_Add (gen_fun_or_var (depth-1), coeff1, gen_fun_or_var (depth-1), coeff2)
-    | 1 -> 
+    | 1 ->
         let coeff1 = 1 + Random.int 5 in
         let coeff2 = 1 + Random.int 5 in
         Quad_Sub (gen_fun_or_var (depth-1), coeff1, gen_fun_or_var (depth-1), coeff2)
@@ -1378,7 +1615,7 @@ and gen_derivative_question_list () : question_list * answer_vars =
   let n = min_question_num + Random.int (max_question_num - min_question_num + 1) in
   let rec aux i acc_questions acc_vars =
     if i = 0 then (List.rev acc_questions, List.rev acc_vars)
-    else 
+    else
       let (question, vars) = gen_derivative_question () in
       aux (i - 1) (question :: acc_questions) (vars @ acc_vars)
   in

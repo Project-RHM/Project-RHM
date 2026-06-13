@@ -1,11 +1,9 @@
-# D:\cygwin64\home\Jason\.opam\COMP4233\bin\dune.exe exec _build/default/unparser.exe 2230026100
+# dune exec ./unparser.exe -- 234156788
 # OCAMLPARAM: unset
 # Shared cache: enabled-except-user-rules
-# Shared cache location:
-# C:\Users\Jiesen\AppData\Local\Microsoft\Windows\INetCache\dune\db
-# Workspace root:
-# "D:\\cygwin64\\home\\Jiesen\\fyp\\generator_ui_v3.4\\generator"
-# Auto-detected concurrency: 24
+# Shared cache location: /Users/ray/.cache/dune/db
+# Workspace root: /Users/ray/Desktop/Project-RHM/generator
+# Auto-detected concurrency: 8
 # Dune context:
 #  { name = "default"
 #  ; kind = "default"
@@ -15,5 +13,4 @@
 #  ; build_dir = In_build_dir "default"
 #  ; instrument_with = []
 #  }
-$ D:\cygwin64\home\Jason\.opam\COMP4233\bin\ocamlc.opt.exe -config > D:\cygwin64\tmp\dune_6678f0_output
-$ (cd D:\cygwin64\home\Jiesen\fyp\generator_ui_v3.4\generator && D:\cygwin64\home\Jiesen\fyp\generator_ui_v3.4\generator\_build\default\unparser.exe 2230026100)
+$ /Users/ray/.opam/default/bin/ocamlc.opt -config > /var/folders/dr/hbzkf_0d2j924z7ch9xnqrd80000gn/T/dune_bf077b_output

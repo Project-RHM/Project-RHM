@@ -112,6 +112,11 @@ class print = object (self)
   
   method visit_GIVEN_PROB     = string "Given the sets:"
   method visit_COMPUTE_PROB   = string "Compute:"
+  method visit_EVALUATE_BOOL_PROB = string "Evaluate the Boolean expression:"
+  method visit_BOOLEAN_EQUIV_PROB = string "Determine whether the Boolean expressions are equivalent:"
+  method visit_WHEN_WORD      = string "When:"
+  method visit_BOOL_ANSWER_HINT = string "Enter 1 for True and 0 for False."
+  method visit_BOOL_EQUIV_ANSWER_HINT = string "Enter 1 if equivalent and 0 otherwise."
 
   method visit_SUPPOSE_PROB       = string "Suppose the vectors:"
   method visit_PERIOD             = string "."
@@ -152,6 +157,14 @@ class print = object (self)
 
   method visit_CMP_1          = string "cmp(parallel=>1)"
   method visit_CMP_2          = string "cmp(parallel=>1,sameDirection=>1)"
+  method visit_TRUE_WORD      = string "True"
+  method visit_FALSE_WORD     = string "False"
+  method visit_AND_WORD       = string "AND"
+  method visit_OR_WORD        = string "OR"
+  method visit_NOT_WORD       = string "NOT"
+  method visit_XOR_WORD       = string "XOR"
+  method visit_IMPLIES_WORD   = string "IMPLIES"
+  method visit_IFF_WORD       = string "IFF"
 
   (*────────────────────────────────────────────────────────────────────────*)
   (* document variants                                                      *)
@@ -467,7 +480,62 @@ class print = object (self)
      ^^ string ">> [`[$" ^^ string fun_name ^^ string "]`] <<" ^^ hardline ^^ hardline
     ^^ self#visit_COMPUTE_PROB ^^ hardline
     ^^ super#visit_derivative_prob_list derp_list
+
   (* ------------------- NEW CODE END ------------------- *)
+
+  method! case_qbool_eval
+      expr assignments ans =
+    self#visit_EVALUATE_BOOL_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr expr ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_WHEN_WORD ^^ hardline
+    ^^ super#visit_bool_assignment_list assignments
+    ^^ self#visit_BOOL_ANSWER_HINT ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qbool_equiv
+      left right ans =
+    self#visit_BOOLEAN_EQUIV_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr left ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr right ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_BOOL_EQUIV_ANSWER_HINT ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qbool_equiv_width
+      left right ans w =
+    self#visit_BOOLEAN_EQUIV_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr left ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr right ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_BOOL_EQUIV_ANSWER_HINT ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{answer=>"
+    ^^ super#visit_answer_item ans
+    ^^ string ",width=>"
+    ^^ string (string_of_int w)
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qbool_eval_width
+      expr assignments ans w =
+    self#visit_EVALUATE_BOOL_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr expr ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_WHEN_WORD ^^ hardline
+    ^^ super#visit_bool_assignment_list assignments
+    ^^ self#visit_BOOL_ANSWER_HINT ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{answer=>"
+    ^^ super#visit_answer_item ans
+    ^^ string ",width=>"
+    ^^ string (string_of_int w)
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
 
   method! case_qvalue
       call =
@@ -520,6 +588,65 @@ class print = object (self)
   method! case_ict_math
       expr =
     string "[`" ^^ super#visit_math_expr expr ^^ string "`]"
+
+  (*─────────────────────────────────────────────────────────────────────────*)
+  (* Boolean expression evaluation printing methods                          *)
+  method! case_bool_assignment_list_cons
+      assignment rest =
+    super#visit_bool_assignment assignment ^^ hardline
+    ^^ super#visit_bool_assignment_list rest
+
+  method! case_bool_assignment_list_last
+      assignment =
+    super#visit_bool_assignment assignment ^^ hardline
+
+  method! case_bool_assignment_true
+      name =
+    string "- " ^^ string name ^^ string " = True"
+
+  method! case_bool_assignment_false
+      name =
+    string "- " ^^ string name ^^ string " = False"
+
+  method! case_bool_and
+      left right =
+    lparen ^^ super#visit_bool_expr left ^^ string " AND " ^^ super#visit_bool_expr right ^^ rparen
+
+  method! case_bool_or
+      left right =
+    lparen ^^ super#visit_bool_expr left ^^ string " OR " ^^ super#visit_bool_expr right ^^ rparen
+
+  method! case_bool_xor
+      left right =
+    lparen ^^ super#visit_bool_expr left ^^ string " XOR " ^^ super#visit_bool_expr right ^^ rparen
+
+  method! case_bool_implies
+      left right =
+    lparen ^^ super#visit_bool_expr left ^^ string " IMPLIES " ^^ super#visit_bool_expr right ^^ rparen
+
+  method! case_bool_iff
+      left right =
+    lparen ^^ super#visit_bool_expr left ^^ string " IFF " ^^ super#visit_bool_expr right ^^ rparen
+
+  method! case_bool_not
+      expr =
+    lparen ^^ string "NOT " ^^ super#visit_bool_expr expr ^^ rparen
+
+  method! case_bool_paren
+      expr =
+    lparen ^^ super#visit_bool_expr expr ^^ rparen
+
+  method! case_bool_true
+      () =
+    string "True"
+
+  method! case_bool_false
+      () =
+    string "False"
+
+  method! case_bool_var
+      name =
+    string name
 
   (*─────────────────────────────────────────────────────────────────────────*)
   (* math_expr, term, factor                                                 *)
@@ -940,8 +1067,8 @@ class print = object (self)
 
   method! case_der_prob_3
       fun_name =
-    string "[`f\'\'(x) =`] [_____]{$" 
-    ^^ string fun_name 
+    string "[`f\'\'(x) =`] [_____]{$"
+    ^^ string fun_name
     ^^ string "->D()->D()}"
 (* ------------------- NEW CODE END ------------------- *)
 
