@@ -240,10 +240,12 @@ and describe_question_item question_item =
       DCST.qset (describe_set_list s_list) (describe_set_prob_list sp_list)
   | Q_Suppose_Vector (vec_list, vecp_list) ->
       DCST.qvector (describe_vector_list vec_list) (describe_vector_prob_list vecp_list)
-  (* ------------------- NEW CODE START ------------------- *)
+(* ------------------- NEW CODE START ------------------- *)
   | Q_Given_Function (fun_name, derp_list) ->
       DCST.qderivative fun_name (describe_derivative_prob_list derp_list)
-  (* ------------------- NEW CODE END ------------------- *)
+  | Q_Given_Prop_Equiv prob_list ->
+      DCST.qprop_equiv (describe_prop_equiv_prob_list prob_list)
+(* ------------------- NEW CODE END ------------------- *)
 
 and describe_set_list s_list =
   if print_describe then prerr_endline "→ describe_set_list";
@@ -445,6 +447,36 @@ and describe_derivative_prob = function
       DCST.der_prob_2 i1 fun_name i2
   | Second_Derivative fun_name ->
       DCST.der_prob_3 fun_name
+
+(* ================================================================ *)
+(* ============== Propositional Logic Describe =================== *)
+(* ================================================================ *)
+
+and describe_prop_expr expr =
+  match expr with
+  | Prop_Var v -> DCST.prop_var v
+  | Prop_True -> DCST.prop_true ()
+  | Prop_False -> DCST.prop_false ()
+  | Prop_Not e -> DCST.prop_not (describe_prop_expr e)
+  | Prop_And (l, r) -> DCST.prop_and (describe_prop_expr l) (describe_prop_expr r)
+  | Prop_Or (l, r) -> DCST.prop_or (describe_prop_expr l) (describe_prop_expr r)
+  | Prop_Imp (l, r) -> DCST.prop_imp (describe_prop_expr l) (describe_prop_expr r)
+  | Prop_Equiv (l, r) -> DCST.prop_equiv (describe_prop_expr l) (describe_prop_expr r)
+
+and describe_prop_equiv_question q =
+  match q with
+  | Prop_Equiv_Judge (e1, e2, is_equiv) ->
+      DCST.prop_equiv_judge (describe_prop_expr e1) (describe_prop_expr e2) is_equiv
+  | Prop_Equiv_Choice (e1, correct, wrongs, idx) ->
+      let wrongs_dcst = List.map describe_prop_expr wrongs in
+      DCST.prop_equiv_choice (describe_prop_expr e1) (describe_prop_expr correct) wrongs_dcst idx
+
+and describe_prop_equiv_prob_list plist =
+  match plist with
+  | Prop_Equiv_Prob_List_Cons (q, rest) ->
+      DCST.prop_equiv_prob_list_cons (describe_prop_equiv_question q) (describe_prop_equiv_prob_list rest)
+  | Prop_Equiv_Prob_List_Last q ->
+      DCST.prop_equiv_prob_list_last (describe_prop_equiv_question q)
 
 (* ------------------- NEW CODE END ------------------- *)
 

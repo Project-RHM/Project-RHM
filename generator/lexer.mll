@@ -70,6 +70,7 @@ rule read =
   | "Enter a vector in the same direction as "  { VECTOR_SAME_PROB }
   (* ------------------- NEW CODE START ------------------- *)
   | "Given this function:"                      { GIVEN_FUN }
+  | "Determine whether the following propositions are equivalent:"  { GIVEN_PROP_EQUIV }
   (* ------------------- NEW CODE END ------------------- *)
 
   | "infinity"                      { INFINITY }
@@ -124,6 +125,11 @@ rule read =
   | "ln"                            { LN_OP }
   | "sin"                           { SIN_OP }
   | "cos"                           { COS_OP }
+  | "\\land"                        { AND_OP }
+  | "\\lor"                         { OR_OP }
+  | "\\to"                          { IMP_OP }
+  | "\\leftrightarrow"              { EQUIV_OP }
+  | "\\neg"                         { NOT_OP }
   (* ------------------- NEW CODE END ------------------- *)
 
   | '='                             { EQ }

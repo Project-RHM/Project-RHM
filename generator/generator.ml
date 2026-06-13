@@ -280,6 +280,11 @@ let rec gen_document () : document =
       let (problem_section, answer_vars) = gen_derivative_problem_section () in
       let modified_context_setup_list = convert_context_setup_list context_setup_list answer_vars in
         Doc_No_Sol (header, modified_context_setup_list, problem_section)
+    | 5 -> (* propositional logic equivalence only *)
+      let header = gen_header () in
+      let context_setup_list = gen_context_setup_list () in
+      let problem_section = gen_prop_equiv_problem_section () in
+        Doc_No_Sol (header, context_setup_list, problem_section)
     | _ -> (* all type of questions only *)
       let header = gen_header () in
       let context_setup_list = gen_context_setup_list () in
@@ -308,6 +313,8 @@ and gen_context_setup_list () : context_setup_list =
       Context_Setup_No_Vars_Last (Context_Only "Vector")
     | 4 -> (* derivative only *)
       Context_Setup_No_Vars_Last (Context_With_Config ("Numeric", Cfg_Cons(Flags, CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"),VInt(0)))]), Cfg_Last(Flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),VInt(0)))])))))
+    | 5 -> (* propositional logic equivalence only *)
+      Context_Setup_No_Vars_Last (Context_Only "contextCustom")
     | _ -> (* all type of questions only *)
       Context_Setup_No_Vars_Cons (Context_With_Config ("Numeric", Cfg_Cons(Flags, CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"),VInt(0)))]), Cfg_Last(Flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),VInt(0)))])))), Context_Setup_No_Vars_Cons (Context_Only "Interval", Context_Setup_No_Vars_Last (Context_Only "Vector")))
 (*
@@ -1383,3 +1390,199 @@ and gen_derivative_question_list () : question_list * answer_vars =
       aux (i - 1) (question :: acc_questions) (vars @ acc_vars)
   in
   aux n [] []
+
+(* ================================================================ *)
+(* ============== Propositional Logic Generation =================== *)
+(* ================================================================ *)
+
+(* Generate propositional logic equivalence problem section *)
+and gen_prop_equiv_problem_section () : problem_section =
+  let n = min_prop_equiv_prob_num + Random.int (max_prop_equiv_prob_num - min_prop_equiv_prob_num + 1) in
+  let rec aux i acc =
+    if i = 0 then List.rev acc
+    else aux (i - 1) (gen_prop_equiv_question () :: acc)
+  in
+  Problem (aux n [])
+
+(* Generate a single propositional logic equivalence question *)
+and gen_prop_equiv_question () : question_item =
+  (* Randomly choose between judge (A) and choice (B) *)
+  if Random.bool () then
+    gen_prop_equiv_judge ()
+  else
+    gen_prop_equiv_choice ()
+
+(* Generate a judge question (type A) *)
+and gen_prop_equiv_judge () : question_item =
+  let rule = pick prop_equiv_rules_by_depth () in
+  let (expr_a, expr_b) = apply_equiv_rule rule in
+  (* 50% equivalent, 50% not equivalent *)
+  let is_equiv = Random.bool () in
+  let expr_b' = if is_equiv then expr_b else make_inequivalent expr_b in
+  let question = Prop_Equiv_Judge (expr_a, expr_b', is_equiv) in
+  let prob_list = Prop_Equiv_Prob_List_Last question in
+  Q_Given_Prop_Equiv prob_list
+
+(* Generate a choice question (type B) *)
+and gen_prop_equiv_choice () : question_item =
+  let rule = pick prop_equiv_rules_by_depth () in
+  let (expr_a, expr_b) = apply_equiv_rule rule in
+  (* Generate 3 wrong options *)
+  let wrong_options = gen_wrong_options expr_b 3 [] in
+  (* Find a valid wrong option list (ensure we have 3 unique wrong options) *)
+  let wrong_options' = if List.length wrong_options < 3 then gen_wrong_options expr_b 3 [] else wrong_options in
+  (* Combine correct answer with wrong options *)
+  let all_options = expr_b :: wrong_options' in
+  (* Shuffle options *)
+  let shuffled = shuffle_list all_options in
+  (* Find correct index *)
+  let correct_idx = 
+    let rec find_idx lst idx = 
+      match lst with
+      | [] -> 0
+      | x :: _ when x = expr_b -> idx
+      | _ :: rest -> find_idx rest (idx + 1)
+    in find_idx shuffled 0
+  in
+  let question = Prop_Equiv_Choice (expr_a, expr_b, wrong_options', correct_idx) in
+  let prob_list = Prop_Equiv_Prob_List_Last question in
+  Q_Given_Prop_Equiv prob_list
+
+(* Get rules filtered by configured depth *)
+and prop_equiv_rules_by_depth () : prop_equiv_rule list =
+  let depth = min_prop_expr_depth + Random.int (max_prop_expr_depth - min_prop_expr_depth + 1) in
+  let all_rules = [
+    (1, Rule_Implication);
+    (1, Rule_DeMorgan_And);
+    (1, Rule_DeMorgan_Or);
+    (1, Rule_Double_Neg);
+    (1, Rule_Idempotent_And);
+    (1, Rule_Idempotent_Or);
+    (1, Rule_Comm_And);
+    (1, Rule_Comm_Or);
+    (2, Rule_Assoc_And);
+    (2, Rule_Assoc_Or);
+    (2, Rule_Distrib_And_Or);
+    (2, Rule_Distrib_Or_And);
+    (2, Rule_Absorption_And);
+    (2, Rule_Absorption_Or);
+    (2, Rule_Contrapositive);
+    (2, Rule_Equiv_Def);
+  ] in
+  List.filter (fun (d, _) -> d <= depth) all_rules |> List.map snd
+
+(* Apply an equivalence rule to generate two expressions *)
+and apply_equiv_rule rule : prop_expr * prop_expr =
+  let var1 = pick prop_variables in
+  let var2 = pick (List.filter ((<>) var1) prop_variables) in
+  let var3 = pick (List.filter (fun v -> v <> var1 && v <> var2) prop_variables) in
+  match rule with
+  | Rule_Implication ->
+      let lhs = Prop_Imp (Prop_Var var1, Prop_Var var2) in
+      let rhs = Prop_Or (Prop_Not (Prop_Var var1), Prop_Var var2) in
+      (lhs, rhs)
+  | Rule_DeMorgan_And ->
+      let lhs = Prop_Not (Prop_And (Prop_Var var1, Prop_Var var2)) in
+      let rhs = Prop_Or (Prop_Not (Prop_Var var1), Prop_Not (Prop_Var var2)) in
+      (lhs, rhs)
+  | Rule_DeMorgan_Or ->
+      let lhs = Prop_Not (Prop_Or (Prop_Var var1, Prop_Var var2)) in
+      let rhs = Prop_And (Prop_Not (Prop_Var var1), Prop_Not (Prop_Var var2)) in
+      (lhs, rhs)
+  | Rule_Double_Neg ->
+      let lhs = Prop_Not (Prop_Not (Prop_Var var1)) in
+      let rhs = Prop_Var var1 in
+      (lhs, rhs)
+  | Rule_Idempotent_And ->
+      let lhs = Prop_And (Prop_Var var1, Prop_Var var1) in
+      let rhs = Prop_Var var1 in
+      (lhs, rhs)
+  | Rule_Idempotent_Or ->
+      let lhs = Prop_Or (Prop_Var var1, Prop_Var var1) in
+      let rhs = Prop_Var var1 in
+      (lhs, rhs)
+  | Rule_Comm_And ->
+      let lhs = Prop_And (Prop_Var var1, Prop_Var var2) in
+      let rhs = Prop_And (Prop_Var var2, Prop_Var var1) in
+      (lhs, rhs)
+  | Rule_Comm_Or ->
+      let lhs = Prop_Or (Prop_Var var1, Prop_Var var2) in
+      let rhs = Prop_Or (Prop_Var var2, Prop_Var var1) in
+      (lhs, rhs)
+  | Rule_Assoc_And ->
+      let lhs = Prop_And (Prop_And (Prop_Var var1, Prop_Var var2), Prop_Var var3) in
+      let rhs = Prop_And (Prop_Var var1, Prop_And (Prop_Var var2, Prop_Var var3)) in
+      (lhs, rhs)
+  | Rule_Assoc_Or ->
+      let lhs = Prop_Or (Prop_Or (Prop_Var var1, Prop_Var var2), Prop_Var var3) in
+      let rhs = Prop_Or (Prop_Var var1, Prop_Or (Prop_Var var2, Prop_Var var3)) in
+      (lhs, rhs)
+  | Rule_Distrib_And_Or ->
+      let lhs = Prop_And (Prop_Var var1, Prop_Or (Prop_Var var2, Prop_Var var3)) in
+      let rhs = Prop_Or (Prop_And (Prop_Var var1, Prop_Var var2), Prop_And (Prop_Var var1, Prop_Var var3)) in
+      (lhs, rhs)
+  | Rule_Distrib_Or_And ->
+      let lhs = Prop_Or (Prop_Var var1, Prop_And (Prop_Var var2, Prop_Var var3)) in
+      let rhs = Prop_And (Prop_Or (Prop_Var var1, Prop_Var var2), Prop_Or (Prop_Var var1, Prop_Var var3)) in
+      (lhs, rhs)
+  | Rule_Absorption_And ->
+      let lhs = Prop_And (Prop_Var var1, Prop_Or (Prop_Var var1, Prop_Var var2)) in
+      let rhs = Prop_Var var1 in
+      (lhs, rhs)
+  | Rule_Absorption_Or ->
+      let lhs = Prop_Or (Prop_Var var1, Prop_And (Prop_Var var1, Prop_Var var2)) in
+      let rhs = Prop_Var var1 in
+      (lhs, rhs)
+  | Rule_Contrapositive ->
+      let lhs = Prop_Imp (Prop_Var var1, Prop_Var var2) in
+      let rhs = Prop_Imp (Prop_Not (Prop_Var var2), Prop_Not (Prop_Var var1)) in
+      (lhs, rhs)
+  | Rule_Equiv_Def ->
+      let lhs = Prop_And (Prop_Imp (Prop_Var var1, Prop_Var var2), Prop_Imp (Prop_Var var2, Prop_Var var1)) in
+      let rhs = Prop_Equiv (Prop_Var var1, Prop_Var var2) in
+      (lhs, rhs)
+
+(* Make an expression inequivalent by changing one connector *)
+and make_inequivalent (expr : prop_expr) : prop_expr =
+  match expr with
+  | Prop_And (a, b) -> Prop_Or (a, b)  (* Change AND to OR *)
+  | Prop_Or (a, b) -> Prop_And (a, b)  (* Change OR to AND *)
+  | Prop_Imp (a, b) -> Prop_And (a, b)  (* Change -> to AND (simple trick) *)
+  | Prop_Not a -> a  (* Remove negation *)
+  | Prop_Var v -> Prop_Not (Prop_Var v)  (* Add negation *)
+  | _ -> Prop_Var "P"  (* Fallback *)
+
+(* Generate wrong options for choice questions *)
+and gen_wrong_options (correct : prop_expr) (n : int) (acc : prop_expr list) : prop_expr list =
+  if List.length acc >= n then acc
+  else
+    let wrong = gen_wrong_option correct acc in
+    gen_wrong_options correct n (wrong :: acc)
+
+(* Generate a single wrong option *)
+and gen_wrong_option (correct : prop_expr) (used : prop_expr list) : prop_expr =
+  let rec try_generate attempts =
+    if attempts <= 0 then
+      (* Fallback: return a simple wrong expression *)
+      Prop_And (Prop_Var "P", Prop_Var "Q")
+    else
+      let wrong = 
+        match correct with
+        | Prop_And (a, b) -> Prop_Or (a, b)  (* AND -> OR *)
+        | Prop_Or (a, b) -> Prop_And (a, b)  (* OR -> AND *)
+        | Prop_Imp (a, b) -> Prop_Imp (b, a)  (* P->Q -> Q->P *)
+        | Prop_Not a -> Prop_Not (Prop_Not a)  (* Double negation (wrong) *)
+        | Prop_Equiv (a, b) -> Prop_Equiv (b, a)  (* Swap sides (still equivalent, but different form) *)
+        | Prop_Var v -> 
+            (* Pick a different variable *)
+            let other_vars = List.filter ((<>) v) prop_variables in
+            if other_vars = [] then Prop_Var v else Prop_Var (pick other_vars)
+        | _ -> Prop_Var "P"
+      in
+      (* Check if this wrong option is unique and not the same as correct *)
+      if wrong = correct || List.mem wrong used then
+        try_generate (attempts - 1)
+      else
+        wrong
+  in
+  try_generate 10
