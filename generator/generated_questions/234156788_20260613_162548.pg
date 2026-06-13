@@ -1,0 +1,43 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+
+BEGIN_PGML
+# Questions:
+
+- _For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+- _For derivative problems, if the result is undefined, then *leave the blank empty*._
+
+Determine whether the Boolean expressions are equivalent:
+[`(NOT ((((True IFF B)) AND ((A AND B)))))`]
+[`(((NOT ((True IFF B)))) OR ((NOT ((A AND B)))))`]
+Enter 1 if equivalent and 0 otherwise.
+[_____]{answer=>1,width=>1}
+---
+
+Determine whether the Boolean expressions are equivalent:
+[`(E AND ((E OR C)))`]
+[`E`]
+Enter 1 if equivalent and 0 otherwise.
+[_____]{answer=>1,width=>1}
+---
+
+Determine whether the Boolean expressions are equivalent:
+[`(B AND B)`]
+[`B`]
+Enter 1 if equivalent and 0 otherwise.
+[_____]{answer=>1,width=>1}
+---
+
+Determine whether the Boolean expressions are equivalent:
+[`(E OR E)`]
+[`E`]
+Enter 1 if equivalent and 0 otherwise.
+[_____]{answer=>1,width=>1}
+---
+END_PGML
+ENDDOCUMENT();

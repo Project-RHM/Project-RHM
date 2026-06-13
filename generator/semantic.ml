@@ -260,7 +260,7 @@ let bool_answer_to_int = function
   | A_Var (Var_Value (VIdent "False")) -> 0
   | A_Var (Var_Value (VIdent "True")) -> 1
   | _ ->
-      raise (Semantic_error "Boolean evaluation answer must be 0/1 or True/False")
+      raise (Semantic_error "Boolean answer must be 0/1 or True/False")
 
 let check_bool_assignments assignments =
   let seen = Hashtbl.create 8 in
@@ -270,6 +270,44 @@ let check_bool_assignments assignments =
     else
       Hashtbl.add seen name true
   ) assignments
+
+let rec bool_expr_variables = function
+  | Ast.Bool_Const _ -> []
+  | Ast.Bool_Var name -> [name]
+  | Ast.Bool_Not expr -> bool_expr_variables expr
+  | Ast.Bool_And (left, right)
+  | Ast.Bool_Or (left, right)
+  | Ast.Bool_Xor (left, right)
+  | Ast.Bool_Implies (left, right)
+  | Ast.Bool_Iff (left, right) ->
+      bool_expr_variables left @ bool_expr_variables right
+
+let unique_bool_variables names =
+  List.fold_left
+    (fun acc name -> if List.mem name acc then acc else name :: acc)
+    [] names
+  |> List.rev
+
+let all_bool_assignments names =
+  let rec aux = function
+    | [] -> [[]]
+    | name :: rest ->
+        let rest_assignments = aux rest in
+        List.concat [
+          List.map (fun assignment -> (name, false) :: assignment) rest_assignments;
+          List.map (fun assignment -> (name, true) :: assignment) rest_assignments;
+        ]
+  in
+  aux names
+
+let bool_expr_equivalent left right =
+  let vars =
+    unique_bool_variables (bool_expr_variables left @ bool_expr_variables right)
+  in
+  List.for_all
+    (fun assignments ->
+      eval_bool_expr assignments left = eval_bool_expr assignments right)
+    (all_bool_assignments vars)
 
 let value_of_float f =
   VNum f
@@ -472,6 +510,15 @@ let check_question_item = function
         raise (Semantic_error
           (Printf.sprintf
              "Boolean answer mismatch: expected %d but got %d" expected actual))
+  | Q_Boolean_Equiv (left, right, answer, _) ->
+      let expected = if bool_expr_equivalent left right then 1 else 0 in
+      let actual = bool_answer_to_int answer in
+      if expected = actual then ()
+      else
+        raise (Semantic_error
+          (Printf.sprintf
+             "Boolean equivalence answer mismatch: expected %d but got %d"
+             expected actual))
 
 (* Entry point for semantic checking of the problem section *)
 let check_problem_section = function

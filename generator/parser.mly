@@ -1,5 +1,5 @@
 /* parser.mly */
-%{ 
+%{
   open Ast
 %}
 
@@ -40,7 +40,7 @@
 
 %token WHAT_WORD IS_WORD THE_WORD VALUE_WORD OF_WORD EQUAL_WORD TO_WORD QUESTION_MARK
 %token GIVEN_PROB COMPUTE_PROB GIVEN_FUN
-%token EVALUATE_BOOL_PROB WHEN_WORD BOOL_ANSWER_HINT
+%token EVALUATE_BOOL_PROB BOOLEAN_EQUIV_PROB WHEN_WORD BOOL_ANSWER_HINT BOOL_EQUIV_ANSWER_HINT
 %token TRUE_WORD FALSE_WORD AND_WORD OR_WORD NOT_WORD XOR_WORD IMPLIES_WORD IFF_WORD
 %token SUPPOSE_PROB PERIOD VECTOR_UNIT_PROB VECTOR_PARA_PROB VECTOR_SAME_PROB
 
@@ -88,7 +88,6 @@
 %token DIV_OP
 (* ------------------- NEW CODE START ------------------- *)
 %token POWER_OP SQRT_OP LN_OP SIN_OP COS_OP
-%token AND_OP OR_OP IMP_OP EQUIV_OP NOT_OP TRUE_OP FALSE_OP
 (* ------------------- NEW CODE END ------------------- *)
 
 %token <float> NUMBER
@@ -251,7 +250,7 @@ entry:
   | key = key; FAT_COMMA; LBRACE; RBRACE
       { Entry_Map  (key, None) }
     [@name entry_map_none]
-  
+
   | key = key; FAT_COMMA; LBRACE; props = properties; RBRACE
       { Entry_Map  (key, Some props) }
     [@name entry_map]
@@ -290,7 +289,7 @@ value:
   | SUB_OP; i = INT
       { VInt (-i) }
     [@name value_int_neg]
-  
+
   | i = INT
       { VInt i }
     [@name value_int_pos]
@@ -310,7 +309,7 @@ value:
   | SINGLE_QUOTE; s = ID; SINGLE_QUOTE
       { VStr s }
     [@name value_str_sin]
-  
+
   | NAMING; id = ID
       { VIdent id }
     [@name value_ident]
@@ -319,7 +318,7 @@ operator_list:
   | DOUBLE_QUOTE; hd = operator; DOUBLE_QUOTE; COMMA; tl = operator_list
       { hd :: tl }
     [@name operator_list_dou]
-  
+
   | SINGLE_QUOTE; hd = operator; SINGLE_QUOTE; COMMA; tl = operator_list
       { hd :: tl }
     [@name operator_list_sin]
@@ -397,13 +396,13 @@ math_object_method:
     [@name meth_rand]
 
   (* To solve shift/reduce conflicts, for parsing:
-     - using '' for math_expr in Formula 
-     - using "" for function_expr in Formula 
+     - using '' for math_expr in Formula
+     - using "" for function_expr in Formula
      *)
   | FORMULA_METH; LPAREN; SINGLE_QUOTE; expr = math_expr; SINGLE_QUOTE; RPAREN
       { M_Formula expr }
     [@name meth_form]
-  
+
   (* ------------------- NEW CODE START ------------------- *)
   | FORMULA_METH; LPAREN; DOUBLE_QUOTE; expr = function_expr; DOUBLE_QUOTE; RPAREN
       { M_Formula_Fun expr }
@@ -453,7 +452,7 @@ problem_section:
 question_list:
   | item = question_item; NEWLINE; NEWLINE; rest = question_list
       { item :: rest }  [@name qlist]
-  
+
   | item = question_item; NEWLINE
       { [item] }        [@name qlist_single]
 
@@ -478,9 +477,6 @@ question_item:
       { Q_Given_Function (fun_name, derp_list) }
     [@name qderivative]
 
-  | GIVEN_PROP_EQUIV; NEWLINE; NEWLINE; COMPUTE_PROP_EQUIV; NEWLINE; peq_list = prop_equiv_prob_list
-      { Q_Given_Prop_Equiv peq_list }
-    [@name qprop_equiv]
   (* ------------------- NEW CODE END ------------------- *)
 
   | EVALUATE_BOOL_PROB; NEWLINE; IT_MATH_OPEN; expr = bool_expr; IT_MATH_CLOSE; NEWLINE;
@@ -496,6 +492,22 @@ question_item:
     BLANK; LBRACE; ANSWER_WORD; FAT_COMMA; ans = answer_item; COMMA; WIDTH_WORD; FAT_COMMA; w = INT; RBRACE
       { Q_Boolean_Eval (expr, assignments, ans, Some w) }
     [@name qbool_eval_width]
+
+  | BOOLEAN_EQUIV_PROB; NEWLINE;
+    IT_MATH_OPEN; left = bool_expr; IT_MATH_CLOSE; NEWLINE;
+    IT_MATH_OPEN; right = bool_expr; IT_MATH_CLOSE; NEWLINE;
+    BOOL_EQUIV_ANSWER_HINT; NEWLINE;
+    BLANK; LBRACE; ans = answer_item; RBRACE
+      { Q_Boolean_Equiv (left, right, ans, None) }
+    [@name qbool_equiv]
+
+  | BOOLEAN_EQUIV_PROB; NEWLINE;
+    IT_MATH_OPEN; left = bool_expr; IT_MATH_CLOSE; NEWLINE;
+    IT_MATH_OPEN; right = bool_expr; IT_MATH_CLOSE; NEWLINE;
+    BOOL_EQUIV_ANSWER_HINT; NEWLINE;
+    BLANK; LBRACE; ANSWER_WORD; FAT_COMMA; ans = answer_item; COMMA; WIDTH_WORD; FAT_COMMA; w = INT; RBRACE
+      { Q_Boolean_Equiv (left, right, ans, Some w) }
+    [@name qbool_equiv_width]
 
 question_text:
   | WHAT_WORD; IS_WORD; THE_WORD; VALUE_WORD; OF_WORD; call = intext_call; QUESTION_MARK
@@ -577,7 +589,7 @@ factor:
   | n = NUMBER
       { F_Num n }
     [@name fnum]
-  
+
   | n = INT
       { F_Int n }
     [@name fint]
@@ -651,7 +663,7 @@ set_list:
   | SUB_OP; IT_MATH_OPEN; set_var = ID; EQ; LBRACE_LATEX; expr = set_expr; RBRACE_LATEX; IT_MATH_CLOSE; NEWLINE; rest = set_list
       { Set_List_Cons (set_var, expr, rest) }
     [@name set_list_cons]
-  
+
   | SUB_OP; IT_MATH_OPEN; set_var = ID; EQ; LBRACE_LATEX; expr = set_expr; RBRACE_LATEX; IT_MATH_CLOSE; NEWLINE
       { Set_List_Last (set_var, expr) }
     [@name set_list_last]
@@ -660,7 +672,7 @@ set_expr:
   | enum = set_enum
       { Set_Expr_Enum enum }
     [@name set_expr_enum]
-  
+
   | interval = set_interval
       { Set_Expr_interval interval }
     [@name set_expr_interval]
@@ -669,7 +681,7 @@ set_enum:
   | i = int_with_sign; COMMA; rest = set_enum
       { i :: rest }
     [@name set_enum_cons]
-  
+
   | i = int_with_sign
       { [i] }
     [@name set_enum_last]
@@ -683,31 +695,31 @@ predicate:
   | X_VAR; GT; i = int_with_sign
       { Greater_Than i }
     [@name pred_gt]
-  
+
   | X_VAR; LT; i = int_with_sign
       { Less_Than i }
     [@name pred_lt]
-  
+
   | X_VAR; GEQ_LATEX; i = int_with_sign
       { Greater_Equal i }
     [@name pred_geq]
-  
+
   | X_VAR; LEQ_LATEX; i = int_with_sign
       { Less_Equal i }
     [@name pred_leq]
-  
+
   | i1 = int_with_sign; LT; X_VAR; LT; i2 = int_with_sign
       { Between_Open (i1, i2) }
     [@name pred_between_open]
-  
+
   | i1 = int_with_sign; LEQ_LATEX; X_VAR; LT; i2 = int_with_sign
       { Between_Left_Closed (i1, i2) }
     [@name pred_between_left_closed]
-  
+
   | i1 = int_with_sign; LT; X_VAR; LEQ_LATEX; i2 = int_with_sign
       { Between_Right_Closed (i1, i2) }
     [@name pred_between_right_closed]
-  
+
   | i1 = int_with_sign; LEQ_LATEX; X_VAR; LEQ_LATEX; i2 = int_with_sign
       { Between_Closed (i1, i2) }
     [@name pred_between_closed]
@@ -716,7 +728,7 @@ set_prob_list:
   | SUB_OP; IT_MATH_OPEN; set_op = set_operation; EQ; IT_MATH_CLOSE; BLANK; LBRACE; ans = answer_item; RBRACE; NEWLINE; rest = set_prob_list
       { Set_Prob_List_Cons (set_op, ans, rest) }
     [@name set_prob_list_cons]
-  
+
   | SUB_OP; IT_MATH_OPEN; set_op = set_operation; EQ; IT_MATH_CLOSE; BLANK; LBRACE; ans = answer_item; RBRACE; NEWLINE
       { Set_Prob_List_Last (set_op, ans) }
     [@name set_prob_list_last]
@@ -725,7 +737,7 @@ set_operation:
   | op = set_operation; CUP; term = set_term
       { Set_Op_Union (op, term) }
     [@name set_op_union]
-  
+
   | term = set_term
       { Set_Op_Term term }
     [@name set_op_term]
@@ -734,7 +746,7 @@ set_term:
   | term = set_term; CAP; factor = set_factor
       { Set_Op_Inter (term, factor) }
     [@name set_op_inter]
-  
+
   | factor = set_factor
       { Set_Op_Factor factor }
     [@name set_op_factor]
@@ -743,7 +755,7 @@ set_factor:
   | factor = set_factor; SUB_OP; primary = set_primary
       { Set_Op_Diff (factor, primary) }
     [@name set_op_diff]
-  
+
   | primary = set_primary
       { Set_Op_Primary primary }
     [@name set_op_primary]
@@ -752,7 +764,7 @@ set_primary:
   | var = ID
       { Set_Op_Var var }
     [@name set_primary_var]
-  
+
   | LPAREN; op = set_operation; RPAREN
       { Set_Op_Paren op }
     [@name set_primary_paren]
@@ -761,7 +773,7 @@ set_compute:
   | compute = set_compute; UNION; term = set_compute_term
       { Set_Compute_Union (compute, term) }
     [@name set_compute_union]
-  
+
   | term = set_compute_term
       { Set_Compute_Term term }
     [@name set_compute_term]
@@ -770,7 +782,7 @@ set_compute_term:
   | term = set_compute_term; SUB_OP; factor = set_compute_factor
       { Set_Compute_Diff (term, factor) }
     [@name set_compute_diff]
-  
+
   | factor = set_compute_factor
       { Set_Compute_Factor factor }
     [@name set_compute_factor]
@@ -779,11 +791,11 @@ set_compute_factor:
   | LPAREN; compute = set_compute; RPAREN
       { Set_Compute_Paren compute }
     [@name set_compute_paren]
-  
+
   | LBRACE; enum = set_enum; RBRACE
       { Set_Compute_Enum enum }
     [@name set_compute_enum]
-  
+
   | interval = set_compute_interval
       { Set_Compute_Interval interval }
     [@name set_compute_interval]
@@ -792,15 +804,15 @@ set_compute_interval:
   | LPAREN; left = interval_value; COMMA; right = interval_value; RPAREN
       { LNEQ_RNEQ (left, right) }
     [@name set_compute_interval_open]
-  
+
   | LPAREN; left = interval_value; COMMA; right = interval_value; RBRACKET
       { LNEQ_REQ (left, right) }
     [@name set_compute_interval_left_open]
-  
+
   | LBRACKET; left = interval_value; COMMA; right = interval_value; RPAREN
       { LEQ_RNEQ (left, right) }
     [@name set_compute_interval_right_open]
-  
+
   | LBRACKET; left = interval_value; COMMA; right = interval_value; RBRACKET
       { LEQ_REQ (left, right) }
     [@name set_compute_interval_closed]
@@ -809,11 +821,11 @@ interval_value:
   | i = int_with_sign
       { I_Int i }
     [@name interval_int]
-  
+
   | INFINITY
       { I_Infinity }
     [@name interval_infinity]
-  
+
   | NEG_INFINITY
       { I_NegInfinity }
     [@name interval_neg_infinity]
@@ -825,7 +837,7 @@ vector_list:
   | SUB_OP; IT_MATH_OPEN; VEC_LATEX; LBRACE; vec_var = ID; RBRACE; EQ; LANGLE_LATEX; expr = set_enum; RANGLE_LATEX; IT_MATH_CLOSE; NEWLINE; rest = vector_list
       { Vector_List_Cons (vec_var, expr, rest) }
     [@name vec_list_cons]
-  
+
   | SUB_OP; IT_MATH_OPEN; VEC_LATEX; LBRACE; vec_var = ID; RBRACE; EQ; LANGLE_LATEX; expr = set_enum; RANGLE_LATEX; IT_MATH_CLOSE; NEWLINE
       { Vector_List_Last (vec_var, expr) }
     [@name vec_list_last]
@@ -834,7 +846,7 @@ vector_prob_list:
   | SUB_OP; vec_prob = vector_prob; NEWLINE; rest = vector_prob_list
       { Vector_Prob_List_Cons (vec_prob, rest) }
     [@name vec_prob_list_cons]
-  
+
   | SUB_OP; vec_prob = vector_prob; NEWLINE
       { Vector_Prob_List_Last (vec_prob) }
     [@name vec_prob_list_last]
@@ -843,7 +855,7 @@ vector_prob:
   | IT_MATH_OPEN; VEC_LATEX; LBRACE; vec_var_1 = ID; RBRACE; CDOT_LATEX; VEC_LATEX; LBRACE; vec_var_2 = ID; RBRACE; EQ; IT_MATH_CLOSE; BLANK; LBRACE; COMPUTE_METH; LPAREN; DOUBLE_QUOTE; LT; vec_enum_1 = set_enum; GT; DOUBLE_QUOTE; RPAREN; PERIOD; COMPUTE_METH; LPAREN; DOUBLE_QUOTE; LT; vec_enum_2 = set_enum; GT; DOUBLE_QUOTE; RPAREN; RBRACE
       { Dot_Product (vec_var_1, vec_var_2, vec_enum_1, vec_enum_2) }
     [@name vec_prob_1]
-  
+
   | IT_MATH_OPEN; VEC_LATEX; LBRACE; vec_var_1 = ID; RBRACE; TIMES_LATEX; VEC_LATEX; LBRACE; vec_var_2 = ID; RBRACE; EQ; IT_MATH_CLOSE; BLANK; LBRACE; COMPUTE_METH; LPAREN; DOUBLE_QUOTE; LT; vec_enum_1 = set_enum; GT; DOUBLE_QUOTE; RPAREN; X_VAR; COMPUTE_METH; LPAREN; DOUBLE_QUOTE; LT; vec_enum_2 = set_enum; GT; DOUBLE_QUOTE; RPAREN; RBRACE
       { Cross_Product (vec_var_1, vec_var_2, vec_enum_1, vec_enum_2) }
     [@name vec_prob_2]
@@ -872,7 +884,7 @@ function_expr:
   | func = linear_function
       { Linear_Fun func }
     [@name linear_fun]
-  
+
   | func = quadratic_function
       { Quadratic_Fun func }
     [@name quadratic_fun]
@@ -905,34 +917,34 @@ linear_function:
   | f_or_v = fun_or_var; ADD_OP; i = INT
       { Fun_Add_Int (f_or_v, i) }
     [@name fun_add_int]
-  
+
   | f_or_v = fun_or_var; SUB_OP; i = INT
       { Fun_Sub_Int (f_or_v, i) }
     [@name fun_sub_int]
-  
+
   | i = INT; SUB_OP; f_or_v = fun_or_var
       { Int_Sub_Fun (i, f_or_v) }
     [@name int_sub_fun]
-  
+
   | i = INT; MUL_OP; f_or_v = fun_or_var
       { Int_Mul_Fun (i, f_or_v) }
     [@name int_mul_fun]
-  
+
   | f_or_v = fun_or_var; MUL_OP; i = INT
       { Fun_Mul_Int (f_or_v, i) }
     [@name fun_mul_int]
 
 quadratic_function:
-  | f_or_v1 = fun_or_var; POWER_OP; i0 = INT; ADD_OP; 
+  | f_or_v1 = fun_or_var; POWER_OP; i0 = INT; ADD_OP;
     i1 = INT; MUL_OP; f_or_v2 = fun_or_var; ADD_OP; i2 = INT
       { Quad_Add (f_or_v1, i1, f_or_v2, i2) }
     [@name quad_add]
-  
-  | f_or_v1 = fun_or_var; POWER_OP; i0 = INT; SUB_OP; 
+
+  | f_or_v1 = fun_or_var; POWER_OP; i0 = INT; SUB_OP;
     i1 = INT; MUL_OP; f_or_v2 = fun_or_var; ADD_OP; i2 = INT
       { Quad_Sub (f_or_v1, i1, f_or_v2, i2) }
     [@name quad_sub]
-  
+
   | LPAREN; f_or_v = fun_or_var; RPAREN; POWER_OP; i0 = INT
       { Quad_Square f_or_v }
     [@name quad_square]
@@ -946,8 +958,8 @@ radical_function:
   | SQRT_OP; LPAREN; f_or_v = fun_or_var; RPAREN
       { Radi_Sqrt f_or_v }
     [@name radi_sqrt]
-  
-  | LPAREN; f_or_v = fun_or_var; RPAREN; POWER_OP; LPAREN; 
+
+  | LPAREN; f_or_v = fun_or_var; RPAREN; POWER_OP; LPAREN;
     i0 = INT; DIV_OP; i = INT; RPAREN
       { Radi_Root (f_or_v, i) }
     [@name radi_root]
@@ -956,7 +968,7 @@ rational_function:
   | f_or_v = fun_or_var; DIV_OP; i = INT
       { Fun_Div_Int (f_or_v, i) }
     [@name fun_div_int]
-  
+
   | i = INT; DIV_OP; LPAREN; f_or_v = fun_or_var; RPAREN
       { Int_Div_Fun (i, f_or_v) }
     [@name int_div_fun]
@@ -970,7 +982,7 @@ trig_function:
   | SIN_OP; LPAREN; f_or_v = fun_or_var; RPAREN
       { Trig_Sin f_or_v }
     [@name trig_sin]
-  
+
   | COS_OP; LPAREN; f_or_v = fun_or_var; RPAREN
       { Trig_Cos f_or_v }
     [@name trig_cos]
@@ -984,7 +996,7 @@ fun_or_var:
   | X_VAR
       { Var_X }
     [@name var_x]
-  
+
   | LPAREN; func = function_expr; RPAREN
       { Func func }
     [@name func]
@@ -993,7 +1005,7 @@ derivative_prob_list:
   | SUB_OP; der_prob = derivative_prob; NEWLINE; rest = derivative_prob_list
       { Derivative_Prob_List_Cons (der_prob, rest) }
     [@name der_prob_list_cons]
-  
+
   | SUB_OP; der_prob = derivative_prob; NEWLINE
       { Derivative_Prob_List_Last (der_prob) }
     [@name der_prob_list_last]
@@ -1011,60 +1023,6 @@ derivative_prob:
       { Second_Derivative fun_name }
     [@name der_prob_3]
 
-(* -------------------------------------------------------------------------- *)
-(* Propositional Logic Equivalence parsing rules                               *)
-(* -------------------------------------------------------------------------- *)
-prop_expr:
-  | v = ID
-      { Prop_Var v }
-    [@name prop_var]
-
-  | v = ID
-      { Prop_Var v }
-    [@name prop_var_true]
-
-  | SUB_OP; e = prop_expr
-      { Prop_Not e }
-    [@name prop_not]
-
-  | LPAREN; e = prop_expr; RPAREN
-      { e }
-    [@name prop_paren]
-
-  | l = prop_expr; AND_OP; r = prop_expr
-      { Prop_And (l, r) }
-    [@name prop_and]
-
-  | l = prop_expr; OR_OP; r = prop_expr
-      { Prop_Or (l, r) }
-    [@name prop_or]
-
-  | l = prop_expr; IMP_OP; r = prop_expr
-      { Prop_Imp (l, r) }
-    [@name prop_imp]
-
-  | l = prop_expr; EQUIV_OP; r = prop_expr
-      { Prop_Equiv (l, r) }
-    [@name prop_equiv]
-
-prop_equiv_question:
-  | e1 = prop_expr; AND; e2 = prop_expr; AND; is_equiv = INT
-      { Prop_Equiv_Judge (e1, e2, is_equiv = 1) }
-    [@name prop_equiv_judge]
-
-  | e1 = prop_expr; AND; correct = prop_expr; AND; wrongs = separated_list(AND_OP, prop_expr); AND; idx = INT
-      { Prop_Equiv_Choice (e1, correct, wrongs, idx) }
-    [@name prop_equiv_choice]
-
-prop_equiv_prob_list:
-  | q = prop_equiv_question; NEWLINE; rest = prop_equiv_prob_list
-      { Prop_Equiv_Prob_List_Cons (q, rest) }
-    [@name prop_equiv_prob_list_cons]
-
-  | q = prop_equiv_question; NEWLINE
-      { Prop_Equiv_Prob_List_Last q }
-    [@name prop_equiv_prob_list_last]
-
 (* ------------------- NEW CODE END ------------------- *)
 
 (* Auxiliary rule: Handling integers with signs *)
@@ -1072,7 +1030,7 @@ int_with_sign:
   | SUB_OP n = INT
       { -n }  (* Return neg *)
     [@name negative_int]
-  
+
   | n = INT
       { n }   (* Return pos *)
     [@name positive_int]

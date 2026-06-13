@@ -70,10 +70,11 @@ rule read =
   | "Enter a vector in the same direction as "  { VECTOR_SAME_PROB }
   (* ------------------- NEW CODE START ------------------- *)
   | "Given this function:"                      { GIVEN_FUN }
-  |"Determine whether the following propositions are equivalent:"  { GIVEN_PROP_EQUIV }
   | "Evaluate the Boolean expression:"          { EVALUATE_BOOL_PROB }
+  | "Determine whether the Boolean expressions are equivalent:" { BOOLEAN_EQUIV_PROB }
   | "When:"                                    { WHEN_WORD }
   | "Enter 1 for True and 0 for False."         { BOOL_ANSWER_HINT }
+  | "Enter 1 if equivalent and 0 otherwise."    { BOOL_EQUIV_ANSWER_HINT }
   | "True"                                     { TRUE_WORD }
   | "False"                                    { FALSE_WORD }
   | "AND"                                      { AND_WORD }
@@ -136,11 +137,6 @@ rule read =
   | "ln"                            { LN_OP }
   | "sin"                           { SIN_OP }
   | "cos"                           { COS_OP }
-  | "\\land"                        { AND_OP }
-  | "\\lor"                         { OR_OP }
-  | "\\to"                          { IMP_OP }
-  | "\\leftrightarrow"              { EQUIV_OP }
-  | "\\neg"                         { NOT_OP }
   (* ------------------- NEW CODE END ------------------- *)
 
   | '='                             { EQ }

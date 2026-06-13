@@ -244,7 +244,28 @@ and describe_question_item question_item =
   | Q_Given_Function (fun_name, derp_list) ->
       DCST.qderivative fun_name (describe_derivative_prob_list derp_list)
   (* ------------------- NEW CODE END ------------------- *)
-
+  | Q_Boolean_Eval (expr, assignments, ans, None) ->
+	      DCST.qbool_eval
+	        (describe_bool_expr expr)
+	        (describe_bool_assignment_list assignments)
+	        (describe_answer_item ans)
+	  | Q_Boolean_Eval (expr, assignments, ans, Some width) ->
+	      DCST.qbool_eval_width
+	        (describe_bool_expr expr)
+	        (describe_bool_assignment_list assignments)
+	        (describe_answer_item ans)
+	        width
+  | Q_Boolean_Equiv (left, right, ans, None) ->
+      DCST.qbool_equiv
+        (describe_bool_expr left)
+        (describe_bool_expr right)
+        (describe_answer_item ans)
+  | Q_Boolean_Equiv (left, right, ans, Some width) ->
+      DCST.qbool_equiv_width
+        (describe_bool_expr left)
+        (describe_bool_expr right)
+        (describe_answer_item ans)
+        width
 and describe_set_list s_list =
   if print_describe then prerr_endline "→ describe_set_list";
   match s_list with
@@ -308,13 +329,55 @@ and describe_set_primary primary =
   | Set_Op_Paren op -> DCST.set_primary_paren (describe_set_operation op)
   | Set_Op_Var var -> DCST.set_primary_var var
 
-and describe_question_text question_text = 
+and describe_question_text question_text =
   if print_describe then prerr_endline "→ describe_question_text";
   match question_text with
-  | Q_Value    c  -> DCST.qvalue    (describe_intext_call c)
-  | Q_IsEqual  c  -> DCST.qis       (describe_intext_call c)
+	  | Q_Value    c  -> DCST.qvalue    (describe_intext_call c)
+	  | Q_IsEqual  c  -> DCST.qis       (describe_intext_call c)
 
-and describe_answer_item answer_item = 
+and describe_bool_assignment_list assignments =
+  if print_describe then prerr_endline "→ describe_bool_assignment_list";
+  match assignments with
+  | [assignment] ->
+      DCST.bool_assignment_list_last (describe_bool_assignment assignment)
+  | assignment :: rest ->
+      DCST.bool_assignment_list_cons
+        (describe_bool_assignment assignment)
+        (describe_bool_assignment_list rest)
+  | [] ->
+      invalid_arg "describe: empty bool_assignment_list"
+
+and describe_bool_assignment (name, value) =
+  if print_describe then prerr_endline "→ describe_bool_assignment";
+  if value then
+    DCST.bool_assignment_true name
+  else
+    DCST.bool_assignment_false name
+
+and describe_bool_expr expr =
+  if print_describe then prerr_endline "→ describe_bool_expr";
+  match expr with
+  | Bool_Const true -> DCST.bool_true ()
+  | Bool_Const false -> DCST.bool_false ()
+  | Bool_Var name -> DCST.bool_var name
+  | Bool_Not inner -> DCST.bool_not (describe_bool_operand inner)
+  | Bool_And (left, right) ->
+      DCST.bool_and (describe_bool_operand left) (describe_bool_operand right)
+  | Bool_Or (left, right) ->
+      DCST.bool_or (describe_bool_operand left) (describe_bool_operand right)
+  | Bool_Xor (left, right) ->
+      DCST.bool_xor (describe_bool_operand left) (describe_bool_operand right)
+  | Bool_Implies (left, right) ->
+      DCST.bool_implies (describe_bool_operand left) (describe_bool_operand right)
+  | Bool_Iff (left, right) ->
+      DCST.bool_iff (describe_bool_operand left) (describe_bool_operand right)
+
+and describe_bool_operand expr =
+  match expr with
+  | Bool_Const _ | Bool_Var _ -> describe_bool_expr expr
+  | _ -> DCST.bool_paren (describe_bool_expr expr)
+
+and describe_answer_item answer_item =
   if print_describe then prerr_endline "→ describe_answer_item";
   match answer_item with
   | A_Var var     -> DCST.ans_var (describe_variable var)

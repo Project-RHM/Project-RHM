@@ -243,8 +243,6 @@ and describe_question_item question_item =
   (* ------------------- NEW CODE START ------------------- *)
   | Q_Given_Function (fun_name, derp_list) ->
       DCST.qderivative fun_name (describe_derivative_prob_list derp_list)
-  | Q_Given_Prop_Equiv prob_list ->
-      DCST.qprop_equiv (describe_prop_equiv_prob_list prob_list)
   (* ------------------- NEW CODE END ------------------- *)
   | Q_Boolean_Eval (expr, assignments, ans, None) ->
 	      DCST.qbool_eval
@@ -257,6 +255,17 @@ and describe_question_item question_item =
 	        (describe_bool_assignment_list assignments)
 	        (describe_answer_item ans)
 	        width
+  | Q_Boolean_Equiv (left, right, ans, None) ->
+      DCST.qbool_equiv
+        (describe_bool_expr left)
+        (describe_bool_expr right)
+        (describe_answer_item ans)
+  | Q_Boolean_Equiv (left, right, ans, Some width) ->
+      DCST.qbool_equiv_width
+        (describe_bool_expr left)
+        (describe_bool_expr right)
+        (describe_answer_item ans)
+        width
 and describe_set_list s_list =
   if print_describe then prerr_endline "→ describe_set_list";
   match s_list with
@@ -351,17 +360,22 @@ and describe_bool_expr expr =
   | Bool_Const true -> DCST.bool_true ()
   | Bool_Const false -> DCST.bool_false ()
   | Bool_Var name -> DCST.bool_var name
-  | Bool_Not inner -> DCST.bool_not (describe_bool_expr inner)
+  | Bool_Not inner -> DCST.bool_not (describe_bool_operand inner)
   | Bool_And (left, right) ->
-      DCST.bool_and (describe_bool_expr left) (describe_bool_expr right)
+      DCST.bool_and (describe_bool_operand left) (describe_bool_operand right)
   | Bool_Or (left, right) ->
-      DCST.bool_or (describe_bool_expr left) (describe_bool_expr right)
+      DCST.bool_or (describe_bool_operand left) (describe_bool_operand right)
   | Bool_Xor (left, right) ->
-      DCST.bool_xor (describe_bool_expr left) (describe_bool_expr right)
+      DCST.bool_xor (describe_bool_operand left) (describe_bool_operand right)
   | Bool_Implies (left, right) ->
-      DCST.bool_implies (describe_bool_expr left) (describe_bool_expr right)
+      DCST.bool_implies (describe_bool_operand left) (describe_bool_operand right)
   | Bool_Iff (left, right) ->
-      DCST.bool_iff (describe_bool_expr left) (describe_bool_expr right)
+      DCST.bool_iff (describe_bool_operand left) (describe_bool_operand right)
+
+and describe_bool_operand expr =
+  match expr with
+  | Bool_Const _ | Bool_Var _ -> describe_bool_expr expr
+  | _ -> DCST.bool_paren (describe_bool_expr expr)
 
 and describe_answer_item answer_item =
   if print_describe then prerr_endline "→ describe_answer_item";
@@ -494,36 +508,6 @@ and describe_derivative_prob = function
       DCST.der_prob_2 i1 fun_name i2
   | Second_Derivative fun_name ->
       DCST.der_prob_3 fun_name
-
-(* ================================================================ *)
-(* ============== Propositional Logic Describe =================== *)
-(* ================================================================ *)
-
-and describe_prop_expr expr =
-  match expr with
-  | Prop_Var v -> DCST.prop_var v
-  | Prop_True -> DCST.prop_true ()
-  | Prop_False -> DCST.prop_false ()
-  | Prop_Not e -> DCST.prop_not (describe_prop_expr e)
-  | Prop_And (l, r) -> DCST.prop_and (describe_prop_expr l) (describe_prop_expr r)
-  | Prop_Or (l, r) -> DCST.prop_or (describe_prop_expr l) (describe_prop_expr r)
-  | Prop_Imp (l, r) -> DCST.prop_imp (describe_prop_expr l) (describe_prop_expr r)
-  | Prop_Equiv (l, r) -> DCST.prop_equiv (describe_prop_expr l) (describe_prop_expr r)
-
-and describe_prop_equiv_question q =
-  match q with
-  | Prop_Equiv_Judge (e1, e2, is_equiv) ->
-      DCST.prop_equiv_judge (describe_prop_expr e1) (describe_prop_expr e2) is_equiv
-  | Prop_Equiv_Choice (e1, correct, wrongs, idx) ->
-      let wrongs_dcst = List.map describe_prop_expr wrongs in
-      DCST.prop_equiv_choice (describe_prop_expr e1) (describe_prop_expr correct) wrongs_dcst idx
-
-and describe_prop_equiv_prob_list plist =
-  match plist with
-  | Prop_Equiv_Prob_List_Cons (q, rest) ->
-      DCST.prop_equiv_prob_list_cons (describe_prop_equiv_question q) (describe_prop_equiv_prob_list rest)
-  | Prop_Equiv_Prob_List_Last q ->
-      DCST.prop_equiv_prob_list_last (describe_prop_equiv_question q)
 
 (* ------------------- NEW CODE END ------------------- *)
 

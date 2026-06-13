@@ -381,6 +381,12 @@ and pp_question_item fmt = function
       pp_bool_assignments assignments
       pp_answer_item ans
       pp_int_option oi
+  | Ast.Q_Boolean_Equiv (left, right, ans, oi) ->
+    fprintf fmt "Q_Boolean_Equiv(%a,@ %a,@ %a,@ %a)"
+      pp_bool_expr left
+      pp_bool_expr right
+      pp_answer_item ans
+      pp_int_option oi
 
 and pp_question_text fmt = function
   | Ast.Q_Value  ic -> fprintf fmt "Q_Value(%a)"   pp_intext_call ic
