@@ -499,8 +499,10 @@ class print = object (self)
   method! case_qbool_equiv
       left right ans =
     self#visit_BOOLEAN_EQUIV_PROB ^^ hardline
-    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr left ^^ self#visit_IT_MATH_CLOSE ^^ hardline
-    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr right ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr left
+    ^^ string ", "
+    ^^ super#visit_bool_expr right
+    ^^ self#visit_IT_MATH_CLOSE ^^ hardline
     ^^ self#visit_BOOL_EQUIV_ANSWER_HINT ^^ hardline
     ^^ self#visit_BLANK
     ^^ string "{"
@@ -511,8 +513,10 @@ class print = object (self)
   method! case_qbool_equiv_width
       left right ans w =
     self#visit_BOOLEAN_EQUIV_PROB ^^ hardline
-    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr left ^^ self#visit_IT_MATH_CLOSE ^^ hardline
-    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr right ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr left
+    ^^ string ", "
+    ^^ super#visit_bool_expr right
+    ^^ self#visit_IT_MATH_CLOSE ^^ hardline
     ^^ self#visit_BOOL_EQUIV_ANSWER_HINT ^^ hardline
     ^^ self#visit_BLANK
     ^^ string "{answer=>"
