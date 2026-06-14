@@ -25,7 +25,7 @@ let max_question_num = {{ max_question_num }}
     1 = arithmetic only,
     2 = set only,
     3 = vector only
-    4 = derivative only
+    4 = calculus only (derivative and integral),
     5 = Boolean Algebra only (includes evaluation and equivalence) *)
 let problem_type = {{ problem_type }}
 
@@ -36,7 +36,7 @@ let problem_type = {{ problem_type }}
    *)
 let question_random_amounts = {{ question_random_amounts }}
 (* The amount of each question type:
-     - [arithmetic_amount; set_amount; vector_amount; derivative_amount; boolean_amount]
+     - [arithmetic_amount; set_amount; vector_amount; calculus_amount; boolean_amount]
      - the total amount of questions should be within the interval [min_question_num, max_question_num]
    *)
 let question_type_amounts = {{ question_type_amounts }}
@@ -102,16 +102,26 @@ let max_vector_prob_num = {{ max_vector_prob_num }}
 (* ----------------------------------------------- *)
 
 (* ============================================== *)
-(* ======= Derivative Question Difficulty ======= *)
+(* ======= Calculus Question Difficulty ======= *)
 (* ============================================== *)
 (* The max depth of a function expression:
    - Set min_fun_expr_depth and max_fun_expr_depth both as 1 to generate only basic functions *)
 let min_fun_expr_depth = {{ min_fun_expr_depth }}
 let max_fun_expr_depth = {{ max_fun_expr_depth }}
 
+(* 0 = mixed, 1 = derivative only, 2 = integral only. *)
+let calculus_question_mode = {{ calculus_question_mode }}
+
+(* Used when calculus_question_mode = 0. Weights for each type: *)
+let derivative_weight = {{ derivative_weight }}
+let integral_weight = {{ integral_weight }}
+
 (* Derivative problem configuration *)
 let min_derivative_prob_num = {{ min_derivative_prob_num }}
 let max_derivative_prob_num = {{ max_derivative_prob_num }}
+
+(* Integral problem configuration *)
+let integral_expr_depth = {{ integral_expr_depth }}
 
 (* ----------------------------------------------- *)
 

@@ -140,8 +140,10 @@ def config():
             'min_set_element', 'max_set_element', 'max_set_def_num', 'min_set_prob_num',
             'max_set_prob_num', 'vector_dimension', 'min_vector_element', 'max_vector_element',
             'max_vector_def_num', 'min_vector_prob_num', 'max_vector_prob_num',
-            'min_fun_expr_depth', 'max_fun_expr_depth',             'min_derivative_prob_num',
-            'max_derivative_prob_num', 'boolean_question_mode', 'boolean_eval_weight',
+            'min_fun_expr_depth', 'max_fun_expr_depth', 'calculus_question_mode',
+            'derivative_weight', 'integral_weight', 'min_derivative_prob_num',
+            'max_derivative_prob_num', 'integral_expr_depth',
+            'boolean_question_mode', 'boolean_eval_weight',
             'boolean_equiv_weight', 'min_bool_expr_depth', 'max_bool_expr_depth',
             'min_bool_var_num', 'max_bool_var_num'
         ]

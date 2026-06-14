@@ -1,0 +1,45 @@
+Doc_No_Sol(LoadMacros(None),
+Context_Setup_Vars_Last(Context_With_Config("Numeric", Cfg_Cons(flags,
+CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"), VInt(0)))]),
+Cfg_Last(flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),
+VInt(0)))])))), AnswerVars([VarDecl("anti_1",
+Var_Method(M_Formula_Fun(Linear_Fun(Int_Mul_Fun(6, Func(Power_Fun(Power_Fun_Int(Var_X, 4))))))));
+VarDecl("fun_1", Var_Field("anti_1", M_D( None))); VarDecl("anti_2",
+Var_Method(M_Formula_Fun(Power_Fun(Power_Fun_Int(Func(Power_Fun(Power_Fun_Int(Var_X, 4))), 3)))));
+VarDecl("fun_2", Var_Field("anti_2", M_D( None))); VarDecl("anti_3",
+Var_Method(M_Formula_Fun(Trig_Fun(Trig_Sin(Func(Quadratic_Fun(Quad_Square(Var_X))))))));
+VarDecl("fun_3", Var_Field("anti_3", M_D( None))); VarDecl("anti_4",
+Var_Method(M_Formula_Fun(Trig_Fun(Trig_Sin(Func(Exp_Fun(Exp(Var_X))))))));
+VarDecl("fun_4", Var_Field("anti_4", M_D( None))); VarDecl("anti_5",
+Var_Method(M_Formula_Fun(Power_Fun(Power_Fun_Int(Func(Quadratic_Fun(Quad_Square(Var_X))), 3)))));
+VarDecl("fun_5", Var_Field("anti_5", M_D( None))); VarDecl("anti_6",
+Var_Method(M_Formula_Fun(Quadratic_Fun(Quad_Square(Var_X)))));
+VarDecl("fun_6", Var_Field("anti_6", M_D( None))); VarDecl("anti_7",
+Var_Method(M_Formula_Fun(Linear_Fun(Int_Mul_Fun(3, Func(Linear_Fun(Fun_Mul_Int(Var_X, 8))))))));
+VarDecl("fun_7", Var_Field("anti_7", M_D( None))); VarDecl("anti_8",
+Var_Method(M_Formula_Fun(Trig_Fun(Trig_Sin(Func(Quadratic_Fun(Quad_Add(Var_X, 4, Var_X, 0))))))));
+VarDecl("fun_8", Var_Field("anti_8", M_D( None))); VarDecl("anti_9",
+Var_Method(M_Formula_Fun(Power_Fun(Power_Fun_Int(Func(Quadratic_Fun(Quad_Square(Var_X))), 2)))));
+VarDecl("fun_9", Var_Field("anti_9", M_D( None))); VarDecl("anti_10",
+Var_Method(M_Formula_Fun(Exp_Fun(Exp(Func(Exp_Fun(Exp(Var_X))))))));
+VarDecl("fun_10", Var_Field("anti_10", M_D( None)))])),
+Problem([Q_Given_Function("fun_1",
+Derivative_Prob_List_Last(Indefinite_Integral("anti_1")));
+Q_Given_Function("fun_2",
+Derivative_Prob_List_Last(Indefinite_Integral("anti_2")));
+Q_Given_Function("fun_3",
+Derivative_Prob_List_Last(Indefinite_Integral("anti_3")));
+Q_Given_Function("fun_4",
+Derivative_Prob_List_Last(Indefinite_Integral("anti_4")));
+Q_Given_Function("fun_5",
+Derivative_Prob_List_Last(Indefinite_Integral("anti_5")));
+Q_Given_Function("fun_6",
+Derivative_Prob_List_Last(Indefinite_Integral("anti_6")));
+Q_Given_Function("fun_7",
+Derivative_Prob_List_Last(Indefinite_Integral("anti_7")));
+Q_Given_Function("fun_8",
+Derivative_Prob_List_Last(Indefinite_Integral("anti_8")));
+Q_Given_Function("fun_9",
+Derivative_Prob_List_Last(Indefinite_Integral("anti_9")));
+Q_Given_Function("fun_10",
+Derivative_Prob_List_Last(Indefinite_Integral("anti_10")))]))

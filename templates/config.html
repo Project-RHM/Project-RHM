@@ -25,7 +25,7 @@
             <button class="nav-tab" onclick="showTab('arithmetic')">Arithmetic problem</button>
             <button class="nav-tab" onclick="showTab('set')">Set problem</button>
             <button class="nav-tab" onclick="showTab('vector')">Vector problem</button>
-            <button class="nav-tab" onclick="showTab('derivative')">Derivative problem</button>
+            <button class="nav-tab" onclick="showTab('derivative')">Calculus problem</button>
             <button class="nav-tab" onclick="showTab('boolean')">Boolean problem</button>
         </div>
 
@@ -73,7 +73,7 @@
                             <option value="1" {% if config.problem_type == 1 %}selected{% endif %}>Arithmetic Only</option>
                             <option value="2" {% if config.problem_type == 2 %}selected{% endif %}>Set Only</option>
                             <option value="3" {% if config.problem_type == 3 %}selected{% endif %}>Vector Only</option>
-                            <option value="4" {% if config.problem_type == 4 %}selected{% endif %}>Derivative Only</option>
+                            <option value="4" {% if config.problem_type == 4 %}selected{% endif %}>Calculus Only</option>
                             <option value="5" {% if config.problem_type == 5 %}selected{% endif %}>Boolean Algebra Only</option>
                         </select>
                     </div>
@@ -89,7 +89,7 @@
 
                         <div id="question-type-amounts-container">
                             <div class="form-row">
-                                {% set type_names = ["Arithmetic", "Set", "Vector", "Derivative", "Boolean"] %}
+                                {% set type_names = ["Arithmetic", "Set", "Vector", "Calculus", "Boolean"] %}
                                 {% for i in range(5) %}
                                 <div class="form-group">
                                     <label for="question_type_amounts_{{ i }}">{{ type_names[i] }} num</label>
@@ -266,10 +266,10 @@
                 </div>
             </div>
 
-            <!-- Derivative problem configs -->
+            <!-- Calculus problem configs -->
             <div id="derivative" class="tab-content">
                 <div class="config-section">
-                    <h3>Derivative Problem Configs</h3>
+                    <h3>Calculus Problem Configs</h3>
 
                     <!-- Function expression section -->
                     <div class="form-section">
@@ -288,7 +288,32 @@
                             </div>
                         </div>
                     </div>
-                    
+
+                    <div class="form-section">
+                        <h4>Question Mode</h4>
+                        <p class="config-description">Select derivative, integral, or a mixed calculus question set. Weights are used only in mixed mode.</p>
+                        <div class="form-group">
+                            <label for="calculus_question_mode">Calculus question mode</label>
+                            <select id="calculus_question_mode" name="calculus_question_mode">
+                                <option value="0" {% if config.get('calculus_question_mode', 0) == 0 %}selected{% endif %}>Mixed (Derivative + Integral)</option>
+                                <option value="1" {% if config.get('calculus_question_mode', 0) == 1 %}selected{% endif %}>Derivative only</option>
+                                <option value="2" {% if config.get('calculus_question_mode', 0) == 2 %}selected{% endif %}>Integral only</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="derivative_weight">Derivative weight</label>
+                                <input type="number" id="derivative_weight" name="derivative_weight"
+                                    value="{{ config.get('derivative_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="integral_weight">Integral weight</label>
+                                <input type="number" id="integral_weight" name="integral_weight"
+                                    value="{{ config.get('integral_weight', 1) }}" min="0" max="20">
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Derivative problem quantity section -->
                     <div class="form-section">
                         <h4>Derivative Problem Quantity</h4>
@@ -306,7 +331,17 @@
                             </div>
                         </div>
                     </div>
-                    
+
+                    <div class="form-section">
+                        <h4>Integral Expression Depth</h4>
+                        <p class="config-description">Control the nested depth of antiderivatives used to generate integral questions.</p>
+                        <div class="form-group">
+                            <label for="integral_expr_depth">Integral expression depth</label>
+                            <input type="number" id="integral_expr_depth" name="integral_expr_depth"
+                                value="{{ config.get('integral_expr_depth', 3) }}" min="0" max="20">
+                        </div>
+                    </div>
+
                 </div>
             </div>
 

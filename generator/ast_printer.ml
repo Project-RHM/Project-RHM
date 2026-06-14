@@ -356,6 +356,8 @@ and pp_derivative_prob fmt = function
       fprintf fmt "Derivative_Algebra(%d,%S,%d)" i1 fun_name i2
   | Ast.Second_Derivative fun_name ->
       fprintf fmt "Second_Derivative(%S)" fun_name
+  | Ast.Indefinite_Integral anti_name ->
+      fprintf fmt "Indefinite_Integral(%S)" anti_name
 
 and pp_problem_section fmt = function
   | Ast.Problem ql ->

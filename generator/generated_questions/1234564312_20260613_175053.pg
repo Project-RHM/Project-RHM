@@ -1,0 +1,55 @@
+DOCUMENT();
+loadMacros(
+"PGstandard.pl",
+"MathObjects.pl",
+"PGML.pl"
+);
+Context("Numeric");
+
+BEGIN_PGML
+# Questions:
+
+- _For arithmetic problems, if the result is not an integer, then retain *three significant digits*._
+- _For derivative problems, if the result is undefined, then *leave the blank empty*._
+
+Determine whether the Boolean expressions are equivalent:
+[`(((((C \land C)) \land ((D \oplus D)))) \land C), (((C \land C)) \lor ((((D \oplus D)) \land C)))`]
+Enter 1 if equivalent and 0 otherwise.
+[_____]{answer=>0,width=>1}
+---
+
+Determine whether the Boolean expressions are equivalent:
+[`(B \oplus C), (((B \lor C)) \lor (\neg ((B \land C))))`]
+Enter 1 if equivalent and 0 otherwise.
+[_____]{0}
+---
+
+Determine whether the Boolean expressions are equivalent:
+[`(E \to D), ((\neg E) \lor D)`]
+Enter 1 if equivalent and 0 otherwise.
+[_____]{answer=>1,width=>1}
+---
+
+Evaluate the Boolean expression:
+[`(((B \leftrightarrow B)) \oplus ((E \oplus E)))`]
+When:
+- E = \mathsf{F}
+- B = \mathsf{T}
+- C = \mathsf{T}
+Enter 1 for True and 0 for False.
+[_____]{answer=>1,width=>1}
+---
+
+Determine whether the Boolean expressions are equivalent:
+[`(C \to ((C \to C))), ((\neg C) \lor ((C \to C)))`]
+Enter 1 if equivalent and 0 otherwise.
+[_____]{answer=>1,width=>1}
+---
+
+Determine whether the Boolean expressions are equivalent:
+[`((\neg E) \to ((B \leftrightarrow A))), (((B \leftrightarrow A)) \to (\neg E))`]
+Enter 1 if equivalent and 0 otherwise.
+[_____]{answer=>0,width=>1}
+---
+END_PGML
+ENDDOCUMENT();

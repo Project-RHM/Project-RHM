@@ -24,10 +24,10 @@ let max_question_num = 10
     0 = all question type,
     1 = arithmetic only,
     2 = set only,
-	    3 = vector only
-	    4 = derivative only
-	    5 = Boolean Algebra only *)
-let problem_type = 5
+    3 = vector only
+    4 = calculus only (derivative and integral),
+    5 = Boolean Algebra only (includes evaluation and equivalence) *)
+let problem_type = 4
 
 (* For problem type is 0 (all question type):
    you can set the amount of each question type.
@@ -36,8 +36,8 @@ let problem_type = 5
    *)
 let question_random_amounts = false
 (* The amount of each question type:
-	   - [arithmetic_amount; set_amount; vector_amount; derivative_amount; boolean_amount]
-   - the total amount of questions should be within the interval [min_question_num, max_question_num]
+     - [arithmetic_amount; set_amount; vector_amount; calculus_amount; boolean_amount]
+     - the total amount of questions should be within the interval [min_question_num, max_question_num]
    *)
 let question_type_amounts = [4; 2; 2; 2; 2]
 (* Set shuffle_questions_for_0_type as true if you want to shuffle the order of the questions. *)
@@ -102,16 +102,26 @@ let max_vector_prob_num = 6
 (* ----------------------------------------------- *)
 
 (* ============================================== *)
-(* ======= Derivative Question Difficulty ======= *)
+(* ======= Calculus Question Difficulty ======= *)
 (* ============================================== *)
 (* The max depth of a function expression:
    - Set min_fun_expr_depth and max_fun_expr_depth both as 1 to generate only basic functions *)
 let min_fun_expr_depth = 3
 let max_fun_expr_depth = 5
 
+(* 0 = mixed, 1 = derivative only, 2 = integral only. *)
+let calculus_question_mode = 2
+
+(* Used when calculus_question_mode = 0. Weights for each type: *)
+let derivative_weight = 1
+let integral_weight = 1
+
 (* Derivative problem configuration *)
 let min_derivative_prob_num = 2
 let max_derivative_prob_num = 4
+
+(* Integral problem configuration *)
+let integral_expr_depth = 3
 
 (* ----------------------------------------------- *)
 
@@ -121,17 +131,17 @@ let max_derivative_prob_num = 4
 (* 0 = mixed, 1 = evaluation only, 2 = equivalence only. *)
 let boolean_question_mode = 0
 
-(* Used when boolean_question_mode = 0. *)
+(* Used when boolean_question_mode = 0. Weights for each type: *)
 let boolean_eval_weight = 1
 let boolean_equiv_weight = 1
 
 (* The min and max depth of a Boolean expression. *)
 let min_bool_expr_depth = 2
-let max_bool_expr_depth = 6
+let max_bool_expr_depth = 2
 
 (* The number of Boolean variables used in one problem. *)
 let min_bool_var_num = 2
-let max_bool_var_num = 6
+let max_bool_var_num = 3
 
 (* The Boolean variable names used in Boolean expression questions. *)
 let boolean_variables = ["A"; "B"; "C"; "D"; "E"]

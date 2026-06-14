@@ -125,6 +125,7 @@ class print = object (self)
   method visit_VECTOR_SAME_PROB   = string "Enter a vector in the same direction as "
   (* ------------------- NEW CODE START ------------------- *)
   method visit_GIVEN_FUN          = string "Given this function:"
+  method visit_INDEFINITE_INTEGRAL_PROB = string "Find an antiderivative F(x) with C = 0:"
   (* ------------------- NEW CODE END ------------------- *)
 
   method visit_UNION          = string "U"
@@ -1074,6 +1075,15 @@ class print = object (self)
     string "[`f\'\'(x) =`] [_____]{$"
     ^^ string fun_name
     ^^ string "->D()->D()}"
+
+  method! case_integral_prob
+      anti_name =
+    self#visit_INDEFINITE_INTEGRAL_PROB
+    ^^ space
+    ^^ self#visit_BLANK
+    ^^ string "{$"
+    ^^ string anti_name
+    ^^ string "}"
 (* ------------------- NEW CODE END ------------------- *)
 
 end

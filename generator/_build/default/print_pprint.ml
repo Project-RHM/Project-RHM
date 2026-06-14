@@ -125,6 +125,7 @@ class print = object (self)
   method visit_VECTOR_SAME_PROB   = string "Enter a vector in the same direction as "
   (* ------------------- NEW CODE START ------------------- *)
   method visit_GIVEN_FUN          = string "Given this function:"
+  method visit_INDEFINITE_INTEGRAL_PROB = string "Find an antiderivative F(x) with C = 0:"
   (* ------------------- NEW CODE END ------------------- *)
 
   method visit_UNION          = string "U"
@@ -499,8 +500,10 @@ class print = object (self)
   method! case_qbool_equiv
       left right ans =
     self#visit_BOOLEAN_EQUIV_PROB ^^ hardline
-    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr left ^^ self#visit_IT_MATH_CLOSE ^^ hardline
-    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr right ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr left
+    ^^ string ", "
+    ^^ super#visit_bool_expr right
+    ^^ self#visit_IT_MATH_CLOSE ^^ hardline
     ^^ self#visit_BOOL_EQUIV_ANSWER_HINT ^^ hardline
     ^^ self#visit_BLANK
     ^^ string "{"
@@ -511,8 +514,10 @@ class print = object (self)
   method! case_qbool_equiv_width
       left right ans w =
     self#visit_BOOLEAN_EQUIV_PROB ^^ hardline
-    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr left ^^ self#visit_IT_MATH_CLOSE ^^ hardline
-    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr right ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr left
+    ^^ string ", "
+    ^^ super#visit_bool_expr right
+    ^^ self#visit_IT_MATH_CLOSE ^^ hardline
     ^^ self#visit_BOOL_EQUIV_ANSWER_HINT ^^ hardline
     ^^ self#visit_BLANK
     ^^ string "{answer=>"
@@ -602,35 +607,35 @@ class print = object (self)
 
   method! case_bool_assignment_true
       name =
-    string "- " ^^ string name ^^ string " = True"
+    string "- " ^^ string name ^^ string " = \\mathsf{T}"
 
   method! case_bool_assignment_false
       name =
-    string "- " ^^ string name ^^ string " = False"
+    string "- " ^^ string name ^^ string " = \\mathsf{F}"
 
   method! case_bool_and
       left right =
-    lparen ^^ super#visit_bool_expr left ^^ string " AND " ^^ super#visit_bool_expr right ^^ rparen
+    lparen ^^ super#visit_bool_expr left ^^ string " \\land " ^^ super#visit_bool_expr right ^^ rparen
 
   method! case_bool_or
       left right =
-    lparen ^^ super#visit_bool_expr left ^^ string " OR " ^^ super#visit_bool_expr right ^^ rparen
+    lparen ^^ super#visit_bool_expr left ^^ string " \\lor " ^^ super#visit_bool_expr right ^^ rparen
 
   method! case_bool_xor
       left right =
-    lparen ^^ super#visit_bool_expr left ^^ string " XOR " ^^ super#visit_bool_expr right ^^ rparen
+    lparen ^^ super#visit_bool_expr left ^^ string " \\oplus " ^^ super#visit_bool_expr right ^^ rparen
 
   method! case_bool_implies
       left right =
-    lparen ^^ super#visit_bool_expr left ^^ string " IMPLIES " ^^ super#visit_bool_expr right ^^ rparen
+    lparen ^^ super#visit_bool_expr left ^^ string " \\to " ^^ super#visit_bool_expr right ^^ rparen
 
   method! case_bool_iff
       left right =
-    lparen ^^ super#visit_bool_expr left ^^ string " IFF " ^^ super#visit_bool_expr right ^^ rparen
+    lparen ^^ super#visit_bool_expr left ^^ string " \\leftrightarrow " ^^ super#visit_bool_expr right ^^ rparen
 
   method! case_bool_not
       expr =
-    lparen ^^ string "NOT " ^^ super#visit_bool_expr expr ^^ rparen
+    string "\\neg " ^^ super#visit_bool_expr expr
 
   method! case_bool_paren
       expr =
@@ -638,11 +643,11 @@ class print = object (self)
 
   method! case_bool_true
       () =
-    string "True"
+    string "\\mathsf{T}"
 
   method! case_bool_false
       () =
-    string "False"
+    string "\\mathsf{F}"
 
   method! case_bool_var
       name =
@@ -1070,6 +1075,15 @@ class print = object (self)
     string "[`f\'\'(x) =`] [_____]{$"
     ^^ string fun_name
     ^^ string "->D()->D()}"
+
+  method! case_integral_prob
+      anti_name =
+    self#visit_INDEFINITE_INTEGRAL_PROB
+    ^^ space
+    ^^ self#visit_BLANK
+    ^^ string "{$"
+    ^^ string anti_name
+    ^^ string "}"
 (* ------------------- NEW CODE END ------------------- *)
 
 end

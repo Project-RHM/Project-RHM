@@ -228,7 +228,13 @@ and convert_context_setup_list (context_setup_list : context_setup_list) (answer
       | other -> other)
     | _ -> (* all type of questions only *)
       (* Split answer_vars into function definitions and set answer variables *)
-      let function_vars = List.filter (fun (name, _) -> String.length name >= 4 && String.sub name 0 4 = "fun_") answer_vars in
+      let function_vars =
+        List.filter
+          (fun (name, _) ->
+            (String.length name >= 4 && String.sub name 0 4 = "fun_")
+            || (String.length name >= 5 && String.sub name 0 5 = "anti_"))
+          answer_vars
+      in
       let set_vars = List.filter (fun (name, _) -> String.length name >= 8 && String.sub name 0 8 = "set_ans_") answer_vars in
 
       (match context_setup_list with
@@ -274,10 +280,10 @@ let rec gen_document () : document =
       let context_setup_list = gen_context_setup_list () in
       let problem_section = gen_problem_section () in
         Doc_No_Sol (header, context_setup_list, problem_section)
-    | 4 -> (* derivative only *)
+    | 4 -> (* calculus only *)
       let header = gen_header () in
       let context_setup_list = gen_context_setup_list () in
-      let (problem_section, answer_vars) = gen_derivative_problem_section () in
+      let (problem_section, answer_vars) = gen_calculus_problem_section () in
       let modified_context_setup_list = convert_context_setup_list context_setup_list answer_vars in
         Doc_No_Sol (header, modified_context_setup_list, problem_section)
     | 5 -> (* Boolean Algebra only *)
@@ -311,7 +317,7 @@ and gen_context_setup_list () : context_setup_list =
       Context_Setup_No_Vars_Last (Context_Only "Interval")
     | 3 -> (* vector only *)
       Context_Setup_No_Vars_Last (Context_Only "Vector")
-    | 4 -> (* derivative only *)
+    | 4 -> (* calculus only *)
       Context_Setup_No_Vars_Last (Context_With_Config ("Numeric", Cfg_Cons(Flags, CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"),VInt(0)))]), Cfg_Last(Flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),VInt(0)))])))))
     | 5 -> (* Boolean Algebra only *)
 	      Context_Setup_No_Vars_Last (Context_Only "Numeric")
@@ -534,7 +540,7 @@ and gen_question_list () : question_item list =
       let arithmetic_count = List.nth question_type_amounts 0 in
       let set_count = List.nth question_type_amounts 1 in
       let vector_count = List.nth question_type_amounts 2 in
-      let derivative_count = List.nth question_type_amounts 3 in
+      let calculus_count = List.nth question_type_amounts 3 in
       let boolean_count = List.nth question_type_amounts 4 in
 
       (* Generate each question type *)
@@ -547,16 +553,16 @@ and gen_question_list () : question_item list =
       let vector_questions =
         List.init vector_count (fun _ -> gen_vector_question ())
       in
-      let derivative_questions =
-        List.init derivative_count (fun _ ->
-          let (q, _) = gen_derivative_question () in
+      let calculus_questions =
+        List.init calculus_count (fun _ ->
+          let (q, _) = gen_calculus_question () in
           q
         )
       in
       let boolean_questions =
         List.init boolean_count (fun _ -> gen_boolean_question ())
       in
-      let all_questions = arithmetic_questions @ set_questions @ vector_questions @ derivative_questions @ boolean_questions in
+      let all_questions = arithmetic_questions @ set_questions @ vector_questions @ calculus_questions @ boolean_questions in
         if shuffle_questions_for_0_type = true then
           shuffle_list all_questions
         else
@@ -597,7 +603,7 @@ and gen_question_item () : question_item =
           | 1 -> gen_set_question ()
           | 2 -> gen_vector_question ()
           | 3 ->
-              let (q, _) = gen_derivative_question () in
+              let (q, _) = gen_calculus_question () in
               q
           | _ -> gen_boolean_question ())
   | 1 ->  (* Arithmetic only *)
@@ -606,8 +612,8 @@ and gen_question_item () : question_item =
       gen_set_question ()
   | 3 ->  (* Vector only *)
       gen_vector_question ()
-	  | 4 ->  (* Derivative only *)
-	      let (q, _) = gen_derivative_question () in
+	  | 4 ->  (* Calculus only *)
+	      let (q, _) = gen_calculus_question () in
 	      q
 	  | 5 ->  (* Boolean Algebra only *)
 	      gen_boolean_question ()
@@ -1180,16 +1186,35 @@ and convert_problem_section (problem_section : problem_section) : problem_sectio
       in
 
       (* Convert each question item *)
+      let rec collect_integral_answers = function
+        | Derivative_Prob_List_Last (Indefinite_Integral anti_name) ->
+            [anti_name]
+        | Derivative_Prob_List_Last _ ->
+            []
+        | Derivative_Prob_List_Cons (Indefinite_Integral anti_name, rest) ->
+            anti_name :: collect_integral_answers rest
+        | Derivative_Prob_List_Cons (_, rest) ->
+            collect_integral_answers rest
+      in
+
       let convert_question_item = function
         | Q_Given_Set (set_list, set_prob_list) ->
             let (modified_set_prob_list, new_vars) = convert_set_prob_list set_prob_list counter in
             answer_vars := new_vars @ !answer_vars;
             Q_Given_Set (set_list, modified_set_prob_list)
         | Q_Given_Function (fun_name, derivative_prob_list) ->
-            (* For derivative questions, handle the function definition *)
-            let var_name = fun_name in
-            let var_decl = (var_name, Var_Method (M_Formula_Fun (gen_function_expr ()))) in
-            answer_vars := var_decl :: !answer_vars;
+            let integral_answers = collect_integral_answers derivative_prob_list in
+            let var_decls =
+              match integral_answers with
+              | [] ->
+                  [(fun_name, Var_Method (M_Formula_Fun (gen_function_expr ()))) ]
+              | anti_name :: _ ->
+                  [
+                    (anti_name, Var_Method (M_Formula_Fun (gen_integral_antiderivative_expr ())));
+                    (fun_name, Var_Field (anti_name, M_D None));
+                  ]
+            in
+            answer_vars := var_decls @ !answer_vars;
             Q_Given_Function (fun_name, derivative_prob_list)
         | Q_Item (qtext, ans, width) as item ->
             item (* Keep arithmetic questions unchanged *)
@@ -1389,6 +1414,77 @@ and gen_vector_question () : question_item =
 (* ============================================================= *)
 (* ============== Derivative Generation Functions ============== *)
 (* ============================================================= *)
+and gen_calculus_question () : question_item * answer_vars =
+  match calculus_question_mode with
+  | 1 -> gen_derivative_question ()
+  | 2 -> gen_integral_question ()
+  | _ ->
+      let der_weight = max 0 derivative_weight in
+      let int_weight = max 0 integral_weight in
+      let total = der_weight + int_weight in
+      if total = 0 then
+        if Random.bool () then gen_derivative_question () else gen_integral_question ()
+      else if Random.int total < der_weight then
+        gen_derivative_question ()
+      else
+        gen_integral_question ()
+
+and gen_integral_question () : question_item * answer_vars =
+  incr fun_counter;
+  let index = !fun_counter in
+  let fun_name = Printf.sprintf "fun_%d" index in
+  let anti_name = Printf.sprintf "anti_%d" index in
+  let anti_expr = gen_integral_antiderivative_expr () in
+  let answer_vars = [
+    (anti_name, Var_Method (M_Formula_Fun anti_expr));
+    (fun_name, Var_Field (anti_name, M_D None));
+  ] in
+  let integral_prob_list = Derivative_Prob_List_Last (Indefinite_Integral anti_name) in
+  (Q_Given_Function (fun_name, integral_prob_list), answer_vars)
+
+and gen_integral_antiderivative_expr () : function_expr =
+  let depth = max 0 integral_expr_depth in
+  gen_integral_antiderivative_expr_root depth
+
+and gen_integral_antiderivative_expr_root depth : function_expr =
+  if depth <= 0 then
+    gen_integral_antiderivative_base ()
+  else
+    match Random.int 8 with
+    | 0 ->
+        Linear_Fun (Int_Mul_Fun (1 + Random.int 6, gen_integral_fun_or_var (depth - 1)))
+    | 1 ->
+        Power_Fun (Power_Fun_Int (gen_integral_fun_or_var (depth - 1), 2 + Random.int 4))
+    | 2 ->
+        Quadratic_Fun (Quad_Square (gen_integral_fun_or_var (depth - 1)))
+    | 3 ->
+        let coeff = 1 + Random.int 5 in
+        Quadratic_Fun (Quad_Add (gen_integral_fun_or_var (depth - 1), coeff, gen_integral_fun_or_var (depth - 1), 0))
+    | 4 ->
+        Trig_Fun (Trig_Sin (gen_integral_fun_or_var (depth - 1)))
+    | 5 ->
+        Trig_Fun (Trig_Cos (gen_integral_fun_or_var (depth - 1)))
+    | 6 ->
+        Exp_Fun (Exp (gen_integral_fun_or_var (depth - 1)))
+    | _ ->
+        gen_integral_antiderivative_base ()
+
+and gen_integral_antiderivative_base () : function_expr =
+  match Random.int 7 with
+  | 0 -> Linear_Fun (Int_Mul_Fun (1 + Random.int 8, Var_X))
+  | 1 -> Linear_Fun (Fun_Mul_Int (Var_X, 1 + Random.int 8))
+  | 2 -> Quadratic_Fun (Quad_Add (Var_X, 1 + Random.int 6, Var_X, 0))
+  | 3 -> Quadratic_Fun (Quad_Sub (Var_X, 1 + Random.int 6, Var_X, 0))
+  | 4 -> Power_Fun (Power_Fun_Int (Var_X, 2 + Random.int 5))
+  | 5 -> Trig_Fun (if Random.bool () then Trig_Sin Var_X else Trig_Cos Var_X)
+  | _ -> Exp_Fun (Exp Var_X)
+
+and gen_integral_fun_or_var depth : fun_or_var =
+  if depth <= 0 || Random.int 3 = 0 then
+    Var_X
+  else
+    Func (gen_integral_antiderivative_expr_root (depth - 1))
+
 (* Generate derivative question with answer_vars *)
 and gen_derivative_question () : question_item * answer_vars =
   incr fun_counter;
@@ -1619,6 +1715,20 @@ and gen_derivative_question_list () : question_list * answer_vars =
     if i = 0 then (List.rev acc_questions, List.rev acc_vars)
     else
       let (question, vars) = gen_derivative_question () in
-      aux (i - 1) (question :: acc_questions) (vars @ acc_vars)
+      aux (i - 1) (question :: acc_questions) (List.rev_append vars acc_vars)
+  in
+  aux n [] []
+
+and gen_calculus_problem_section () : problem_section * answer_vars =
+  let (question_list, answer_vars) = gen_calculus_question_list () in
+  (Problem question_list, answer_vars)
+
+and gen_calculus_question_list () : question_list * answer_vars =
+  let n = min_question_num + Random.int (max_question_num - min_question_num + 1) in
+  let rec aux i acc_questions acc_vars =
+    if i = 0 then (List.rev acc_questions, List.rev acc_vars)
+    else
+      let (question, vars) = gen_calculus_question () in
+      aux (i - 1) (question :: acc_questions) (List.rev_append vars acc_vars)
   in
   aux n [] []

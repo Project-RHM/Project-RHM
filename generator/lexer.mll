@@ -70,6 +70,7 @@ rule read =
   | "Enter a vector in the same direction as "  { VECTOR_SAME_PROB }
   (* ------------------- NEW CODE START ------------------- *)
   | "Given this function:"                      { GIVEN_FUN }
+  | "Find an antiderivative F(x) with C = 0:"   { INDEFINITE_INTEGRAL_PROB }
   | "Evaluate the Boolean expression:"          { EVALUATE_BOOL_PROB }
   | "Determine whether the Boolean expressions are equivalent:" { BOOLEAN_EQUIV_PROB }
   | "When:"                                    { WHEN_WORD }

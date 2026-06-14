@@ -230,6 +230,7 @@ and derivative_prob =
   | First_Derivative    of string
   | Derivative_Algebra  of int * string * int
   | Second_Derivative   of string
+  | Indefinite_Integral of string
 
 (* ------------------- NEW CODE END ------------------- *)
 (* ================================================================ *)

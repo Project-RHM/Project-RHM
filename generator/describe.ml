@@ -508,6 +508,8 @@ and describe_derivative_prob = function
       DCST.der_prob_2 i1 fun_name i2
   | Second_Derivative fun_name ->
       DCST.der_prob_3 fun_name
+  | Indefinite_Integral anti_name ->
+      DCST.integral_prob anti_name
 
 (* ------------------- NEW CODE END ------------------- *)
 
