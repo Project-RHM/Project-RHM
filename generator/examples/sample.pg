@@ -1,0 +1,8 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+What is the value of [`1+2*3`]? [_____]{7}
+END_PGML
+ENDDOCUMENT();

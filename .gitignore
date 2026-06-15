@@ -49,6 +49,9 @@ _build/
 # --- Generated Output ---
 generator/generated_questions/
 generator/generated_asts/
+generator/generated_visualizations/
+generator/*visualization.html
+/ast_dcst_visualization.html
 
 # --- Local IDE / User Files ---
 .vscode/

@@ -88,8 +88,17 @@
                         </div>
                     </div>
                     
-                    <h3>Generated PGML Code:</h3>
+                    <div class="result-view-switch" id="generateViewSwitch">
+                        <button type="button" class="view-switch-btn active" data-view="pgml">PGML</button>
+                        <button type="button" class="view-switch-btn" data-view="trees">AST / DCST Trees</button>
+                    </div>
+
+                    <h3 id="generatedPgmlHeading">Generated PGML Code:</h3>
                     <textarea id="output" class="output-textarea" readonly></textarea>
+
+                    <div id="generatedTreeView" class="tree-view-panel" style="display: none;">
+                        <iframe id="generatedTreeFrame" class="tree-view-frame" title="Generated question AST and DCST"></iframe>
+                    </div>
                     
                     <div id="fileInfo" class="file-info" style="display: none;">
                         <strong>Generated Files:</strong><br>
@@ -101,10 +110,10 @@
                         You have unsaved changes! Please save before leaving edit mode.
                     </div>
                     
-                    <div class="action-buttons">
+                    <div class="action-buttons" id="generateActionButtons">
                         <button type="button" id="copyBtn" class="btn btn-primary">Copy PGML Code</button>
                         <button type="button" id="showOriginalBtn" class="btn btn-secondary" style="display: none;">Show PGML Code Without Context</button>
-                        <button type="button" id="showAstBtn" class="btn btn-secondary">Show Generated AST</button>
+                        <button type="button" id="showAstBtn" class="btn btn-secondary">Open AST / DCST Trees</button>
                         <button type="button" id="editToggleBtn" class="btn btn-success">Activate Edit Mode</button>
                         <button type="button" id="saveBtn" class="btn btn-warning" style="display: none;">Save Changes</button>
                     </div>
@@ -115,7 +124,7 @@
                         
                         <div class="action-buttons">
                             <button type="button" id="originalCopyBtn" class="btn btn-primary">Copy PGML Code</button>
-                            <button type="button" id="originalShowAstBtn" class="btn btn-secondary">Show Generated AST</button>
+                            <button type="button" id="originalShowAstBtn" class="btn btn-secondary">Open AST / DCST Trees</button>
                             <button type="button" id="originalEditToggleBtn" class="btn btn-success">Activate Edit Mode</button>
                             <button type="button" id="originalSaveBtn" class="btn btn-warning" style="display: none;">Save Changes</button>
                         </div>
@@ -148,17 +157,26 @@
                 <p id="historyTitle">Viewing generated question</p>
                 
                 <div id="historyResult">
-                    <h3>PGML Code:</h3>
+                    <div class="result-view-switch" id="historyViewSwitch">
+                        <button type="button" class="view-switch-btn active" data-view="pgml">PGML</button>
+                        <button type="button" class="view-switch-btn" data-view="trees">AST / DCST Trees</button>
+                    </div>
+
+                    <h3 id="historyPgmlHeading">PGML Code:</h3>
                     <textarea id="historyOutput" class="output-textarea"></textarea>
+
+                    <div id="historyTreeView" class="tree-view-panel" style="display: none;">
+                        <iframe id="historyTreeFrame" class="tree-view-frame" title="Historical question AST and DCST"></iframe>
+                    </div>
                     
                     <div class="unsaved-changes" id="historyUnsavedWarning">
                         You have unsaved changes! Please save before leaving edit mode.
                     </div>
                     
-                    <div class="action-buttons">
+                    <div class="action-buttons" id="historyActionButtons">
                         <button type="button" id="historyCopyBtn" class="btn btn-primary">Copy PGML Code</button>
                         <button type="button" id="historyShowOriginalBtn" class="btn btn-secondary" style="display: none;">Show PGML Code Without Context</button>
-                        <button type="button" id="historyShowAstBtn" class="btn btn-secondary">Show Generated AST</button>
+                        <button type="button" id="historyShowAstBtn" class="btn btn-secondary">Open AST / DCST Trees</button>
                         <button type="button" id="historyEditToggleBtn" class="btn btn-success">Activate Edit Mode</button>
                         <button type="button" id="historySaveBtn" class="btn btn-warning" style="display: none;">Save Changes</button>
                     </div>
@@ -169,7 +187,7 @@
                         
                         <div class="action-buttons">
                             <button type="button" id="historyOriginalCopyBtn" class="btn btn-primary">Copy PGML Code</button>
-                            <button type="button" id="historyOriginalShowAstBtn" class="btn btn-secondary">Show Generated AST</button>
+                            <button type="button" id="historyOriginalShowAstBtn" class="btn btn-secondary">Open AST / DCST Trees</button>
                             <button type="button" id="historyOriginalEditToggleBtn" class="btn btn-success">Activate Edit Mode</button>
                             <button type="button" id="historyOriginalSaveBtn" class="btn btn-warning" style="display: none;">Save Changes</button>
                         </div>
@@ -210,6 +228,8 @@
         let currentContextPath = '';
         let currentOriginalPath = '';
         let contextCheckInterval = null;
+        let currentVisualizationFilename = '';
+        let currentHistoryVisualizationFilename = '';
         let originalPgmlContent = ''; // 存储原始PGML内容
 
         // 添加独立的状态变量用于原始PGML代码框
@@ -598,8 +618,7 @@
             // 显示AST按钮
             const originalShowAstBtn = document.getElementById(isGenerateArea ? 'originalShowAstBtn' : 'historyOriginalShowAstBtn');
             originalShowAstBtn.onclick = function() {
-                const astContainer = document.getElementById(isGenerateArea ? 'astContainer' : 'historyAstContainer');
-                astContainer.style.display = 'block';
+                switchResultView(area, 'trees');
             };
             
             // 编辑模式切换按钮 - 使用独立的状态管理
@@ -710,9 +729,60 @@
         }
 
         // 加载历史记录内容
+        function switchResultView(area, view) {
+            const isGenerate = area === 'generate';
+            const filename = isGenerate
+                ? currentVisualizationFilename
+                : currentHistoryVisualizationFilename;
+
+            if (view === 'trees' && !filename) {
+                alert('Tree visualization is not available for this question.');
+                return;
+            }
+
+            const prefix = isGenerate ? 'generated' : 'history';
+            const output = document.getElementById(isGenerate ? 'output' : 'historyOutput');
+            const heading = document.getElementById(`${prefix}PgmlHeading`);
+            const treePanel = document.getElementById(`${prefix}TreeView`);
+            const treeFrame = document.getElementById(`${prefix}TreeFrame`);
+            const actionButtons = document.getElementById(
+                isGenerate ? 'generateActionButtons' : 'historyActionButtons'
+            );
+            const switcher = document.getElementById(
+                isGenerate ? 'generateViewSwitch' : 'historyViewSwitch'
+            );
+            const showingTrees = view === 'trees';
+
+            heading.style.display = showingTrees ? 'none' : 'block';
+            output.style.display = showingTrees ? 'none' : 'block';
+            actionButtons.style.display = showingTrees ? 'none' : 'flex';
+            treePanel.style.display = showingTrees ? 'block' : 'none';
+
+            if (isGenerate) {
+                if (showingTrees) {
+                    document.getElementById('fileInfo').style.display = 'none';
+                }
+                document.getElementById('originalContentContainer').style.display = 'none';
+                document.getElementById('astContainer').style.display = 'none';
+            } else {
+                document.getElementById('historyOriginalContentContainer').style.display = 'none';
+                document.getElementById('historyAstContainer').style.display = 'none';
+            }
+
+            switcher.querySelectorAll('.view-switch-btn').forEach(button => {
+                button.classList.toggle('active', button.dataset.view === view);
+            });
+
+            if (showingTrees) {
+                treeFrame.src = `/tree_visualization?filename=${encodeURIComponent(filename)}`;
+            }
+        }
+
         function loadHistoryContent(filename) {
             currentHistoryFile = filename;
+            currentHistoryVisualizationFilename = '';
             showContent('historyContent');
+            switchResultView('history', 'pgml');
             
             const historyTitle = document.getElementById('historyTitle');
             const historyOutput = document.getElementById('historyOutput');
@@ -751,6 +821,10 @@
                 .then(response => response.json())
                 .then(originalData => {
                     if (originalData.success) {
+                        currentHistoryVisualizationFilename =
+                            originalData.has_visualization
+                                ? originalData.visualization_filename
+                                : '';
                         // 保存原始内容 - 这是关键修复
                         originalPgmlContent = originalData.pgml_content;
                         document.getElementById('historyOriginalOutput').value = originalPgmlContent;
@@ -979,6 +1053,15 @@
             
             // 加载历史记录
             loadHistory();
+
+            document.querySelectorAll('.result-view-switch').forEach(switcher => {
+                switcher.addEventListener('click', function(event) {
+                    const button = event.target.closest('.view-switch-btn');
+                    if (!button) return;
+                    const area = this.id === 'generateViewSwitch' ? 'generate' : 'history';
+                    switchResultView(area, button.dataset.view);
+                });
+            });
             
             // Edit API Key 按钮事件
             document.getElementById('editApiKeyBtn').addEventListener('click', function(e) {
@@ -1084,6 +1167,8 @@
                 const contextStatus = document.getElementById('contextStatus');
                 
                 // 隐藏之前的结果
+                currentVisualizationFilename = '';
+                switchResultView('generate', 'pgml');
                 resultDiv.style.display = 'none';
                 errorDiv.style.display = 'none';
                 astContainer.style.display = 'none';
@@ -1113,6 +1198,10 @@
                     
                     if (data.success) {
                         // 保存原始PGML内容
+                        currentVisualizationFilename = data.visualization_path
+                            ? data.visualization_path.split('/').pop()
+                            : '';
+                        switchResultView('generate', 'pgml');
                         originalPgmlContent = data.pgml_code || 'Fail to find PGML code.';
                         
                         if (addContext && hasApiKey) {
@@ -1180,6 +1269,8 @@
 
             // 显示AST（生成界面）
             document.getElementById('showAstBtn').addEventListener('click', function() {
+                switchResultView('generate', 'trees');
+                return;
                 if (!currentAstPath) {
                     alert('No available path for the AST file.');
                     return;
@@ -1215,7 +1306,7 @@
 
             // 显示AST（历史界面）
             document.getElementById('historyShowAstBtn').addEventListener('click', function() {
-                document.getElementById('historyAstContainer').style.display = 'block';
+                switchResultView('history', 'trees');
             });
 
             // 隐藏AST（生成界面）

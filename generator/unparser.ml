@@ -62,9 +62,16 @@ let () =
       | e -> prerr_endline ("Warning: " ^ Printexc.to_string e)
     );
 
-    (try 
-        Unix.mkdir "generated_questions" 0o755 
+    (try
+        Unix.mkdir "generated_questions" 0o755
      with 
+        Unix.Unix_error (Unix.EEXIST, _, _) -> ()
+      | e -> prerr_endline ("Warning: " ^ Printexc.to_string e)
+    );
+
+    (try
+        Unix.mkdir "generated_visualizations" 0o755
+     with
         Unix.Unix_error (Unix.EEXIST, _, _) -> ()
       | e -> prerr_endline ("Warning: " ^ Printexc.to_string e)
     );
@@ -81,9 +88,15 @@ let () =
     let oc = open_out pgml_filename in
     output_string oc pgml_code;
     close_out oc;
-    
+
+    let visualization_filename =
+      "generated_visualizations/" ^ student_id ^ "_" ^ formatted_date ^ "_trees.html"
+    in
+    Visualization.write_document_html visualization_filename pgml_code doc;
+
     print_endline ("\nAST saved to: " ^ ast_filename);
-    print_endline ("PGML code saved to: " ^ pgml_filename)
+    print_endline ("PGML code saved to: " ^ pgml_filename);
+    print_endline ("Tree visualization saved to: " ^ visualization_filename)
   
   end else begin
     (* Original parse-from-stdin → unparse → print *)

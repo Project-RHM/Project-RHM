@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 import subprocess
 import os
 import json
@@ -30,17 +30,80 @@ API_CALL_SCRIPT = os.path.join(LLM_CONTEXT_DIR, "api_call.py")
 # 添加用户API密钥存储
 USER_API_KEYS_FILE = os.path.join(BASE_DIR, "user_api_keys.json")
 
+DEFAULT_CONFIG = {
+    "min_question_num": 1,
+    "max_question_num": 5,
+    "problem_type": 0,
+    "question_random_amounts": True,
+    "question_type_amounts": [1, 1, 1, 1, 1, 1],
+    "shuffle_questions_for_0_type": True,
+    "max_expr_depth": 2,
+    "allow_float": False,
+    "min_set_expr_depth": 1,
+    "max_set_expr_depth": 2,
+    "min_set_element": -10,
+    "max_set_element": 10,
+    "max_set_def_num": 4,
+    "set_variables": ["A", "B", "C", "D", "E"],
+    "min_set_prob_num": 1,
+    "max_set_prob_num": 3,
+    "vector_dimension": 3,
+    "min_vector_element": -10,
+    "max_vector_element": 10,
+    "max_vector_def_num": 4,
+    "vector_variables": ["u", "v", "w", "p", "q"],
+    "min_vector_prob_num": 1,
+    "max_vector_prob_num": 3,
+    "min_fun_expr_depth": 1,
+    "max_fun_expr_depth": 2,
+    "calculus_question_mode": 0,
+    "derivative_weight": 1,
+    "integral_weight": 1,
+    "min_derivative_prob_num": 1,
+    "max_derivative_prob_num": 3,
+    "integral_expr_depth": 1,
+    "boolean_question_mode": 0,
+    "boolean_eval_weight": 1,
+    "boolean_equiv_weight": 1,
+    "min_bool_expr_depth": 1,
+    "max_bool_expr_depth": 3,
+    "min_bool_var_num": 2,
+    "max_bool_var_num": 4,
+    "boolean_variables": ["A", "B", "C", "D"],
+    "complex_question_mode": 0,
+    "complex_arithmetic_weight": 1,
+    "complex_conjugate_weight": 1,
+    "complex_modulus_weight": 1,
+    "complex_power_i_weight": 1,
+    "min_complex_component": -10,
+    "max_complex_component": 10,
+    "min_complex_power": 1,
+    "max_complex_power": 10,
+    "difficulty_level": "medium",
+}
+
 # 设置工作目录
 os.chdir(BASE_DIR)
 
+def dune_command(*args):
+    """Use dune directly when available, otherwise run it through opam."""
+    if shutil.which("dune"):
+        return ["dune", *args]
+    if shutil.which("opam"):
+        return ["opam", "exec", "--", "dune", *args]
+    return ["dune", *args]
+
 def read_config():
     """读取JSON配置文件"""
+    config = dict(DEFAULT_CONFIG)
     try:
         with open(CONFIG_JSON_PATH, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            saved_config = json.load(f)
+            if isinstance(saved_config, dict):
+                config.update(saved_config)
     except Exception as e:
         print(f"Fail to read JSON configuration: {e}")
-        return {}
+    return config
 
 def write_config(config):
     """写入JSON配置文件"""
@@ -56,6 +119,11 @@ def generate_ml_config():
     """根据JSON配置生成OCaml配置文件"""
     try:
         config = read_config()
+        ml_path = os.path.join(OCAML_PROJECT_DIR, "config.ml")
+
+        # Keep the checked-in default configuration until the web form is saved.
+        if not config:
+            return os.path.exists(ml_path)
         
         # 读取模板文件
         with open(CONFIG_ML_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
@@ -75,9 +143,14 @@ def generate_ml_config():
                 replacement = str(value)
             
             ml_content = ml_content.replace(f'{{{{ {key} }}}}', replacement)
+
+        unresolved = sorted(set(re.findall(r'\{\{\s*([a-zA-Z0-9_]+)\s*\}\}', ml_content)))
+        if unresolved:
+            raise ValueError(
+                "Missing OCaml configuration values: " + ", ".join(unresolved)
+            )
         
         # 写入最终的config.ml
-        ml_path = os.path.join(OCAML_PROJECT_DIR, "config.ml")
         with open(ml_path, 'w', encoding='utf-8') as f:
             f.write(ml_content)
         
@@ -91,6 +164,7 @@ def extract_pgml_and_paths(output):
     pgml_code = ""
     ast_path = ""
     pgml_path = ""
+    visualization_path = ""
     
     # 提取PGML代码部分
     pgml_match = re.search(r'Generated PGML code:\s*\n(.*?\nENDDOCUMENT\(\);)', output, re.DOTALL)
@@ -106,8 +180,15 @@ def extract_pgml_and_paths(output):
     pgml_match_path = re.search(r'PGML code saved to:\s*(generated_questions/.*?\.pg)', output)
     if pgml_match_path:
         pgml_path = pgml_match_path.group(1)
-    
-    return pgml_code, ast_path, pgml_path
+
+    visualization_match = re.search(
+        r'Tree visualization saved to:\s*(generated_visualizations/.*?\.html)',
+        output
+    )
+    if visualization_match:
+        visualization_path = visualization_match.group(1)
+
+    return pgml_code, ast_path, pgml_path, visualization_path
 
 def read_ast_file(ast_path):
     """读取AST文件内容"""
@@ -126,7 +207,7 @@ def index():
 @app.route('/config', methods=['GET', 'POST'])
 def config():
     if request.method == 'POST':
-        config_data = {}
+        config_data = read_config()
         
         # 处理表单数据
         config_data['question_random_amounts'] = request.form.get('question_random_amounts') == 'true'
@@ -190,7 +271,7 @@ def config():
             # 在配置更新成功后运行 dune build
             try:
                 build_result = subprocess.run(
-                    ["dune", "build"],
+                    dune_command("build"),
                     capture_output=True,
                     text=True,
                     timeout=60,  # 设置60秒超时，根据实际情况调整
@@ -431,7 +512,7 @@ def run_program():
     
     try:
         result = subprocess.run(
-            ["dune", "exec", "./unparser.exe", "--", student_id],
+            dune_command("exec", "./unparser.exe", "--", student_id),
             capture_output=True,
             text=True,
             timeout=30,
@@ -440,7 +521,7 @@ def run_program():
         
         if result.returncode == 0:
             # 提取PGML代码和文件路径
-            pgml_code, ast_path, pgml_path = extract_pgml_and_paths(result.stdout)
+            pgml_code, ast_path, pgml_path, visualization_path = extract_pgml_and_paths(result.stdout)
             
             return jsonify({
                 'success': True,
@@ -448,6 +529,7 @@ def run_program():
                 'pgml_code': pgml_code,
                 'ast_path': ast_path,
                 'pgml_path': pgml_path,
+                'visualization_path': visualization_path,
                 'original_pgml_content': pgml_code  # 添加原始PGML内容
             })
         else:
@@ -482,6 +564,15 @@ def get_ast():
             'success': False,
             'error': f'Failed to read the AST file: {str(e)}'
         })
+
+@app.route('/tree_visualization')
+def tree_visualization():
+    filename = os.path.basename(request.args.get('filename', '').strip())
+    if not filename:
+        return "No visualization filename provided.", 400
+
+    visualization_dir = os.path.join(OCAML_PROJECT_DIR, "generated_visualizations")
+    return send_from_directory(visualization_dir, filename)
 
 @app.route('/save_pgml', methods=['POST'])
 def save_pgml():
@@ -535,12 +626,20 @@ def get_history():
                     ast_filename = f"{student_id}_{date_str}_{time_str}_ast.txt"
                     ast_path = os.path.join(OCAML_PROJECT_DIR, "generated_asts", ast_filename)
                     has_ast = os.path.exists(ast_path)
+                    visualization_filename = f"{student_id}_{date_str}_{time_str}_trees.html"
+                    visualization_path = os.path.join(
+                        OCAML_PROJECT_DIR,
+                        "generated_visualizations",
+                        visualization_filename
+                    )
                     
                     history.append({
                         'filename': filename,
                         'student_id': student_id,
                         'timestamp': formatted_time,
                         'has_ast': has_ast,
+                        'has_visualization': os.path.exists(visualization_path),
+                        'visualization_filename': visualization_filename,
                         'raw_timestamp': f"{date_str}_{time_str}"
                     })
         
@@ -593,12 +692,21 @@ def get_history_content():
         if os.path.exists(ast_path):
             with open(ast_path, 'r', encoding='utf-8') as f:
                 ast_content = f.read()
+
+        visualization_filename = f"{base_name}_trees.html"
+        visualization_path = os.path.join(
+            OCAML_PROJECT_DIR,
+            "generated_visualizations",
+            visualization_filename
+        )
         
         return jsonify({
             'success': True,
             'pgml_content': full_content,
             'ast_content': ast_content,
-            'has_ast': bool(ast_content)
+            'has_ast': bool(ast_content),
+            'has_visualization': os.path.exists(visualization_path),
+            'visualization_filename': visualization_filename
         })
         
     except Exception as e:
