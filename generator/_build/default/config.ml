@@ -26,8 +26,9 @@ let max_question_num = 10
     2 = set only,
     3 = vector only
     4 = calculus only (derivative and integral),
-    5 = Boolean Algebra only (includes evaluation and equivalence) *)
-let problem_type = 4
+    5 = Boolean Algebra only (includes evaluation and equivalence),
+    6 = Complex Number only *)
+let problem_type = 6
 
 (* For problem type is 0 (all question type):
    you can set the amount of each question type.
@@ -36,10 +37,10 @@ let problem_type = 4
    *)
 let question_random_amounts = false
 (* The amount of each question type:
-     - [arithmetic_amount; set_amount; vector_amount; calculus_amount; boolean_amount]
+     - [arithmetic_amount; set_amount; vector_amount; calculus_amount; boolean_amount; complex_amount]
      - the total amount of questions should be within the interval [min_question_num, max_question_num]
    *)
-let question_type_amounts = [4; 2; 2; 2; 2]
+let question_type_amounts = [4; 2; 2; 2; 2; 0]
 (* Set shuffle_questions_for_0_type as true if you want to shuffle the order of the questions. *)
 let shuffle_questions_for_0_type = false
 
@@ -145,5 +146,27 @@ let max_bool_var_num = 3
 
 (* The Boolean variable names used in Boolean expression questions. *)
 let boolean_variables = ["A"; "B"; "C"; "D"; "E"]
+
+(* ----------------------------------------------- *)
+
+(* ============================================== *)
+(* ======= Complex Number Difficulty ============ *)
+(* ============================================== *)
+(* 0 = mixed, 1 = arithmetic only, 2 = conjugate only, 3 = modulus only, 4 = powers of i only. *)
+let complex_question_mode = 0
+
+(* Used when complex_question_mode = 0. Weights for each type: *)
+let complex_arithmetic_weight = 2
+let complex_conjugate_weight = 1
+let complex_modulus_weight = 1
+let complex_power_i_weight = 1
+
+(* The range of real and imaginary components in generated complex numbers. *)
+let min_complex_component = -8
+let max_complex_component = 8
+
+(* The exponent range for i^n questions. *)
+let min_complex_power = 2
+let max_complex_power = 5
 
 (* ----------------------------------------------- *)

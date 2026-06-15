@@ -145,7 +145,11 @@ def config():
             'max_derivative_prob_num', 'integral_expr_depth',
             'boolean_question_mode', 'boolean_eval_weight',
             'boolean_equiv_weight', 'min_bool_expr_depth', 'max_bool_expr_depth',
-            'min_bool_var_num', 'max_bool_var_num'
+            'min_bool_var_num', 'max_bool_var_num', 'complex_question_mode',
+            'complex_arithmetic_weight', 'complex_conjugate_weight',
+            'complex_modulus_weight', 'complex_power_i_weight',
+            'min_complex_component', 'max_complex_component',
+            'min_complex_power', 'max_complex_power'
         ]
         
         for param in int_params:
@@ -155,13 +159,13 @@ def config():
         
         # 列表参数
         question_amounts = []
-        for i in range(5):
+        for i in range(6):
             amount = request.form.get(f'question_type_amounts_{i}')
             if amount and amount.strip():
                 question_amounts.append(int(amount))
 
-        if len(question_amounts) != 5:
-            question_amounts = [0, 0, 0, 0, 0]
+        if len(question_amounts) != 6:
+            question_amounts = [0, 0, 0, 0, 0, 0]
         
         config_data['question_type_amounts'] = question_amounts
         

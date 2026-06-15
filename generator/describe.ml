@@ -166,6 +166,7 @@ and describe_math_object_method mometh =
   (* ------------------- NEW CODE START ------------------- *)
   | M_Formula_Fun  s       -> DCST.meth_form_fun (describe_function_expr s)
   (* ------------------- NEW CODE END ------------------- *)
+  | M_Complex      (re, im) -> DCST.meth_complex (describe_int_with_sign re) (describe_int_with_sign im)
   | M_Real         v       -> DCST.meth_real (describe_value v)
   | M_D            u       -> begin match u with 
                               | None   -> DCST.meth_d_none ()
@@ -266,6 +267,22 @@ and describe_question_item question_item =
         (describe_bool_expr right)
         (describe_answer_item ans)
         width
+  | Q_Complex_Arithmetic (expr, ans) ->
+      DCST.qcomplex_arith
+        (describe_complex_expr expr)
+        (describe_answer_item ans)
+  | Q_Complex_Conjugate (num, ans) ->
+      DCST.qcomplex_conj
+        (describe_complex_num num)
+        (describe_answer_item ans)
+  | Q_Complex_Modulus (num, ans) ->
+      DCST.qcomplex_mod
+        (describe_complex_num num)
+        (describe_answer_item ans)
+  | Q_Complex_Power_I (exponent, ans) ->
+      DCST.qcomplex_power_i
+        exponent
+        (describe_answer_item ans)
 and describe_set_list s_list =
   if print_describe then prerr_endline "→ describe_set_list";
   match s_list with
@@ -376,6 +393,30 @@ and describe_bool_operand expr =
   match expr with
   | Bool_Const _ | Bool_Var _ -> describe_bool_expr expr
   | _ -> DCST.bool_paren (describe_bool_expr expr)
+
+and describe_complex_expr expr =
+  if print_describe then prerr_endline "→ describe_complex_expr";
+  match expr with
+  | Complex_Lit num ->
+      DCST.complex_lit (describe_complex_num num)
+  | Complex_Add (left, right) ->
+      DCST.complex_add (describe_complex_expr left) (describe_complex_expr right)
+  | Complex_Sub (left, right) ->
+      DCST.complex_sub (describe_complex_expr left) (describe_complex_expr right)
+  | Complex_Mul (left, right) ->
+      DCST.complex_mul (describe_complex_expr left) (describe_complex_expr right)
+
+and describe_complex_num num =
+  if print_describe then prerr_endline "→ describe_complex_num";
+  match num with
+  | Complex_Num (re, 0) ->
+      DCST.complex_num_real (describe_int_with_sign re)
+  | Complex_Num (0, im) ->
+      DCST.complex_num_imag (describe_int_with_sign im)
+  | Complex_Num (re, im) when im > 0 ->
+      DCST.complex_num_pos_im (describe_int_with_sign re) im
+  | Complex_Num (re, im) ->
+      DCST.complex_num_neg_im (describe_int_with_sign re) (-im)
 
 and describe_answer_item answer_item =
   if print_describe then prerr_endline "→ describe_answer_item";

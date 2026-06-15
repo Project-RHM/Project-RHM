@@ -73,6 +73,10 @@ rule read =
   | "Find an antiderivative F(x) with C = 0:"   { INDEFINITE_INTEGRAL_PROB }
   | "Evaluate the Boolean expression:"          { EVALUATE_BOOL_PROB }
   | "Determine whether the Boolean expressions are equivalent:" { BOOLEAN_EQUIV_PROB }
+  | "Compute the complex number expression:"    { COMPLEX_ARITH_PROB }
+  | "Find the conjugate of:"                    { COMPLEX_CONJ_PROB }
+  | "Find the modulus of:"                      { COMPLEX_MOD_PROB }
+  | "Simplify the power of i:"                  { COMPLEX_POWER_I_PROB }
   | "When:"                                    { WHEN_WORD }
   | "Enter 1 for True and 0 for False."         { BOOL_ANSWER_HINT }
   | "Enter 1 if equivalent and 0 otherwise."    { BOOL_EQUIV_ANSWER_HINT }
@@ -105,6 +109,7 @@ rule read =
   | "\\left\\|"                     { LEFT_NORM_LATEX }
   | "\\right\\|"                    { RIGHT_NORM_LATEX }
   | "x"                             { X_VAR }
+  | "i"                             { I_UNIT }
   (* ------------------- NEW CODE START ------------------- *)
   | "f"                             { F_FUN }
   | "e"                             { NAT_LOG }
@@ -175,6 +180,7 @@ rule read =
       | "with"     -> WITH_METH
       | "Set"      -> SET_DEF_METH
       | "Compute"     -> COMPUTE_METH
+      | "Complex"     -> COMPLEX_METH
       | "intersect"   -> INTERSECT_METH
       | "norm"     -> NORM_METH
 	      | "unit"     -> UNIT_METH

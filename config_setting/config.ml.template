@@ -26,7 +26,8 @@ let max_question_num = {{ max_question_num }}
     2 = set only,
     3 = vector only
     4 = calculus only (derivative and integral),
-    5 = Boolean Algebra only (includes evaluation and equivalence) *)
+    5 = Boolean Algebra only (includes evaluation and equivalence),
+    6 = Complex Number only *)
 let problem_type = {{ problem_type }}
 
 (* For problem type is 0 (all question type):
@@ -36,7 +37,7 @@ let problem_type = {{ problem_type }}
    *)
 let question_random_amounts = {{ question_random_amounts }}
 (* The amount of each question type:
-     - [arithmetic_amount; set_amount; vector_amount; calculus_amount; boolean_amount]
+     - [arithmetic_amount; set_amount; vector_amount; calculus_amount; boolean_amount; complex_amount]
      - the total amount of questions should be within the interval [min_question_num, max_question_num]
    *)
 let question_type_amounts = {{ question_type_amounts }}
@@ -145,5 +146,27 @@ let max_bool_var_num = {{ max_bool_var_num }}
 
 (* The Boolean variable names used in Boolean expression questions. *)
 let boolean_variables = {{ boolean_variables }}
+
+(* ----------------------------------------------- *)
+
+(* ============================================== *)
+(* ======= Complex Number Difficulty ============ *)
+(* ============================================== *)
+(* 0 = mixed, 1 = arithmetic only, 2 = conjugate only, 3 = modulus only, 4 = powers of i only. *)
+let complex_question_mode = {{ complex_question_mode }}
+
+(* Used when complex_question_mode = 0. Weights for each type: *)
+let complex_arithmetic_weight = {{ complex_arithmetic_weight }}
+let complex_conjugate_weight = {{ complex_conjugate_weight }}
+let complex_modulus_weight = {{ complex_modulus_weight }}
+let complex_power_i_weight = {{ complex_power_i_weight }}
+
+(* The range of real and imaginary components in generated complex numbers. *)
+let min_complex_component = {{ min_complex_component }}
+let max_complex_component = {{ max_complex_component }}
+
+(* The exponent range for i^n questions. *)
+let min_complex_power = {{ min_complex_power }}
+let max_complex_power = {{ max_complex_power }}
 
 (* ----------------------------------------------- *)

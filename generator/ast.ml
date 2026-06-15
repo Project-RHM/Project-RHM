@@ -68,6 +68,7 @@ and math_object_method =
   (* ------------------- NEW CODE START ------------------- *)
   | M_Formula_Fun of function_expr
   (* ------------------- NEW CODE END ------------------- *)
+  | M_Complex  of int * int
   | M_Real     of value
   | M_D        of string option
   | M_Eval     of property
@@ -113,6 +114,10 @@ and question_item =
 (* ------------------- NEW CODE END ------------------- *)
   | Q_Boolean_Eval of bool_expr * bool_assignment list * answer_item * int option
   | Q_Boolean_Equiv of bool_expr * bool_expr * answer_item * int option
+  | Q_Complex_Arithmetic of complex_expr * answer_item
+  | Q_Complex_Conjugate of complex_num * answer_item
+  | Q_Complex_Modulus of complex_num * answer_item
+  | Q_Complex_Power_I of int * answer_item
 and question_text =
   | Q_Value     of intext_call
   | Q_IsEqual   of intext_call
@@ -248,6 +253,14 @@ and bool_expr =
   | Bool_Xor     of bool_expr * bool_expr
   | Bool_Implies of bool_expr * bool_expr
   | Bool_Iff     of bool_expr * bool_expr
+
+and complex_num = Complex_Num of int * int
+
+and complex_expr =
+  | Complex_Lit of complex_num
+  | Complex_Add of complex_expr * complex_expr
+  | Complex_Sub of complex_expr * complex_expr
+  | Complex_Mul of complex_expr * complex_expr
 
 (*
 and solution_section = Solution of solution_list

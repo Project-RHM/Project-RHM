@@ -132,6 +132,7 @@ and pp_math_object_method fmt = function
   | Ast.M_Random (a,b,c)    -> fprintf fmt "M_Random(%d,@ %d,@ %d)" a b c
   | Ast.M_Formula expr      -> fprintf fmt "M_Formula(%a)"     pp_math_expr expr
   | Ast.M_Formula_Fun expr  -> fprintf fmt "M_Formula_Fun(%a)" pp_function_expr expr
+  | Ast.M_Complex (re, im)  -> fprintf fmt "M_Complex(%d,@ %d)" re im
   | Ast.M_Real v            -> fprintf fmt "M_Real(%a)"        pp_value v
   | Ast.M_D s               -> fprintf fmt "M_D(@ %a)"         pp_string_opt s
   | Ast.M_Eval p            -> fprintf fmt "M_Eval(%a)"        pp_property p
@@ -389,6 +390,22 @@ and pp_question_item fmt = function
       pp_bool_expr right
       pp_answer_item ans
       pp_int_option oi
+  | Ast.Q_Complex_Arithmetic (expr, ans) ->
+    fprintf fmt "Q_Complex_Arithmetic(%a,@ %a)"
+      pp_complex_expr expr
+      pp_answer_item ans
+  | Ast.Q_Complex_Conjugate (num, ans) ->
+    fprintf fmt "Q_Complex_Conjugate(%a,@ %a)"
+      pp_complex_num num
+      pp_answer_item ans
+  | Ast.Q_Complex_Modulus (num, ans) ->
+    fprintf fmt "Q_Complex_Modulus(%a,@ %a)"
+      pp_complex_num num
+      pp_answer_item ans
+  | Ast.Q_Complex_Power_I (exponent, ans) ->
+    fprintf fmt "Q_Complex_Power_I(%d,@ %a)"
+      exponent
+      pp_answer_item ans
 
 and pp_question_text fmt = function
   | Ast.Q_Value  ic -> fprintf fmt "Q_Value(%a)"   pp_intext_call ic
@@ -443,3 +460,17 @@ and pp_bool_expr fmt = function
       fprintf fmt "Bool_Implies(%a,@ %a)" pp_bool_expr left pp_bool_expr right
   | Ast.Bool_Iff (left, right) ->
       fprintf fmt "Bool_Iff(%a,@ %a)" pp_bool_expr left pp_bool_expr right
+
+and pp_complex_num fmt = function
+  | Ast.Complex_Num (re, im) ->
+      fprintf fmt "Complex_Num(%d,@ %d)" re im
+
+and pp_complex_expr fmt = function
+  | Ast.Complex_Lit num ->
+      fprintf fmt "Complex_Lit(%a)" pp_complex_num num
+  | Ast.Complex_Add (left, right) ->
+      fprintf fmt "Complex_Add(%a,@ %a)" pp_complex_expr left pp_complex_expr right
+  | Ast.Complex_Sub (left, right) ->
+      fprintf fmt "Complex_Sub(%a,@ %a)" pp_complex_expr left pp_complex_expr right
+  | Ast.Complex_Mul (left, right) ->
+      fprintf fmt "Complex_Mul(%a,@ %a)" pp_complex_expr left pp_complex_expr right

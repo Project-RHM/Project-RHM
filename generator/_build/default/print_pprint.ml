@@ -74,6 +74,7 @@ class print = object (self)
   method visit_WITH_METH           = string "with"
   method visit_SET_DEF_METH        = string "Set"
   method visit_COMPUTE_METH        = string "Compute"
+  method visit_COMPLEX_METH        = string "Complex"
   method visit_INTERSECT_METH      = string "intersect"
   method visit_NORM_METH      = string "norm"
   method visit_UNIT_METH      = string "unit"
@@ -114,6 +115,10 @@ class print = object (self)
   method visit_COMPUTE_PROB   = string "Compute:"
   method visit_EVALUATE_BOOL_PROB = string "Evaluate the Boolean expression:"
   method visit_BOOLEAN_EQUIV_PROB = string "Determine whether the Boolean expressions are equivalent:"
+  method visit_COMPLEX_ARITH_PROB = string "Compute the complex number expression:"
+  method visit_COMPLEX_CONJ_PROB  = string "Find the conjugate of:"
+  method visit_COMPLEX_MOD_PROB   = string "Find the modulus of:"
+  method visit_COMPLEX_POWER_I_PROB = string "Simplify the power of i:"
   method visit_WHEN_WORD      = string "When:"
   method visit_BOOL_ANSWER_HINT = string "Enter 1 for True and 0 for False."
   method visit_BOOL_EQUIV_ANSWER_HINT = string "Enter 1 if equivalent and 0 otherwise."
@@ -136,6 +141,7 @@ class print = object (self)
   method visit_GEQ_LATEX      = string "\\geq"
   method visit_LEQ_LATEX      = string "\\leq"
   method visit_X_VAR          = string "x"
+  method visit_I_UNIT         = string "i"
   (* ------------------- NEW CODE START ------------------- *)
   method visit_F_FUN          = string "f"
   method visit_NAT_LOG        = string "e"
@@ -384,6 +390,15 @@ class print = object (self)
       string "Formula(" ^^ string "\"" ^^ (super#visit_function_expr s) ^^ string "\"" ^^ string ")"
   (* ------------------- NEW CODE END ------------------- *)
 
+  method! case_meth_complex
+      re im =
+    self#visit_COMPLEX_METH
+    ^^ lparen
+    ^^ super#visit_int_with_sign re
+    ^^ comma
+    ^^ super#visit_int_with_sign im
+    ^^ rparen
+
   method! case_meth_real
       v    = 
       string "Real(" ^^ self#visit_value v ^^ string ")"
@@ -542,6 +557,51 @@ class print = object (self)
     ^^ string "}"
     ^^ hardline ^^ string "---"
 
+  method! case_qcomplex_arith
+      expr ans =
+    self#visit_COMPLEX_ARITH_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_complex_expr expr ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qcomplex_conj
+      num ans =
+    self#visit_COMPLEX_CONJ_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_complex_num num ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qcomplex_mod
+      num ans =
+    self#visit_COMPLEX_MOD_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_complex_num num ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qcomplex_power_i
+      exponent ans =
+    self#visit_COMPLEX_POWER_I_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN
+    ^^ self#visit_I_UNIT
+    ^^ self#visit_POWER_OP
+    ^^ string (string_of_int exponent)
+    ^^ self#visit_IT_MATH_CLOSE
+    ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
   method! case_qvalue
       call =
     let call_doc = super#visit_intext_call call in
@@ -652,6 +712,46 @@ class print = object (self)
   method! case_bool_var
       name =
     string name
+
+  (*─────────────────────────────────────────────────────────────────────────*)
+  (* Complex number printing methods                                         *)
+  method! case_complex_add
+      left right =
+    lparen ^^ super#visit_complex_expr left ^^ rparen
+    ^^ string " + "
+    ^^ lparen ^^ super#visit_complex_expr right ^^ rparen
+
+  method! case_complex_sub
+      left right =
+    lparen ^^ super#visit_complex_expr left ^^ rparen
+    ^^ string " - "
+    ^^ lparen ^^ super#visit_complex_expr right ^^ rparen
+
+  method! case_complex_mul
+      left right =
+    lparen ^^ super#visit_complex_expr left ^^ rparen
+    ^^ string " * "
+    ^^ lparen ^^ super#visit_complex_expr right ^^ rparen
+
+  method! case_complex_lit
+      num =
+    super#visit_complex_num num
+
+  method! case_complex_num_pos_im
+      re im =
+    super#visit_int_with_sign re ^^ string " + " ^^ string (string_of_int im) ^^ self#visit_I_UNIT
+
+  method! case_complex_num_neg_im
+      re im =
+    super#visit_int_with_sign re ^^ string " - " ^^ string (string_of_int im) ^^ self#visit_I_UNIT
+
+  method! case_complex_num_imag
+      im =
+    super#visit_int_with_sign im ^^ self#visit_I_UNIT
+
+  method! case_complex_num_real
+      re =
+    super#visit_int_with_sign re
 
   (*─────────────────────────────────────────────────────────────────────────*)
   (* math_expr, term, factor                                                 *)

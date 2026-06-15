@@ -19,6 +19,9 @@ let pick lst =
 let pick_one lst =
   List.nth lst (Random.int (List.length lst))
 
+let nth_or_default lst index default =
+  try List.nth lst index with _ -> default
+
 (* generate a macro‐tree without repeats *)
 let rec gen_macro_from = function
   | [] -> failwith "internal error: no more macros to pick"
@@ -38,9 +41,11 @@ let rec gen_macro_from = function
 
 (* Global counter for function names *)
 let fun_counter = ref 0
+let complex_counter = ref 0
 
 (* Reset function counter *)
 let reset_fun_counter () = fun_counter := 0
+let reset_complex_counter () = complex_counter := 0
 
 (* ============================================================= *)
 (* ============== Recursive Auxiliary Functions ================ *)
@@ -220,10 +225,15 @@ and convert_context_setup_list (context_setup_list : context_setup_list) (answer
       | other -> other)
     | 3 -> (* vector only *)
       context_setup_list
-    | 4 -> (* derivative only *)
+    | 4 -> (* calculus only *)
       (match context_setup_list with
       | Context_Setup_No_Vars_Last csetup ->
         (* Convert the last context setup without vars to one with vars *)
+        Context_Setup_Vars_Last (csetup, answer_vars)
+      | other -> other)
+    | 6 -> (* complex number only *)
+      (match context_setup_list with
+      | Context_Setup_No_Vars_Last csetup ->
         Context_Setup_Vars_Last (csetup, answer_vars)
       | other -> other)
     | _ -> (* all type of questions only *)
@@ -236,14 +246,27 @@ and convert_context_setup_list (context_setup_list : context_setup_list) (answer
           answer_vars
       in
       let set_vars = List.filter (fun (name, _) -> String.length name >= 8 && String.sub name 0 8 = "set_ans_") answer_vars in
+      let complex_vars = List.filter (fun (name, _) -> String.length name >= 12 && String.sub name 0 12 = "complex_ans_") answer_vars in
 
       (match context_setup_list with
-      | Context_Setup_No_Vars_Cons (csetup1, Context_Setup_No_Vars_Cons (csetup2, rest)) ->
-        (* Add function vars to the first context setup (numeric context) *)
-        (* Add set vars to the second context setup (interval context) *)
-        (* Keep rest (vector context) without vars *)
-        Context_Setup_Vars_Cons (csetup1, function_vars,
-          Context_Setup_Vars_Cons (csetup2, set_vars, rest))
+      | Context_Setup_No_Vars_Cons (csetup1, Context_Setup_No_Vars_Cons (csetup2, Context_Setup_No_Vars_Cons (csetup3, Context_Setup_No_Vars_Last csetup4))) ->
+        let complex_context =
+          if complex_vars = [] then
+            Context_Setup_No_Vars_Last csetup4
+          else
+            Context_Setup_Vars_Last (csetup4, complex_vars)
+        in
+        let vector_context = Context_Setup_No_Vars_Cons (csetup3, complex_context) in
+        let set_context =
+          if set_vars = [] then
+            Context_Setup_No_Vars_Cons (csetup2, vector_context)
+          else
+            Context_Setup_Vars_Cons (csetup2, set_vars, vector_context)
+        in
+        if function_vars = [] then
+          Context_Setup_No_Vars_Cons (csetup1, set_context)
+        else
+          Context_Setup_Vars_Cons (csetup1, function_vars, set_context)
       | other -> other)
 
 (* ============================================================= *)
@@ -254,6 +277,7 @@ and convert_context_setup_list (context_setup_list : context_setup_list) (answer
 let rec gen_document () : document =
   (* Reset function counter for each new document *)
   reset_fun_counter ();
+  reset_complex_counter ();
 
   match problem_type with
     | 0 -> (* all type of questions *)
@@ -291,6 +315,13 @@ let rec gen_document () : document =
 	      let context_setup_list = gen_context_setup_list () in
 	      let problem_section = gen_problem_section () in
 	        Doc_No_Sol (header, context_setup_list, problem_section)
+    | 6 -> (* complex number only *)
+      let header = gen_header () in
+      let context_setup_list = gen_context_setup_list () in
+      let problem_section = gen_problem_section () in
+      let (modified_problem_section, answer_vars) = convert_problem_section problem_section in
+      let modified_context_setup_list = convert_context_setup_list context_setup_list answer_vars in
+        Doc_No_Sol (header, modified_context_setup_list, modified_problem_section)
     | _ -> (* all type of questions only *)
       let header = gen_header () in
       let context_setup_list = gen_context_setup_list () in
@@ -321,8 +352,10 @@ and gen_context_setup_list () : context_setup_list =
       Context_Setup_No_Vars_Last (Context_With_Config ("Numeric", Cfg_Cons(Flags, CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"),VInt(0)))]), Cfg_Last(Flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),VInt(0)))])))))
     | 5 -> (* Boolean Algebra only *)
 	      Context_Setup_No_Vars_Last (Context_Only "Numeric")
+    | 6 -> (* complex number only *)
+      Context_Setup_No_Vars_Last (Context_Only "Complex")
     | _ -> (* all type of questions only *)
-      Context_Setup_No_Vars_Cons (Context_With_Config ("Numeric", Cfg_Cons(Flags, CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"),VInt(0)))]), Cfg_Last(Flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),VInt(0)))])))), Context_Setup_No_Vars_Cons (Context_Only "Interval", Context_Setup_No_Vars_Last (Context_Only "Vector")))
+      Context_Setup_No_Vars_Cons (Context_With_Config ("Numeric", Cfg_Cons(Flags, CM_Set([Entry_Property(Property(Str("reduceConstantFunctions"),VInt(0)))]), Cfg_Last(Flags, CM_Set([Entry_Property(Property(Str("reduceConstants"),VInt(0)))])))), Context_Setup_No_Vars_Cons (Context_Only "Interval", Context_Setup_No_Vars_Cons (Context_Only "Vector", Context_Setup_No_Vars_Last (Context_Only "Complex"))))
 (*
 and gen_context_config () : context_config =
   let modules = [ Variables; Constants; Strings; Operators; Flags ] in
@@ -536,12 +569,13 @@ and gen_question_list () : question_item list =
   match problem_type with
   | 0 ->  (* All type of questions *)
     if question_random_amounts = false then
-      (* List: [arithmetic_amount; set_amount; vector_amount; derivative_amount; boolean_amount] *)
-      let arithmetic_count = List.nth question_type_amounts 0 in
-      let set_count = List.nth question_type_amounts 1 in
-      let vector_count = List.nth question_type_amounts 2 in
-      let calculus_count = List.nth question_type_amounts 3 in
-      let boolean_count = List.nth question_type_amounts 4 in
+      (* List: [arithmetic_amount; set_amount; vector_amount; calculus_amount; boolean_amount; complex_amount] *)
+      let arithmetic_count = nth_or_default question_type_amounts 0 0 in
+      let set_count = nth_or_default question_type_amounts 1 0 in
+      let vector_count = nth_or_default question_type_amounts 2 0 in
+      let calculus_count = nth_or_default question_type_amounts 3 0 in
+      let boolean_count = nth_or_default question_type_amounts 4 0 in
+      let complex_count = nth_or_default question_type_amounts 5 0 in
 
       (* Generate each question type *)
       let arithmetic_questions =
@@ -562,7 +596,10 @@ and gen_question_list () : question_item list =
       let boolean_questions =
         List.init boolean_count (fun _ -> gen_boolean_question ())
       in
-      let all_questions = arithmetic_questions @ set_questions @ vector_questions @ calculus_questions @ boolean_questions in
+      let complex_questions =
+        List.init complex_count (fun _ -> gen_complex_question ())
+      in
+      let all_questions = arithmetic_questions @ set_questions @ vector_questions @ calculus_questions @ boolean_questions @ complex_questions in
         if shuffle_questions_for_0_type = true then
           shuffle_list all_questions
         else
@@ -598,14 +635,15 @@ and gen_question_item () : question_item =
   match problem_type with
   | 0 ->  (* All type of questions *)
       (* if randomly choose *)
-      (match Random.int 5 with
+      (match Random.int 6 with
           | 0 -> gen_arithmetic_question ()
           | 1 -> gen_set_question ()
           | 2 -> gen_vector_question ()
           | 3 ->
               let (q, _) = gen_calculus_question () in
               q
-          | _ -> gen_boolean_question ())
+          | 4 -> gen_boolean_question ()
+          | _ -> gen_complex_question ())
   | 1 ->  (* Arithmetic only *)
       gen_arithmetic_question ()
   | 2 ->  (* Set only *)
@@ -617,6 +655,8 @@ and gen_question_item () : question_item =
 	      q
 	  | 5 ->  (* Boolean Algebra only *)
 	      gen_boolean_question ()
+    | 6 ->  (* Complex Number only *)
+      gen_complex_question ()
 	  | _ -> gen_arithmetic_question ()  (* Default to arithmetic *)
 
 and gen_arithmetic_question () : question_item =
@@ -880,6 +920,111 @@ and gen_boolean_equiv_question () : question_item =
   let answer = if bool_expr_equivalent left right then 1 else 0 in
   let width = if Random.bool () then Some 1 else None in
   Q_Boolean_Equiv (left, right, A_Var (Var_Value (VInt answer)), width)
+
+and gen_complex_question () : question_item =
+  match complex_question_mode with
+  | 1 -> gen_complex_arithmetic_question ()
+  | 2 -> gen_complex_conjugate_question ()
+  | 3 -> gen_complex_modulus_question ()
+  | 4 -> gen_complex_power_i_question ()
+  | _ ->
+      let weights = [
+        (max 0 complex_arithmetic_weight, gen_complex_arithmetic_question);
+        (max 0 complex_conjugate_weight, gen_complex_conjugate_question);
+        (max 0 complex_modulus_weight, gen_complex_modulus_question);
+        (max 0 complex_power_i_weight, gen_complex_power_i_question);
+      ] in
+      let total = List.fold_left (fun acc (weight, _) -> acc + weight) 0 weights in
+      if total = 0 then
+        (match Random.int 4 with
+        | 0 -> gen_complex_arithmetic_question ()
+        | 1 -> gen_complex_conjugate_question ()
+        | 2 -> gen_complex_modulus_question ()
+        | _ -> gen_complex_power_i_question ())
+      else
+        let r = Random.int total in
+        let rec pick_weighted remaining = function
+          | [] -> gen_complex_arithmetic_question ()
+          | (weight, gen) :: rest ->
+              if remaining < weight then gen ()
+              else pick_weighted (remaining - weight) rest
+        in
+        pick_weighted r weights
+
+and gen_complex_part () =
+  let low = min_complex_component in
+  let high = max low max_complex_component in
+  low + Random.int (high - low + 1)
+
+and gen_complex_num () : complex_num =
+  let rec choose attempts =
+    let re = gen_complex_part () in
+    let im = gen_complex_part () in
+    if attempts <= 0 || im <> 0 then
+      Complex_Num (re, im)
+    else
+      choose (attempts - 1)
+  in
+  choose 20
+
+and complex_answer (re, im) =
+  A_Var (Var_Method (M_Complex (re, im)))
+
+and gen_complex_arithmetic_question () : question_item =
+  let left = Complex_Lit (gen_complex_num ()) in
+  let right = Complex_Lit (gen_complex_num ()) in
+  let expr =
+    match Random.int 3 with
+    | 0 -> Complex_Add (left, right)
+    | 1 -> Complex_Sub (left, right)
+    | _ -> Complex_Mul (left, right)
+  in
+  let answer = complex_answer (eval_complex_expr expr) in
+  Q_Complex_Arithmetic (expr, answer)
+
+and gen_complex_conjugate_question () : question_item =
+  let num = gen_complex_num () in
+  let (re, im) = complex_num_to_pair num in
+  Q_Complex_Conjugate (num, complex_answer (re, -im))
+
+and gen_complex_modulus_question () : question_item =
+  let triples = [
+    (3, 4, 5); (5, 12, 13); (8, 15, 17); (7, 24, 25);
+    (6, 8, 10); (9, 12, 15); (12, 16, 20)
+  ] in
+  let low = min_complex_component in
+  let high = max low max_complex_component in
+  let signed_options =
+    List.concat_map
+      (fun (a, b, c) ->
+        [(a, b, c); (-a, b, c); (a, -b, c); (-a, -b, c);
+         (b, a, c); (-b, a, c); (b, -a, c); (-b, -a, c)])
+      triples
+  in
+  let candidates =
+    List.filter
+      (fun (re, im, _) -> re >= low && re <= high && im >= low && im <= high)
+      signed_options
+  in
+  let (re, im, magnitude) =
+    match candidates with
+    | [] -> (3, 4, 5)
+    | _ -> pick_one candidates
+  in
+  Q_Complex_Modulus (Complex_Num (re, im), A_Var (Var_Value (VInt magnitude)))
+
+and gen_complex_power_i_question () : question_item =
+  let min_power = max 0 min_complex_power in
+  let max_power = max min_power max_complex_power in
+  let exponent = min_power + Random.int (max_power - min_power + 1) in
+  let answer =
+    match exponent mod 4 with
+    | 0 -> (1, 0)
+    | 1 -> (0, 1)
+    | 2 -> (-1, 0)
+    | _ -> (0, -1)
+  in
+  Q_Complex_Power_I (exponent, complex_answer answer)
 
 and gen_set_question () : question_item =
   let set_list = gen_set_list () in
@@ -1153,6 +1298,7 @@ and convert_problem_section (problem_section : problem_section) : problem_sectio
   match problem_section with
   | Problem question_list ->
       let counter = ref 0 in
+      let complex_answer_counter = ref 0 in
       let answer_vars = ref [] in
 
       (* Helper function to convert set_prob_list *)
@@ -1183,6 +1329,16 @@ and convert_problem_section (problem_section : problem_section) : problem_sectio
             incr counter_ref;
             let var_decl = (var_name, gen_variable ()) in (* Fallback variable *)
             (other_ans, var_name, var_decl)
+      in
+
+      let convert_complex_answer_item ans_item counter_ref =
+        incr counter_ref;
+        let var_name = Printf.sprintf "complex_ans_%d" !counter_ref in
+        match ans_item with
+        | A_Var var ->
+            let var_decl = (var_name, var) in
+            let modified_ans = A_Var (Var_Value (VIdent var_name)) in
+            (modified_ans, var_decl)
       in
 
       (* Convert each question item *)
@@ -1224,6 +1380,22 @@ and convert_problem_section (problem_section : problem_section) : problem_sectio
 	            item (* Keep Boolean evaluation questions unchanged *)
 	        | Q_Boolean_Equiv (_, _, _, _) as item ->
 	            item (* Keep Boolean equivalence questions unchanged *)
+        | Q_Complex_Arithmetic (expr, ans) ->
+            let (modified_ans, var_decl) = convert_complex_answer_item ans complex_answer_counter in
+            answer_vars := var_decl :: !answer_vars;
+            Q_Complex_Arithmetic (expr, modified_ans)
+        | Q_Complex_Conjugate (num, ans) ->
+            let (modified_ans, var_decl) = convert_complex_answer_item ans complex_answer_counter in
+            answer_vars := var_decl :: !answer_vars;
+            Q_Complex_Conjugate (num, modified_ans)
+        | Q_Complex_Modulus (num, ans) ->
+            let (modified_ans, var_decl) = convert_complex_answer_item ans complex_answer_counter in
+            answer_vars := var_decl :: !answer_vars;
+            Q_Complex_Modulus (num, modified_ans)
+        | Q_Complex_Power_I (exponent, ans) ->
+            let (modified_ans, var_decl) = convert_complex_answer_item ans complex_answer_counter in
+            answer_vars := var_decl :: !answer_vars;
+            Q_Complex_Power_I (exponent, modified_ans)
 	      in
 
       let modified_question_list = List.map convert_question_item question_list in

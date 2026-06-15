@@ -65,6 +65,7 @@ type token =
   | LBRACE_LATEX
   | LBRACE
   | LANGLE_LATEX
+  | I_UNIT
   | IT_VAR_OPEN
   | IT_VAR_CLOSE
   | IT_MATH_OPEN
@@ -101,6 +102,11 @@ type token =
   | CONTEXT
   | COMPUTE_PROB
   | COMPUTE_METH
+  | COMPLEX_POWER_I_PROB
+  | COMPLEX_MOD_PROB
+  | COMPLEX_METH
+  | COMPLEX_CONJ_PROB
+  | COMPLEX_ARITH_PROB
   | COMMA
   | CMP_2
   | CMP_1
@@ -200,6 +206,7 @@ module MenhirInterpreter : sig
     | T_LBRACE_LATEX : unit terminal
     | T_LBRACE : unit terminal
     | T_LANGLE_LATEX : unit terminal
+    | T_I_UNIT : unit terminal
     | T_IT_VAR_OPEN : unit terminal
     | T_IT_VAR_CLOSE : unit terminal
     | T_IT_MATH_OPEN : unit terminal
@@ -236,6 +243,11 @@ module MenhirInterpreter : sig
     | T_CONTEXT : unit terminal
     | T_COMPUTE_PROB : unit terminal
     | T_COMPUTE_METH : unit terminal
+    | T_COMPLEX_POWER_I_PROB : unit terminal
+    | T_COMPLEX_MOD_PROB : unit terminal
+    | T_COMPLEX_METH : unit terminal
+    | T_COMPLEX_CONJ_PROB : unit terminal
+    | T_COMPLEX_ARITH_PROB : unit terminal
     | T_COMMA : unit terminal
     | T_CMP_2 : unit terminal
     | T_CMP_1 : unit terminal
@@ -315,6 +327,8 @@ module MenhirInterpreter : sig
     | N_context_setup : (Ast.context_setup) nonterminal
     | N_context_method : (Ast.context_method) nonterminal
     | N_context_config : (Ast.context_config) nonterminal
+    | N_complex_num : (Ast.complex_num) nonterminal
+    | N_complex_expr : (Ast.complex_expr) nonterminal
     | N_bool_expr : (Ast.bool_expr) nonterminal
     | N_bool_assignment_list : (Ast.bool_assignment list) nonterminal
     | N_bool_assignment : (Ast.bool_assignment) nonterminal
@@ -581,6 +595,14 @@ module DCST : sig
   (* The type of DCSTs for the nonterminal symbol [context_config]. *)
   
   type context_config
+  
+  (* The type of DCSTs for the nonterminal symbol [complex_num]. *)
+  
+  type complex_num
+  
+  (* The type of DCSTs for the nonterminal symbol [complex_expr]. *)
+  
+  type complex_expr
   
   (* The type of DCSTs for the nonterminal symbol [bool_expr]. *)
   
@@ -1006,6 +1028,22 @@ module DCST : sig
   
   val qbool_equiv_width: bool_expr -> bool_expr -> answer_item -> (int) -> question_item
   
+  (* question_item -> COMPLEX_ARITH_PROB NEWLINE IT_MATH_OPEN complex_expr IT_MATH_CLOSE NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qcomplex_arith: complex_expr -> answer_item -> question_item
+  
+  (* question_item -> COMPLEX_CONJ_PROB NEWLINE IT_MATH_OPEN complex_num IT_MATH_CLOSE NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qcomplex_conj: complex_num -> answer_item -> question_item
+  
+  (* question_item -> COMPLEX_MOD_PROB NEWLINE IT_MATH_OPEN complex_num IT_MATH_CLOSE NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qcomplex_mod: complex_num -> answer_item -> question_item
+  
+  (* question_item -> COMPLEX_POWER_I_PROB NEWLINE IT_MATH_OPEN I_UNIT POWER_OP INT IT_MATH_CLOSE NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qcomplex_power_i: (int) -> answer_item -> question_item
+  
   (* The binary choice constructor at type [quadratic_function]. *)
   
   val quadratic_function_choice: quadratic_function -> quadratic_function -> quadratic_function
@@ -1157,6 +1195,10 @@ module DCST : sig
   (* math_object_method -> FORMULA_METH LPAREN DOUBLE_QUOTE function_expr DOUBLE_QUOTE RPAREN *)
   
   val meth_form_fun: function_expr -> math_object_method
+  
+  (* math_object_method -> COMPLEX_METH LPAREN int_with_sign COMMA int_with_sign RPAREN *)
+  
+  val meth_complex: int_with_sign -> int_with_sign -> math_object_method
   
   (* math_object_method -> REAL_METH LPAREN value RPAREN *)
   
@@ -1522,6 +1564,46 @@ module DCST : sig
   
   val cfg_last: module_ -> context_method -> context_config
   
+  (* The binary choice constructor at type [complex_num]. *)
+  
+  val complex_num_choice: complex_num -> complex_num -> complex_num
+  
+  (* complex_num -> int_with_sign ADD_OP INT I_UNIT *)
+  
+  val complex_num_pos_im: int_with_sign -> (int) -> complex_num
+  
+  (* complex_num -> int_with_sign SUB_OP INT I_UNIT *)
+  
+  val complex_num_neg_im: int_with_sign -> (int) -> complex_num
+  
+  (* complex_num -> int_with_sign I_UNIT *)
+  
+  val complex_num_imag: int_with_sign -> complex_num
+  
+  (* complex_num -> int_with_sign *)
+  
+  val complex_num_real: int_with_sign -> complex_num
+  
+  (* The binary choice constructor at type [complex_expr]. *)
+  
+  val complex_expr_choice: complex_expr -> complex_expr -> complex_expr
+  
+  (* complex_expr -> LPAREN complex_expr RPAREN ADD_OP LPAREN complex_expr RPAREN *)
+  
+  val complex_add: complex_expr -> complex_expr -> complex_expr
+  
+  (* complex_expr -> LPAREN complex_expr RPAREN SUB_OP LPAREN complex_expr RPAREN *)
+  
+  val complex_sub: complex_expr -> complex_expr -> complex_expr
+  
+  (* complex_expr -> LPAREN complex_expr RPAREN MUL_OP LPAREN complex_expr RPAREN *)
+  
+  val complex_mul: complex_expr -> complex_expr -> complex_expr
+  
+  (* complex_expr -> complex_num *)
+  
+  val complex_lit: complex_num -> complex_expr
+  
   (* The binary choice constructor at type [bool_expr]. *)
   
   val bool_expr_choice: bool_expr -> bool_expr -> bool_expr
@@ -1848,6 +1930,14 @@ module CST : sig
   
   type context_config
   
+  (* The type of CSTs for the nonterminal symbol [complex_num]. *)
+  
+  type complex_num
+  
+  (* The type of CSTs for the nonterminal symbol [complex_expr]. *)
+  
+  type complex_expr
+  
   (* The type of CSTs for the nonterminal symbol [bool_expr]. *)
   
   type bool_expr
@@ -2012,6 +2102,8 @@ module CST : sig
     
     method virtual visit_LANGLE_LATEX : 'r
     
+    method virtual visit_I_UNIT : 'r
+    
     method virtual visit_IT_VAR_OPEN : 'r
     
     method virtual visit_IT_VAR_CLOSE : 'r
@@ -2083,6 +2175,16 @@ module CST : sig
     method virtual visit_COMPUTE_PROB : 'r
     
     method virtual visit_COMPUTE_METH : 'r
+    
+    method virtual visit_COMPLEX_POWER_I_PROB : 'r
+    
+    method virtual visit_COMPLEX_MOD_PROB : 'r
+    
+    method virtual visit_COMPLEX_METH : 'r
+    
+    method virtual visit_COMPLEX_CONJ_PROB : 'r
+    
+    method virtual visit_COMPLEX_ARITH_PROB : 'r
     
     method virtual visit_COMMA : 'r
     
@@ -2235,6 +2337,10 @@ module CST : sig
     method visit_context_method : context_method -> 'r
     
     method visit_context_config : context_config -> 'r
+    
+    method visit_complex_num : complex_num -> 'r
+    
+    method visit_complex_expr : complex_expr -> 'r
     
     method visit_bool_expr : bool_expr -> 'r
     
@@ -2396,6 +2502,14 @@ module CST : sig
     
     method case_qbool_equiv_width : bool_expr -> bool_expr -> answer_item -> (int) -> 'r
     
+    method case_qcomplex_arith : complex_expr -> answer_item -> 'r
+    
+    method case_qcomplex_conj : complex_num -> answer_item -> 'r
+    
+    method case_qcomplex_mod : complex_num -> answer_item -> 'r
+    
+    method case_qcomplex_power_i : (int) -> answer_item -> 'r
+    
     method case_quad_add : fun_or_var -> (int) -> (int) -> fun_or_var -> (int) -> 'r
     
     method case_quad_sub : fun_or_var -> (int) -> (int) -> fun_or_var -> (int) -> 'r
@@ -2451,6 +2565,8 @@ module CST : sig
     method case_meth_form : math_expr -> 'r
     
     method case_meth_form_fun : function_expr -> 'r
+    
+    method case_meth_complex : int_with_sign -> int_with_sign -> 'r
     
     method case_meth_real : value -> 'r
     
@@ -2589,6 +2705,22 @@ module CST : sig
     method case_cfg_cons : module_ -> context_method -> context_config -> 'r
     
     method case_cfg_last : module_ -> context_method -> 'r
+    
+    method case_complex_num_pos_im : int_with_sign -> (int) -> 'r
+    
+    method case_complex_num_neg_im : int_with_sign -> (int) -> 'r
+    
+    method case_complex_num_imag : int_with_sign -> 'r
+    
+    method case_complex_num_real : int_with_sign -> 'r
+    
+    method case_complex_add : complex_expr -> complex_expr -> 'r
+    
+    method case_complex_sub : complex_expr -> complex_expr -> 'r
+    
+    method case_complex_mul : complex_expr -> complex_expr -> 'r
+    
+    method case_complex_lit : complex_num -> 'r
     
     method case_bool_and : bool_expr -> bool_expr -> 'r
     

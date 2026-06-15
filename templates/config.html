@@ -27,6 +27,7 @@
             <button class="nav-tab" onclick="showTab('vector')">Vector problem</button>
             <button class="nav-tab" onclick="showTab('derivative')">Calculus problem</button>
             <button class="nav-tab" onclick="showTab('boolean')">Boolean problem</button>
+            <button class="nav-tab" onclick="showTab('complex')">Complex problem</button>
         </div>
 
         <div id="message" class="message"></div>
@@ -75,6 +76,7 @@
                             <option value="3" {% if config.problem_type == 3 %}selected{% endif %}>Vector Only</option>
                             <option value="4" {% if config.problem_type == 4 %}selected{% endif %}>Calculus Only</option>
                             <option value="5" {% if config.problem_type == 5 %}selected{% endif %}>Boolean Algebra Only</option>
+                            <option value="6" {% if config.problem_type == 6 %}selected{% endif %}>Complex Number Only</option>
                         </select>
                     </div>
                     
@@ -89,8 +91,8 @@
 
                         <div id="question-type-amounts-container">
                             <div class="form-row">
-                                {% set type_names = ["Arithmetic", "Set", "Vector", "Calculus", "Boolean"] %}
-                                {% for i in range(5) %}
+                                {% set type_names = ["Arithmetic", "Set", "Vector", "Calculus", "Boolean", "Complex"] %}
+                                {% for i in range(6) %}
                                 <div class="form-group">
                                     <label for="question_type_amounts_{{ i }}">{{ type_names[i] }} num</label>
                                     <input type="number" id="question_type_amounts_{{ i }}"
@@ -411,6 +413,84 @@
                             <label for="boolean_variables">Available variable names (separated by commas)</label>
                             <input type="text" id="boolean_variables" name="boolean_variables"
                                 value="{{ config.boolean_variables | join(', ') }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complex problem configs -->
+            <div id="complex" class="tab-content">
+                <div class="config-section">
+                    <h3>Complex Number Configs</h3>
+
+                    <div class="form-section">
+                        <h4>Question Mode</h4>
+                        <p class="config-description">Select the type of complex number questions to generate. Weights are used only in mixed mode.</p>
+                        <div class="form-group">
+                            <label for="complex_question_mode">Complex question mode</label>
+                            <select id="complex_question_mode" name="complex_question_mode">
+                                <option value="0" {% if config.get('complex_question_mode', 0) == 0 %}selected{% endif %}>Mixed</option>
+                                <option value="1" {% if config.get('complex_question_mode', 0) == 1 %}selected{% endif %}>Arithmetic only</option>
+                                <option value="2" {% if config.get('complex_question_mode', 0) == 2 %}selected{% endif %}>Conjugate only</option>
+                                <option value="3" {% if config.get('complex_question_mode', 0) == 3 %}selected{% endif %}>Modulus only</option>
+                                <option value="4" {% if config.get('complex_question_mode', 0) == 4 %}selected{% endif %}>Powers of i only</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="complex_arithmetic_weight">Arithmetic weight</label>
+                                <input type="number" id="complex_arithmetic_weight" name="complex_arithmetic_weight"
+                                    value="{{ config.get('complex_arithmetic_weight', 2) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="complex_conjugate_weight">Conjugate weight</label>
+                                <input type="number" id="complex_conjugate_weight" name="complex_conjugate_weight"
+                                    value="{{ config.get('complex_conjugate_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="complex_modulus_weight">Modulus weight</label>
+                                <input type="number" id="complex_modulus_weight" name="complex_modulus_weight"
+                                    value="{{ config.get('complex_modulus_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="complex_power_i_weight">Powers of i weight</label>
+                                <input type="number" id="complex_power_i_weight" name="complex_power_i_weight"
+                                    value="{{ config.get('complex_power_i_weight', 1) }}" min="0" max="20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Complex Components Range</h4>
+                        <p class="config-description">Control the integer range for real and imaginary components.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_complex_component">Min component</label>
+                                <input type="number" id="min_complex_component" name="min_complex_component"
+                                    value="{{ config.get('min_complex_component', -8) }}" min="-100" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_complex_component">Max component</label>
+                                <input type="number" id="max_complex_component" name="max_complex_component"
+                                    value="{{ config.get('max_complex_component', 8) }}" min="-100" max="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Powers of i Range</h4>
+                        <p class="config-description">Control the exponent range used in i^n questions.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_complex_power">Min exponent</label>
+                                <input type="number" id="min_complex_power" name="min_complex_power"
+                                    value="{{ config.get('min_complex_power', 2) }}" min="0" max="1000">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_complex_power">Max exponent</label>
+                                <input type="number" id="max_complex_power" name="max_complex_power"
+                                    value="{{ config.get('max_complex_power', 40) }}" min="0" max="1000">
+                            </div>
                         </div>
                     </div>
                 </div>

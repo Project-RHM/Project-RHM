@@ -4,7 +4,7 @@
   "allow_float": false,
   "min_question_num": 4,
   "max_question_num": 10,
-  "problem_type": 4,
+  "problem_type": 6,
   "max_expr_depth": 2,
   "min_set_expr_depth": 1,
   "max_set_expr_depth": 2,
@@ -34,12 +34,22 @@
   "max_bool_expr_depth": 2,
   "min_bool_var_num": 2,
   "max_bool_var_num": 3,
+  "complex_question_mode": 0,
+  "complex_arithmetic_weight": 2,
+  "complex_conjugate_weight": 1,
+  "complex_modulus_weight": 1,
+  "complex_power_i_weight": 1,
+  "min_complex_component": -8,
+  "max_complex_component": 8,
+  "min_complex_power": 2,
+  "max_complex_power": 5,
   "question_type_amounts": [
     4,
     2,
     2,
     2,
-    2
+    2,
+    0
   ],
   "set_variables": [
     "A",

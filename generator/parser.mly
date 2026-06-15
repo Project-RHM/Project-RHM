@@ -31,6 +31,7 @@
 %token WITH_METH      (* for the word "with" *)
 %token SET_DEF_METH   (* for the word "Set" *)
 %token COMPUTE_METH   (* for the word "Compute" *)
+%token COMPLEX_METH   (* for the word "Complex" *)
 %token INTERSECT_METH (* for the word "intersect" *)
 %token NORM_METH UNIT_METH CMP_1 CMP_2
 
@@ -41,6 +42,7 @@
 %token WHAT_WORD IS_WORD THE_WORD VALUE_WORD OF_WORD EQUAL_WORD TO_WORD QUESTION_MARK
 %token GIVEN_PROB COMPUTE_PROB GIVEN_FUN INDEFINITE_INTEGRAL_PROB
 %token EVALUATE_BOOL_PROB BOOLEAN_EQUIV_PROB WHEN_WORD BOOL_ANSWER_HINT BOOL_EQUIV_ANSWER_HINT
+%token COMPLEX_ARITH_PROB COMPLEX_CONJ_PROB COMPLEX_MOD_PROB COMPLEX_POWER_I_PROB
 %token TRUE_WORD FALSE_WORD AND_WORD OR_WORD NOT_WORD XOR_WORD IMPLIES_WORD IFF_WORD
 %token SUPPOSE_PROB PERIOD VECTOR_UNIT_PROB VECTOR_PARA_PROB VECTOR_SAME_PROB
 
@@ -77,6 +79,7 @@
 %token LBRACKET RBRACKET
 %token LBRACE_LATEX RBRACE_LATEX PIPE
 %token GT LT GEQ_LATEX LEQ_LATEX X_VAR F_FUN NAT_LOG
+%token I_UNIT
 
 %token INFINITY NEG_INFINITY
 
@@ -409,6 +412,10 @@ math_object_method:
     [@name meth_form_fun]
   (* ------------------- NEW CODE END ------------------- *)
 
+  | COMPLEX_METH; LPAREN; re = int_with_sign; COMMA; im = int_with_sign; RPAREN
+      { M_Complex (re, im) }
+    [@name meth_complex]
+
   | REAL_METH; LPAREN; n = value; RPAREN
       { M_Real n }
     [@name meth_real]
@@ -508,6 +515,30 @@ question_item:
     BLANK; LBRACE; ANSWER_WORD; FAT_COMMA; ans = answer_item; COMMA; WIDTH_WORD; FAT_COMMA; w = INT; RBRACE
       { Q_Boolean_Equiv (left, right, ans, Some w) }
     [@name qbool_equiv_width]
+
+  | COMPLEX_ARITH_PROB; NEWLINE;
+    IT_MATH_OPEN; expr = complex_expr; IT_MATH_CLOSE; NEWLINE;
+    BLANK; LBRACE; ans = answer_item; RBRACE
+      { Q_Complex_Arithmetic (expr, ans) }
+    [@name qcomplex_arith]
+
+  | COMPLEX_CONJ_PROB; NEWLINE;
+    IT_MATH_OPEN; num = complex_num; IT_MATH_CLOSE; NEWLINE;
+    BLANK; LBRACE; ans = answer_item; RBRACE
+      { Q_Complex_Conjugate (num, ans) }
+    [@name qcomplex_conj]
+
+  | COMPLEX_MOD_PROB; NEWLINE;
+    IT_MATH_OPEN; num = complex_num; IT_MATH_CLOSE; NEWLINE;
+    BLANK; LBRACE; ans = answer_item; RBRACE
+      { Q_Complex_Modulus (num, ans) }
+    [@name qcomplex_mod]
+
+  | COMPLEX_POWER_I_PROB; NEWLINE;
+    IT_MATH_OPEN; I_UNIT; POWER_OP; exponent = INT; IT_MATH_CLOSE; NEWLINE;
+    BLANK; LBRACE; ans = answer_item; RBRACE
+      { Q_Complex_Power_I (exponent, ans) }
+    [@name qcomplex_power_i]
 
 question_text:
   | WHAT_WORD; IS_WORD; THE_WORD; VALUE_WORD; OF_WORD; call = intext_call; QUESTION_MARK
@@ -655,6 +686,43 @@ bool_expr:
   | name = ID
       { Bool_Var name }
     [@name bool_var]
+
+(* -------------------------------------------------------------------------- *)
+(* Complex number expression parsing rules                                    *)
+(* -------------------------------------------------------------------------- *)
+complex_expr:
+  | LPAREN; left = complex_expr; RPAREN; ADD_OP; LPAREN; right = complex_expr; RPAREN
+      { Complex_Add (left, right) }
+    [@name complex_add]
+
+  | LPAREN; left = complex_expr; RPAREN; SUB_OP; LPAREN; right = complex_expr; RPAREN
+      { Complex_Sub (left, right) }
+    [@name complex_sub]
+
+  | LPAREN; left = complex_expr; RPAREN; MUL_OP; LPAREN; right = complex_expr; RPAREN
+      { Complex_Mul (left, right) }
+    [@name complex_mul]
+
+  | num = complex_num
+      { Complex_Lit num }
+    [@name complex_lit]
+
+complex_num:
+  | re = int_with_sign; ADD_OP; im = INT; I_UNIT
+      { Complex_Num (re, im) }
+    [@name complex_num_pos_im]
+
+  | re = int_with_sign; SUB_OP; im = INT; I_UNIT
+      { Complex_Num (re, -im) }
+    [@name complex_num_neg_im]
+
+  | im = int_with_sign; I_UNIT
+      { Complex_Num (0, im) }
+    [@name complex_num_imag]
+
+  | re = int_with_sign
+      { Complex_Num (re, 0) }
+    [@name complex_num_real]
 
 (* -------------------------------------------------------------------------- *)
 (* Set-related parsing rules                                                  *)

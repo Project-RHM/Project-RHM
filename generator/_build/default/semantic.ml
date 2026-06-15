@@ -149,6 +149,7 @@ let string_of_math_object_method = function
   | M_Random (low, high, step) -> Printf.sprintf "random(%d,%d,%d)" low high step
   | M_Formula expr             -> check_math_expr expr; "<formula>"
   | M_Formula_Fun expr         -> check_function_expr expr; "<formula_fun>"
+  | M_Complex (re, im)         -> Printf.sprintf "Complex(%d,%d)" re im
   | M_Real v                   -> string_of_value v
   | M_D s                      -> begin match s with
                                     | Some s -> s
@@ -309,6 +310,50 @@ let bool_expr_equivalent left right =
       eval_bool_expr assignments left = eval_bool_expr assignments right)
     (all_bool_assignments vars)
 
+let complex_num_to_pair = function
+  | Ast.Complex_Num (re, im) -> (re, im)
+
+let rec eval_complex_expr = function
+  | Ast.Complex_Lit num ->
+      complex_num_to_pair num
+  | Ast.Complex_Add (left, right) ->
+      let (a, b) = eval_complex_expr left in
+      let (c, d) = eval_complex_expr right in
+      (a + c, b + d)
+  | Ast.Complex_Sub (left, right) ->
+      let (a, b) = eval_complex_expr left in
+      let (c, d) = eval_complex_expr right in
+      (a - c, b - d)
+  | Ast.Complex_Mul (left, right) ->
+      let (a, b) = eval_complex_expr left in
+      let (c, d) = eval_complex_expr right in
+      (a * c - b * d, a * d + b * c)
+
+let check_complex_answer expected = function
+  | A_Var (Var_Method (M_Complex (actual_re, actual_im))) ->
+      if expected = (actual_re, actual_im) then ()
+      else
+        let (expected_re, expected_im) = expected in
+        raise (Semantic_error
+          (Printf.sprintf
+             "Complex answer mismatch: expected Complex(%d,%d) but got Complex(%d,%d)"
+             expected_re expected_im actual_re actual_im))
+  | A_Var (Var_Value (VIdent _)) ->
+      ()
+  | _ ->
+      raise (Semantic_error "Complex answer must be Complex(re,im)")
+
+let check_integer_answer expected = function
+  | A_Var (Var_Value (VInt actual)) when actual = expected -> ()
+  | A_Var (Var_Value (VIdent _)) -> ()
+  | A_Var (Var_Value (VInt actual)) ->
+      raise (Semantic_error
+        (Printf.sprintf
+           "Integer answer mismatch: expected %d but got %d"
+           expected actual))
+  | _ ->
+      raise (Semantic_error "Integer answer expected")
+
 let value_of_float f =
   VNum f
 
@@ -322,6 +367,7 @@ let float_of_variable = function
   | Var_Value (VNum f)      -> f
   | Var_Method (M_Real v)   -> float_of_value v
   | Var_Method (M_Formula e) -> eval_math_expr e  (* if you allow formulas as answers *)
+  | Var_Method (M_Complex _) -> raise (Semantic_error "Cannot convert complex number to float")
   | Var_Method (M_Set _)    -> raise (Semantic_error "Cannot convert set to float")
   | Var_Method (M_Compute _) -> raise (Semantic_error "Cannot convert set computation to float")
   | Var_Method (M_intersect _) -> raise (Semantic_error "Cannot convert set intersection to float")
@@ -430,6 +476,7 @@ let check_math_object_method = function
       check_math_expr expr
   | M_Formula_Fun expr ->
       check_function_expr expr
+  | M_Complex _ -> ()
   | M_Real f -> () 
   | M_D s -> ()
   | M_Eval prop -> ()
@@ -519,6 +566,24 @@ let check_question_item = function
           (Printf.sprintf
              "Boolean equivalence answer mismatch: expected %d but got %d"
              expected actual))
+  | Q_Complex_Arithmetic (expr, answer) ->
+      check_complex_answer (eval_complex_expr expr) answer
+  | Q_Complex_Conjugate (num, answer) ->
+      let (re, im) = complex_num_to_pair num in
+      check_complex_answer (re, -im) answer
+  | Q_Complex_Modulus (num, answer) ->
+      let (re, im) = complex_num_to_pair num in
+      let magnitude = int_of_float (sqrt (float_of_int (re * re + im * im))) in
+      check_integer_answer magnitude answer
+  | Q_Complex_Power_I (exponent, answer) ->
+      let expected =
+        match exponent mod 4 with
+        | 0 -> (1, 0)
+        | 1 -> (0, 1)
+        | 2 -> (-1, 0)
+        | _ -> (0, -1)
+      in
+      check_complex_answer expected answer
 
 (* Entry point for semantic checking of the problem section *)
 let check_problem_section = function
