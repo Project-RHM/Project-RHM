@@ -178,8 +178,8 @@
                     <!-- Remaining set configuration fields -->
                     <div class="form-group">
                         <label for="max_set_def_num">Maximum quantity of set definitions</label>
-                        <input type="number" id="max_set_def_num" name="max_set_def_num" 
-                            value="{{ config.max_set_def_num }}" min="1" max="100">
+                        <input type="number" id="max_set_def_num" name="max_set_def_num"
+                            value="{{ config.max_set_def_num }}" min="2" max="100">
                     </div>
                     <div class="form-group">
                         <label for="set_variables">Available variable names (separated by commas)</label>
@@ -214,8 +214,8 @@
                     
                     <div class="form-group">
                         <label for="vector_dimension">Vector dimension</label>
-                        <input type="number" id="vector_dimension" name="vector_dimension" 
-                            value="{{ config.vector_dimension }}" min="2" max="10">
+                        <input type="number" id="vector_dimension" name="vector_dimension"
+                            value="{{ config.vector_dimension }}" min="3" max="3">
                     </div>
                     
                     <!-- Vector elements range section -->
@@ -323,13 +323,13 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="min_derivative_prob_num">Min number</label>
-                                <input type="number" id="min_derivative_prob_num" name="min_derivative_prob_num" 
-                                    value="{{ config.min_derivative_prob_num }}" min="1" max="100">
+                                <input type="number" id="min_derivative_prob_num" name="min_derivative_prob_num"
+                                    value="{{ config.min_derivative_prob_num }}" min="1" max="12">
                             </div>
                             <div class="form-group">
                                 <label for="max_derivative_prob_num">Max number</label>
-                                <input type="number" id="max_derivative_prob_num" name="max_derivative_prob_num" 
-                                    value="{{ config.max_derivative_prob_num }}" min="1" max="100">
+                                <input type="number" id="max_derivative_prob_num" name="max_derivative_prob_num"
+                                    value="{{ config.max_derivative_prob_num }}" min="1" max="12">
                             </div>
                         </div>
                     </div>
@@ -550,7 +550,7 @@
             .then(response => response.json())
             .then(data => {
                 hideLoading();
-                
+
                 if (data.success) {
                     messageDiv.textContent = data.message;
                     messageDiv.className = 'message success';
@@ -568,7 +568,17 @@
                         }
                     }, 2000);
                 } else {
-                    messageDiv.textContent = data.error;
+                    const details = [];
+                    if (data.error) {
+                        details.push(data.error);
+                    }
+                    if (Array.isArray(data.errors) && data.errors.length > 0) {
+                        details.push(data.errors.map(item => '- ' + item).join('\n'));
+                    }
+                    if (data.build_error) {
+                        details.push('Build error:\n' + data.build_error);
+                    }
+                    messageDiv.textContent = details.join('\n');
                     messageDiv.className = 'message error';
                     messageDiv.style.display = 'block';
                 }
