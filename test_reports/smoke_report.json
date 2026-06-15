@@ -1,0 +1,225 @@
+[
+  {
+    "case": "all_mixed",
+    "seed": "test_all_mixed_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_all_mixed_1_20260615_142705.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_all_mixed_1_20260615_142705_ast.txt",
+    "detected_kinds": [
+      "arithmetic",
+      "boolean",
+      "boolean_equiv",
+      "boolean_eval",
+      "calculus",
+      "calculus_derivative",
+      "calculus_integral",
+      "complex",
+      "complex_arithmetic",
+      "complex_conjugate",
+      "complex_power_i",
+      "set",
+      "vector"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "arithmetic_only",
+    "seed": "test_arithmetic_only_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_arithmetic_only_1_20260615_142706.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_arithmetic_only_1_20260615_142706_ast.txt",
+    "detected_kinds": [
+      "arithmetic"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "set_only",
+    "seed": "test_set_only_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_set_only_1_20260615_142707.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_set_only_1_20260615_142707_ast.txt",
+    "detected_kinds": [
+      "set"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "vector_only",
+    "seed": "test_vector_only_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_vector_only_1_20260615_142707.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_vector_only_1_20260615_142707_ast.txt",
+    "detected_kinds": [
+      "vector"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "calculus_mixed",
+    "seed": "test_calculus_mixed_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_calculus_mixed_1_20260615_142708.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_calculus_mixed_1_20260615_142708_ast.txt",
+    "detected_kinds": [
+      "calculus",
+      "calculus_derivative",
+      "calculus_integral"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "calculus_derivative_only",
+    "seed": "test_calculus_derivative_only_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_calculus_derivative_only_1_20260615_142709.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_calculus_derivative_only_1_20260615_142709_ast.txt",
+    "detected_kinds": [
+      "calculus",
+      "calculus_derivative"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "calculus_integral_only",
+    "seed": "test_calculus_integral_only_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_calculus_integral_only_1_20260615_142710.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_calculus_integral_only_1_20260615_142710_ast.txt",
+    "detected_kinds": [
+      "calculus",
+      "calculus_integral"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "boolean_mixed",
+    "seed": "test_boolean_mixed_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_boolean_mixed_1_20260615_142712.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_boolean_mixed_1_20260615_142712_ast.txt",
+    "detected_kinds": [
+      "boolean",
+      "boolean_equiv",
+      "boolean_eval"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "boolean_evaluation_only",
+    "seed": "test_boolean_evaluation_only_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_boolean_evaluation_only_1_20260615_142713.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_boolean_evaluation_only_1_20260615_142713_ast.txt",
+    "detected_kinds": [
+      "boolean",
+      "boolean_eval"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "boolean_equivalence_only",
+    "seed": "test_boolean_equivalence_only_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_boolean_equivalence_only_1_20260615_142714.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_boolean_equivalence_only_1_20260615_142714_ast.txt",
+    "detected_kinds": [
+      "boolean",
+      "boolean_equiv"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "complex_mixed",
+    "seed": "test_complex_mixed_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_complex_mixed_1_20260615_142715.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_complex_mixed_1_20260615_142715_ast.txt",
+    "detected_kinds": [
+      "complex",
+      "complex_arithmetic",
+      "complex_conjugate",
+      "complex_modulus",
+      "complex_power_i"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "complex_arithmetic_only",
+    "seed": "test_complex_arithmetic_only_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_complex_arithmetic_only_1_20260615_142716.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_complex_arithmetic_only_1_20260615_142716_ast.txt",
+    "detected_kinds": [
+      "complex",
+      "complex_arithmetic"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "complex_conjugate_only",
+    "seed": "test_complex_conjugate_only_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_complex_conjugate_only_1_20260615_142716.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_complex_conjugate_only_1_20260615_142716_ast.txt",
+    "detected_kinds": [
+      "complex",
+      "complex_conjugate"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "complex_modulus_only",
+    "seed": "test_complex_modulus_only_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_complex_modulus_only_1_20260615_142717.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_complex_modulus_only_1_20260615_142717_ast.txt",
+    "detected_kinds": [
+      "complex",
+      "complex_modulus"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  },
+  {
+    "case": "complex_power_i_only",
+    "seed": "test_complex_power_i_only_1",
+    "status": "PASS",
+    "pgml_path": "/Users/ray/Desktop/Project-RHM/generator/generated_questions/test_complex_power_i_only_1_20260615_142718.pg",
+    "ast_path": "/Users/ray/Desktop/Project-RHM/generator/generated_asts/test_complex_power_i_only_1_20260615_142718_ast.txt",
+    "detected_kinds": [
+      "complex",
+      "complex_power_i"
+    ],
+    "webwork_status": "SKIPPED",
+    "webwork_message": "WEBWORK_VALIDATE_URL is not set",
+    "bugs": []
+  }
+]
