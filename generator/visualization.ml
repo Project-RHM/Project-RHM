@@ -98,147 +98,180 @@ type raw_dcst =
 [@@warning "-37"]
 
 let token_name = function
-  | X_VAR -> "X_VAR"
-  | XOR_WORD -> "XOR_WORD"
-  | WITH_METH -> "WITH_METH"
-  | WIDTH_WORD -> "WIDTH_WORD"
-  | WHEN_WORD -> "WHEN_WORD"
-  | WHAT_WORD -> "WHAT_WORD"
-  | VEC_LATEX -> "VEC_LATEX"
-  | VECTOR_UNIT_PROB -> "VECTOR_UNIT_PROB"
-  | VECTOR_SAME_PROB -> "VECTOR_SAME_PROB"
-  | VECTOR_PARA_PROB -> "VECTOR_PARA_PROB"
-  | VALUE_WORD -> "VALUE_WORD"
-  | UNIT_METH -> "UNIT_METH"
-  | UNION -> "UNION"
-  | UNDEFINE_METH -> "UNDEFINE_METH"
-  | TRUE_WORD -> "TRUE_WORD"
-  | TO_WORD -> "TO_WORD"
-  | TIMES_LATEX -> "TIMES_LATEX"
-  | THE_WORD -> "THE_WORD"
-  | SUPPOSE_PROB -> "SUPPOSE_PROB"
-  | SUB_OP -> "SUB_OP"
-  | SQRT_OP -> "SQRT_OP"
-  | SIN_OP -> "SIN_OP"
-  | SINGLE_QUOTE -> "SINGLE_QUOTE"
-  | SET_METH -> "SET_METH"
-  | SET_DEF_METH -> "SET_DEF_METH"
-  | SEMI -> "SEMI"
-  | RPAREN -> "RPAREN"
-  | RIGHT_NORM_LATEX -> "RIGHT_NORM_LATEX"
-  | REDEFINE_METH -> "REDEFINE_METH"
-  | REAL_METH -> "REAL_METH"
-  | RBRACKET -> "RBRACKET"
-  | RBRACE_LATEX -> "RBRACE_LATEX"
-  | RBRACE -> "RBRACE"
-  | RANGLE_LATEX -> "RANGLE_LATEX"
-  | RANDOM_METH -> "RANDOM_METH"
-  | QUESTION_MARK -> "QUESTION_MARK"
-  | POWER_OP -> "POWER_OP"
-  | PIPE -> "PIPE"
-  | PGSTANDARD -> "PGSTANDARD"
-  | PGML -> "PGML"
-  | PERIOD -> "PERIOD"
-  | OR_WORD -> "OR_WORD"
-  | OF_WORD -> "OF_WORD"
-  | NUMBER value -> Printf.sprintf "NUMBER(%g)" value
-  | NOT_WORD -> "NOT_WORD"
-  | NORM_METH -> "NORM_METH"
-  | NEWLINE -> "NEWLINE"
-  | NEG_INFINITY -> "NEG_INFINITY"
-  | NAT_LOG -> "NAT_LOG"
-  | NAMING -> "NAMING"
-  | MUL_OP -> "MUL_OP"
-  | MATHOBJECTS -> "MATHOBJECTS"
-  | MACRO value -> Printf.sprintf "MACRO(%S)" value
-  | LT -> "LT"
-  | LPAREN -> "LPAREN"
-  | LOADMACROS -> "LOADMACROS"
-  | LN_OP -> "LN_OP"
-  | LEQ_LATEX -> "LEQ_LATEX"
-  | LEFT_NORM_LATEX -> "LEFT_NORM_LATEX"
-  | LBRACKET -> "LBRACKET"
-  | LBRACE_LATEX -> "LBRACE_LATEX"
-  | LBRACE -> "LBRACE"
-  | LANGLE_LATEX -> "LANGLE_LATEX"
-  | I_UNIT -> "I_UNIT"
-  | IT_VAR_OPEN -> "IT_VAR_OPEN"
-  | IT_VAR_CLOSE -> "IT_VAR_CLOSE"
-  | IT_MATH_OPEN -> "IT_MATH_OPEN"
-  | IT_MATH_CLOSE -> "IT_MATH_CLOSE"
-  | IS_WORD -> "IS_WORD"
-  | INTERSECT_METH -> "INTERSECT_METH"
-  | INT value -> Printf.sprintf "INT(%d)" value
-  | INFINITY -> "INFINITY"
-  | INDEFINITE_INTEGRAL_PROB -> "INDEFINITE_INTEGRAL_PROB"
-  | IMPLIES_WORD -> "IMPLIES_WORD"
-  | IFF_WORD -> "IFF_WORD"
-  | ID value -> Printf.sprintf "ID(%S)" value
-  | GT -> "GT"
-  | GIVEN_PROB -> "GIVEN_PROB"
-  | GIVEN_FUN -> "GIVEN_FUN"
-  | GEQ_LATEX -> "GEQ_LATEX"
-  | F_FUN -> "F_FUN"
-  | FORMULA_METH -> "FORMULA_METH"
-  | FAT_COMMA -> "FAT_COMMA"
-  | FALSE_WORD -> "FALSE_WORD"
-  | EVAL_METH -> "EVAL_METH"
-  | EVALUATE_BOOL_PROB -> "EVALUATE_BOOL_PROB"
-  | EQUAL_WORD -> "EQUAL_WORD"
-  | EQ -> "EQ"
-  | EOF -> "EOF"
+  | X_VAR -> "x"
+  | XOR_WORD -> "XOR"
+  | WITH_METH -> "with"
+  | WIDTH_WORD -> "width"
+  | WHEN_WORD -> "When:"
+  | WHAT_WORD -> "What"
+  | VEC_LATEX -> "\\vec"
+  | VECTOR_UNIT_PROB -> "Enter a unit vector in the direction of"
+  | VECTOR_SAME_PROB -> "Enter a vector in the same direction as"
+  | VECTOR_PARA_PROB -> "Enter a vector parallel to"
+  | VALUE_WORD -> "value"
+  | UNIT_METH -> "unit"
+  | UNION -> "U"
+  | UNDEFINE_METH -> "undefine"
+  | TRUE_WORD -> "True"
+  | TO_WORD -> "to"
+  | TIMES_LATEX -> "\\times"
+  | THE_WORD -> "the"
+  | SUPPOSE_PROB -> "Suppose the vectors:"
+  | SUB_OP -> "-"
+  | SQRT_OP -> "sqrt"
+  | SIN_OP -> "sin"
+  | SINGLE_QUOTE -> "'"
+  | SET_METH -> "set"
+  | SET_DEF_METH -> "Set"
+  | SEMI -> ";"
+  | RPAREN -> ")"
+  | RIGHT_NORM_LATEX -> "\\right\\|"
+  | REDEFINE_METH -> "redefine"
+  | REAL_METH -> "Real"
+  | RBRACKET -> "]"
+  | RBRACE_LATEX -> "\\}"
+  | RBRACE -> "}"
+  | RANGLE_LATEX -> "\\rangle"
+  | RANDOM_METH -> "random"
+  | QUESTION_MARK -> "?"
+  | POWER_OP -> "^"
+  | PIPE -> "|"
+  | PGSTANDARD -> "PGstandard.pl"
+  | PGML -> "PGML.pl"
+  | PERIOD -> "."
+  | OR_WORD -> "OR"
+  | OF_WORD -> "of"
+  | NUMBER value -> Printf.sprintf "%g" value
+  | NOT_WORD -> "NOT"
+  | NORM_METH -> "norm"
+  | NEWLINE -> "\\n"
+  | NEG_INFINITY -> "-infinity"
+  | NAT_LOG -> "e"
+  | NAMING -> "$"
+  | MUL_OP -> "*"
+  | MATHOBJECTS -> "MathObjects.pl"
+  | MACRO value -> value
+  | LT -> "<"
+  | LPAREN -> "("
+  | LOADMACROS -> "loadMacros"
+  | LN_OP -> "ln"
+  | LEQ_LATEX -> "\\leq"
+  | LEFT_NORM_LATEX -> "\\left\\|"
+  | LBRACKET -> "["
+  | LBRACE_LATEX -> "\\{"
+  | LBRACE -> "{"
+  | LANGLE_LATEX -> "\\langle"
+  | I_UNIT -> "i"
+  | IT_VAR_OPEN -> "[`["
+  | IT_VAR_CLOSE -> "]`]"
+  | IT_MATH_OPEN -> "[`"
+  | IT_MATH_CLOSE -> "`]"
+  | IS_WORD -> "is"
+  | INTERSECT_METH -> "intersect"
+  | INT value -> string_of_int value
+  | INFINITY -> "infinity"
+  | INDEFINITE_INTEGRAL_PROB -> "Find an antiderivative F(x) with C = 0:"
+  | IMPLIES_WORD -> "IMPLIES"
+  | IFF_WORD -> "IFF"
+  | ID value -> value
+  | GT -> ">"
+  | GIVEN_PROB -> "Given the sets:"
+  | GIVEN_FUN -> "Given this function:"
+  | GEQ_LATEX -> "\\geq"
+  | F_FUN -> "f"
+  | FORMULA_METH -> "Formula"
+  | FAT_COMMA -> "=>"
+  | FALSE_WORD -> "False"
+  | EVAL_METH -> "eval"
+  | EVALUATE_BOOL_PROB -> "Evaluate the Boolean expression:"
+  | EQUAL_WORD -> "equal"
+  | EQ -> "="
+  | EOF -> "<end>"
   | END_PGML -> "END_PGML"
   | ENDDOCUMENT -> "ENDDOCUMENT"
-  | D_METH -> "D_METH"
-  | DOUBLE_QUOTE -> "DOUBLE_QUOTE"
+  | D_METH -> "D"
+  | DOUBLE_QUOTE -> "\""
   | DOCUMENT -> "DOCUMENT"
-  | DIV_OP -> "DIV_OP"
-  | CUP -> "CUP"
-  | COS_OP -> "COS_OP"
-  | CONTEXT -> "CONTEXT"
-  | COMPUTE_PROB -> "COMPUTE_PROB"
-  | COMPUTE_METH -> "COMPUTE_METH"
-  | COMPLEX_POWER_I_PROB -> "COMPLEX_POWER_I_PROB"
-  | COMPLEX_MOD_PROB -> "COMPLEX_MOD_PROB"
-  | COMPLEX_METH -> "COMPLEX_METH"
-  | COMPLEX_CONJ_PROB -> "COMPLEX_CONJ_PROB"
-  | COMPLEX_ARITH_PROB -> "COMPLEX_ARITH_PROB"
-  | COMMA -> "COMMA"
-  | CMP_2 -> "CMP_2"
-  | CMP_1 -> "CMP_1"
-  | CDOT_LATEX -> "CDOT_LATEX"
-  | CAP -> "CAP"
-  | BOOL_EQUIV_ANSWER_HINT -> "BOOL_EQUIV_ANSWER_HINT"
-  | BOOL_ANSWER_HINT -> "BOOL_ANSWER_HINT"
-  | BOOLEAN_EQUIV_PROB -> "BOOLEAN_EQUIV_PROB"
-  | BLANK -> "BLANK"
+  | DIV_OP -> "/"
+  | CUP -> "\\cup"
+  | COS_OP -> "cos"
+  | CONTEXT -> "Context"
+  | COMPUTE_PROB -> "Compute:"
+  | COMPUTE_METH -> "Compute"
+  | COMPLEX_POWER_I_PROB -> "Simplify the power of i:"
+  | COMPLEX_MOD_PROB -> "Find the modulus of:"
+  | COMPLEX_METH -> "Complex"
+  | COMPLEX_CONJ_PROB -> "Find the conjugate of:"
+  | COMPLEX_ARITH_PROB -> "Compute the complex number expression:"
+  | COMMA -> ","
+  | CMP_2 -> "cmp(parallel=>1,sameDirection=>1)"
+  | CMP_1 -> "cmp(parallel=>1)"
+  | CDOT_LATEX -> "\\cdot"
+  | CAP -> "\\cap"
+  | BOOL_EQUIV_ANSWER_HINT -> "Enter 1 if equivalent and 0 otherwise."
+  | BOOL_ANSWER_HINT -> "Enter 1 for True and 0 for False."
+  | BOOLEAN_EQUIV_PROB -> "Determine whether the Boolean expressions are equivalent:"
+  | BLANK -> "[_____]"
   | BEGIN_PGML -> "BEGIN_PGML"
-  | ARROW -> "ARROW"
-  | ARE_METH -> "ARE_METH"
-  | ANSWER_WORD -> "ANSWER_WORD"
-  | AND_WORD -> "AND_WORD"
-  | ADD_OP -> "ADD_OP"
-  | ADD_METH -> "ADD_METH"
+  | ARROW -> "->"
+  | ARE_METH -> "are"
+  | ANSWER_WORD -> "answer"
+  | AND_WORD -> "AND"
+  | ADD_OP -> "+"
+  | ADD_METH -> "add"
 
 let production_name = function
-  | 1 -> "ans_var"
+  | 1 -> "Answer"
+  | 7 -> "Boolean AND"
+  | 8 -> "Boolean OR"
+  | 9 -> "Boolean XOR"
+  | 10 -> "Boolean implication"
+  | 11 -> "Boolean equivalence"
+  | 12 -> "Boolean NOT"
+  | 13 -> "Parenthesized Boolean expression"
+  | 14 -> "Boolean true"
+  | 15 -> "Boolean false"
+  | 16 -> "Boolean variable"
+  | 17 -> "Complex addition"
+  | 18 -> "Complex subtraction"
+  | 19 -> "Complex multiplication"
+  | 20 -> "Complex number"
+  | 21 -> "Complex number (positive imaginary part)"
+  | 22 -> "Complex number (negative imaginary part)"
+  | 23 -> "Pure imaginary number"
+  | 24 -> "Real number"
   | 33 -> "ctx_only"
   | 37 -> "ctx_setup_no_vars_last"
-  | 52 -> "fint"
+  | 52 -> "Integer"
   | 64 -> "header_simple"
-  | 71 -> "ict_math"
+  | 71 -> "Mathematical expression"
   | 82 -> "doc_no_sol"
-  | 83 -> "madd"
-  | 85 -> "mterm"
+  | 83 -> "Addition"
+  | 84 -> "Subtraction"
+  | 85 -> "Expression term"
   | 116 -> "problem_section"
-  | 123 -> "qitem1"
+  | 123 -> "Arithmetic question"
+  | 124 -> "Arithmetic question (custom answer width)"
+  | 125 -> "Set question"
+  | 126 -> "Vector question"
+  | 127 -> "Calculus question"
+  | 128 -> "Boolean evaluation question"
+  | 129 -> "Boolean evaluation question (custom answer width)"
+  | 130 -> "Boolean equivalence question"
+  | 131 -> "Boolean equivalence question (custom answer width)"
+  | 132 -> "Complex arithmetic question"
+  | 133 -> "Complex conjugate question"
+  | 134 -> "Complex modulus question"
+  | 135 -> "Power of i question"
   | 137 -> "qlist_single"
-  | 138 -> "qvalue"
-  | 172 -> "tmul"
-  | 174 -> "tfac"
-  | 178 -> "value_int_pos"
-  | 184 -> "var_value"
-  | id -> Printf.sprintf "production_%d" id
+  | 138 -> "Value question prompt"
+  | 172 -> "Multiplication"
+  | 173 -> "Division"
+  | 174 -> "Expression factor"
+  | 178 -> "Positive integer value"
+  | 179 -> "Negative integer value"
+  | 184 -> "Answer value"
+  | id -> Printf.sprintf "Grammar production %d" id
 
 let rec tree_of_raw_dcst = function
   | Choice (left, right) ->
@@ -307,16 +340,93 @@ let node_kind domain label children =
   else if String.starts_with ~prefix:"NonTerminal:" label then "nonterminal"
   else "value"
 
+let production_id_of_label label =
+  match String.rindex_opt label '#' with
+  | None -> None
+  | Some hash_index ->
+      let first_digit = hash_index + 1 in
+      let length = String.length label in
+      let rec find_end index =
+        if index < length then
+          match label.[index] with
+          | '0' .. '9' -> find_end (index + 1)
+          | _ -> index
+        else
+          index
+      in
+      let end_index = find_end first_digit in
+      if end_index = first_digit then None
+      else
+        String.sub label first_digit (end_index - first_digit)
+        |> int_of_string_opt
+
+let semantic_key domain label =
+  let ast_keys =
+    [ ("Q_Item", "question-arithmetic");
+      ("Q_Given_Set", "question-set");
+      ("Q_Suppose_Vector", "question-vector");
+      ("Q_Given_Function", "question-calculus");
+      ("Q_Boolean_Eval", "question-boolean-eval");
+      ("Q_Boolean_Equiv", "question-boolean-equiv");
+      ("Q_Complex_Arithmetic", "question-complex-arithmetic");
+      ("Q_Complex_Conjugate", "question-complex-conjugate");
+      ("Q_Complex_Modulus", "question-complex-modulus");
+      ("Q_Complex_Power_I", "question-complex-power-i");
+      ("ME_Add", "math-add");
+      ("ME_Sub", "math-sub");
+      ("T_Mul", "math-mul");
+      ("T_Div", "math-div");
+      ("Bool_And", "bool-and");
+      ("Bool_Or", "bool-or");
+      ("Bool_Xor", "bool-xor");
+      ("Bool_Implies", "bool-implies");
+      ("Bool_Iff", "bool-iff");
+      ("Bool_Not", "bool-not");
+      ("Complex_Add", "complex-add");
+      ("Complex_Sub", "complex-sub");
+      ("Complex_Mul", "complex-mul");
+      ("A_Var", "answer") ]
+  in
+  let dcst_keys =
+    [ (123, "question-arithmetic"); (124, "question-arithmetic");
+      (125, "question-set"); (126, "question-vector");
+      (127, "question-calculus");
+      (128, "question-boolean-eval"); (129, "question-boolean-eval");
+      (130, "question-boolean-equiv"); (131, "question-boolean-equiv");
+      (132, "question-complex-arithmetic");
+      (133, "question-complex-conjugate");
+      (134, "question-complex-modulus");
+      (135, "question-complex-power-i");
+      (83, "math-add"); (84, "math-sub");
+      (172, "math-mul"); (173, "math-div");
+      (7, "bool-and"); (8, "bool-or"); (9, "bool-xor");
+      (10, "bool-implies"); (11, "bool-iff"); (12, "bool-not");
+      (17, "complex-add"); (18, "complex-sub"); (19, "complex-mul");
+      (1, "answer") ]
+  in
+  if domain = "ast" then
+    List.assoc_opt label ast_keys
+  else
+    match production_id_of_label label with
+    | Some id -> List.assoc_opt id dcst_keys
+    | None -> None
+
 let rec tree_json domain (Node (label, children)) =
   let children_json =
     children
     |> List.map (tree_json domain)
     |> String.concat ","
   in
+  let semantic_json =
+    match semantic_key domain label with
+    | None -> ""
+    | Some key -> Printf.sprintf {|,"semantic":"%s"|} (json_escape key)
+  in
   Printf.sprintf
-    {|{"name":"%s","kind":"%s","children":[%s]}|}
+    {|{"name":"%s","kind":"%s"%s,"children":[%s]}|}
     (json_escape label)
     (node_kind domain label children)
+    semantic_json
     children_json
 
 let concrete_text cst =
@@ -439,6 +549,9 @@ button, select { font: inherit; }
 .node.choice rect { fill: #f3e9f5; stroke: #9362a1; }
 .node.value rect { fill: #f4f5f6; stroke: #8b969f; }
 .node.collapsed rect { stroke-width: 2.2; }
+.node.semantic-match rect { stroke: #d97706; stroke-width: 3; filter: drop-shadow(0 0 4px rgba(217, 119, 6, .45)); }
+.node.semantic-muted { opacity: .22; }
+.node.semantic-pinned rect { fill: #ffedd5; }
 .empty-message { position: absolute; inset: 0; display: grid; place-items: center; color: #6d7882; }
 .source-dialog { width: min(760px, calc(100vw - 32px)); max-height: 72vh; padding: 0; border: 1px solid #aebbc5; border-radius: 6px; box-shadow: 0 18px 50px rgba(19, 31, 43, .24); }
 .source-dialog::backdrop { background: rgba(21, 31, 40, .42); }
@@ -456,7 +569,7 @@ button, select { font: inherit; }
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><h1>AST and DCST Explorer</h1><p>Semantic structure and concrete grammar choices</p></div>
+  <div class="brand"><h1>AST and DCST Explorer</h1><p>Hover matching nodes to compare them; click to pin the highlight.</p></div>
   <div class="toolbar">
     <button id="previous" type="button" title="Previous question">Previous</button>
     <select id="question-select" aria-label="Question"></select>
@@ -494,6 +607,25 @@ const questions = [|};
     {|];
 let questionIndex = 0;
 const charts = {};
+let activeSemantic = null;
+let pinnedSemantic = null;
+
+function refreshSemanticHighlight() {
+  const semantic = pinnedSemantic || activeSemantic;
+  d3.selectAll("g.node")
+    .classed("semantic-match", node => Boolean(semantic && node.data.semantic === semantic))
+    .classed("semantic-muted", node => Boolean(semantic && node.data.semantic !== semantic))
+    .classed("semantic-pinned", node => Boolean(pinnedSemantic && node.data.semantic === pinnedSemantic));
+}
+
+function setSemanticHighlight(semantic, pinned = false) {
+  if (pinned) {
+    pinnedSemantic = pinnedSemantic === semantic ? null : semantic;
+  } else {
+    activeSemantic = semantic;
+  }
+  refreshSemanticHighlight();
+}
 
 function collapseBelowRoot(root) {
   root.eachAfter(node => {
@@ -533,6 +665,11 @@ function createChart(containerId, data) {
   const nodesLayer = viewport.append("g");
   const zoom = d3.zoom().scaleExtent([0.12, 2.5]).on("zoom", event => viewport.attr("transform", event.transform));
   svg.call(zoom);
+  svg.on("click", () => {
+    pinnedSemantic = null;
+    activeSemantic = null;
+    refreshSemanticHighlight();
+  });
   const root = d3.hierarchy(data);
   collapseFromDepth(root, containerId === "dcst-canvas" ? 3 : 4);
   root.x0 = height / 2;
@@ -552,8 +689,16 @@ function createChart(containerId, data) {
     const enter = nodes.enter().append("g")
       .attr("class", node => `node ${node.data.kind}`)
       .attr("transform", `translate(${source.y0},${source.x0})`)
+      .on("mouseenter", (event, node) => {
+        if (node.data.semantic) setSemanticHighlight(node.data.semantic);
+      })
+      .on("mouseleave", () => {
+        activeSemantic = null;
+        refreshSemanticHighlight();
+      })
       .on("click", (event, node) => {
         event.stopPropagation();
+        if (node.data.semantic) setSemanticHighlight(node.data.semantic, true);
         if (node.children) { node._children = node.children; node.children = null; }
         else if (node._children) { node.children = node._children; node._children = null; }
         update(node);
@@ -598,6 +743,7 @@ function createChart(containerId, data) {
       links.exit().remove();
     }
     visible.forEach(node => { node.x0 = node.x; node.y0 = node.y; });
+    refreshSemanticHighlight();
   }
 
   function fit() {
@@ -620,6 +766,8 @@ function createChart(containerId, data) {
 
 function renderQuestion(index) {
   questionIndex = Math.max(0, Math.min(index, questions.length - 1));
+  activeSemantic = null;
+  pinnedSemantic = null;
   const question = questions[questionIndex];
   charts.ast = createChart("ast-canvas", question.ast);
   charts.dcst = createChart("dcst-canvas", question.dcst);
