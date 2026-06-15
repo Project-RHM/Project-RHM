@@ -1,3 +1,0 @@
-cd D:/BNBU/FYP/Generator/v_3/generator_ui_v3.4
-
-python app.py
