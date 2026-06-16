@@ -53,6 +53,19 @@ let rec int_pow base exponent =
 let random_between low high =
   if low > high then low else low + Random.int (high - low + 1)
 
+let random_nonzero_between low high =
+  if low = 0 && high = 0 then 1
+  else
+    let rec pick attempts =
+      let value = random_between low high in
+      if value <> 0 then value
+      else if attempts > 100 then
+        if low < 0 then low else high
+      else
+        pick (attempts + 1)
+    in
+    pick 0
+
 let weighted_pick weighted_items =
   let positive_items = List.filter (fun (weight, _) -> weight > 0) weighted_items in
   match positive_items with
@@ -746,20 +759,20 @@ and gen_sequence_question () : question_item =
   in
   match mode with
   | `Arithmetic_Nth ->
-      let diff = random_between min_sequence_difference max_sequence_difference in
+      let diff = random_nonzero_between min_sequence_difference max_sequence_difference in
       let answer = first + ((index - 1) * diff) in
       Q_Sequence (Arithmetic_Nth (first, diff, index), make_answer answer, None)
   | `Geometric_Nth ->
-      let ratio = random_between min_sequence_ratio max_sequence_ratio in
+      let ratio = random_nonzero_between min_sequence_ratio max_sequence_ratio in
       let answer = first * int_pow ratio (index - 1) in
       Q_Sequence (Geometric_Nth (first, ratio, index), make_answer answer, None)
   | `Arithmetic_Sum ->
-      let diff = random_between min_sequence_difference max_sequence_difference in
+      let diff = random_nonzero_between min_sequence_difference max_sequence_difference in
       let last = first + ((index - 1) * diff) in
       let answer = index * (first + last) / 2 in
       Q_Sequence (Arithmetic_Sum (first, diff, index), make_answer answer, None)
   | `Geometric_Sum ->
-      let ratio = random_between min_sequence_ratio max_sequence_ratio in
+      let ratio = random_nonzero_between min_sequence_ratio max_sequence_ratio in
       let answer =
         if ratio = 1 then first * index
         else first * ((int_pow ratio index) - 1) / (ratio - 1)

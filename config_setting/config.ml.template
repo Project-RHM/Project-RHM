@@ -193,11 +193,11 @@ let max_sequence_index = {{ max_sequence_index }}
 let min_sequence_term = {{ min_sequence_term }}
 let max_sequence_term = {{ max_sequence_term }}
 
-(* Arithmetic sequence common difference range. *)
+(* Arithmetic sequence common difference range. 0 is never generated. *)
 let min_sequence_difference = {{ min_sequence_difference }}
 let max_sequence_difference = {{ max_sequence_difference }}
 
-(* Geometric sequence common ratio range. *)
+(* Geometric sequence common ratio range. 0 is never generated. *)
 let min_sequence_ratio = {{ min_sequence_ratio }}
 let max_sequence_ratio = {{ max_sequence_ratio }}
 

@@ -617,6 +617,8 @@ def validate_sequence(pgml: str, case: str, seed: str) -> list[Bug]:
         params = parse_sequence_params(block)
         if "Arithmetic sequence: find a_n." in block:
             try:
+                if params.get("d") == 0:
+                    bugs.append(bug(case, seed, "sequence_zero_difference", str(params), payload, "d != 0", "d = 0", "Arithmetic sequences should not use a zero common difference."))
                 expected = params["a_1"] + ((params["n"] - 1) * params["d"])
                 actual = int(payload)
                 if expected != actual:
@@ -625,6 +627,8 @@ def validate_sequence(pgml: str, case: str, seed: str) -> list[Bug]:
                 bugs.append(bug(case, seed, "sequence_arith_nth_exception", block[:300], payload, "sequence can be evaluated", repr(exc), "Arithmetic nth-term validator failed."))
         if "Geometric sequence: find a_n." in block:
             try:
+                if params.get("r") == 0:
+                    bugs.append(bug(case, seed, "sequence_zero_ratio", str(params), payload, "r != 0", "r = 0", "Geometric sequences should not use a zero common ratio."))
                 expected = params["a_1"] * (params["r"] ** (params["n"] - 1))
                 actual = int(payload)
                 if expected != actual:
@@ -633,6 +637,8 @@ def validate_sequence(pgml: str, case: str, seed: str) -> list[Bug]:
                 bugs.append(bug(case, seed, "sequence_geom_nth_exception", block[:300], payload, "sequence can be evaluated", repr(exc), "Geometric nth-term validator failed."))
         if "Arithmetic sequence: find the finite sum." in block:
             try:
+                if params.get("d") == 0:
+                    bugs.append(bug(case, seed, "sequence_zero_difference", str(params), payload, "d != 0", "d = 0", "Arithmetic sequences should not use a zero common difference."))
                 last = params["a_1"] + ((params["n"] - 1) * params["d"])
                 expected = params["n"] * (params["a_1"] + last) // 2
                 actual = int(payload)
@@ -642,6 +648,8 @@ def validate_sequence(pgml: str, case: str, seed: str) -> list[Bug]:
                 bugs.append(bug(case, seed, "sequence_arith_sum_exception", block[:300], payload, "sequence can be evaluated", repr(exc), "Arithmetic finite-sum validator failed."))
         if "Geometric sequence: find the finite sum." in block:
             try:
+                if params.get("r") == 0:
+                    bugs.append(bug(case, seed, "sequence_zero_ratio", str(params), payload, "r != 0", "r = 0", "Geometric sequences should not use a zero common ratio."))
                 if params["r"] == 1:
                     expected = params["a_1"] * params["n"]
                 else:

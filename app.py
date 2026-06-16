@@ -389,6 +389,9 @@ def has_complex_modulus_candidate(low, high):
         ])
     return any(low <= re_part <= high and low <= im_part <= high for re_part, im_part, _ in signed_options)
 
+def range_has_nonzero_candidate(low, high):
+    return low < 0 or high > 0
+
 def validate_config_data(config):
     errors = []
 
@@ -461,6 +464,29 @@ def validate_config_data(config):
         )
         if total_sequence_weight <= 0:
             errors.append("At least one sequence weight must be positive in mixed mode.")
+
+    arithmetic_sequence_enabled = (
+        config["sequence_question_mode"] in [1, 3] or
+        (
+            config["sequence_question_mode"] == 0 and
+            (config["arithmetic_sequence_weight"] > 0 or config["arithmetic_sequence_sum_weight"] > 0)
+        )
+    )
+    geometric_sequence_enabled = (
+        config["sequence_question_mode"] in [2, 4] or
+        (
+            config["sequence_question_mode"] == 0 and
+            (config["geometric_sequence_weight"] > 0 or config["geometric_sequence_sum_weight"] > 0)
+        )
+    )
+    if arithmetic_sequence_enabled and not range_has_nonzero_candidate(
+        config["min_sequence_difference"], config["max_sequence_difference"]
+    ):
+        errors.append("The sequence difference range must include at least one non-zero value.")
+    if geometric_sequence_enabled and not range_has_nonzero_candidate(
+        config["min_sequence_ratio"], config["max_sequence_ratio"]
+    ):
+        errors.append("The sequence ratio range must include at least one non-zero value.")
 
     modulus_enabled = (
         config["complex_question_mode"] == 3 or
