@@ -733,6 +733,26 @@ pre {
     flex: 1;
 }
 
+#question-type-amounts-container .question-type-amounts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    gap: 14px;
+    align-items: end;
+}
+
+#question-type-amounts-container .form-group {
+    min-width: 0;
+}
+
+#question-type-amounts-container label {
+    line-height: 1.35;
+}
+
+#question-type-amounts-container input[type="number"] {
+    width: 100%;
+    box-sizing: border-box;
+}
+
 /* Form Section */
 .form-section {
     margin-bottom: 20px;
@@ -845,6 +865,11 @@ pre {
     flex-direction: column;
     animation: slideIn 0.3s;
     padding: 5px 25px;
+}
+
+#configModal .modal-content {
+    width: 94%;
+    max-width: 1180px;
 }
 
 .modal-header {

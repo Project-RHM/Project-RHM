@@ -28,6 +28,7 @@
             <button class="nav-tab" onclick="showTab('derivative')">Calculus problem</button>
             <button class="nav-tab" onclick="showTab('boolean')">Boolean problem</button>
             <button class="nav-tab" onclick="showTab('complex')">Complex problem</button>
+            <button class="nav-tab" onclick="showTab('sequence')">Sequence problem</button>
         </div>
 
         <div id="message" class="message"></div>
@@ -77,6 +78,7 @@
                             <option value="4" {% if config.problem_type == 4 %}selected{% endif %}>Calculus Only</option>
                             <option value="5" {% if config.problem_type == 5 %}selected{% endif %}>Boolean Algebra Only</option>
                             <option value="6" {% if config.problem_type == 6 %}selected{% endif %}>Complex Number Only</option>
+                            <option value="7" {% if config.problem_type == 7 %}selected{% endif %}>Sequence Only</option>
                         </select>
                     </div>
                     
@@ -90,9 +92,9 @@
                         </div>
 
                         <div id="question-type-amounts-container">
-                            <div class="form-row">
-                                {% set type_names = ["Arithmetic", "Set", "Vector", "Calculus", "Boolean", "Complex"] %}
-                                {% for i in range(6) %}
+                            <div class="form-row question-type-amounts-grid">
+                                {% set type_names = ["Arithmetic", "Set", "Vector", "Calculus", "Boolean", "Complex", "Sequence"] %}
+                                {% for i in range(7) %}
                                 <div class="form-group">
                                     <label for="question_type_amounts_{{ i }}">{{ type_names[i] }} num</label>
                                     <input type="number" id="question_type_amounts_{{ i }}"
@@ -490,6 +492,102 @@
                                 <label for="max_complex_power">Max exponent</label>
                                 <input type="number" id="max_complex_power" name="max_complex_power"
                                     value="{{ config.get('max_complex_power', 40) }}" min="0" max="1000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sequence problem configs -->
+            <div id="sequence" class="tab-content">
+                <div class="config-section">
+                    <h3>Sequence Problem Configs</h3>
+
+                    <div class="form-section">
+                        <h4>Question Mode</h4>
+                        <p class="config-description">Select the type of sequence questions to generate. Weights are used only in mixed mode.</p>
+                        <div class="form-group">
+                            <label for="sequence_question_mode">Sequence question mode</label>
+                            <select id="sequence_question_mode" name="sequence_question_mode">
+                                <option value="0" {% if config.get('sequence_question_mode', 0) == 0 %}selected{% endif %}>Mixed</option>
+                                <option value="1" {% if config.get('sequence_question_mode', 0) == 1 %}selected{% endif %}>Arithmetic nth term only</option>
+                                <option value="2" {% if config.get('sequence_question_mode', 0) == 2 %}selected{% endif %}>Geometric nth term only</option>
+                                <option value="3" {% if config.get('sequence_question_mode', 0) == 3 %}selected{% endif %}>Arithmetic finite sum only</option>
+                                <option value="4" {% if config.get('sequence_question_mode', 0) == 4 %}selected{% endif %}>Geometric finite sum only</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="arithmetic_sequence_weight">Arithmetic nth weight</label>
+                                <input type="number" id="arithmetic_sequence_weight" name="arithmetic_sequence_weight"
+                                    value="{{ config.get('arithmetic_sequence_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="geometric_sequence_weight">Geometric nth weight</label>
+                                <input type="number" id="geometric_sequence_weight" name="geometric_sequence_weight"
+                                    value="{{ config.get('geometric_sequence_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="arithmetic_sequence_sum_weight">Arithmetic sum weight</label>
+                                <input type="number" id="arithmetic_sequence_sum_weight" name="arithmetic_sequence_sum_weight"
+                                    value="{{ config.get('arithmetic_sequence_sum_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="geometric_sequence_sum_weight">Geometric sum weight</label>
+                                <input type="number" id="geometric_sequence_sum_weight" name="geometric_sequence_sum_weight"
+                                    value="{{ config.get('geometric_sequence_sum_weight', 1) }}" min="0" max="20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Index and Term Ranges</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_sequence_index">Min n</label>
+                                <input type="number" id="min_sequence_index" name="min_sequence_index"
+                                    value="{{ config.get('min_sequence_index', 2) }}" min="1" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_sequence_index">Max n</label>
+                                <input type="number" id="max_sequence_index" name="max_sequence_index"
+                                    value="{{ config.get('max_sequence_index', 8) }}" min="1" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="min_sequence_term">Min first term</label>
+                                <input type="number" id="min_sequence_term" name="min_sequence_term"
+                                    value="{{ config.get('min_sequence_term', -10) }}" min="-100" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_sequence_term">Max first term</label>
+                                <input type="number" id="max_sequence_term" name="max_sequence_term"
+                                    value="{{ config.get('max_sequence_term', 10) }}" min="-100" max="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Difference and Ratio Ranges</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_sequence_difference">Min difference</label>
+                                <input type="number" id="min_sequence_difference" name="min_sequence_difference"
+                                    value="{{ config.get('min_sequence_difference', -8) }}" min="-100" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_sequence_difference">Max difference</label>
+                                <input type="number" id="max_sequence_difference" name="max_sequence_difference"
+                                    value="{{ config.get('max_sequence_difference', 8) }}" min="-100" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="min_sequence_ratio">Min ratio</label>
+                                <input type="number" id="min_sequence_ratio" name="min_sequence_ratio"
+                                    value="{{ config.get('min_sequence_ratio', -5) }}" min="-20" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_sequence_ratio">Max ratio</label>
+                                <input type="number" id="max_sequence_ratio" name="max_sequence_ratio"
+                                    value="{{ config.get('max_sequence_ratio', 5) }}" min="-20" max="20">
                             </div>
                         </div>
                     </div>

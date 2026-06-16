@@ -43,6 +43,7 @@
 %token GIVEN_PROB COMPUTE_PROB GIVEN_FUN INDEFINITE_INTEGRAL_PROB
 %token EVALUATE_BOOL_PROB BOOLEAN_EQUIV_PROB WHEN_WORD BOOL_ANSWER_HINT BOOL_EQUIV_ANSWER_HINT
 %token COMPLEX_ARITH_PROB COMPLEX_CONJ_PROB COMPLEX_MOD_PROB COMPLEX_POWER_I_PROB
+%token ARITH_SEQ_NTH_PROB GEOM_SEQ_NTH_PROB ARITH_SEQ_SUM_PROB GEOM_SEQ_SUM_PROB
 %token TRUE_WORD FALSE_WORD AND_WORD OR_WORD NOT_WORD XOR_WORD IMPLIES_WORD IFF_WORD
 %token SUPPOSE_PROB PERIOD VECTOR_UNIT_PROB VECTOR_PARA_PROB VECTOR_SAME_PROB
 
@@ -539,6 +540,43 @@ question_item:
     BLANK; LBRACE; ans = answer_item; RBRACE
       { Q_Complex_Power_I (exponent, ans) }
     [@name qcomplex_power_i]
+
+  | ARITH_SEQ_NTH_PROB; NEWLINE;
+    first = sequence_param; NEWLINE;
+    diff = sequence_param; NEWLINE;
+    index = sequence_param; NEWLINE;
+    BLANK; LBRACE; ans = answer_item; RBRACE
+      { Q_Sequence (Arithmetic_Nth (first, diff, index), ans, None) }
+    [@name qsequence_arith_nth]
+
+  | GEOM_SEQ_NTH_PROB; NEWLINE;
+    first = sequence_param; NEWLINE;
+    ratio = sequence_param; NEWLINE;
+    index = sequence_param; NEWLINE;
+    BLANK; LBRACE; ans = answer_item; RBRACE
+      { Q_Sequence (Geometric_Nth (first, ratio, index), ans, None) }
+    [@name qsequence_geom_nth]
+
+  | ARITH_SEQ_SUM_PROB; NEWLINE;
+    first = sequence_param; NEWLINE;
+    diff = sequence_param; NEWLINE;
+    count = sequence_param; NEWLINE;
+    BLANK; LBRACE; ans = answer_item; RBRACE
+      { Q_Sequence (Arithmetic_Sum (first, diff, count), ans, None) }
+    [@name qsequence_arith_sum]
+
+  | GEOM_SEQ_SUM_PROB; NEWLINE;
+    first = sequence_param; NEWLINE;
+    ratio = sequence_param; NEWLINE;
+    count = sequence_param; NEWLINE;
+    BLANK; LBRACE; ans = answer_item; RBRACE
+      { Q_Sequence (Geometric_Sum (first, ratio, count), ans, None) }
+    [@name qsequence_geom_sum]
+
+sequence_param:
+  | IT_MATH_OPEN; ID; EQ; value = int_with_sign; IT_MATH_CLOSE
+      { value }
+    [@name sequence_param]
 
 question_text:
   | WHAT_WORD; IS_WORD; THE_WORD; VALUE_WORD; OF_WORD; call = intext_call; QUESTION_MARK

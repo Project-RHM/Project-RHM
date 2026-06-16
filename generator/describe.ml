@@ -283,6 +283,32 @@ and describe_question_item question_item =
       DCST.qcomplex_power_i
         exponent
         (describe_answer_item ans)
+  | Q_Sequence (Arithmetic_Nth (first, diff, index), ans, None) ->
+      DCST.qsequence_arith_nth
+        (DCST.sequence_param "a_1" (describe_int_with_sign first))
+        (DCST.sequence_param "d" (describe_int_with_sign diff))
+        (DCST.sequence_param "n" (describe_int_with_sign index))
+        (describe_answer_item ans)
+  | Q_Sequence (Geometric_Nth (first, ratio, index), ans, None) ->
+      DCST.qsequence_geom_nth
+        (DCST.sequence_param "a_1" (describe_int_with_sign first))
+        (DCST.sequence_param "r" (describe_int_with_sign ratio))
+        (DCST.sequence_param "n" (describe_int_with_sign index))
+        (describe_answer_item ans)
+  | Q_Sequence (Arithmetic_Sum (first, diff, count), ans, None) ->
+      DCST.qsequence_arith_sum
+        (DCST.sequence_param "a_1" (describe_int_with_sign first))
+        (DCST.sequence_param "d" (describe_int_with_sign diff))
+        (DCST.sequence_param "n" (describe_int_with_sign count))
+        (describe_answer_item ans)
+  | Q_Sequence (Geometric_Sum (first, ratio, count), ans, None) ->
+      DCST.qsequence_geom_sum
+        (DCST.sequence_param "a_1" (describe_int_with_sign first))
+        (DCST.sequence_param "r" (describe_int_with_sign ratio))
+        (DCST.sequence_param "n" (describe_int_with_sign count))
+        (describe_answer_item ans)
+  | Q_Sequence (_, _, Some _) ->
+      failwith "Sequence questions do not currently support answer width"
 and describe_set_list s_list =
   if print_describe then prerr_endline "→ describe_set_list";
   match s_list with

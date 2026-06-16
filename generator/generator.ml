@@ -47,6 +47,26 @@ let complex_counter = ref 0
 let reset_fun_counter () = fun_counter := 0
 let reset_complex_counter () = complex_counter := 0
 
+let rec int_pow base exponent =
+  if exponent <= 0 then 1 else base * int_pow base (exponent - 1)
+
+let random_between low high =
+  if low > high then low else low + Random.int (high - low + 1)
+
+let weighted_pick weighted_items =
+  let positive_items = List.filter (fun (weight, _) -> weight > 0) weighted_items in
+  match positive_items with
+  | [] -> snd (List.hd weighted_items)
+  | _ ->
+      let total = List.fold_left (fun acc (weight, _) -> acc + weight) 0 positive_items in
+      let target = Random.int total in
+      let rec choose offset = function
+        | [] -> snd (List.hd positive_items)
+        | (weight, value) :: rest ->
+            if target < offset + weight then value else choose (offset + weight) rest
+      in
+      choose 0 positive_items
+
 (* ============================================================= *)
 (* ============== Recursive Auxiliary Functions ================ *)
 (* ============================================================= *)
@@ -569,13 +589,14 @@ and gen_question_list () : question_item list =
   match problem_type with
   | 0 ->  (* All type of questions *)
     if question_random_amounts = false then
-      (* List: [arithmetic_amount; set_amount; vector_amount; calculus_amount; boolean_amount; complex_amount] *)
+      (* List: [arithmetic_amount; set_amount; vector_amount; calculus_amount; boolean_amount; complex_amount; sequence_amount] *)
       let arithmetic_count = nth_or_default question_type_amounts 0 0 in
       let set_count = nth_or_default question_type_amounts 1 0 in
       let vector_count = nth_or_default question_type_amounts 2 0 in
       let calculus_count = nth_or_default question_type_amounts 3 0 in
       let boolean_count = nth_or_default question_type_amounts 4 0 in
       let complex_count = nth_or_default question_type_amounts 5 0 in
+      let sequence_count = nth_or_default question_type_amounts 6 0 in
 
       (* Generate each question type *)
       let arithmetic_questions =
@@ -599,7 +620,10 @@ and gen_question_list () : question_item list =
       let complex_questions =
         List.init complex_count (fun _ -> gen_complex_question ())
       in
-      let all_questions = arithmetic_questions @ set_questions @ vector_questions @ calculus_questions @ boolean_questions @ complex_questions in
+      let sequence_questions =
+        List.init sequence_count (fun _ -> gen_sequence_question ())
+      in
+      let all_questions = arithmetic_questions @ set_questions @ vector_questions @ calculus_questions @ boolean_questions @ complex_questions @ sequence_questions in
         if shuffle_questions_for_0_type = true then
           shuffle_list all_questions
         else
@@ -635,7 +659,7 @@ and gen_question_item () : question_item =
   match problem_type with
   | 0 ->  (* All type of questions *)
       (* if randomly choose *)
-      (match Random.int 6 with
+      (match Random.int 7 with
           | 0 -> gen_arithmetic_question ()
           | 1 -> gen_set_question ()
           | 2 -> gen_vector_question ()
@@ -643,7 +667,8 @@ and gen_question_item () : question_item =
               let (q, _) = gen_calculus_question () in
               q
           | 4 -> gen_boolean_question ()
-          | _ -> gen_complex_question ())
+          | 5 -> gen_complex_question ()
+          | _ -> gen_sequence_question ())
   | 1 ->  (* Arithmetic only *)
       gen_arithmetic_question ()
   | 2 ->  (* Set only *)
@@ -657,6 +682,8 @@ and gen_question_item () : question_item =
 	      gen_boolean_question ()
     | 6 ->  (* Complex Number only *)
       gen_complex_question ()
+    | 7 ->  (* Sequence only *)
+      gen_sequence_question ()
 	  | _ -> gen_arithmetic_question ()  (* Default to arithmetic *)
 
 and gen_arithmetic_question () : question_item =
@@ -699,6 +726,45 @@ and gen_arithmetic_question () : question_item =
   in
 
 	  Q_Item (qtext, ans, width)
+
+and gen_sequence_question () : question_item =
+  let first = random_between min_sequence_term max_sequence_term in
+  let index = random_between min_sequence_index max_sequence_index in
+  let make_answer value = A_Var (Var_Value (VInt value)) in
+  let mode =
+    match sequence_question_mode with
+    | 1 -> `Arithmetic_Nth
+    | 2 -> `Geometric_Nth
+    | 3 -> `Arithmetic_Sum
+    | 4 -> `Geometric_Sum
+    | _ ->
+        weighted_pick
+          [ (arithmetic_sequence_weight, `Arithmetic_Nth);
+            (geometric_sequence_weight, `Geometric_Nth);
+            (arithmetic_sequence_sum_weight, `Arithmetic_Sum);
+            (geometric_sequence_sum_weight, `Geometric_Sum) ]
+  in
+  match mode with
+  | `Arithmetic_Nth ->
+      let diff = random_between min_sequence_difference max_sequence_difference in
+      let answer = first + ((index - 1) * diff) in
+      Q_Sequence (Arithmetic_Nth (first, diff, index), make_answer answer, None)
+  | `Geometric_Nth ->
+      let ratio = random_between min_sequence_ratio max_sequence_ratio in
+      let answer = first * int_pow ratio (index - 1) in
+      Q_Sequence (Geometric_Nth (first, ratio, index), make_answer answer, None)
+  | `Arithmetic_Sum ->
+      let diff = random_between min_sequence_difference max_sequence_difference in
+      let last = first + ((index - 1) * diff) in
+      let answer = index * (first + last) / 2 in
+      Q_Sequence (Arithmetic_Sum (first, diff, index), make_answer answer, None)
+  | `Geometric_Sum ->
+      let ratio = random_between min_sequence_ratio max_sequence_ratio in
+      let answer =
+        if ratio = 1 then first * index
+        else first * ((int_pow ratio index) - 1) / (ratio - 1)
+      in
+      Q_Sequence (Geometric_Sum (first, ratio, index), make_answer answer, None)
 
 and take_string_list n lst =
   let rec aux i acc rest =
@@ -1396,6 +1462,8 @@ and convert_problem_section (problem_section : problem_section) : problem_sectio
             let (modified_ans, var_decl) = convert_complex_answer_item ans complex_answer_counter in
             answer_vars := var_decl :: !answer_vars;
             Q_Complex_Power_I (exponent, modified_ans)
+        | Q_Sequence (_, _, _) as item ->
+            item
 	      in
 
       let modified_question_list = List.map convert_question_item question_list in

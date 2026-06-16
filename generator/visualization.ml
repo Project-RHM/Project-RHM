@@ -217,8 +217,12 @@ let token_name = function
   | ARE_METH -> "are"
   | ANSWER_WORD -> "answer"
   | AND_WORD -> "AND"
+  | ARITH_SEQ_NTH_PROB -> "Arithmetic sequence: find a_n."
+  | ARITH_SEQ_SUM_PROB -> "Arithmetic sequence: find the finite sum."
   | ADD_OP -> "+"
   | ADD_METH -> "add"
+  | GEOM_SEQ_NTH_PROB -> "Geometric sequence: find a_n."
+  | GEOM_SEQ_SUM_PROB -> "Geometric sequence: find the finite sum."
 
 let production_name = function
   | 1 -> "Answer"
@@ -372,6 +376,7 @@ let semantic_key domain label =
       ("Q_Complex_Conjugate", "question-complex-conjugate");
       ("Q_Complex_Modulus", "question-complex-modulus");
       ("Q_Complex_Power_I", "question-complex-power-i");
+      ("Q_Sequence", "question-sequence");
       ("ME_Add", "math-add");
       ("ME_Sub", "math-sub");
       ("T_Mul", "math-mul");

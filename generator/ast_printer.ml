@@ -406,6 +406,11 @@ and pp_question_item fmt = function
     fprintf fmt "Q_Complex_Power_I(%d,@ %a)"
       exponent
       pp_answer_item ans
+  | Ast.Q_Sequence (seq, ans, oi) ->
+    fprintf fmt "Q_Sequence(%a,@ %a,@ %a)"
+      pp_sequence_question seq
+      pp_answer_item ans
+      pp_int_option oi
 
 and pp_question_text fmt = function
   | Ast.Q_Value  ic -> fprintf fmt "Q_Value(%a)"   pp_intext_call ic
@@ -413,6 +418,16 @@ and pp_question_text fmt = function
 
 and pp_answer_item fmt = function
   | Ast.A_Var v -> fprintf fmt "A_Var(%a)" pp_variable v
+
+and pp_sequence_question fmt = function
+  | Ast.Arithmetic_Nth (first, diff, index) ->
+    fprintf fmt "Arithmetic_Nth(%d,@ %d,@ %d)" first diff index
+  | Ast.Geometric_Nth (first, ratio, index) ->
+    fprintf fmt "Geometric_Nth(%d,@ %d,@ %d)" first ratio index
+  | Ast.Arithmetic_Sum (first, diff, count) ->
+    fprintf fmt "Arithmetic_Sum(%d,@ %d,@ %d)" first diff count
+  | Ast.Geometric_Sum (first, ratio, count) ->
+    fprintf fmt "Geometric_Sum(%d,@ %d,@ %d)" first ratio count
 
 and pp_intext_call fmt = function
   | Ast.IC_VarV v -> fprintf fmt "IC_VarV(%a)" pp_variable v

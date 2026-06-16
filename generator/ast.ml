@@ -118,6 +118,13 @@ and question_item =
   | Q_Complex_Conjugate of complex_num * answer_item
   | Q_Complex_Modulus of complex_num * answer_item
   | Q_Complex_Power_I of int * answer_item
+  | Q_Sequence of sequence_question * answer_item * int option
+
+and sequence_question =
+  | Arithmetic_Nth of int * int * int
+  | Geometric_Nth of int * int * int
+  | Arithmetic_Sum of int * int * int
+  | Geometric_Sum of int * int * int
 and question_text =
   | Q_Value     of intext_call
   | Q_IsEqual   of intext_call

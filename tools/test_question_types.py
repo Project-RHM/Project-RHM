@@ -88,7 +88,20 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "max_complex_component": 8,
     "min_complex_power": 0,
     "max_complex_power": 12,
-    "question_type_amounts": [1, 1, 1, 2, 2, 4],
+    "sequence_question_mode": 0,
+    "arithmetic_sequence_weight": 1,
+    "geometric_sequence_weight": 1,
+    "arithmetic_sequence_sum_weight": 1,
+    "geometric_sequence_sum_weight": 1,
+    "min_sequence_index": 2,
+    "max_sequence_index": 8,
+    "min_sequence_term": -10,
+    "max_sequence_term": 10,
+    "min_sequence_difference": -8,
+    "max_sequence_difference": 8,
+    "min_sequence_ratio": -5,
+    "max_sequence_ratio": 5,
+    "question_type_amounts": [1, 1, 1, 2, 2, 4, 1],
     "set_variables": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
     "vector_variables": ["u", "v", "w", "x", "y", "z", "a", "b", "c", "d"],
     "boolean_variables": ["A", "B", "C", "D", "E"],
@@ -249,6 +262,18 @@ def detect_kinds(pgml: str) -> set[str]:
     if "Simplify the power of i:" in pgml:
         kinds.add("complex")
         kinds.add("complex_power_i")
+    if "Arithmetic sequence: find a_n." in pgml:
+        kinds.add("sequence")
+        kinds.add("sequence_arithmetic_nth")
+    if "Geometric sequence: find a_n." in pgml:
+        kinds.add("sequence")
+        kinds.add("sequence_geometric_nth")
+    if "Arithmetic sequence: find the finite sum." in pgml:
+        kinds.add("sequence")
+        kinds.add("sequence_arithmetic_sum")
+    if "Geometric sequence: find the finite sum." in pgml:
+        kinds.add("sequence")
+        kinds.add("sequence_geometric_sum")
     return kinds
 
 
@@ -576,6 +601,58 @@ def validate_calculus_static(pgml: str, case: str, seed: str) -> list[Bug]:
             bugs.append(bug(case, seed, "calculus_undefined_antiderivative", ref, pgml[:400], f"${ref} definition", "missing", "Integral question references an undefined antiderivative."))
     return bugs
 
+def parse_sequence_params(block: str) -> dict[str, int]:
+    params: dict[str, int] = {}
+    for name, value in re.findall(r"\[`([A-Za-z0-9_]+)\s*=\s*([-+]?\d+)`\]", block):
+        params[name] = int(value)
+    return params
+
+
+def validate_sequence(pgml: str, case: str, seed: str) -> list[Bug]:
+    bugs: list[Bug] = []
+    for block in split_blocks(pgml):
+        payload = answer_payload(block)
+        if payload is None:
+            continue
+        params = parse_sequence_params(block)
+        if "Arithmetic sequence: find a_n." in block:
+            try:
+                expected = params["a_1"] + ((params["n"] - 1) * params["d"])
+                actual = int(payload)
+                if expected != actual:
+                    bugs.append(bug(case, seed, "sequence_arith_nth_answer", str(params), payload, str(expected), str(actual), "Arithmetic nth-term answer is incorrect."))
+            except Exception as exc:
+                bugs.append(bug(case, seed, "sequence_arith_nth_exception", block[:300], payload, "sequence can be evaluated", repr(exc), "Arithmetic nth-term validator failed."))
+        if "Geometric sequence: find a_n." in block:
+            try:
+                expected = params["a_1"] * (params["r"] ** (params["n"] - 1))
+                actual = int(payload)
+                if expected != actual:
+                    bugs.append(bug(case, seed, "sequence_geom_nth_answer", str(params), payload, str(expected), str(actual), "Geometric nth-term answer is incorrect."))
+            except Exception as exc:
+                bugs.append(bug(case, seed, "sequence_geom_nth_exception", block[:300], payload, "sequence can be evaluated", repr(exc), "Geometric nth-term validator failed."))
+        if "Arithmetic sequence: find the finite sum." in block:
+            try:
+                last = params["a_1"] + ((params["n"] - 1) * params["d"])
+                expected = params["n"] * (params["a_1"] + last) // 2
+                actual = int(payload)
+                if expected != actual:
+                    bugs.append(bug(case, seed, "sequence_arith_sum_answer", str(params), payload, str(expected), str(actual), "Arithmetic finite-sum answer is incorrect."))
+            except Exception as exc:
+                bugs.append(bug(case, seed, "sequence_arith_sum_exception", block[:300], payload, "sequence can be evaluated", repr(exc), "Arithmetic finite-sum validator failed."))
+        if "Geometric sequence: find the finite sum." in block:
+            try:
+                if params["r"] == 1:
+                    expected = params["a_1"] * params["n"]
+                else:
+                    expected = params["a_1"] * ((params["r"] ** params["n"]) - 1) // (params["r"] - 1)
+                actual = int(payload)
+                if expected != actual:
+                    bugs.append(bug(case, seed, "sequence_geom_sum_answer", str(params), payload, str(expected), str(actual), "Geometric finite-sum answer is incorrect."))
+            except Exception as exc:
+                bugs.append(bug(case, seed, "sequence_geom_sum_exception", block[:300], payload, "sequence can be evaluated", repr(exc), "Geometric finite-sum validator failed."))
+    return bugs
+
 
 def call_webwork(pgml: str, case: str, seed: str, pgml_path: str, timeout: int) -> tuple[str, str, list[Bug]]:
     url = os.environ.get("WEBWORK_VALIDATE_URL", "").strip()
@@ -633,6 +710,7 @@ def local_validate(pgml: str, case: str, seed: str) -> list[Bug]:
     bugs.extend(validate_boolean(pgml, case, seed))
     bugs.extend(validate_complex(pgml, case, seed))
     bugs.extend(validate_calculus_static(pgml, case, seed))
+    bugs.extend(validate_sequence(pgml, case, seed))
     return bugs
 
 
@@ -657,8 +735,8 @@ def test_cases() -> list[TestCase]:
         TestCase(
             "all_mixed",
             "All major question families in one document.",
-            {**common, "problem_type": 0, "question_random_amounts": False, "question_type_amounts": [1, 1, 1, 2, 2, 4], "shuffle_questions_for_0_type": True, "calculus_question_mode": 0, "boolean_question_mode": 0, "complex_question_mode": 0},
-            {"arithmetic", "set", "vector", "calculus", "boolean", "complex"},
+            {**common, "problem_type": 0, "question_random_amounts": False, "question_type_amounts": [1, 1, 1, 2, 2, 4, 4], "shuffle_questions_for_0_type": True, "calculus_question_mode": 0, "boolean_question_mode": 0, "complex_question_mode": 0, "sequence_question_mode": 0},
+            {"arithmetic", "set", "vector", "calculus", "boolean", "complex", "sequence"},
         ),
         TestCase("arithmetic_only", "Arithmetic only.", {**common, "problem_type": 1}, {"arithmetic"}, {"set", "vector", "boolean", "complex"}),
         TestCase("set_only", "Set only.", {**common, "problem_type": 2}, {"set"}, {"arithmetic", "vector", "boolean", "complex"}),
@@ -674,6 +752,11 @@ def test_cases() -> list[TestCase]:
         TestCase("complex_conjugate_only", "Complex conjugate only.", {**common, "problem_type": 6, "complex_question_mode": 2}, {"complex_conjugate"}, {"complex_arithmetic", "complex_modulus", "complex_power_i"}),
         TestCase("complex_modulus_only", "Complex modulus only.", {**common, "problem_type": 6, "complex_question_mode": 3}, {"complex_modulus"}, {"complex_arithmetic", "complex_conjugate", "complex_power_i"}),
         TestCase("complex_power_i_only", "Powers of i only.", {**common, "problem_type": 6, "complex_question_mode": 4}, {"complex_power_i"}, {"complex_arithmetic", "complex_conjugate", "complex_modulus"}),
+        TestCase("sequence_mixed", "All sequence modes mixed.", {**common, "problem_type": 7, "min_question_num": 12, "max_question_num": 12, "sequence_question_mode": 0, "arithmetic_sequence_weight": 1, "geometric_sequence_weight": 1, "arithmetic_sequence_sum_weight": 1, "geometric_sequence_sum_weight": 1}, {"sequence_arithmetic_nth", "sequence_geometric_nth", "sequence_arithmetic_sum", "sequence_geometric_sum"}),
+        TestCase("sequence_arithmetic_nth_only", "Arithmetic nth term only.", {**common, "problem_type": 7, "sequence_question_mode": 1}, {"sequence_arithmetic_nth"}, {"sequence_geometric_nth", "sequence_arithmetic_sum", "sequence_geometric_sum"}),
+        TestCase("sequence_geometric_nth_only", "Geometric nth term only.", {**common, "problem_type": 7, "sequence_question_mode": 2}, {"sequence_geometric_nth"}, {"sequence_arithmetic_nth", "sequence_arithmetic_sum", "sequence_geometric_sum"}),
+        TestCase("sequence_arithmetic_sum_only", "Arithmetic finite sum only.", {**common, "problem_type": 7, "sequence_question_mode": 3}, {"sequence_arithmetic_sum"}, {"sequence_arithmetic_nth", "sequence_geometric_nth", "sequence_geometric_sum"}),
+        TestCase("sequence_geometric_sum_only", "Geometric finite sum only.", {**common, "problem_type": 7, "sequence_question_mode": 4}, {"sequence_geometric_sum"}, {"sequence_arithmetic_nth", "sequence_geometric_nth", "sequence_arithmetic_sum"}),
     ]
 
 

@@ -584,6 +584,27 @@ let check_question_item = function
         | _ -> (0, -1)
       in
       check_complex_answer expected answer
+  | Q_Sequence (seq, answer, _) ->
+      let expected =
+        match seq with
+        | Arithmetic_Nth (first, diff, index) ->
+            first + ((index - 1) * diff)
+        | Geometric_Nth (first, ratio, index) ->
+            let rec pow base exponent =
+              if exponent <= 0 then 1 else base * pow base (exponent - 1)
+            in
+            first * pow ratio (index - 1)
+        | Arithmetic_Sum (first, diff, count) ->
+            let last = first + ((count - 1) * diff) in
+            count * (first + last) / 2
+        | Geometric_Sum (first, ratio, count) ->
+            let rec pow base exponent =
+              if exponent <= 0 then 1 else base * pow base (exponent - 1)
+            in
+            if ratio = 1 then first * count
+            else first * ((pow ratio count) - 1) / (ratio - 1)
+      in
+      check_integer_answer expected answer
 
 (* Entry point for semantic checking of the problem section *)
 let check_problem_section = function

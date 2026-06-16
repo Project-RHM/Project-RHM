@@ -82,6 +82,8 @@ type token =
   | GIVEN_PROB
   | GIVEN_FUN
   | GEQ_LATEX
+  | GEOM_SEQ_SUM_PROB
+  | GEOM_SEQ_NTH_PROB
   | F_FUN
   | FORMULA_METH
   | FAT_COMMA
@@ -118,6 +120,8 @@ type token =
   | BLANK
   | BEGIN_PGML
   | ARROW
+  | ARITH_SEQ_SUM_PROB
+  | ARITH_SEQ_NTH_PROB
   | ARE_METH
   | ANSWER_WORD
   | AND_WORD
@@ -223,6 +227,8 @@ module MenhirInterpreter : sig
     | T_GIVEN_PROB : unit terminal
     | T_GIVEN_FUN : unit terminal
     | T_GEQ_LATEX : unit terminal
+    | T_GEOM_SEQ_SUM_PROB : unit terminal
+    | T_GEOM_SEQ_NTH_PROB : unit terminal
     | T_F_FUN : unit terminal
     | T_FORMULA_METH : unit terminal
     | T_FAT_COMMA : unit terminal
@@ -259,6 +265,8 @@ module MenhirInterpreter : sig
     | T_BLANK : unit terminal
     | T_BEGIN_PGML : unit terminal
     | T_ARROW : unit terminal
+    | T_ARITH_SEQ_SUM_PROB : unit terminal
+    | T_ARITH_SEQ_NTH_PROB : unit terminal
     | T_ARE_METH : unit terminal
     | T_ANSWER_WORD : unit terminal
     | T_AND_WORD : unit terminal
@@ -290,6 +298,7 @@ module MenhirInterpreter : sig
     | N_set_compute_interval : (Ast.set_compute_interval) nonterminal
     | N_set_compute_factor : (Ast.set_compute_factor) nonterminal
     | N_set_compute : (Ast.set_compute) nonterminal
+    | N_sequence_param : (int) nonterminal
     | N_rational_function : (Ast.rational_function) nonterminal
     | N_radical_function : (Ast.radical_function) nonterminal
     | N_question_text : (Ast.question_text) nonterminal
@@ -447,6 +456,10 @@ module DCST : sig
   (* The type of DCSTs for the nonterminal symbol [set_compute]. *)
   
   type set_compute
+  
+  (* The type of DCSTs for the nonterminal symbol [sequence_param]. *)
+  
+  type sequence_param
   
   (* The type of DCSTs for the nonterminal symbol [rational_function]. *)
   
@@ -940,6 +953,14 @@ module DCST : sig
   
   val set_compute_term: set_compute_term -> set_compute
   
+  (* The binary choice constructor at type [sequence_param]. *)
+  
+  val sequence_param_choice: sequence_param -> sequence_param -> sequence_param
+  
+  (* sequence_param -> IT_MATH_OPEN ID EQ int_with_sign IT_MATH_CLOSE *)
+  
+  val sequence_param: (string) -> int_with_sign -> sequence_param
+  
   (* The binary choice constructor at type [rational_function]. *)
   
   val rational_function_choice: rational_function -> rational_function -> rational_function
@@ -1043,6 +1064,22 @@ module DCST : sig
   (* question_item -> COMPLEX_POWER_I_PROB NEWLINE IT_MATH_OPEN I_UNIT POWER_OP INT IT_MATH_CLOSE NEWLINE BLANK LBRACE answer_item RBRACE *)
   
   val qcomplex_power_i: (int) -> answer_item -> question_item
+  
+  (* question_item -> ARITH_SEQ_NTH_PROB NEWLINE sequence_param NEWLINE sequence_param NEWLINE sequence_param NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qsequence_arith_nth: sequence_param -> sequence_param -> sequence_param -> answer_item -> question_item
+  
+  (* question_item -> GEOM_SEQ_NTH_PROB NEWLINE sequence_param NEWLINE sequence_param NEWLINE sequence_param NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qsequence_geom_nth: sequence_param -> sequence_param -> sequence_param -> answer_item -> question_item
+  
+  (* question_item -> ARITH_SEQ_SUM_PROB NEWLINE sequence_param NEWLINE sequence_param NEWLINE sequence_param NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qsequence_arith_sum: sequence_param -> sequence_param -> sequence_param -> answer_item -> question_item
+  
+  (* question_item -> GEOM_SEQ_SUM_PROB NEWLINE sequence_param NEWLINE sequence_param NEWLINE sequence_param NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qsequence_geom_sum: sequence_param -> sequence_param -> sequence_param -> answer_item -> question_item
   
   (* The binary choice constructor at type [quadratic_function]. *)
   
@@ -1782,6 +1819,10 @@ module CST : sig
   
   type set_compute
   
+  (* The type of CSTs for the nonterminal symbol [sequence_param]. *)
+  
+  type sequence_param
+  
   (* The type of CSTs for the nonterminal symbol [rational_function]. *)
   
   type rational_function
@@ -2136,6 +2177,10 @@ module CST : sig
     
     method virtual visit_GEQ_LATEX : 'r
     
+    method virtual visit_GEOM_SEQ_SUM_PROB : 'r
+    
+    method virtual visit_GEOM_SEQ_NTH_PROB : 'r
+    
     method virtual visit_F_FUN : 'r
     
     method virtual visit_FORMULA_METH : 'r
@@ -2208,6 +2253,10 @@ module CST : sig
     
     method virtual visit_ARROW : 'r
     
+    method virtual visit_ARITH_SEQ_SUM_PROB : 'r
+    
+    method virtual visit_ARITH_SEQ_NTH_PROB : 'r
+    
     method virtual visit_ARE_METH : 'r
     
     method virtual visit_ANSWER_WORD : 'r
@@ -2263,6 +2312,8 @@ module CST : sig
     method visit_set_compute_factor : set_compute_factor -> 'r
     
     method visit_set_compute : set_compute -> 'r
+    
+    method visit_sequence_param : sequence_param -> 'r
     
     method visit_rational_function : rational_function -> 'r
     
@@ -2468,6 +2519,8 @@ module CST : sig
     
     method case_set_compute_term : set_compute_term -> 'r
     
+    method case_sequence_param : (string) -> int_with_sign -> 'r
+    
     method case_fun_div_int : fun_or_var -> (int) -> 'r
     
     method case_int_div_fun : (int) -> fun_or_var -> 'r
@@ -2509,6 +2562,14 @@ module CST : sig
     method case_qcomplex_mod : complex_num -> answer_item -> 'r
     
     method case_qcomplex_power_i : (int) -> answer_item -> 'r
+    
+    method case_qsequence_arith_nth : sequence_param -> sequence_param -> sequence_param -> answer_item -> 'r
+    
+    method case_qsequence_geom_nth : sequence_param -> sequence_param -> sequence_param -> answer_item -> 'r
+    
+    method case_qsequence_arith_sum : sequence_param -> sequence_param -> sequence_param -> answer_item -> 'r
+    
+    method case_qsequence_geom_sum : sequence_param -> sequence_param -> sequence_param -> answer_item -> 'r
     
     method case_quad_add : fun_or_var -> (int) -> (int) -> fun_or_var -> (int) -> 'r
     

@@ -82,6 +82,10 @@ class print = object (self)
   method visit_NAMING         = string "$"
   method visit_COLON          = string ":"
   method visit_QUESTION_MARK  = string "?"
+  method visit_ARITH_SEQ_NTH_PROB = string "Arithmetic sequence: find a_n."
+  method visit_GEOM_SEQ_NTH_PROB = string "Geometric sequence: find a_n."
+  method visit_ARITH_SEQ_SUM_PROB = string "Arithmetic sequence: find the finite sum."
+  method visit_GEOM_SEQ_SUM_PROB = string "Geometric sequence: find the finite sum."
   method visit_FAT_COMMA      = string "=>"
   method visit_ARROW          = string "->"
 
@@ -601,6 +605,55 @@ class print = object (self)
     ^^ super#visit_answer_item ans
     ^^ string "}"
     ^^ hardline ^^ string "---"
+
+  method! case_sequence_param
+      label value =
+    self#visit_IT_MATH_OPEN
+    ^^ string label
+    ^^ space
+    ^^ self#visit_EQ
+    ^^ space
+    ^^ super#visit_int_with_sign value
+    ^^ self#visit_IT_MATH_CLOSE
+
+  method sequence_answer ans =
+    self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qsequence_arith_nth
+      first diff index ans =
+    self#visit_ARITH_SEQ_NTH_PROB ^^ hardline
+    ^^ super#visit_sequence_param first ^^ hardline
+    ^^ super#visit_sequence_param diff ^^ hardline
+    ^^ super#visit_sequence_param index ^^ hardline
+    ^^ self#sequence_answer ans
+
+  method! case_qsequence_geom_nth
+      first ratio index ans =
+    self#visit_GEOM_SEQ_NTH_PROB ^^ hardline
+    ^^ super#visit_sequence_param first ^^ hardline
+    ^^ super#visit_sequence_param ratio ^^ hardline
+    ^^ super#visit_sequence_param index ^^ hardline
+    ^^ self#sequence_answer ans
+
+  method! case_qsequence_arith_sum
+      first diff count ans =
+    self#visit_ARITH_SEQ_SUM_PROB ^^ hardline
+    ^^ super#visit_sequence_param first ^^ hardline
+    ^^ super#visit_sequence_param diff ^^ hardline
+    ^^ super#visit_sequence_param count ^^ hardline
+    ^^ self#sequence_answer ans
+
+  method! case_qsequence_geom_sum
+      first ratio count ans =
+    self#visit_GEOM_SEQ_SUM_PROB ^^ hardline
+    ^^ super#visit_sequence_param first ^^ hardline
+    ^^ super#visit_sequence_param ratio ^^ hardline
+    ^^ super#visit_sequence_param count ^^ hardline
+    ^^ self#sequence_answer ans
 
   method! case_qvalue
       call =

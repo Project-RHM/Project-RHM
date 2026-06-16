@@ -86,7 +86,20 @@ DEFAULT_CONFIG = {
     "max_complex_component": 8,
     "min_complex_power": 1,
     "max_complex_power": 40,
-    "question_type_amounts": [1, 1, 1, 2, 2, 1],
+    "sequence_question_mode": 0,
+    "arithmetic_sequence_weight": 1,
+    "geometric_sequence_weight": 1,
+    "arithmetic_sequence_sum_weight": 1,
+    "geometric_sequence_sum_weight": 1,
+    "min_sequence_index": 2,
+    "max_sequence_index": 8,
+    "min_sequence_term": -10,
+    "max_sequence_term": 10,
+    "min_sequence_difference": -8,
+    "max_sequence_difference": 8,
+    "min_sequence_ratio": -5,
+    "max_sequence_ratio": 5,
+    "question_type_amounts": [1, 1, 1, 2, 2, 1, 1],
     "set_variables": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
     "vector_variables": ["u", "v", "w", "x", "y", "z", "a", "b", "c", "d"],
     "boolean_variables": ["A", "B", "C", "D", "E"],
@@ -114,13 +127,19 @@ INT_PARAMS = [
     "complex_arithmetic_weight", "complex_conjugate_weight",
     "complex_modulus_weight", "complex_power_i_weight",
     "min_complex_component", "max_complex_component",
-    "min_complex_power", "max_complex_power"
+    "min_complex_power", "max_complex_power",
+    "sequence_question_mode", "arithmetic_sequence_weight",
+    "geometric_sequence_weight", "arithmetic_sequence_sum_weight",
+    "geometric_sequence_sum_weight", "min_sequence_index",
+    "max_sequence_index", "min_sequence_term", "max_sequence_term",
+    "min_sequence_difference", "max_sequence_difference",
+    "min_sequence_ratio", "max_sequence_ratio"
 ]
 
 INT_RANGES = {
     "min_question_num": (1, 20),
     "max_question_num": (1, 20),
-    "problem_type": (0, 6),
+    "problem_type": (0, 7),
     "max_expr_depth": (1, 100),
     "min_set_expr_depth": (1, 100),
     "max_set_expr_depth": (1, 100),
@@ -159,6 +178,19 @@ INT_RANGES = {
     "max_complex_component": (-100, 100),
     "min_complex_power": (0, 1000),
     "max_complex_power": (0, 1000),
+    "sequence_question_mode": (0, 4),
+    "arithmetic_sequence_weight": (0, 20),
+    "geometric_sequence_weight": (0, 20),
+    "arithmetic_sequence_sum_weight": (0, 20),
+    "geometric_sequence_sum_weight": (0, 20),
+    "min_sequence_index": (1, 20),
+    "max_sequence_index": (1, 20),
+    "min_sequence_term": (-100, 100),
+    "max_sequence_term": (-100, 100),
+    "min_sequence_difference": (-100, 100),
+    "max_sequence_difference": (-100, 100),
+    "min_sequence_ratio": (-20, 20),
+    "max_sequence_ratio": (-20, 20),
 }
 
 LIST_PARAMS = ["set_variables", "vector_variables", "boolean_variables"]
@@ -184,7 +216,7 @@ def normalize_config(config):
     normalized_amounts = []
     if not isinstance(amounts, list):
         amounts = []
-    for i in range(6):
+    for i in range(7):
         try:
             normalized_amounts.append(int(amounts[i]))
         except (IndexError, TypeError, ValueError):
@@ -318,7 +350,7 @@ def parse_config_form(form):
         config_data[name] = parse_int_field(form, name, errors)
 
     question_amounts = []
-    for i in range(6):
+    for i in range(7):
         field_name = f"question_type_amounts_{i}"
         question_amounts.append(parse_int_field(form, field_name, errors, default=0))
     config_data["question_type_amounts"] = question_amounts
@@ -376,6 +408,10 @@ def validate_config_data(config):
         ("min_bool_var_num", "max_bool_var_num"),
         ("min_complex_component", "max_complex_component"),
         ("min_complex_power", "max_complex_power"),
+        ("min_sequence_index", "max_sequence_index"),
+        ("min_sequence_term", "max_sequence_term"),
+        ("min_sequence_difference", "max_sequence_difference"),
+        ("min_sequence_ratio", "max_sequence_ratio"),
     ]:
         validate_min_max(config, min_key, max_key, errors)
 
@@ -415,6 +451,16 @@ def validate_config_data(config):
         )
         if total_complex_weight <= 0:
             errors.append("At least one complex-number weight must be positive in mixed mode.")
+
+    if config["sequence_question_mode"] == 0:
+        total_sequence_weight = (
+            config["arithmetic_sequence_weight"] +
+            config["geometric_sequence_weight"] +
+            config["arithmetic_sequence_sum_weight"] +
+            config["geometric_sequence_sum_weight"]
+        )
+        if total_sequence_weight <= 0:
+            errors.append("At least one sequence weight must be positive in mixed mode.")
 
     modulus_enabled = (
         config["complex_question_mode"] == 3 or

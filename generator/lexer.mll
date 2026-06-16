@@ -77,6 +77,10 @@ rule read =
   | "Find the conjugate of:"                    { COMPLEX_CONJ_PROB }
   | "Find the modulus of:"                      { COMPLEX_MOD_PROB }
   | "Simplify the power of i:"                  { COMPLEX_POWER_I_PROB }
+  | "Arithmetic sequence: find a_n."            { ARITH_SEQ_NTH_PROB }
+  | "Geometric sequence: find a_n."             { GEOM_SEQ_NTH_PROB }
+  | "Arithmetic sequence: find the finite sum." { ARITH_SEQ_SUM_PROB }
+  | "Geometric sequence: find the finite sum."  { GEOM_SEQ_SUM_PROB }
   | "When:"                                    { WHEN_WORD }
   | "Enter 1 for True and 0 for False."         { BOOL_ANSWER_HINT }
   | "Enter 1 if equivalent and 0 otherwise."    { BOOL_EQUIV_ANSWER_HINT }
