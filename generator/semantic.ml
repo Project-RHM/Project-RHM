@@ -149,6 +149,7 @@ let string_of_math_object_method = function
   | M_Random (low, high, step) -> Printf.sprintf "random(%d,%d,%d)" low high step
   | M_Formula expr             -> check_math_expr expr; "<formula>"
   | M_Formula_Fun expr         -> check_function_expr expr; "<formula_fun>"
+  | M_Complex (re, im)         -> Printf.sprintf "Complex(%d,%d)" re im
   | M_Real v                   -> string_of_value v
   | M_D s                      -> begin match s with
                                     | Some s -> s
@@ -235,6 +236,124 @@ and eval_factor = function
   | Ast.F_Num n   -> n
   | Ast.F_Int i   -> float_of_int i
 
+let rec eval_bool_expr assignments = function
+  | Ast.Bool_Const value -> value
+  | Ast.Bool_Var name ->
+      (try List.assoc name assignments
+       with Not_found ->
+         raise (Semantic_error ("Boolean variable has no assignment: " ^ name)))
+  | Ast.Bool_Not expr ->
+      not (eval_bool_expr assignments expr)
+  | Ast.Bool_And (left, right) ->
+      eval_bool_expr assignments left && eval_bool_expr assignments right
+  | Ast.Bool_Or (left, right) ->
+      eval_bool_expr assignments left || eval_bool_expr assignments right
+  | Ast.Bool_Xor (left, right) ->
+      eval_bool_expr assignments left <> eval_bool_expr assignments right
+  | Ast.Bool_Implies (left, right) ->
+      (not (eval_bool_expr assignments left)) || eval_bool_expr assignments right
+  | Ast.Bool_Iff (left, right) ->
+      eval_bool_expr assignments left = eval_bool_expr assignments right
+
+let bool_answer_to_int = function
+  | A_Var (Var_Value (VInt 0)) -> 0
+  | A_Var (Var_Value (VInt 1)) -> 1
+  | A_Var (Var_Value (VIdent "False")) -> 0
+  | A_Var (Var_Value (VIdent "True")) -> 1
+  | _ ->
+      raise (Semantic_error "Boolean answer must be 0/1 or True/False")
+
+let check_bool_assignments assignments =
+  let seen = Hashtbl.create 8 in
+  List.iter (fun (name, _) ->
+    if Hashtbl.mem seen name then
+      raise (Semantic_error ("Duplicate Boolean assignment: " ^ name))
+    else
+      Hashtbl.add seen name true
+  ) assignments
+
+let rec bool_expr_variables = function
+  | Ast.Bool_Const _ -> []
+  | Ast.Bool_Var name -> [name]
+  | Ast.Bool_Not expr -> bool_expr_variables expr
+  | Ast.Bool_And (left, right)
+  | Ast.Bool_Or (left, right)
+  | Ast.Bool_Xor (left, right)
+  | Ast.Bool_Implies (left, right)
+  | Ast.Bool_Iff (left, right) ->
+      bool_expr_variables left @ bool_expr_variables right
+
+let unique_bool_variables names =
+  List.fold_left
+    (fun acc name -> if List.mem name acc then acc else name :: acc)
+    [] names
+  |> List.rev
+
+let all_bool_assignments names =
+  let rec aux = function
+    | [] -> [[]]
+    | name :: rest ->
+        let rest_assignments = aux rest in
+        List.concat [
+          List.map (fun assignment -> (name, false) :: assignment) rest_assignments;
+          List.map (fun assignment -> (name, true) :: assignment) rest_assignments;
+        ]
+  in
+  aux names
+
+let bool_expr_equivalent left right =
+  let vars =
+    unique_bool_variables (bool_expr_variables left @ bool_expr_variables right)
+  in
+  List.for_all
+    (fun assignments ->
+      eval_bool_expr assignments left = eval_bool_expr assignments right)
+    (all_bool_assignments vars)
+
+let complex_num_to_pair = function
+  | Ast.Complex_Num (re, im) -> (re, im)
+
+let rec eval_complex_expr = function
+  | Ast.Complex_Lit num ->
+      complex_num_to_pair num
+  | Ast.Complex_Add (left, right) ->
+      let (a, b) = eval_complex_expr left in
+      let (c, d) = eval_complex_expr right in
+      (a + c, b + d)
+  | Ast.Complex_Sub (left, right) ->
+      let (a, b) = eval_complex_expr left in
+      let (c, d) = eval_complex_expr right in
+      (a - c, b - d)
+  | Ast.Complex_Mul (left, right) ->
+      let (a, b) = eval_complex_expr left in
+      let (c, d) = eval_complex_expr right in
+      (a * c - b * d, a * d + b * c)
+
+let check_complex_answer expected = function
+  | A_Var (Var_Method (M_Complex (actual_re, actual_im))) ->
+      if expected = (actual_re, actual_im) then ()
+      else
+        let (expected_re, expected_im) = expected in
+        raise (Semantic_error
+          (Printf.sprintf
+             "Complex answer mismatch: expected Complex(%d,%d) but got Complex(%d,%d)"
+             expected_re expected_im actual_re actual_im))
+  | A_Var (Var_Value (VIdent _)) ->
+      ()
+  | _ ->
+      raise (Semantic_error "Complex answer must be Complex(re,im)")
+
+let check_integer_answer expected = function
+  | A_Var (Var_Value (VInt actual)) when actual = expected -> ()
+  | A_Var (Var_Value (VIdent _)) -> ()
+  | A_Var (Var_Value (VInt actual)) ->
+      raise (Semantic_error
+        (Printf.sprintf
+           "Integer answer mismatch: expected %d but got %d"
+           expected actual))
+  | _ ->
+      raise (Semantic_error "Integer answer expected")
+
 let value_of_float f =
   VNum f
 
@@ -248,6 +367,7 @@ let float_of_variable = function
   | Var_Value (VNum f)      -> f
   | Var_Method (M_Real v)   -> float_of_value v
   | Var_Method (M_Formula e) -> eval_math_expr e  (* if you allow formulas as answers *)
+  | Var_Method (M_Complex _) -> raise (Semantic_error "Cannot convert complex number to float")
   | Var_Method (M_Set _)    -> raise (Semantic_error "Cannot convert set to float")
   | Var_Method (M_Compute _) -> raise (Semantic_error "Cannot convert set computation to float")
   | Var_Method (M_intersect _) -> raise (Semantic_error "Cannot convert set intersection to float")
@@ -356,6 +476,7 @@ let check_math_object_method = function
       check_math_expr expr
   | M_Formula_Fun expr ->
       check_function_expr expr
+  | M_Complex _ -> ()
   | M_Real f -> () 
   | M_D s -> ()
   | M_Eval prop -> ()
@@ -427,6 +548,63 @@ let check_question_item = function
   | Q_Given_Set _ -> ()  (* Skip numeric comparison for set problems *)
   | Q_Suppose_Vector _ -> ()  (* Skip numeric comparison for vector problems *)
   | Q_Given_Function _ -> ()  (* Skip numeric comparison for derivative problems *)
+  | Q_Boolean_Eval (expr, assignments, answer, _) ->
+      check_bool_assignments assignments;
+      let expected = if eval_bool_expr assignments expr then 1 else 0 in
+      let actual = bool_answer_to_int answer in
+      if expected = actual then ()
+      else
+        raise (Semantic_error
+          (Printf.sprintf
+             "Boolean answer mismatch: expected %d but got %d" expected actual))
+  | Q_Boolean_Equiv (left, right, answer, _) ->
+      let expected = if bool_expr_equivalent left right then 1 else 0 in
+      let actual = bool_answer_to_int answer in
+      if expected = actual then ()
+      else
+        raise (Semantic_error
+          (Printf.sprintf
+             "Boolean equivalence answer mismatch: expected %d but got %d"
+             expected actual))
+  | Q_Complex_Arithmetic (expr, answer) ->
+      check_complex_answer (eval_complex_expr expr) answer
+  | Q_Complex_Conjugate (num, answer) ->
+      let (re, im) = complex_num_to_pair num in
+      check_complex_answer (re, -im) answer
+  | Q_Complex_Modulus (num, answer) ->
+      let (re, im) = complex_num_to_pair num in
+      let magnitude = int_of_float (sqrt (float_of_int (re * re + im * im))) in
+      check_integer_answer magnitude answer
+  | Q_Complex_Power_I (exponent, answer) ->
+      let expected =
+        match exponent mod 4 with
+        | 0 -> (1, 0)
+        | 1 -> (0, 1)
+        | 2 -> (-1, 0)
+        | _ -> (0, -1)
+      in
+      check_complex_answer expected answer
+  | Q_Sequence (seq, answer, _) ->
+      let expected =
+        match seq with
+        | Arithmetic_Nth (first, diff, index) ->
+            first + ((index - 1) * diff)
+        | Geometric_Nth (first, ratio, index) ->
+            let rec pow base exponent =
+              if exponent <= 0 then 1 else base * pow base (exponent - 1)
+            in
+            first * pow ratio (index - 1)
+        | Arithmetic_Sum (first, diff, count) ->
+            let last = first + ((count - 1) * diff) in
+            count * (first + last) / 2
+        | Geometric_Sum (first, ratio, count) ->
+            let rec pow base exponent =
+              if exponent <= 0 then 1 else base * pow base (exponent - 1)
+            in
+            if ratio = 1 then first * count
+            else first * ((pow ratio count) - 1) / (ratio - 1)
+      in
+      check_integer_answer expected answer
 
 (* Entry point for semantic checking of the problem section *)
 let check_problem_section = function

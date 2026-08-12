@@ -2,6 +2,7 @@
 user_api_keys.json
 .env
 config_setting/*.json
+generator/config.ml
 
 # --- Python ---
 __pycache__/
@@ -31,13 +32,31 @@ wheels/
 # --- OCaml ---
 *.cmo
 *.cmi
+*.cmt
+*.cmti
+*.cmly
 *.cmx
+*.cmxa
+*.cmxs
 *.o
 *.a
 *.so
 *.out
+*.exe
 _build/
 .merlin
+
+# --- Generated Output ---
+generator/generated_questions/
+generator/generated_asts/
+generator/generated_visualizations/
+generator/*visualization.html
+/ast_dcst_visualization.html
+
+# --- Local IDE / User Files ---
+.vscode/
+generator/.vscode/
+run.txt
 
 # --- OS Specific ---
 .DS_Store

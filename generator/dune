@@ -1,6 +1,24 @@
+(library
+ (name pg_core)
+ (wrapped false)
+ (modules ast lexer parser ast_printer semantic describe print_pprint visualization attribute_grammar)
+ (libraries menhirLib menhirCST pprint)
+ (flags (:standard -w -26-27)))
+
 (executable
- (name       unparser)
- (modules    ast lexer parser ast_printer semantic describe print_pprint generator unparser config)
- (libraries  unix menhirLib menhirCST pprint)
- (flags (:standard -w -26-27))
- )
+ (name unparser)
+ (modules generator unparser config)
+ (libraries pg_core unix menhirLib menhirCST pprint)
+ (flags (:standard -w -26-27)))
+
+(executable
+ (name visualize)
+ (modules visualize)
+ (libraries pg_core menhirLib menhirCST pprint)
+ (flags (:standard -w -26-27)))
+
+(test
+ (name attribute_grammar_test)
+ (modules attribute_grammar_test)
+ (libraries pg_core)
+ (flags (:standard -w -26-27)))

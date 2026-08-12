@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Question Generator</title>
+    <title>Project RHM — Math Question Generator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -11,17 +11,30 @@
         <!-- 左侧边栏 -->
         <div class="sidebar" id="sidebar">
             <!-- 添加折叠按钮 -->
-            <div class="sidebar-collapse-btn" id="sidebarCollapseBtn">
+            <button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn"
+                aria-label="Collapse history sidebar" aria-expanded="true" title="Collapse sidebar">
                 <span class="collapse-icon">‹</span>
-            </div>
+            </button>
     
             <div class="sidebar-content" id="sidebarContent">
+                <div class="sidebar-brand">
+                    <div class="brand-copy">
+                        <strong>Project RHM</strong>
+                        <span>Question workspace</span>
+                    </div>
+                </div>
                 <div class="sidebar-header">
-                    <button id="newQuestionBtn" class="new-question-btn">Generate New Question</button>
-                    <button id="configSettingsBtn" class="btn btn-secondary config-link-btn">Config Settings</button>
+                    <button id="newQuestionBtn" class="new-question-btn">
+                        <span aria-hidden="true">＋</span> New generation
+                    </button>
+                    <button id="configSettingsBtn" class="btn btn-secondary config-link-btn">Generator settings</button>
+                </div>
+                <div class="history-heading">
+                    <span>Recent generations</span>
+                    <span class="history-count" id="historyCount">0</span>
                 </div>
                 <div class="history-list" id="historyList">
-                    <div class="loading-history">Loading history...</div>
+                    <div class="loading-history"><span class="mini-spinner"></span> Loading history…</div>
                 </div>
             </div>
         </div>
@@ -30,16 +43,18 @@
         <div class="main-content">
             <!-- 生成新题目界面 -->
             <div id="generateContent" class="content-area active">
-                <h1>Math Question Generator</h1>
-                <p>Enter a student ID to generate math questions.</p>
+                <header class="page-hero">
+                    <h1>Math Question Generator</h1>
+                    <p>Build reproducible WeBWorK question sets with the classic generator or an editable attribute grammar.</p>
+                </header>
                 
                 <form id="studentForm">
                     <!-- 添加API密钥模态窗口 -->
                     <div id="apiKeyModal" class="modal">
-                        <div class="modal-content" style="max-width: 500px;">
+                        <div class="modal-content api-modal-content" style="max-width: 500px;">
                             <div class="modal-header">
-                                <h2>Set Your API Key</h2>
-                                <span class="close-btn api-close-btn">&times;</span>
+                                <h2>Set API key</h2>
+                                <button type="button" class="close-btn api-close-btn" aria-label="Close">&times;</button>
                             </div>
                             <div class="modal-body">
                                 <div class="form-group">
@@ -59,18 +74,111 @@
                         </div>
                     </div>
 
+                    <section class="generator-workspace">
+                        <div class="workspace-heading">
+                            <span class="section-eyebrow">Generation method</span>
+                            <h2>Choose a workflow</h2>
+                        </div>
+
+                    <!-- 生成方式：经典生成器 vs 属性文法 -->
+                    <div class="generator-mode">
+                        <label class="mode-option">
+                            <input type="radio" name="generatorMode" value="classic" checked>
+                            <span class="mode-label"><span class="mode-icon">C</span> Classic</span>
+                            <span class="mode-hint">all seven question types, built into OCaml</span>
+                        </label>
+                        <label class="mode-option">
+                            <input type="radio" name="generatorMode" value="ag">
+                            <span class="mode-label"><span class="mode-icon">AG</span> Attribute Grammar</span>
+                            <span class="mode-hint">editable arithmetic and Boolean grammars</span>
+                        </label>
+                    </div>
+
+                    <div class="ag-controls" id="agControls" style="display: none;">
+                        <div class="ag-controls-row">
+                            <label for="agGrammarSelect">Grammar file</label>
+                            <select id="agGrammarSelect"></select>
+                            <label for="agCount">Questions</label>
+                            <input type="number" id="agCount" min="1" max="50" value="6">
+                            <button type="button" id="agEditToggleBtn" class="btn btn-secondary">
+                                Edit Grammar
+                            </button>
+                        </div>
+                        <p class="ag-note">
+                            The grammar file defines everything: the shape of the
+                            expression, the answer, the wording, and the difficulty
+                            (<code>attribute len</code> sets the operator count,
+                            <code>attribute digit</code> the digits per number).
+                            Editing it takes effect immediately — no rebuild.
+                        </p>
+                    </div>
+
+                    <div class="ag-editor" id="agEditor" style="display: none;">
+                        <div class="ag-editor-head">
+                            <div class="ag-file-identity">
+                                <span class="ag-file-mark">AG</span>
+                                <div>
+                                    <span id="agEditorName">arithmetic.ag</span>
+                                    <span class="ag-save-state" id="agSaveState" data-state="saved">
+                                        <span class="ag-save-dot"></span>
+                                        <span id="agSaveStateText">Saved</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="ag-editor-actions">
+                                <button type="button" id="agReloadBtn" class="btn ag-btn ag-btn-quiet" title="Reload from disk">Reload</button>
+                                <button type="button" id="agCheckBtn" class="btn ag-btn ag-btn-check">Check</button>
+                                <button type="button" id="agSaveBtn" class="btn ag-btn ag-btn-save" title="Save grammar (Ctrl/Command + S)">Save</button>
+                            </div>
+                        </div>
+                        <div class="ag-editor-shell" id="agEditorShell">
+                            <div class="ag-line-numbers" id="agLineNumbers" aria-hidden="true"></div>
+                            <div class="ag-code-stage" id="agCodeStage">
+                                <div class="ag-active-line" id="agActiveLine" aria-hidden="true"></div>
+                                <pre id="agHighlight" class="ag-highlight" aria-hidden="true"></pre>
+                                <textarea id="agGrammarText" class="ag-textarea"
+                                    aria-label="Attribute grammar source"
+                                    aria-describedby="agEditorHelp"
+                                    autocomplete="off" autocapitalize="off"
+                                    spellcheck="false" wrap="off"></textarea>
+                            </div>
+                        </div>
+                        <div class="ag-editor-status" id="agEditorHelp">
+                            <div class="ag-syntax-legend" aria-label="Syntax highlight legend">
+                                <span><i class="ag-legend-keyword"></i>keyword</span>
+                                <span><i class="ag-legend-attribute"></i>attribute</span>
+                                <span><i class="ag-legend-string"></i>string</span>
+                                <span><i class="ag-legend-comment"></i>comment</span>
+                            </div>
+                            <div class="ag-cursor-status">
+                                <span>Tab inserts spaces</span>
+                                <span aria-hidden="true">·</span>
+                                <span id="agCursorPosition">Ln 1, Col 1</span>
+                                <span aria-hidden="true">·</span>
+                                <span id="agDocumentStats">0 lines</span>
+                            </div>
+                        </div>
+                        <pre id="agGrammarMessage" class="ag-message" aria-live="polite" style="display: none;"></pre>
+                    </div>
+
                     <!-- 修改：将Add Context整合到输入框中 -->
-                    <div class="input-with-context">
+                    <div class="input-with-context generation-launch">
+                        <div class="launch-heading">
+                            <div>
+                                <label for="studentId">Student ID</label>
+                                <span>Used as the deterministic seed for reproducible output.</span>
+                            </div>
+                        </div>
                         <div class="input-group">
-                            <input type="text" id="studentId" name="student_id" 
-                                placeholder="Please enter a student ID, e.g., 2230026100" required>
-                            <button type="submit">Generate</button>
+                            <input type="text" id="studentId" name="student_id"
+                                placeholder="e.g. 2230026100" autocomplete="off" required>
+                            <button type="submit"><span>Generate questions</span><span aria-hidden="true">→</span></button>
                         </div>
                         <div class="context-option">
                             <label class="context-checkbox">
                                 <input type="checkbox" id="addContextCheckbox">
                                 <span class="checkmark"></span>
-                                <span class="context-label">🤔 Add Context For Arithmetic Problems</span>
+                                <span class="context-label">Add context to arithmetic questions</span>
                             </label>
                             <div class="api-key-info" id="apiKeyInfo" style="display: none;">
                                 <span id="apiKeyStatusText">API key configured</span>
@@ -78,9 +186,20 @@
                             </div>
                         </div>
                     </div>
+                    </section>
                 </form>
                 
                 <div id="result" class="result-container" style="display: none;">
+                    <div class="result-header">
+                        <div>
+                            <span class="section-eyebrow">Generated output</span>
+                            <h2>Question set</h2>
+                        </div>
+                        <div class="result-view-switch" id="generateViewSwitch">
+                            <button type="button" class="view-switch-btn active" data-view="pgml">PGML</button>
+                            <button type="button" class="view-switch-btn" data-view="trees">AST / DCST Trees</button>
+                        </div>
+                    </div>
                     <div id="contextStatus" class="loading" style="display: none; text-align: left; background: #e8f4fd; padding: 10px; border-radius: 4px; margin: 10px 0;">
                         <div style="display: flex; align-items: center;">
                             <div class="spinner" style="width: 20px; height: 20px;"></div>
@@ -88,8 +207,15 @@
                         </div>
                     </div>
                     
-                    <h3>Generated PGML Code:</h3>
+                    <div class="code-panel-heading" id="generatedPgmlHeading">
+                        <h3>Generated PGML</h3>
+                        <span>Read-only until edit mode is enabled</span>
+                    </div>
                     <textarea id="output" class="output-textarea" readonly></textarea>
+
+                    <div id="generatedTreeView" class="tree-view-panel" style="display: none;">
+                        <iframe id="generatedTreeFrame" class="tree-view-frame" title="Generated question AST and DCST"></iframe>
+                    </div>
                     
                     <div id="fileInfo" class="file-info" style="display: none;">
                         <strong>Generated Files:</strong><br>
@@ -101,10 +227,10 @@
                         You have unsaved changes! Please save before leaving edit mode.
                     </div>
                     
-                    <div class="action-buttons">
+                    <div class="action-buttons" id="generateActionButtons">
                         <button type="button" id="copyBtn" class="btn btn-primary">Copy PGML Code</button>
                         <button type="button" id="showOriginalBtn" class="btn btn-secondary" style="display: none;">Show PGML Code Without Context</button>
-                        <button type="button" id="showAstBtn" class="btn btn-secondary">Show Generated AST</button>
+                        <button type="button" id="showAstBtn" class="btn btn-secondary">Open AST / DCST Trees</button>
                         <button type="button" id="editToggleBtn" class="btn btn-success">Activate Edit Mode</button>
                         <button type="button" id="saveBtn" class="btn btn-warning" style="display: none;">Save Changes</button>
                     </div>
@@ -115,7 +241,7 @@
                         
                         <div class="action-buttons">
                             <button type="button" id="originalCopyBtn" class="btn btn-primary">Copy PGML Code</button>
-                            <button type="button" id="originalShowAstBtn" class="btn btn-secondary">Show Generated AST</button>
+                            <button type="button" id="originalShowAstBtn" class="btn btn-secondary">Open AST / DCST Trees</button>
                             <button type="button" id="originalEditToggleBtn" class="btn btn-success">Activate Edit Mode</button>
                             <button type="button" id="originalSaveBtn" class="btn btn-warning" style="display: none;">Save Changes</button>
                         </div>
@@ -129,36 +255,57 @@
                 </div>
                 
                 <div id="error" class="error-container" style="display: none;">
-                    <h3>Error Message:</h3>
-                    <p id="errorMessage"></p>
+                    <div class="status-icon error-icon" aria-hidden="true">!</div>
+                    <div>
+                        <h3>Generation failed</h3>
+                        <p id="errorMessage"></p>
+                    </div>
                 </div>
                 
                 <div class="loading" id="loading" style="display: none;">
-                    The generation is started. Please wait a moment...
+                    <div class="status-spinner" aria-hidden="true"></div>
+                    <div><strong>Generating your question set</strong><span>Building PGML and validating the output…</span></div>
                 </div>
             </div>
             
             <!-- 查看历史记录界面 -->
             <div id="historyContent" class="content-area">
-                <div class="config-link">
-                    <button id="backToGenerate" class="btn btn-secondary">Back to Generate</button>
-                </div>
+                <header class="page-hero history-hero">
+                    <button id="backToGenerate" class="btn back-button"><span aria-hidden="true">←</span> Back to generator</button>
+                    <h1>Generation history</h1>
+                    <p id="historyTitle">Viewing generated question</p>
+                </header>
                 
-                <h1>History Generation</h1>
-                <p id="historyTitle">Viewing generated question</p>
-                
-                <div id="historyResult">
-                    <h3>PGML Code:</h3>
+                <div id="historyResult" class="result-container history-result">
+                    <div class="result-header">
+                        <div>
+                            <span class="section-eyebrow">Saved output</span>
+                            <h2>Question set</h2>
+                        </div>
+                        <div class="result-view-switch" id="historyViewSwitch">
+                            <button type="button" class="view-switch-btn active" data-view="pgml">PGML</button>
+                            <button type="button" class="view-switch-btn" data-view="trees">AST / DCST Trees</button>
+                        </div>
+                    </div>
+
+                    <div class="code-panel-heading" id="historyPgmlHeading">
+                        <h3>Saved PGML</h3>
+                        <span>Open edit mode to make changes</span>
+                    </div>
                     <textarea id="historyOutput" class="output-textarea"></textarea>
+
+                    <div id="historyTreeView" class="tree-view-panel" style="display: none;">
+                        <iframe id="historyTreeFrame" class="tree-view-frame" title="Historical question AST and DCST"></iframe>
+                    </div>
                     
                     <div class="unsaved-changes" id="historyUnsavedWarning">
                         You have unsaved changes! Please save before leaving edit mode.
                     </div>
                     
-                    <div class="action-buttons">
+                    <div class="action-buttons" id="historyActionButtons">
                         <button type="button" id="historyCopyBtn" class="btn btn-primary">Copy PGML Code</button>
                         <button type="button" id="historyShowOriginalBtn" class="btn btn-secondary" style="display: none;">Show PGML Code Without Context</button>
-                        <button type="button" id="historyShowAstBtn" class="btn btn-secondary">Show Generated AST</button>
+                        <button type="button" id="historyShowAstBtn" class="btn btn-secondary">Open AST / DCST Trees</button>
                         <button type="button" id="historyEditToggleBtn" class="btn btn-success">Activate Edit Mode</button>
                         <button type="button" id="historySaveBtn" class="btn btn-warning" style="display: none;">Save Changes</button>
                     </div>
@@ -169,7 +316,7 @@
                         
                         <div class="action-buttons">
                             <button type="button" id="historyOriginalCopyBtn" class="btn btn-primary">Copy PGML Code</button>
-                            <button type="button" id="historyOriginalShowAstBtn" class="btn btn-secondary">Show Generated AST</button>
+                            <button type="button" id="historyOriginalShowAstBtn" class="btn btn-secondary">Open AST / DCST Trees</button>
                             <button type="button" id="historyOriginalEditToggleBtn" class="btn btn-success">Activate Edit Mode</button>
                             <button type="button" id="historyOriginalSaveBtn" class="btn btn-warning" style="display: none;">Save Changes</button>
                         </div>
@@ -189,14 +336,16 @@
     <div id="configModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Generator Settings</h2>
-                <span class="close-btn">&times;</span>
+                <h2>Generator settings</h2>
+                <button type="button" class="close-btn" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
                 <iframe id="configIframe" src="/config" frameborder="0"></iframe>
             </div>
         </div>
     </div>
+
+    <div class="toast" id="appToast" role="status" aria-live="polite"></div>
 
     <script>
         let currentAstPath = '';
@@ -210,7 +359,30 @@
         let currentContextPath = '';
         let currentOriginalPath = '';
         let contextCheckInterval = null;
+        let currentVisualizationFilename = '';
+        let currentHistoryVisualizationFilename = '';
         let originalPgmlContent = ''; // 存储原始PGML内容
+        let toastTimer = null;
+
+        function showToast(message, kind = '') {
+            const toast = document.getElementById('appToast');
+            clearTimeout(toastTimer);
+            toast.textContent = message;
+            toast.className = 'toast' + (kind ? ' ' + kind : '');
+            requestAnimationFrame(() => toast.classList.add('visible'));
+            toastTimer = setTimeout(() => toast.classList.remove('visible'), 2800);
+        }
+
+        function copyTextarea(textarea, message = 'Copied to clipboard.') {
+            const copy = navigator.clipboard && window.isSecureContext
+                ? navigator.clipboard.writeText(textarea.value)
+                : new Promise((resolve, reject) => {
+                    textarea.select();
+                    document.execCommand('copy') ? resolve() : reject(new Error('Copy failed'));
+                });
+            copy.then(() => showToast(message, 'success'))
+                .catch(() => showToast('Could not copy to the clipboard.', 'error'));
+        }
 
         // 添加独立的状态变量用于原始PGML代码框
         let isOriginalEditing = false;
@@ -249,8 +421,8 @@
                 apiKeyInfo.style.display = 'flex';
                 apiKeyInfo.style.alignItems = 'center';
                 apiKeyInfo.style.gap = '10px';
-                apiKeyStatusText.textContent = 'API key configured ✅';
-                apiKeyStatusText.style.color = '#27ae60';
+                apiKeyStatusText.textContent = 'API key connected';
+                apiKeyStatusText.style.color = '#315c46';
                 editApiKeyBtn.style.display = 'inline-block';
                 // 有API密钥时允许勾选
                 checkbox.disabled = false;
@@ -258,8 +430,8 @@
                 apiKeyInfo.style.display = 'flex';
                 apiKeyInfo.style.alignItems = 'center';
                 apiKeyInfo.style.gap = '10px';
-                apiKeyStatusText.textContent = 'API key required ❌';
-                apiKeyStatusText.style.color = '#e74c3c';
+                apiKeyStatusText.textContent = 'API key not configured';
+                apiKeyStatusText.style.color = '#7a343b';
                 editApiKeyBtn.style.display = 'none';
                 checkbox.checked = false;
                 // 无API密钥时不允许勾选
@@ -372,8 +544,8 @@
             showOriginalBtn.style.display = 'none'; // 隐藏显示原文件按钮
             
             // 隐藏其他可能显示的元素
-            document.querySelector('h3').style.display = 'none'; // 隐藏"Generated PGML Code:"标题
-            document.querySelector('.action-buttons').style.display = 'none'; // 隐藏操作按钮
+            document.getElementById('generatedPgmlHeading').style.display = 'none';
+            document.getElementById('generateActionButtons').style.display = 'none';
             
             fetch('/generate_context', {
                 method: 'POST',
@@ -462,8 +634,8 @@
                         // 恢复显示所有内容
                         outputTextarea.style.display = 'block';
                         fileInfo.style.display = 'block';
-                        document.querySelector('h3').style.display = 'block';
-                        document.querySelector('.action-buttons').style.display = 'flex';
+                        document.getElementById('generatedPgmlHeading').style.display = 'flex';
+                        document.getElementById('generateActionButtons').style.display = 'flex';
                         
                         // 更新PGML代码为完整的语境版本
                         if (data.pgml_code) {
@@ -523,8 +695,8 @@
             // 恢复所有隐藏的内容
             outputTextarea.style.display = 'block';
             fileInfo.style.display = 'block';
-            document.querySelector('h3').style.display = 'block';
-            document.querySelector('.action-buttons').style.display = 'flex';
+            document.getElementById('generatedPgmlHeading').style.display = 'flex';
+            document.getElementById('generateActionButtons').style.display = 'flex';
             
             // 恢复原始内容
             outputTextarea.value = originalPgmlContent;
@@ -590,16 +762,13 @@
             // 复制按钮
             const originalCopyBtn = document.getElementById(isGenerateArea ? 'originalCopyBtn' : 'historyOriginalCopyBtn');
             originalCopyBtn.onclick = function() {
-                originalOutput.select();
-                document.execCommand('copy');
-                alert('The original PGML code has been copied to the clipboard!');
+                copyTextarea(originalOutput, 'Original PGML copied.');
             };
             
             // 显示AST按钮
             const originalShowAstBtn = document.getElementById(isGenerateArea ? 'originalShowAstBtn' : 'historyOriginalShowAstBtn');
             originalShowAstBtn.onclick = function() {
-                const astContainer = document.getElementById(isGenerateArea ? 'astContainer' : 'historyAstContainer');
-                astContainer.style.display = 'block';
+                switchResultView(area, 'trees');
             };
             
             // 编辑模式切换按钮 - 使用独立的状态管理
@@ -657,7 +826,7 @@
                 const filename = isGenerateArea ? document.getElementById('pgmlPath').textContent.split('/').pop() : currentHistoryFile;
                 
                 if (!filename) {
-                    alert('No file to save!');
+                    showToast('There is no file to save yet.', 'error');
                     return;
                 }
                 
@@ -671,7 +840,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('Original PGML code saved successfully!');
+                        showToast('Original PGML saved.', 'success');
                         hasOriginalUnsavedChanges = false;
                         originalOriginalContent = content;
                         originalUnsavedWarning.style.display = 'none';
@@ -681,11 +850,11 @@
                             loadHistory();
                         }
                     } else {
-                        alert('Failed to save original PGML code: ' + data.error);
+                        showToast('Could not save original PGML: ' + data.error, 'error');
                     }
                 })
                 .catch(error => {
-                    alert('Network error: ' + error.message);
+                    showToast('Network error: ' + error.message, 'error');
                 });
             };
         }
@@ -710,9 +879,60 @@
         }
 
         // 加载历史记录内容
+        function switchResultView(area, view) {
+            const isGenerate = area === 'generate';
+            const filename = isGenerate
+                ? currentVisualizationFilename
+                : currentHistoryVisualizationFilename;
+
+            if (view === 'trees' && !filename) {
+                showToast('Tree visualization is not available for this question.', 'error');
+                return;
+            }
+
+            const prefix = isGenerate ? 'generated' : 'history';
+            const output = document.getElementById(isGenerate ? 'output' : 'historyOutput');
+            const heading = document.getElementById(`${prefix}PgmlHeading`);
+            const treePanel = document.getElementById(`${prefix}TreeView`);
+            const treeFrame = document.getElementById(`${prefix}TreeFrame`);
+            const actionButtons = document.getElementById(
+                isGenerate ? 'generateActionButtons' : 'historyActionButtons'
+            );
+            const switcher = document.getElementById(
+                isGenerate ? 'generateViewSwitch' : 'historyViewSwitch'
+            );
+            const showingTrees = view === 'trees';
+
+            heading.style.display = showingTrees ? 'none' : 'flex';
+            output.style.display = showingTrees ? 'none' : 'block';
+            actionButtons.style.display = showingTrees ? 'none' : 'flex';
+            treePanel.style.display = showingTrees ? 'block' : 'none';
+
+            if (isGenerate) {
+                if (showingTrees) {
+                    document.getElementById('fileInfo').style.display = 'none';
+                }
+                document.getElementById('originalContentContainer').style.display = 'none';
+                document.getElementById('astContainer').style.display = 'none';
+            } else {
+                document.getElementById('historyOriginalContentContainer').style.display = 'none';
+                document.getElementById('historyAstContainer').style.display = 'none';
+            }
+
+            switcher.querySelectorAll('.view-switch-btn').forEach(button => {
+                button.classList.toggle('active', button.dataset.view === view);
+            });
+
+            if (showingTrees) {
+                treeFrame.src = `/tree_visualization?filename=${encodeURIComponent(filename)}`;
+            }
+        }
+
         function loadHistoryContent(filename) {
             currentHistoryFile = filename;
+            currentHistoryVisualizationFilename = '';
             showContent('historyContent');
+            switchResultView('history', 'pgml');
             
             const historyTitle = document.getElementById('historyTitle');
             const historyOutput = document.getElementById('historyOutput');
@@ -727,7 +947,11 @@
                 const dateStr = parts[1];
                 const timeStr = parts[2];
                 const formattedTime = formatTimestamp(dateStr, timeStr);
-                historyTitle.innerHTML = `Viewing question generated for <strong>Student ID: ${studentId}</strong> at <strong>${formattedTime}</strong>`;
+                const studentStrong = document.createElement('strong');
+                const timeStrong = document.createElement('strong');
+                studentStrong.textContent = 'Student ID: ' + studentId;
+                timeStrong.textContent = formattedTime;
+                historyTitle.replaceChildren('Viewing question generated for ', studentStrong, ' at ', timeStrong);
             }
             
             // 重置编辑状态
@@ -751,6 +975,10 @@
                 .then(response => response.json())
                 .then(originalData => {
                     if (originalData.success) {
+                        currentHistoryVisualizationFilename =
+                            originalData.has_visualization
+                                ? originalData.visualization_filename
+                                : '';
                         // 保存原始内容 - 这是关键修复
                         originalPgmlContent = originalData.pgml_content;
                         document.getElementById('historyOriginalOutput').value = originalPgmlContent;
@@ -810,26 +1038,34 @@
         // 加载历史记录列表
         function loadHistory() {
             const historyList = document.getElementById('historyList');
-            historyList.innerHTML = '<div class="loading-history">Loading history...</div>';
+            const historyCount = document.getElementById('historyCount');
+            historyList.innerHTML = '<div class="loading-history"><span class="mini-spinner"></span> Loading history…</div>';
             
             fetch('/history')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.history.length > 0) {
-                        let html = '';
+                        historyList.innerHTML = '';
+                        historyCount.textContent = data.history.length;
                         data.history.forEach(item => {
-                            html += `
-                                <div class="history-item" data-filename="${item.filename}">
-                                    <div class="student-id">${item.student_id}</div>
-                                    <div class="timestamp">${item.timestamp}</div>
-                                </div>
-                            `;
-                        });
-                        historyList.innerHTML = html;
-                        
-                        // 添加点击事件
-                        document.querySelectorAll('.history-item').forEach(item => {
-                            item.addEventListener('click', function() {
+                            const historyItem = document.createElement('button');
+                            const avatar = document.createElement('span');
+                            const student = document.createElement('span');
+                            const timestamp = document.createElement('span');
+
+                            historyItem.type = 'button';
+                            historyItem.className = 'history-item';
+                            historyItem.dataset.filename = item.filename;
+                            historyItem.title = 'Open ' + item.filename;
+                            avatar.className = 'history-avatar';
+                            avatar.textContent = String(item.student_id || '?').slice(0, 2).toUpperCase();
+                            student.className = 'student-id';
+                            student.textContent = item.student_id;
+                            timestamp.className = 'timestamp';
+                            timestamp.textContent = item.timestamp;
+                            historyItem.append(avatar, student, timestamp);
+
+                            historyItem.addEventListener('click', function() {
                                 // 检查是否有未保存的更改
                                 if (hasUnsavedChanges) {
                                     if (!confirm('You have unsaved changes. Are you sure you want to leave without saving?')) {
@@ -847,12 +1083,15 @@
                                 const filename = this.getAttribute('data-filename');
                                 loadHistoryContent(filename);
                             });
+                            historyList.appendChild(historyItem);
                         });
                     } else {
-                        historyList.innerHTML = '<div class="empty-history">No generation history found</div>';
+                        historyCount.textContent = '0';
+                        historyList.innerHTML = '<div class="empty-history">No generations yet.<br>Create one to see it here.</div>';
                     }
                 })
                 .catch(error => {
+                    historyCount.textContent = '—';
                     historyList.innerHTML = '<div class="empty-history">Failed to load history</div>';
                 });
         }
@@ -932,7 +1171,7 @@
             const filename = area === 'generate' ? document.getElementById('pgmlPath').textContent.split('/').pop() : currentHistoryFile;
             
             if (!filename) {
-                alert('No file to save!');
+                showToast('There is no file to save yet.', 'error');
                 return;
             }
             
@@ -946,7 +1185,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('PGML code saved successfully!');
+                    showToast('PGML saved successfully.', 'success');
                     hasUnsavedChanges = false;
                     originalContent = content;
                     document.getElementById(area === 'generate' ? 'generateUnsavedWarning' : 'historyUnsavedWarning').style.display = 'none';
@@ -956,11 +1195,11 @@
                         loadHistory();
                     }
                 } else {
-                    alert('Failed to save PGML code: ' + data.error);
+                    showToast('Could not save PGML: ' + data.error, 'error');
                 }
             })
             .catch(error => {
-                alert('Network error: ' + error.message);
+                showToast('Network error: ' + error.message, 'error');
             });
         }
 
@@ -979,6 +1218,15 @@
             
             // 加载历史记录
             loadHistory();
+
+            document.querySelectorAll('.result-view-switch').forEach(switcher => {
+                switcher.addEventListener('click', function(event) {
+                    const button = event.target.closest('.view-switch-btn');
+                    if (!button) return;
+                    const area = this.id === 'generateViewSwitch' ? 'generate' : 'history';
+                    switchResultView(area, button.dataset.view);
+                });
+            });
             
             // Edit API Key 按钮事件
             document.getElementById('editApiKeyBtn').addEventListener('click', function(e) {
@@ -1061,8 +1309,444 @@
             });
 
             // 修改生成表单提交事件
+            // ---------------------------------------------------------------
+            // 属性文法：生成方式切换 + 文法文件在线编辑
+            // ---------------------------------------------------------------
+            function currentGeneratorMode() {
+                const checked = document.querySelector('input[name="generatorMode"]:checked');
+                return checked ? checked.value : 'classic';
+            }
+
+            const agControls = document.getElementById('agControls');
+            const agEditor = document.getElementById('agEditor');
+            const agGrammarSelect = document.getElementById('agGrammarSelect');
+            const agGrammarText = document.getElementById('agGrammarText');
+            const agGrammarMessage = document.getElementById('agGrammarMessage');
+            const agEditorName = document.getElementById('agEditorName');
+            const agEditToggleBtn = document.getElementById('agEditToggleBtn');
+            const agHighlight = document.getElementById('agHighlight');
+            const agLineNumbers = document.getElementById('agLineNumbers');
+            const agActiveLine = document.getElementById('agActiveLine');
+            const agCodeStage = document.getElementById('agCodeStage');
+            const agCursorPosition = document.getElementById('agCursorPosition');
+            const agDocumentStats = document.getElementById('agDocumentStats');
+            const agSaveState = document.getElementById('agSaveState');
+            const agSaveStateText = document.getElementById('agSaveStateText');
+            const agCheckBtn = document.getElementById('agCheckBtn');
+            const agSaveBtn = document.getElementById('agSaveBtn');
+            const agReloadBtn = document.getElementById('agReloadBtn');
+            let agGrammarsLoaded = false;
+            let agOriginalText = '';
+            let agCurrentGrammar = '';
+            let agDirty = false;
+
+            const agKeywords = new Set([
+                'attribute', 'random', 'let', 'boolean', 'synth', 'on', 'start',
+                'precedence', 'left', 'right', 'nonassoc', 'copy', 'split',
+                'when', 'weight', 'require', 'prompt', 'answer', 'width',
+                'and', 'or', 'not'
+            ]);
+            const agBuiltins = new Set([
+                'integer', 'nonzero_integer', 'str', 'paren', 'infix', 'prefix',
+                'cond', 'abs', 'min', 'max', 'bit_and', 'bit_or', 'bit_xor'
+            ]);
+
+            function escapeAgHtml(text) {
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+            }
+
+            function agToken(kind, text) {
+                return '<span class="ag-token-' + kind + '">' + escapeAgHtml(text) + '</span>';
+            }
+
+            // Small lexer used only for presentation. The real OCaml lexer remains
+            // the source of truth when Check or Save is pressed.
+            function highlightAgSource(source) {
+                let output = '';
+                let index = 0;
+                while (index < source.length) {
+                    const character = source[index];
+
+                    if (character === '#') {
+                        let end = source.indexOf('\n', index);
+                        if (end === -1) end = source.length;
+                        output += agToken('comment', source.slice(index, end));
+                        index = end;
+                        continue;
+                    }
+
+                    if (character === '"') {
+                        let end = index + 1;
+                        while (end < source.length) {
+                            if (source[end] === '\\' && end + 1 < source.length) {
+                                end += 2;
+                            } else if (source[end] === '"') {
+                                end += 1;
+                                break;
+                            } else {
+                                end += 1;
+                            }
+                        }
+                        output += agToken('string', source.slice(index, end));
+                        index = end;
+                        continue;
+                    }
+
+                    if (character === '$' && /[0-9]/.test(source[index + 1] || '')) {
+                        let end = index + 2;
+                        while (/[0-9]/.test(source[end] || '')) end += 1;
+                        if (source[end] === '.') {
+                            end += 1;
+                            while (/[A-Za-z0-9_]/.test(source[end] || '')) end += 1;
+                        }
+                        output += agToken('child', source.slice(index, end));
+                        index = end;
+                        continue;
+                    }
+
+                    if (/[0-9]/.test(character)) {
+                        let end = index + 1;
+                        while (/[0-9]/.test(source[end] || '')) end += 1;
+                        output += agToken('number', source.slice(index, end));
+                        index = end;
+                        continue;
+                    }
+
+                    if (/[A-Za-z_]/.test(character)) {
+                        let end = index + 1;
+                        while (/[A-Za-z0-9_]/.test(source[end] || '')) end += 1;
+                        const word = source.slice(index, end);
+                        let kind = 'attribute';
+                        if (agKeywords.has(word)) kind = 'keyword';
+                        else if (agBuiltins.has(word)) kind = 'builtin';
+                        else if (/^[A-Z]/.test(word)) kind = 'symbol';
+                        output += agToken(kind, word);
+                        index = end;
+                        continue;
+                    }
+
+                    const pair = source.slice(index, index + 2);
+                    if (['->', '++', '!=', '<=', '>='].includes(pair)) {
+                        output += agToken('operator', pair);
+                        index += 2;
+                        continue;
+                    }
+                    if ('=<>+-*/%^.,(){}'.includes(character)) {
+                        output += agToken('operator', character);
+                        index += 1;
+                        continue;
+                    }
+
+                    output += escapeAgHtml(character);
+                    index += 1;
+                }
+                return output;
+            }
+
+            function setAgState(state, text) {
+                agSaveState.dataset.state = state;
+                agSaveStateText.textContent = text;
+            }
+
+            function syncAgScroll() {
+                agHighlight.scrollTop = agGrammarText.scrollTop;
+                agHighlight.scrollLeft = agGrammarText.scrollLeft;
+                agLineNumbers.scrollTop = agGrammarText.scrollTop;
+                updateAgCursor();
+            }
+
+            function updateAgCursor() {
+                const beforeCaret = agGrammarText.value.slice(0, agGrammarText.selectionStart);
+                const line = beforeCaret.split('\n').length;
+                const lastBreak = beforeCaret.lastIndexOf('\n');
+                const column = agGrammarText.selectionStart - lastBreak;
+                const computed = window.getComputedStyle(agGrammarText);
+                const lineHeight = parseFloat(computed.lineHeight) || 21.45;
+                const paddingTop = parseFloat(computed.paddingTop) || 16;
+                const top = paddingTop + ((line - 1) * lineHeight) - agGrammarText.scrollTop;
+
+                agCodeStage.style.setProperty('--ag-line-height', lineHeight + 'px');
+                agActiveLine.style.transform = 'translateY(' + (top - paddingTop) + 'px)';
+                agActiveLine.style.opacity = top + lineHeight < 0 || top > agCodeStage.clientHeight ? '0' : '1';
+                agCursorPosition.textContent = 'Ln ' + line + ', Col ' + column;
+
+                agLineNumbers.querySelectorAll('.active').forEach(item => item.classList.remove('active'));
+                const currentNumber = agLineNumbers.children[line - 1];
+                if (currentNumber) currentNumber.classList.add('active');
+            }
+
+            function updateAgEditor(markDirty) {
+                const source = agGrammarText.value;
+                const lineCount = source.split('\n').length;
+                agHighlight.innerHTML = highlightAgSource(source) + (source.endsWith('\n') ? ' ' : '');
+                agLineNumbers.innerHTML = Array.from({ length: lineCount }, (_, index) =>
+                    '<span class="ag-line-number">' + (index + 1) + '</span>'
+                ).join('');
+                agDocumentStats.textContent = lineCount + (lineCount === 1 ? ' line' : ' lines')
+                    + ' · ' + source.length + ' chars';
+
+                if (markDirty) {
+                    agDirty = source !== agOriginalText;
+                    setAgState(agDirty ? 'dirty' : 'saved', agDirty ? 'Unsaved changes' : 'Saved');
+                }
+                syncAgScroll();
+            }
+
+            function extractAgLocation(text) {
+                const match = String(text || '').match(/:(\d+):(\d+):/);
+                return match ? { line: Number(match[1]), column: Number(match[2]) } : null;
+            }
+
+            function goToAgLocation(line, column) {
+                const lines = agGrammarText.value.split('\n');
+                const safeLine = Math.max(1, Math.min(line, lines.length));
+                const safeColumn = Math.max(1, Math.min(column, lines[safeLine - 1].length + 1));
+                let offset = 0;
+                for (let index = 0; index < safeLine - 1; index += 1) {
+                    offset += lines[index].length + 1;
+                }
+                offset += safeColumn - 1;
+                agGrammarText.focus();
+                agGrammarText.setSelectionRange(offset, offset);
+                const lineHeight = parseFloat(window.getComputedStyle(agGrammarText).lineHeight) || 21.45;
+                agGrammarText.scrollTop = Math.max(0, ((safeLine - 1) * lineHeight) - (agGrammarText.clientHeight / 3));
+                syncAgScroll();
+            }
+
+            function showAgMessage(text, kind) {
+                agGrammarMessage.textContent = text;
+                agGrammarMessage.className = 'ag-message ' + (kind || '');
+                agGrammarMessage.style.display = text ? 'block' : 'none';
+                const location = kind === 'error' ? extractAgLocation(text) : null;
+                agGrammarMessage.classList.toggle('has-location', Boolean(location));
+                agGrammarMessage.dataset.line = location ? String(location.line) : '';
+                agGrammarMessage.dataset.column = location ? String(location.column) : '';
+            }
+
+            agGrammarMessage.addEventListener('click', function() {
+                if (this.dataset.line) {
+                    goToAgLocation(Number(this.dataset.line), Number(this.dataset.column));
+                }
+            });
+
+            function loadAgGrammarList() {
+                if (agGrammarsLoaded) return Promise.resolve();
+                return fetch('/ag_grammars')
+                    .then(r => r.json())
+                    .then(data => {
+                        agGrammarSelect.innerHTML = '';
+                        (data.grammars || []).forEach(name => {
+                            const option = document.createElement('option');
+                            option.value = name;
+                            option.textContent = name;
+                            agGrammarSelect.appendChild(option);
+                        });
+                        agGrammarsLoaded = true;
+                    })
+                    .catch(() => {});
+            }
+
+            function loadAgGrammarText(requestedName) {
+                const name = requestedName || agGrammarSelect.value;
+                if (!name) return;
+                showAgMessage('', '');
+                setAgState('checking', 'Loading…');
+                fetch('/ag_grammar?name=' + encodeURIComponent(name))
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            agGrammarText.value = data.content;
+                            agEditorName.textContent = data.name;
+                            agCurrentGrammar = data.name;
+                            agGrammarSelect.value = data.name;
+                            agOriginalText = data.content;
+                            agDirty = false;
+                            setAgState('saved', 'Saved');
+                            updateAgEditor(false);
+                        } else {
+                            showAgMessage(data.error || 'Could not load the grammar.', 'error');
+                            setAgState('dirty', 'Load failed');
+                        }
+                    })
+                    .catch(e => {
+                        showAgMessage('Network error: ' + e.message, 'error');
+                        setAgState('dirty', 'Load failed');
+                    });
+            }
+
+            document.querySelectorAll('input[name="generatorMode"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const isAg = currentGeneratorMode() === 'ag';
+                    agControls.style.display = isAg ? 'block' : 'none';
+                    if (!isAg) {
+                        agEditor.style.display = 'none';
+                        agEditToggleBtn.textContent = 'Edit Grammar';
+                    } else {
+                        loadAgGrammarList();
+                    }
+                });
+            });
+
+            agGrammarSelect.addEventListener('change', function() {
+                const requested = this.value;
+                if (agDirty && !confirm('This grammar has unsaved changes. Discard them and open another file?')) {
+                    this.value = agCurrentGrammar;
+                    return;
+                }
+                if (agEditor.style.display !== 'none') loadAgGrammarText(requested);
+            });
+
+            agEditToggleBtn.addEventListener('click', function() {
+                const opening = agEditor.style.display === 'none';
+                agEditor.style.display = opening ? 'block' : 'none';
+                agEditToggleBtn.textContent = opening ? 'Hide Grammar' : 'Edit Grammar';
+                if (opening) {
+                    if (!agCurrentGrammar || agCurrentGrammar !== agGrammarSelect.value) {
+                        loadAgGrammarText();
+                    } else {
+                        updateAgEditor(false);
+                        agGrammarText.focus();
+                    }
+                }
+            });
+
+            agReloadBtn.addEventListener('click', function() {
+                if (agDirty && !confirm('Discard the unsaved changes and reload this grammar?')) return;
+                loadAgGrammarText();
+            });
+
+            agGrammarText.addEventListener('input', function() {
+                updateAgEditor(true);
+                showAgMessage('', '');
+            });
+            agGrammarText.addEventListener('scroll', syncAgScroll);
+            ['click', 'keyup', 'select'].forEach(eventName =>
+                agGrammarText.addEventListener(eventName, updateAgCursor));
+
+            agGrammarText.addEventListener('keydown', function(event) {
+                if (event.key === 'Tab') {
+                    event.preventDefault();
+                    const start = this.selectionStart;
+                    const end = this.selectionEnd;
+                    const lineStart = this.value.lastIndexOf('\n', start - 1) + 1;
+                    const selectedBlock = this.value.slice(lineStart, end);
+
+                    if (start !== end) {
+                        if (event.shiftKey) {
+                            const lines = selectedBlock.split('\n');
+                            let removedBeforeStart = 0;
+                            let removedTotal = 0;
+                            const adjusted = lines.map((line, index) => {
+                                const match = line.match(/^ {1,4}/);
+                                const removed = match ? match[0].length : 0;
+                                if (index === 0) removedBeforeStart = removed;
+                                removedTotal += removed;
+                                return line.slice(removed);
+                            }).join('\n');
+                            this.setRangeText(adjusted, lineStart, end, 'start');
+                            this.setSelectionRange(Math.max(lineStart, start - removedBeforeStart), end - removedTotal);
+                        } else {
+                            const adjusted = selectedBlock.replace(/^/gm, '    ');
+                            const addedLines = selectedBlock.split('\n').length;
+                            this.setRangeText(adjusted, lineStart, end, 'start');
+                            this.setSelectionRange(start + 4, end + (addedLines * 4));
+                        }
+                    } else if (event.shiftKey) {
+                        const before = this.value.slice(lineStart, start);
+                        const spaces = Math.min(4, (before.match(/ *$/) || [''])[0].length);
+                        if (spaces > 0) {
+                            this.setRangeText('', start - spaces, start, 'end');
+                        }
+                    } else {
+                        this.setRangeText('    ', start, end, 'end');
+                    }
+                    updateAgEditor(true);
+                }
+
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+                    event.preventDefault();
+                    agSaveBtn.click();
+                }
+                if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                    event.preventDefault();
+                    agCheckBtn.click();
+                }
+            });
+
+            agCheckBtn.addEventListener('click', function() {
+                agCheckBtn.disabled = true;
+                setAgState('checking', 'Checking…');
+                showAgMessage('Checking...', '');
+                fetch('/ag_grammar_check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'name=' + encodeURIComponent(agGrammarSelect.value)
+                        + '&content=' + encodeURIComponent(agGrammarText.value)
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        showAgMessage(data.success ? data.message : data.error,
+                            data.success ? 'ok' : 'error');
+                        setAgState(agDirty ? 'dirty' : 'saved',
+                            data.success ? (agDirty ? 'Valid · unsaved' : 'Valid · saved') : 'Check failed');
+                    })
+                    .catch(e => {
+                        showAgMessage('Network error: ' + e.message, 'error');
+                        setAgState(agDirty ? 'dirty' : 'saved', agDirty ? 'Unsaved changes' : 'Saved');
+                    })
+                    .finally(() => { agCheckBtn.disabled = false; });
+            });
+
+            agSaveBtn.addEventListener('click', function() {
+                agSaveBtn.disabled = true;
+                setAgState('checking', 'Saving…');
+                showAgMessage('Saving...', '');
+                fetch('/ag_grammar_save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'name=' + encodeURIComponent(agGrammarSelect.value)
+                        + '&content=' + encodeURIComponent(agGrammarText.value)
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            // 保存前会先校验，所以走到这里文法一定是好的
+                            agOriginalText = agGrammarText.value;
+                            agDirty = false;
+                            setAgState('saved', 'Valid · saved');
+                            showAgMessage('Saved. Generate again to see the change.\n\n'
+                                + data.message, 'ok');
+                        } else {
+                            setAgState('dirty', 'Save failed');
+                            showAgMessage(data.error, 'error');
+                        }
+                    })
+                    .catch(e => {
+                        setAgState('dirty', 'Save failed');
+                        showAgMessage('Network error: ' + e.message, 'error');
+                    })
+                    .finally(() => { agSaveBtn.disabled = false; });
+            });
+
+            window.addEventListener('beforeunload', function(event) {
+                if (!agDirty) return;
+                event.preventDefault();
+                event.returnValue = '';
+            });
+
             document.getElementById('studentForm').addEventListener('submit', function(e) {
                 e.preventDefault();
+
+                if (currentGeneratorMode() === 'ag' && agDirty) {
+                    agEditor.style.display = 'block';
+                    agEditToggleBtn.textContent = 'Hide Grammar';
+                    showAgMessage('Save the grammar before generating so the new rules are used.', 'error');
+                    agGrammarText.focus();
+                    return;
+                }
                 
                 if (!checkUnsavedChanges(currentEditingArea)) {
                     return;
@@ -1084,6 +1768,8 @@
                 const contextStatus = document.getElementById('contextStatus');
                 
                 // 隐藏之前的结果
+                currentVisualizationFilename = '';
+                switchResultView('generate', 'pgml');
                 resultDiv.style.display = 'none';
                 errorDiv.style.display = 'none';
                 astContainer.style.display = 'none';
@@ -1098,14 +1784,25 @@
                 
                 // 重置编辑状态
                 resetEditState('generate');
-                
+
+                // 按生成方式分流：属性文法走 /run_ag，经典生成器走 /run
+                const useAttributeGrammar = currentGeneratorMode() === 'ag';
+                const endpoint = useAttributeGrammar ? '/run_ag' : '/run';
+                let body = 'student_id=' + encodeURIComponent(studentId);
+                if (useAttributeGrammar) {
+                    body += '&grammar=' + encodeURIComponent(document.getElementById('agGrammarSelect').value)
+                          + '&count=' + encodeURIComponent(document.getElementById('agCount').value);
+                    // 属性文法这条路目前不产出 AST/树视图
+                    showAstBtn.style.display = 'none';
+                }
+
                 // 发送请求
-                fetch('/run', {
+                fetch(endpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: 'student_id=' + encodeURIComponent(studentId)
+                    body: body
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -1113,9 +1810,13 @@
                     
                     if (data.success) {
                         // 保存原始PGML内容
+                        currentVisualizationFilename = data.visualization_path
+                            ? data.visualization_path.split('/').pop()
+                            : '';
+                        switchResultView('generate', 'pgml');
                         originalPgmlContent = data.pgml_code || 'Fail to find PGML code.';
                         
-                        if (addContext && hasApiKey) {
+                        if (addContext && hasApiKey && !useAttributeGrammar) {
                             // 如果选中了Add Context且有API密钥，开始生成语境
                             // 隐藏所有结果内容，只显示加载提示
                             outputTextarea.value = ''; // 清空输出区域
@@ -1165,23 +1866,21 @@
             // 复制PGML代码（生成界面）
             document.getElementById('copyBtn').addEventListener('click', function() {
                 const outputTextarea = document.getElementById('output');
-                outputTextarea.select();
-                document.execCommand('copy');
-                alert('The PGML code has been copied to the clipboard!');
+                copyTextarea(outputTextarea, 'PGML copied to clipboard.');
             });
 
             // 复制PGML代码（历史界面）
             document.getElementById('historyCopyBtn').addEventListener('click', function() {
                 const outputTextarea = document.getElementById('historyOutput');
-                outputTextarea.select();
-                document.execCommand('copy');
-                alert('The PGML code has been copied to the clipboard!');
+                copyTextarea(outputTextarea, 'Saved PGML copied to clipboard.');
             });
 
             // 显示AST（生成界面）
             document.getElementById('showAstBtn').addEventListener('click', function() {
+                switchResultView('generate', 'trees');
+                return;
                 if (!currentAstPath) {
-                    alert('No available path for the AST file.');
+                    showToast('No AST file is available.', 'error');
                     return;
                 }
                 
@@ -1215,7 +1914,7 @@
 
             // 显示AST（历史界面）
             document.getElementById('historyShowAstBtn').addEventListener('click', function() {
-                document.getElementById('historyAstContainer').style.display = 'block';
+                switchResultView('history', 'trees');
             });
 
             // 隐藏AST（生成界面）
@@ -1408,36 +2107,35 @@
             const sidebar = document.getElementById('sidebar');
             const sidebarCollapseBtn = document.getElementById('sidebarCollapseBtn');
             const mainContent = document.querySelector('.main-content');
+
+            function setSidebarCollapsed(collapsed, persist = true) {
+                sidebar.classList.toggle('collapsed', collapsed);
+                sidebarCollapseBtn.setAttribute('aria-expanded', String(!collapsed));
+                sidebarCollapseBtn.setAttribute(
+                    'aria-label',
+                    collapsed ? 'Expand history sidebar' : 'Collapse history sidebar'
+                );
+                sidebarCollapseBtn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+                sidebarCollapseBtn.querySelector('.collapse-icon').textContent = collapsed ? '›' : '‹';
+                if (persist) {
+                    localStorage.setItem('sidebarCollapsed', String(collapsed));
+                }
+            }
             
             // 检查本地存储的折叠状态
             const isSidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (isSidebarCollapsed) {
-                sidebar.classList.add('collapsed');
-            }
+            setSidebarCollapsed(isSidebarCollapsed, false);
             
             // 折叠按钮点击事件
             sidebarCollapseBtn.addEventListener('click', function(e) {
                 e.stopPropagation(); // 防止事件冒泡
-                sidebar.classList.toggle('collapsed');
-                
-                // 保存折叠状态到本地存储
-                const isCollapsed = sidebar.classList.contains('collapsed');
-                localStorage.setItem('sidebarCollapsed', isCollapsed);
+                setSidebarCollapsed(!sidebar.classList.contains('collapsed'));
             });
             
             // 在移动设备上，点击主内容区域可以关闭侧边栏
             mainContent.addEventListener('click', function() {
                 if (window.innerWidth <= 768 && !sidebar.classList.contains('collapsed')) {
-                    sidebar.classList.add('collapsed');
-                    localStorage.setItem('sidebarCollapsed', 'true');
-                }
-            });
-            
-            // 窗口大小改变时调整布局
-            window.addEventListener('resize', function() {
-                if (window.innerWidth > 768 && sidebar.classList.contains('collapsed')) {
-                    // 在桌面端，折叠状态只改变宽度，不隐藏
-                    sidebar.style.transform = 'translateX(0)';
+                    setSidebarCollapsed(true);
                 }
             });
             

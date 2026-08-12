@@ -166,6 +166,7 @@ and describe_math_object_method mometh =
   (* ------------------- NEW CODE START ------------------- *)
   | M_Formula_Fun  s       -> DCST.meth_form_fun (describe_function_expr s)
   (* ------------------- NEW CODE END ------------------- *)
+  | M_Complex      (re, im) -> DCST.meth_complex (describe_int_with_sign re) (describe_int_with_sign im)
   | M_Real         v       -> DCST.meth_real (describe_value v)
   | M_D            u       -> begin match u with 
                               | None   -> DCST.meth_d_none ()
@@ -244,7 +245,70 @@ and describe_question_item question_item =
   | Q_Given_Function (fun_name, derp_list) ->
       DCST.qderivative fun_name (describe_derivative_prob_list derp_list)
   (* ------------------- NEW CODE END ------------------- *)
-
+  | Q_Boolean_Eval (expr, assignments, ans, None) ->
+	      DCST.qbool_eval
+	        (describe_bool_expr expr)
+	        (describe_bool_assignment_list assignments)
+	        (describe_answer_item ans)
+	  | Q_Boolean_Eval (expr, assignments, ans, Some width) ->
+	      DCST.qbool_eval_width
+	        (describe_bool_expr expr)
+	        (describe_bool_assignment_list assignments)
+	        (describe_answer_item ans)
+	        width
+  | Q_Boolean_Equiv (left, right, ans, None) ->
+      DCST.qbool_equiv
+        (describe_bool_expr left)
+        (describe_bool_expr right)
+        (describe_answer_item ans)
+  | Q_Boolean_Equiv (left, right, ans, Some width) ->
+      DCST.qbool_equiv_width
+        (describe_bool_expr left)
+        (describe_bool_expr right)
+        (describe_answer_item ans)
+        width
+  | Q_Complex_Arithmetic (expr, ans) ->
+      DCST.qcomplex_arith
+        (describe_complex_expr expr)
+        (describe_answer_item ans)
+  | Q_Complex_Conjugate (num, ans) ->
+      DCST.qcomplex_conj
+        (describe_complex_num num)
+        (describe_answer_item ans)
+  | Q_Complex_Modulus (num, ans) ->
+      DCST.qcomplex_mod
+        (describe_complex_num num)
+        (describe_answer_item ans)
+  | Q_Complex_Power_I (exponent, ans) ->
+      DCST.qcomplex_power_i
+        exponent
+        (describe_answer_item ans)
+  | Q_Sequence (Arithmetic_Nth (first, diff, index), ans, None) ->
+      DCST.qsequence_arith_nth
+        (DCST.sequence_param "a_1" (describe_int_with_sign first))
+        (DCST.sequence_param "d" (describe_int_with_sign diff))
+        (DCST.sequence_param "n" (describe_int_with_sign index))
+        (describe_answer_item ans)
+  | Q_Sequence (Geometric_Nth (first, ratio, index), ans, None) ->
+      DCST.qsequence_geom_nth
+        (DCST.sequence_param "a_1" (describe_int_with_sign first))
+        (DCST.sequence_param "r" (describe_int_with_sign ratio))
+        (DCST.sequence_param "n" (describe_int_with_sign index))
+        (describe_answer_item ans)
+  | Q_Sequence (Arithmetic_Sum (first, diff, count), ans, None) ->
+      DCST.qsequence_arith_sum
+        (DCST.sequence_param "a_1" (describe_int_with_sign first))
+        (DCST.sequence_param "d" (describe_int_with_sign diff))
+        (DCST.sequence_param "n" (describe_int_with_sign count))
+        (describe_answer_item ans)
+  | Q_Sequence (Geometric_Sum (first, ratio, count), ans, None) ->
+      DCST.qsequence_geom_sum
+        (DCST.sequence_param "a_1" (describe_int_with_sign first))
+        (DCST.sequence_param "r" (describe_int_with_sign ratio))
+        (DCST.sequence_param "n" (describe_int_with_sign count))
+        (describe_answer_item ans)
+  | Q_Sequence (_, _, Some _) ->
+      failwith "Sequence questions do not currently support answer width"
 and describe_set_list s_list =
   if print_describe then prerr_endline "→ describe_set_list";
   match s_list with
@@ -308,13 +372,79 @@ and describe_set_primary primary =
   | Set_Op_Paren op -> DCST.set_primary_paren (describe_set_operation op)
   | Set_Op_Var var -> DCST.set_primary_var var
 
-and describe_question_text question_text = 
+and describe_question_text question_text =
   if print_describe then prerr_endline "→ describe_question_text";
   match question_text with
-  | Q_Value    c  -> DCST.qvalue    (describe_intext_call c)
-  | Q_IsEqual  c  -> DCST.qis       (describe_intext_call c)
+	  | Q_Value    c  -> DCST.qvalue    (describe_intext_call c)
+	  | Q_IsEqual  c  -> DCST.qis       (describe_intext_call c)
 
-and describe_answer_item answer_item = 
+and describe_bool_assignment_list assignments =
+  if print_describe then prerr_endline "→ describe_bool_assignment_list";
+  match assignments with
+  | [assignment] ->
+      DCST.bool_assignment_list_last (describe_bool_assignment assignment)
+  | assignment :: rest ->
+      DCST.bool_assignment_list_cons
+        (describe_bool_assignment assignment)
+        (describe_bool_assignment_list rest)
+  | [] ->
+      invalid_arg "describe: empty bool_assignment_list"
+
+and describe_bool_assignment (name, value) =
+  if print_describe then prerr_endline "→ describe_bool_assignment";
+  if value then
+    DCST.bool_assignment_true name
+  else
+    DCST.bool_assignment_false name
+
+and describe_bool_expr expr =
+  if print_describe then prerr_endline "→ describe_bool_expr";
+  match expr with
+  | Bool_Const true -> DCST.bool_true ()
+  | Bool_Const false -> DCST.bool_false ()
+  | Bool_Var name -> DCST.bool_var name
+  | Bool_Not inner -> DCST.bool_not (describe_bool_operand inner)
+  | Bool_And (left, right) ->
+      DCST.bool_and (describe_bool_operand left) (describe_bool_operand right)
+  | Bool_Or (left, right) ->
+      DCST.bool_or (describe_bool_operand left) (describe_bool_operand right)
+  | Bool_Xor (left, right) ->
+      DCST.bool_xor (describe_bool_operand left) (describe_bool_operand right)
+  | Bool_Implies (left, right) ->
+      DCST.bool_implies (describe_bool_operand left) (describe_bool_operand right)
+  | Bool_Iff (left, right) ->
+      DCST.bool_iff (describe_bool_operand left) (describe_bool_operand right)
+
+and describe_bool_operand expr =
+  match expr with
+  | Bool_Const _ | Bool_Var _ -> describe_bool_expr expr
+  | _ -> DCST.bool_paren (describe_bool_expr expr)
+
+and describe_complex_expr expr =
+  if print_describe then prerr_endline "→ describe_complex_expr";
+  match expr with
+  | Complex_Lit num ->
+      DCST.complex_lit (describe_complex_num num)
+  | Complex_Add (left, right) ->
+      DCST.complex_add (describe_complex_expr left) (describe_complex_expr right)
+  | Complex_Sub (left, right) ->
+      DCST.complex_sub (describe_complex_expr left) (describe_complex_expr right)
+  | Complex_Mul (left, right) ->
+      DCST.complex_mul (describe_complex_expr left) (describe_complex_expr right)
+
+and describe_complex_num num =
+  if print_describe then prerr_endline "→ describe_complex_num";
+  match num with
+  | Complex_Num (re, 0) ->
+      DCST.complex_num_real (describe_int_with_sign re)
+  | Complex_Num (0, im) ->
+      DCST.complex_num_imag (describe_int_with_sign im)
+  | Complex_Num (re, im) when im > 0 ->
+      DCST.complex_num_pos_im (describe_int_with_sign re) im
+  | Complex_Num (re, im) ->
+      DCST.complex_num_neg_im (describe_int_with_sign re) (-im)
+
+and describe_answer_item answer_item =
   if print_describe then prerr_endline "→ describe_answer_item";
   match answer_item with
   | A_Var var     -> DCST.ans_var (describe_variable var)
@@ -445,6 +575,8 @@ and describe_derivative_prob = function
       DCST.der_prob_2 i1 fun_name i2
   | Second_Derivative fun_name ->
       DCST.der_prob_3 fun_name
+  | Indefinite_Integral anti_name ->
+      DCST.integral_prob anti_name
 
 (* ------------------- NEW CODE END ------------------- *)
 

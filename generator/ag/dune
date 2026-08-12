@@ -1,0 +1,40 @@
+(library
+ (name ag)
+ (wrapped false)
+ (modules ag_ast ag_lexer ag_parser ag_check ag_load ag_number ag_engine ag_pgml)
+ (libraries menhirLib))
+
+(menhir
+ (modules ag_parser)
+ (flags --explain --unused-token UMINUS))
+
+(ocamllex ag_lexer)
+
+(tests
+ (names ag_test ag_engine_test)
+ (modules ag_test ag_engine_test)
+ (deps arithmetic.ag)
+ (libraries ag))
+
+(test
+ (name ag_boolean_test)
+ (modules ag_boolean_test)
+ (deps boolean.ag)
+ (libraries ag))
+
+(test
+ (name ag_equiv_test)
+ (modules ag_equiv_test)
+ (deps boolean_equiv.ag)
+ (libraries ag))
+
+; The round-trip check needs the project's own PG front-end as well.
+(test
+ (name ag_pgml_test)
+ (modules ag_pgml_test)
+ (libraries ag pg_core))
+
+(executables
+ (names agcheck agrun)
+ (modules agcheck agrun)
+ (libraries ag))

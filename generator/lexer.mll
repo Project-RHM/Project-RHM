@@ -70,6 +70,28 @@ rule read =
   | "Enter a vector in the same direction as "  { VECTOR_SAME_PROB }
   (* ------------------- NEW CODE START ------------------- *)
   | "Given this function:"                      { GIVEN_FUN }
+  | "Find an antiderivative F(x) with C = 0:"   { INDEFINITE_INTEGRAL_PROB }
+  | "Evaluate the Boolean expression:"          { EVALUATE_BOOL_PROB }
+  | "Determine whether the Boolean expressions are equivalent:" { BOOLEAN_EQUIV_PROB }
+  | "Compute the complex number expression:"    { COMPLEX_ARITH_PROB }
+  | "Find the conjugate of:"                    { COMPLEX_CONJ_PROB }
+  | "Find the modulus of:"                      { COMPLEX_MOD_PROB }
+  | "Simplify the power of i:"                  { COMPLEX_POWER_I_PROB }
+  | "Arithmetic sequence: find a_n."            { ARITH_SEQ_NTH_PROB }
+  | "Geometric sequence: find a_n."             { GEOM_SEQ_NTH_PROB }
+  | "Arithmetic sequence: find the finite sum." { ARITH_SEQ_SUM_PROB }
+  | "Geometric sequence: find the finite sum."  { GEOM_SEQ_SUM_PROB }
+  | "When:"                                    { WHEN_WORD }
+  | "Enter 1 for True and 0 for False."         { BOOL_ANSWER_HINT }
+  | "Enter 1 if equivalent and 0 otherwise."    { BOOL_EQUIV_ANSWER_HINT }
+  | "True"                                     { TRUE_WORD }
+  | "False"                                    { FALSE_WORD }
+  | "AND"                                      { AND_WORD }
+  | "OR"                                       { OR_WORD }
+  | "NOT"                                      { NOT_WORD }
+  | "XOR"                                      { XOR_WORD }
+  | "IMPLIES"                                  { IMPLIES_WORD }
+  | "IFF"                                      { IFF_WORD }
   (* ------------------- NEW CODE END ------------------- *)
 
   | "infinity"                      { INFINITY }
@@ -87,10 +109,12 @@ rule read =
   | "\\langle"                      { LANGLE_LATEX }
   | "\\rangle"                      { RANGLE_LATEX }
   | "\\cdot"                        { CDOT_LATEX }
+  | "\\div"                         { DIV_LATEX }
   | "\\times"                       { TIMES_LATEX }
   | "\\left\\|"                     { LEFT_NORM_LATEX }
   | "\\right\\|"                    { RIGHT_NORM_LATEX }
   | "x"                             { X_VAR }
+  | "i"                             { I_UNIT }
   (* ------------------- NEW CODE START ------------------- *)
   | "f"                             { F_FUN }
   | "e"                             { NAT_LOG }
@@ -161,11 +185,20 @@ rule read =
       | "with"     -> WITH_METH
       | "Set"      -> SET_DEF_METH
       | "Compute"     -> COMPUTE_METH
+      | "Complex"     -> COMPLEX_METH
       | "intersect"   -> INTERSECT_METH
       | "norm"     -> NORM_METH
-      | "unit"     -> UNIT_METH
-      | _          -> ID (Lexing.lexeme lexbuf)
-    }
+	      | "unit"     -> UNIT_METH
+	      | "True"     -> TRUE_WORD
+	      | "False"    -> FALSE_WORD
+	      | "AND"      -> AND_WORD
+	      | "OR"       -> OR_WORD
+	      | "NOT"      -> NOT_WORD
+	      | "XOR"      -> XOR_WORD
+	      | "IMPLIES"  -> IMPLIES_WORD
+	      | "IFF"      -> IFF_WORD
+	      | _          -> ID (Lexing.lexeme lexbuf)
+	    }
 
   | "cmp(parallel=>1)"                  { CMP_1 }
   | "cmp(parallel=>1,sameDirection=>1)" { CMP_2 }

@@ -3,8 +3,10 @@
 
 type token = 
   | X_VAR
+  | XOR_WORD
   | WITH_METH
   | WIDTH_WORD
+  | WHEN_WORD
   | WHAT_WORD
   | VEC_LATEX
   | VECTOR_UNIT_PROB
@@ -14,6 +16,7 @@ type token =
   | UNIT_METH
   | UNION
   | UNDEFINE_METH
+  | TRUE_WORD
   | TO_WORD
   | TIMES_LATEX
   | THE_WORD
@@ -40,8 +43,10 @@ type token =
   | PGSTANDARD
   | PGML
   | PERIOD
+  | OR_WORD
   | OF_WORD
   | NUMBER of (float)
+  | NOT_WORD
   | NORM_METH
   | NEWLINE
   | NEG_INFINITY
@@ -60,6 +65,7 @@ type token =
   | LBRACE_LATEX
   | LBRACE
   | LANGLE_LATEX
+  | I_UNIT
   | IT_VAR_OPEN
   | IT_VAR_CLOSE
   | IT_MATH_OPEN
@@ -68,15 +74,22 @@ type token =
   | INTERSECT_METH
   | INT of (int)
   | INFINITY
+  | INDEFINITE_INTEGRAL_PROB
+  | IMPLIES_WORD
+  | IFF_WORD
   | ID of (string)
   | GT
   | GIVEN_PROB
   | GIVEN_FUN
   | GEQ_LATEX
+  | GEOM_SEQ_SUM_PROB
+  | GEOM_SEQ_NTH_PROB
   | F_FUN
   | FORMULA_METH
   | FAT_COMMA
+  | FALSE_WORD
   | EVAL_METH
+  | EVALUATE_BOOL_PROB
   | EQUAL_WORD
   | EQ
   | EOF
@@ -86,21 +99,33 @@ type token =
   | DOUBLE_QUOTE
   | DOCUMENT
   | DIV_OP
+  | DIV_LATEX
   | CUP
   | COS_OP
   | CONTEXT
   | COMPUTE_PROB
   | COMPUTE_METH
+  | COMPLEX_POWER_I_PROB
+  | COMPLEX_MOD_PROB
+  | COMPLEX_METH
+  | COMPLEX_CONJ_PROB
+  | COMPLEX_ARITH_PROB
   | COMMA
   | CMP_2
   | CMP_1
   | CDOT_LATEX
   | CAP
+  | BOOL_EQUIV_ANSWER_HINT
+  | BOOL_ANSWER_HINT
+  | BOOLEAN_EQUIV_PROB
   | BLANK
   | BEGIN_PGML
   | ARROW
+  | ARITH_SEQ_SUM_PROB
+  | ARITH_SEQ_NTH_PROB
   | ARE_METH
   | ANSWER_WORD
+  | AND_WORD
   | ADD_OP
   | ADD_METH
 
@@ -119,6 +144,217 @@ module MenhirInterpreter : sig
   include MenhirLib.IncrementalEngine.INCREMENTAL_ENGINE
     with type token = token
   
+  (* The indexed type of terminal symbols. *)
+  
+  type _ terminal = 
+    | T_error : unit terminal
+    | T_X_VAR : unit terminal
+    | T_XOR_WORD : unit terminal
+    | T_WITH_METH : unit terminal
+    | T_WIDTH_WORD : unit terminal
+    | T_WHEN_WORD : unit terminal
+    | T_WHAT_WORD : unit terminal
+    | T_VEC_LATEX : unit terminal
+    | T_VECTOR_UNIT_PROB : unit terminal
+    | T_VECTOR_SAME_PROB : unit terminal
+    | T_VECTOR_PARA_PROB : unit terminal
+    | T_VALUE_WORD : unit terminal
+    | T_UNIT_METH : unit terminal
+    | T_UNION : unit terminal
+    | T_UNDEFINE_METH : unit terminal
+    | T_TRUE_WORD : unit terminal
+    | T_TO_WORD : unit terminal
+    | T_TIMES_LATEX : unit terminal
+    | T_THE_WORD : unit terminal
+    | T_SUPPOSE_PROB : unit terminal
+    | T_SUB_OP : unit terminal
+    | T_SQRT_OP : unit terminal
+    | T_SIN_OP : unit terminal
+    | T_SINGLE_QUOTE : unit terminal
+    | T_SET_METH : unit terminal
+    | T_SET_DEF_METH : unit terminal
+    | T_SEMI : unit terminal
+    | T_RPAREN : unit terminal
+    | T_RIGHT_NORM_LATEX : unit terminal
+    | T_REDEFINE_METH : unit terminal
+    | T_REAL_METH : unit terminal
+    | T_RBRACKET : unit terminal
+    | T_RBRACE_LATEX : unit terminal
+    | T_RBRACE : unit terminal
+    | T_RANGLE_LATEX : unit terminal
+    | T_RANDOM_METH : unit terminal
+    | T_QUESTION_MARK : unit terminal
+    | T_POWER_OP : unit terminal
+    | T_PIPE : unit terminal
+    | T_PGSTANDARD : unit terminal
+    | T_PGML : unit terminal
+    | T_PERIOD : unit terminal
+    | T_OR_WORD : unit terminal
+    | T_OF_WORD : unit terminal
+    | T_NUMBER : (float) terminal
+    | T_NOT_WORD : unit terminal
+    | T_NORM_METH : unit terminal
+    | T_NEWLINE : unit terminal
+    | T_NEG_INFINITY : unit terminal
+    | T_NAT_LOG : unit terminal
+    | T_NAMING : unit terminal
+    | T_MUL_OP : unit terminal
+    | T_MATHOBJECTS : unit terminal
+    | T_MACRO : (string) terminal
+    | T_LT : unit terminal
+    | T_LPAREN : unit terminal
+    | T_LOADMACROS : unit terminal
+    | T_LN_OP : unit terminal
+    | T_LEQ_LATEX : unit terminal
+    | T_LEFT_NORM_LATEX : unit terminal
+    | T_LBRACKET : unit terminal
+    | T_LBRACE_LATEX : unit terminal
+    | T_LBRACE : unit terminal
+    | T_LANGLE_LATEX : unit terminal
+    | T_I_UNIT : unit terminal
+    | T_IT_VAR_OPEN : unit terminal
+    | T_IT_VAR_CLOSE : unit terminal
+    | T_IT_MATH_OPEN : unit terminal
+    | T_IT_MATH_CLOSE : unit terminal
+    | T_IS_WORD : unit terminal
+    | T_INTERSECT_METH : unit terminal
+    | T_INT : (int) terminal
+    | T_INFINITY : unit terminal
+    | T_INDEFINITE_INTEGRAL_PROB : unit terminal
+    | T_IMPLIES_WORD : unit terminal
+    | T_IFF_WORD : unit terminal
+    | T_ID : (string) terminal
+    | T_GT : unit terminal
+    | T_GIVEN_PROB : unit terminal
+    | T_GIVEN_FUN : unit terminal
+    | T_GEQ_LATEX : unit terminal
+    | T_GEOM_SEQ_SUM_PROB : unit terminal
+    | T_GEOM_SEQ_NTH_PROB : unit terminal
+    | T_F_FUN : unit terminal
+    | T_FORMULA_METH : unit terminal
+    | T_FAT_COMMA : unit terminal
+    | T_FALSE_WORD : unit terminal
+    | T_EVAL_METH : unit terminal
+    | T_EVALUATE_BOOL_PROB : unit terminal
+    | T_EQUAL_WORD : unit terminal
+    | T_EQ : unit terminal
+    | T_EOF : unit terminal
+    | T_END_PGML : unit terminal
+    | T_ENDDOCUMENT : unit terminal
+    | T_D_METH : unit terminal
+    | T_DOUBLE_QUOTE : unit terminal
+    | T_DOCUMENT : unit terminal
+    | T_DIV_OP : unit terminal
+    | T_DIV_LATEX : unit terminal
+    | T_CUP : unit terminal
+    | T_COS_OP : unit terminal
+    | T_CONTEXT : unit terminal
+    | T_COMPUTE_PROB : unit terminal
+    | T_COMPUTE_METH : unit terminal
+    | T_COMPLEX_POWER_I_PROB : unit terminal
+    | T_COMPLEX_MOD_PROB : unit terminal
+    | T_COMPLEX_METH : unit terminal
+    | T_COMPLEX_CONJ_PROB : unit terminal
+    | T_COMPLEX_ARITH_PROB : unit terminal
+    | T_COMMA : unit terminal
+    | T_CMP_2 : unit terminal
+    | T_CMP_1 : unit terminal
+    | T_CDOT_LATEX : unit terminal
+    | T_CAP : unit terminal
+    | T_BOOL_EQUIV_ANSWER_HINT : unit terminal
+    | T_BOOL_ANSWER_HINT : unit terminal
+    | T_BOOLEAN_EQUIV_PROB : unit terminal
+    | T_BLANK : unit terminal
+    | T_BEGIN_PGML : unit terminal
+    | T_ARROW : unit terminal
+    | T_ARITH_SEQ_SUM_PROB : unit terminal
+    | T_ARITH_SEQ_NTH_PROB : unit terminal
+    | T_ARE_METH : unit terminal
+    | T_ANSWER_WORD : unit terminal
+    | T_AND_WORD : unit terminal
+    | T_ADD_OP : unit terminal
+    | T_ADD_METH : unit terminal
+  
+  (* The indexed type of nonterminal symbols. *)
+  
+  type _ nonterminal = 
+    | N_vector_prob_list : (Ast.vector_prob_list) nonterminal
+    | N_vector_prob : (Ast.vector_prob) nonterminal
+    | N_vector_list : (Ast.vector_list) nonterminal
+    | N_variable_list : (Ast.answer_vars) nonterminal
+    | N_variable_declaration : (Ast.variable_declaration) nonterminal
+    | N_variable : (Ast.variable) nonterminal
+    | N_value : (Ast.value) nonterminal
+    | N_trig_function : (Ast.trig_function) nonterminal
+    | N_term : (Ast.term) nonterminal
+    | N_set_term : (Ast.set_term) nonterminal
+    | N_set_prob_list : (Ast.set_prob_list) nonterminal
+    | N_set_primary : (Ast.set_primary) nonterminal
+    | N_set_operation : (Ast.set_operation) nonterminal
+    | N_set_list : (Ast.set_list) nonterminal
+    | N_set_interval : (Ast.set_interval) nonterminal
+    | N_set_factor : (Ast.set_factor) nonterminal
+    | N_set_expr : (Ast.set_expr) nonterminal
+    | N_set_enum : (Ast.set_enum) nonterminal
+    | N_set_compute_term : (Ast.set_compute_term) nonterminal
+    | N_set_compute_interval : (Ast.set_compute_interval) nonterminal
+    | N_set_compute_factor : (Ast.set_compute_factor) nonterminal
+    | N_set_compute : (Ast.set_compute) nonterminal
+    | N_sequence_param : (int) nonterminal
+    | N_rational_function : (Ast.rational_function) nonterminal
+    | N_radical_function : (Ast.radical_function) nonterminal
+    | N_question_text : (Ast.question_text) nonterminal
+    | N_question_list : (Ast.question_list) nonterminal
+    | N_question_item : (Ast.question_item) nonterminal
+    | N_quadratic_function : (Ast.quadratic_function) nonterminal
+    | N_property : (Ast.property) nonterminal
+    | N_properties : (Ast.properties) nonterminal
+    | N_problem_section : (Ast.problem_section) nonterminal
+    | N_predicate : (Ast.predicate) nonterminal
+    | N_power_function : (Ast.power_function) nonterminal
+    | N_operator_list : (Ast.operator_list) nonterminal
+    | N_operator : (Ast.operator) nonterminal
+    | N_module_ : (Ast.module_) nonterminal
+    | N_math_object_method : (Ast.math_object_method) nonterminal
+    | N_math_expr : (Ast.math_expr) nonterminal
+    | N_main : (Ast.document) nonterminal
+    | N_macro : (Ast.macro) nonterminal
+    | N_log_function : (Ast.log_function) nonterminal
+    | N_linear_function : (Ast.linear_function) nonterminal
+    | N_key : (Ast.key) nonterminal
+    | N_intext_call : (Ast.intext_call) nonterminal
+    | N_interval_value : (Ast.interval_value) nonterminal
+    | N_int_with_sign : (int) nonterminal
+    | N_header : (Ast.header) nonterminal
+    | N_function_expr : (Ast.function_expr) nonterminal
+    | N_fun_or_var : (Ast.fun_or_var) nonterminal
+    | N_factor : (Ast.factor) nonterminal
+    | N_exp_function : (Ast.exp_function) nonterminal
+    | N_entry_list : (Ast.entry_list) nonterminal
+    | N_entry : (Ast.entry) nonterminal
+    | N_derivative_prob_list : (Ast.derivative_prob_list) nonterminal
+    | N_derivative_prob : (Ast.derivative_prob) nonterminal
+    | N_context_setup_list : (Ast.context_setup_list) nonterminal
+    | N_context_setup : (Ast.context_setup) nonterminal
+    | N_context_method : (Ast.context_method) nonterminal
+    | N_context_config : (Ast.context_config) nonterminal
+    | N_complex_num : (Ast.complex_num) nonterminal
+    | N_complex_expr : (Ast.complex_expr) nonterminal
+    | N_bool_expr : (Ast.bool_expr) nonterminal
+    | N_bool_assignment_list : (Ast.bool_assignment list) nonterminal
+    | N_bool_assignment : (Ast.bool_assignment) nonterminal
+    | N_answer_vars : (Ast.answer_vars) nonterminal
+    | N_answer_item : (Ast.answer_item) nonterminal
+  
+  (* The inspection API. *)
+  
+  include MenhirLib.IncrementalEngine.INSPECTION
+    with type 'a lr1state := 'a lr1state
+    with type production := production
+    with type 'a terminal := 'a terminal
+    with type 'a nonterminal := 'a nonterminal
+    with type 'a env := 'a env
+  
 end
 
 (* The entry point(s) to the incremental API. *)
@@ -131,699 +367,773 @@ end
 
 (* The unparsing API. *)
 
+(* Constructing disjunctive concrete syntax trees (DCSTs). *)
+
 module DCST : sig
-  
-  (* The type of DCSTs for the nonterminal symbol [answer_item]. *)
-  
-  type answer_item
-  
-  (* The type of DCSTs for the nonterminal symbol [answer_vars]. *)
-  
-  type answer_vars
-  
-  (* The type of DCSTs for the nonterminal symbol [context_config]. *)
-  
-  type context_config
-  
-  (* The type of DCSTs for the nonterminal symbol [context_method]. *)
-  
-  type context_method
-  
-  (* The type of DCSTs for the nonterminal symbol [context_setup]. *)
-  
-  type context_setup
-  
-  (* The type of DCSTs for the nonterminal symbol [context_setup_list]. *)
-  
-  type context_setup_list
-  
-  (* The type of DCSTs for the nonterminal symbol [derivative_prob]. *)
-  
-  type derivative_prob
-  
-  (* The type of DCSTs for the nonterminal symbol [derivative_prob_list]. *)
-  
-  type derivative_prob_list
-  
-  (* The type of DCSTs for the nonterminal symbol [entry]. *)
-  
-  type entry
-  
-  (* The type of DCSTs for the nonterminal symbol [entry_list]. *)
-  
-  type entry_list
-  
-  (* The type of DCSTs for the nonterminal symbol [exp_function]. *)
-  
-  type exp_function
-  
-  (* The type of DCSTs for the nonterminal symbol [factor]. *)
-  
-  type factor
-  
-  (* The type of DCSTs for the nonterminal symbol [fun_or_var]. *)
-  
-  type fun_or_var
-  
-  (* The type of DCSTs for the nonterminal symbol [function_expr]. *)
-  
-  type function_expr
-  
-  (* The type of DCSTs for the nonterminal symbol [header]. *)
-  
-  type header
-  
-  (* The type of DCSTs for the nonterminal symbol [int_with_sign]. *)
-  
-  type int_with_sign
-  
-  (* The type of DCSTs for the nonterminal symbol [interval_value]. *)
-  
-  type interval_value
-  
-  (* The type of DCSTs for the nonterminal symbol [intext_call]. *)
-  
-  type intext_call
-  
-  (* The type of DCSTs for the nonterminal symbol [key]. *)
-  
-  type key
-  
-  (* The type of DCSTs for the nonterminal symbol [linear_function]. *)
-  
-  type linear_function
-  
-  (* The type of DCSTs for the nonterminal symbol [log_function]. *)
-  
-  type log_function
-  
-  (* The type of DCSTs for the nonterminal symbol [macro]. *)
-  
-  type macro
-  
-  (* The type of DCSTs for the nonterminal symbol [main]. *)
-  
-  type main
-  
-  (* The type of DCSTs for the nonterminal symbol [math_expr]. *)
-  
-  type math_expr
-  
-  (* The type of DCSTs for the nonterminal symbol [math_object_method]. *)
-  
-  type math_object_method
-  
-  (* The type of DCSTs for the nonterminal symbol [module_]. *)
-  
-  type module_
-  
-  (* The type of DCSTs for the nonterminal symbol [operator]. *)
-  
-  type operator
-  
-  (* The type of DCSTs for the nonterminal symbol [operator_list]. *)
-  
-  type operator_list
-  
-  (* The type of DCSTs for the nonterminal symbol [power_function]. *)
-  
-  type power_function
-  
-  (* The type of DCSTs for the nonterminal symbol [predicate]. *)
-  
-  type predicate
-  
-  (* The type of DCSTs for the nonterminal symbol [problem_section]. *)
-  
-  type problem_section
-  
-  (* The type of DCSTs for the nonterminal symbol [properties]. *)
-  
-  type properties
-  
-  (* The type of DCSTs for the nonterminal symbol [property]. *)
-  
-  type property
-  
-  (* The type of DCSTs for the nonterminal symbol [quadratic_function]. *)
-  
-  type quadratic_function
-  
-  (* The type of DCSTs for the nonterminal symbol [question_item]. *)
-  
-  type question_item
-  
-  (* The type of DCSTs for the nonterminal symbol [question_list]. *)
-  
-  type question_list
-  
-  (* The type of DCSTs for the nonterminal symbol [question_text]. *)
-  
-  type question_text
-  
-  (* The type of DCSTs for the nonterminal symbol [radical_function]. *)
-  
-  type radical_function
-  
-  (* The type of DCSTs for the nonterminal symbol [rational_function]. *)
-  
-  type rational_function
-  
-  (* The type of DCSTs for the nonterminal symbol [set_compute]. *)
-  
-  type set_compute
-  
-  (* The type of DCSTs for the nonterminal symbol [set_compute_factor]. *)
-  
-  type set_compute_factor
-  
-  (* The type of DCSTs for the nonterminal symbol [set_compute_interval]. *)
-  
-  type set_compute_interval
-  
-  (* The type of DCSTs for the nonterminal symbol [set_compute_term]. *)
-  
-  type set_compute_term
-  
-  (* The type of DCSTs for the nonterminal symbol [set_enum]. *)
-  
-  type set_enum
-  
-  (* The type of DCSTs for the nonterminal symbol [set_expr]. *)
-  
-  type set_expr
-  
-  (* The type of DCSTs for the nonterminal symbol [set_factor]. *)
-  
-  type set_factor
-  
-  (* The type of DCSTs for the nonterminal symbol [set_interval]. *)
-  
-  type set_interval
-  
-  (* The type of DCSTs for the nonterminal symbol [set_list]. *)
-  
-  type set_list
-  
-  (* The type of DCSTs for the nonterminal symbol [set_operation]. *)
-  
-  type set_operation
-  
-  (* The type of DCSTs for the nonterminal symbol [set_primary]. *)
-  
-  type set_primary
-  
-  (* The type of DCSTs for the nonterminal symbol [set_prob_list]. *)
-  
-  type set_prob_list
-  
-  (* The type of DCSTs for the nonterminal symbol [set_term]. *)
-  
-  type set_term
-  
-  (* The type of DCSTs for the nonterminal symbol [term]. *)
-  
-  type term
-  
-  (* The type of DCSTs for the nonterminal symbol [trig_function]. *)
-  
-  type trig_function
-  
-  (* The type of DCSTs for the nonterminal symbol [value]. *)
-  
-  type value
-  
-  (* The type of DCSTs for the nonterminal symbol [variable]. *)
-  
-  type variable
-  
-  (* The type of DCSTs for the nonterminal symbol [variable_declaration]. *)
-  
-  type variable_declaration
-  
-  (* The type of DCSTs for the nonterminal symbol [variable_list]. *)
-  
-  type variable_list
-  
-  (* The type of DCSTs for the nonterminal symbol [vector_list]. *)
-  
-  type vector_list
-  
-  (* The type of DCSTs for the nonterminal symbol [vector_prob]. *)
-  
-  type vector_prob
   
   (* The type of DCSTs for the nonterminal symbol [vector_prob_list]. *)
   
   type vector_prob_list
   
-  (* The binary choice constructor at type [answer_item]. *)
+  (* The type of DCSTs for the nonterminal symbol [vector_prob]. *)
   
-  val answer_item_choice: answer_item -> answer_item -> answer_item
+  type vector_prob
   
-  (* answer_item -> variable *)
+  (* The type of DCSTs for the nonterminal symbol [vector_list]. *)
   
-  val ans_var: variable -> answer_item
+  type vector_list
   
-  (* The binary choice constructor at type [answer_vars]. *)
+  (* The type of DCSTs for the nonterminal symbol [variable_list]. *)
   
-  val answer_vars_choice: answer_vars -> answer_vars -> answer_vars
+  type variable_list
   
-  (* answer_vars -> variable_list *)
+  (* The type of DCSTs for the nonterminal symbol [variable_declaration]. *)
   
-  val answer_vars: variable_list -> answer_vars
+  type variable_declaration
   
-  (* The binary choice constructor at type [context_config]. *)
+  (* The type of DCSTs for the nonterminal symbol [variable]. *)
   
-  val context_config_choice: context_config -> context_config -> context_config
+  type variable
   
-  (* context_config -> CONTEXT LPAREN RPAREN ARROW module_ ARROW context_method SEMI NEWLINE context_config *)
+  (* The type of DCSTs for the nonterminal symbol [value]. *)
   
-  val cfg_cons: module_ -> context_method -> context_config -> context_config
+  type value
   
-  (* context_config -> CONTEXT LPAREN RPAREN ARROW module_ ARROW context_method SEMI NEWLINE *)
+  (* The type of DCSTs for the nonterminal symbol [trig_function]. *)
   
-  val cfg_last: module_ -> context_method -> context_config
+  type trig_function
   
-  (* The binary choice constructor at type [context_method]. *)
+  (* The type of DCSTs for the nonterminal symbol [term]. *)
   
-  val context_method_choice: context_method -> context_method -> context_method
+  type term
   
-  (* context_method -> ADD_METH LPAREN entry_list RPAREN *)
+  (* The type of DCSTs for the nonterminal symbol [set_term]. *)
   
-  val cm_add: entry_list -> context_method
+  type set_term
   
-  (* context_method -> SET_METH LPAREN entry_list RPAREN *)
+  (* The type of DCSTs for the nonterminal symbol [set_prob_list]. *)
   
-  val cm_set: entry_list -> context_method
+  type set_prob_list
   
-  (* context_method -> ARE_METH LPAREN entry_list RPAREN *)
+  (* The type of DCSTs for the nonterminal symbol [set_primary]. *)
   
-  val cm_are: entry_list -> context_method
+  type set_primary
   
-  (* context_method -> UNDEFINE_METH LPAREN operator_list RPAREN *)
+  (* The type of DCSTs for the nonterminal symbol [set_operation]. *)
   
-  val cm_undefine: operator_list -> context_method
+  type set_operation
   
-  (* context_method -> REDEFINE_METH LPAREN operator_list RPAREN *)
+  (* The type of DCSTs for the nonterminal symbol [set_list]. *)
   
-  val cm_redefine: operator_list -> context_method
+  type set_list
   
-  (* The binary choice constructor at type [context_setup]. *)
+  (* The type of DCSTs for the nonterminal symbol [set_interval]. *)
   
-  val context_setup_choice: context_setup -> context_setup -> context_setup
+  type set_interval
   
-  (* context_setup -> CONTEXT LPAREN DOUBLE_QUOTE ID DOUBLE_QUOTE RPAREN SEMI NEWLINE context_config *)
+  (* The type of DCSTs for the nonterminal symbol [set_factor]. *)
   
-  val ctx_with_cfg: (string) -> context_config -> context_setup
+  type set_factor
   
-  (* context_setup -> CONTEXT LPAREN DOUBLE_QUOTE ID DOUBLE_QUOTE RPAREN SEMI NEWLINE *)
+  (* The type of DCSTs for the nonterminal symbol [set_expr]. *)
   
-  val ctx_only: (string) -> context_setup
+  type set_expr
   
-  (* The binary choice constructor at type [context_setup_list]. *)
+  (* The type of DCSTs for the nonterminal symbol [set_enum]. *)
   
-  val context_setup_list_choice: context_setup_list -> context_setup_list -> context_setup_list
+  type set_enum
   
-  (* context_setup_list -> context_setup NEWLINE answer_vars NEWLINE context_setup_list *)
+  (* The type of DCSTs for the nonterminal symbol [set_compute_term]. *)
   
-  val ctx_setup_vars_cons: context_setup -> answer_vars -> context_setup_list -> context_setup_list
+  type set_compute_term
   
-  (* context_setup_list -> context_setup NEWLINE answer_vars NEWLINE *)
+  (* The type of DCSTs for the nonterminal symbol [set_compute_interval]. *)
   
-  val ctx_setup_vars_last: context_setup -> answer_vars -> context_setup_list
+  type set_compute_interval
   
-  (* context_setup_list -> context_setup NEWLINE context_setup_list *)
+  (* The type of DCSTs for the nonterminal symbol [set_compute_factor]. *)
   
-  val ctx_setup_no_vars_cons: context_setup -> context_setup_list -> context_setup_list
+  type set_compute_factor
   
-  (* context_setup_list -> context_setup NEWLINE *)
+  (* The type of DCSTs for the nonterminal symbol [set_compute]. *)
   
-  val ctx_setup_no_vars_last: context_setup -> context_setup_list
+  type set_compute
   
-  (* The binary choice constructor at type [derivative_prob]. *)
+  (* The type of DCSTs for the nonterminal symbol [sequence_param]. *)
   
-  val derivative_prob_choice: derivative_prob -> derivative_prob -> derivative_prob
+  type sequence_param
   
-  (* derivative_prob -> IT_MATH_OPEN F_FUN SINGLE_QUOTE LPAREN X_VAR RPAREN EQ IT_MATH_CLOSE BLANK LBRACE NAMING ID ARROW D_METH LPAREN RPAREN RBRACE *)
+  (* The type of DCSTs for the nonterminal symbol [rational_function]. *)
   
-  val der_prob_1: (string) -> derivative_prob
+  type rational_function
   
-  (* derivative_prob -> IT_MATH_OPEN F_FUN SINGLE_QUOTE LPAREN INT RPAREN EQ IT_MATH_CLOSE BLANK LBRACE NAMING ID ARROW D_METH LPAREN RPAREN ARROW EVAL_METH LPAREN X_VAR FAT_COMMA INT RPAREN RBRACE *)
+  (* The type of DCSTs for the nonterminal symbol [radical_function]. *)
   
-  val der_prob_2: (int) -> (string) -> (int) -> derivative_prob
+  type radical_function
   
-  (* derivative_prob -> IT_MATH_OPEN F_FUN SINGLE_QUOTE SINGLE_QUOTE LPAREN X_VAR RPAREN EQ IT_MATH_CLOSE BLANK LBRACE NAMING ID ARROW D_METH LPAREN RPAREN ARROW D_METH LPAREN RPAREN RBRACE *)
+  (* The type of DCSTs for the nonterminal symbol [question_text]. *)
   
-  val der_prob_3: (string) -> derivative_prob
+  type question_text
   
-  (* The binary choice constructor at type [derivative_prob_list]. *)
+  (* The type of DCSTs for the nonterminal symbol [question_list]. *)
   
-  val derivative_prob_list_choice: derivative_prob_list -> derivative_prob_list -> derivative_prob_list
+  type question_list
   
-  (* derivative_prob_list -> SUB_OP derivative_prob NEWLINE derivative_prob_list *)
+  (* The type of DCSTs for the nonterminal symbol [question_item]. *)
   
-  val der_prob_list_cons: derivative_prob -> derivative_prob_list -> derivative_prob_list
+  type question_item
   
-  (* derivative_prob_list -> SUB_OP derivative_prob NEWLINE *)
+  (* The type of DCSTs for the nonterminal symbol [quadratic_function]. *)
   
-  val der_prob_list_last: derivative_prob -> derivative_prob_list
+  type quadratic_function
   
-  (* The binary choice constructor at type [entry]. *)
+  (* The type of DCSTs for the nonterminal symbol [property]. *)
   
-  val entry_choice: entry -> entry -> entry
+  type property
   
-  (* entry -> key FAT_COMMA LBRACE RBRACE *)
+  (* The type of DCSTs for the nonterminal symbol [properties]. *)
   
-  val entry_map_none: key -> entry
+  type properties
   
-  (* entry -> key FAT_COMMA LBRACE properties RBRACE *)
+  (* The type of DCSTs for the nonterminal symbol [problem_section]. *)
   
-  val entry_map: key -> properties -> entry
+  type problem_section
   
-  (* entry -> property *)
+  (* The type of DCSTs for the nonterminal symbol [predicate]. *)
   
-  val entry_prop: property -> entry
+  type predicate
   
-  (* The binary choice constructor at type [entry_list]. *)
+  (* The type of DCSTs for the nonterminal symbol [power_function]. *)
   
-  val entry_list_choice: entry_list -> entry_list -> entry_list
+  type power_function
   
-  (* entry_list -> entry COMMA entry_list *)
+  (* The type of DCSTs for the nonterminal symbol [operator_list]. *)
   
-  val entry_list: entry -> entry_list -> entry_list
+  type operator_list
   
-  (* entry_list -> entry *)
+  (* The type of DCSTs for the nonterminal symbol [operator]. *)
   
-  val entry_list_single: entry -> entry_list
+  type operator
   
-  (* The binary choice constructor at type [exp_function]. *)
+  (* The type of DCSTs for the nonterminal symbol [module_]. *)
   
-  val exp_function_choice: exp_function -> exp_function -> exp_function
+  type module_
   
-  (* exp_function -> NAT_LOG POWER_OP LPAREN fun_or_var RPAREN *)
+  (* The type of DCSTs for the nonterminal symbol [math_object_method]. *)
   
-  val exp: fun_or_var -> exp_function
+  type math_object_method
   
-  (* The binary choice constructor at type [factor]. *)
+  (* The type of DCSTs for the nonterminal symbol [math_expr]. *)
   
-  val factor_choice: factor -> factor -> factor
+  type math_expr
   
-  (* factor -> LPAREN math_expr RPAREN *)
+  (* The type of DCSTs for the nonterminal symbol [main]. *)
   
-  val fparen: math_expr -> factor
+  type main
   
-  (* factor -> NUMBER *)
+  (* The type of DCSTs for the nonterminal symbol [macro]. *)
   
-  val fnum: (float) -> factor
+  type macro
   
-  (* factor -> INT *)
+  (* The type of DCSTs for the nonterminal symbol [log_function]. *)
   
-  val fint: (int) -> factor
+  type log_function
   
-  (* The binary choice constructor at type [fun_or_var]. *)
+  (* The type of DCSTs for the nonterminal symbol [linear_function]. *)
   
-  val fun_or_var_choice: fun_or_var -> fun_or_var -> fun_or_var
+  type linear_function
   
-  (* fun_or_var -> X_VAR *)
+  (* The type of DCSTs for the nonterminal symbol [key]. *)
   
-  val var_x: unit -> fun_or_var
+  type key
   
-  (* fun_or_var -> LPAREN function_expr RPAREN *)
+  (* The type of DCSTs for the nonterminal symbol [intext_call]. *)
   
-  val func: function_expr -> fun_or_var
+  type intext_call
   
-  (* The binary choice constructor at type [function_expr]. *)
+  (* The type of DCSTs for the nonterminal symbol [interval_value]. *)
   
-  val function_expr_choice: function_expr -> function_expr -> function_expr
+  type interval_value
   
-  (* function_expr -> linear_function *)
+  (* The type of DCSTs for the nonterminal symbol [int_with_sign]. *)
   
-  val linear_fun: linear_function -> function_expr
+  type int_with_sign
   
-  (* function_expr -> quadratic_function *)
+  (* The type of DCSTs for the nonterminal symbol [header]. *)
   
-  val quadratic_fun: quadratic_function -> function_expr
+  type header
   
-  (* function_expr -> power_function *)
+  (* The type of DCSTs for the nonterminal symbol [function_expr]. *)
   
-  val power_fun: power_function -> function_expr
+  type function_expr
   
-  (* function_expr -> radical_function *)
+  (* The type of DCSTs for the nonterminal symbol [fun_or_var]. *)
   
-  val radical_fun: radical_function -> function_expr
+  type fun_or_var
   
-  (* function_expr -> rational_function *)
+  (* The type of DCSTs for the nonterminal symbol [factor]. *)
   
-  val rational_fun: rational_function -> function_expr
+  type factor
   
-  (* function_expr -> log_function *)
+  (* The type of DCSTs for the nonterminal symbol [exp_function]. *)
   
-  val log_fun: log_function -> function_expr
+  type exp_function
   
-  (* function_expr -> trig_function *)
+  (* The type of DCSTs for the nonterminal symbol [entry_list]. *)
   
-  val trig_fun: trig_function -> function_expr
+  type entry_list
   
-  (* function_expr -> exp_function *)
+  (* The type of DCSTs for the nonterminal symbol [entry]. *)
   
-  val exp_fun: exp_function -> function_expr
+  type entry
   
-  (* The binary choice constructor at type [header]. *)
+  (* The type of DCSTs for the nonterminal symbol [derivative_prob_list]. *)
   
-  val header_choice: header -> header -> header
+  type derivative_prob_list
   
-  (* header -> LOADMACROS LPAREN DOUBLE_QUOTE PGSTANDARD DOUBLE_QUOTE COMMA DOUBLE_QUOTE MATHOBJECTS DOUBLE_QUOTE COMMA DOUBLE_QUOTE PGML DOUBLE_QUOTE COMMA macro RPAREN SEMI NEWLINE *)
+  (* The type of DCSTs for the nonterminal symbol [derivative_prob]. *)
   
-  val header_with_macro: macro -> header
+  type derivative_prob
   
-  (* header -> LOADMACROS LPAREN DOUBLE_QUOTE PGSTANDARD DOUBLE_QUOTE COMMA DOUBLE_QUOTE MATHOBJECTS DOUBLE_QUOTE COMMA DOUBLE_QUOTE PGML DOUBLE_QUOTE RPAREN SEMI NEWLINE *)
+  (* The type of DCSTs for the nonterminal symbol [context_setup_list]. *)
   
-  val header_simple: unit -> header
+  type context_setup_list
   
-  (* The binary choice constructor at type [int_with_sign]. *)
+  (* The type of DCSTs for the nonterminal symbol [context_setup]. *)
   
-  val int_with_sign_choice: int_with_sign -> int_with_sign -> int_with_sign
+  type context_setup
   
-  (* int_with_sign -> SUB_OP INT *)
+  (* The type of DCSTs for the nonterminal symbol [context_method]. *)
   
-  val negative_int: (int) -> int_with_sign
+  type context_method
   
-  (* int_with_sign -> INT *)
+  (* The type of DCSTs for the nonterminal symbol [context_config]. *)
   
-  val positive_int: (int) -> int_with_sign
+  type context_config
   
-  (* The binary choice constructor at type [interval_value]. *)
+  (* The type of DCSTs for the nonterminal symbol [complex_num]. *)
   
-  val interval_value_choice: interval_value -> interval_value -> interval_value
+  type complex_num
   
-  (* interval_value -> int_with_sign *)
+  (* The type of DCSTs for the nonterminal symbol [complex_expr]. *)
   
-  val interval_int: int_with_sign -> interval_value
+  type complex_expr
   
-  (* interval_value -> INFINITY *)
+  (* The type of DCSTs for the nonterminal symbol [bool_expr]. *)
   
-  val interval_infinity: unit -> interval_value
+  type bool_expr
   
-  (* interval_value -> NEG_INFINITY *)
+  (* The type of DCSTs for the nonterminal symbol [bool_assignment_list]. *)
   
-  val interval_neg_infinity: unit -> interval_value
+  type bool_assignment_list
   
-  (* The binary choice constructor at type [intext_call]. *)
+  (* The type of DCSTs for the nonterminal symbol [bool_assignment]. *)
   
-  val intext_call_choice: intext_call -> intext_call -> intext_call
+  type bool_assignment
   
-  (* intext_call -> IT_VAR_OPEN variable IT_VAR_CLOSE *)
+  (* The type of DCSTs for the nonterminal symbol [answer_vars]. *)
   
-  val ict_varv: variable -> intext_call
+  type answer_vars
   
-  (* intext_call -> IT_MATH_OPEN math_expr IT_MATH_CLOSE *)
+  (* The type of DCSTs for the nonterminal symbol [answer_item]. *)
   
-  val ict_math: math_expr -> intext_call
+  type answer_item
   
-  (* The binary choice constructor at type [key]. *)
+  (* The binary choice constructor at type [vector_prob_list]. *)
   
-  val key_choice: key -> key -> key
+  val vector_prob_list_choice: vector_prob_list -> vector_prob_list -> vector_prob_list
   
-  (* key -> NAMING ID *)
+  (* vector_prob_list -> SUB_OP vector_prob NEWLINE vector_prob_list *)
   
-  val key_ident: (string) -> key
+  val vec_prob_list_cons: vector_prob -> vector_prob_list -> vector_prob_list
   
-  (* key -> ID *)
+  (* vector_prob_list -> SUB_OP vector_prob NEWLINE *)
   
-  val key_str: (string) -> key
+  val vec_prob_list_last: vector_prob -> vector_prob_list
   
-  (* The binary choice constructor at type [linear_function]. *)
+  (* The binary choice constructor at type [vector_prob]. *)
   
-  val linear_function_choice: linear_function -> linear_function -> linear_function
+  val vector_prob_choice: vector_prob -> vector_prob -> vector_prob
   
-  (* linear_function -> fun_or_var ADD_OP INT *)
+  (* vector_prob -> IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE CDOT_LATEX VEC_LATEX LBRACE ID RBRACE EQ IT_MATH_CLOSE BLANK LBRACE COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN PERIOD COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN RBRACE *)
   
-  val fun_add_int: fun_or_var -> (int) -> linear_function
+  val vec_prob_1: (string) -> (string) -> set_enum -> set_enum -> vector_prob
   
-  (* linear_function -> fun_or_var SUB_OP INT *)
+  (* vector_prob -> IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE TIMES_LATEX VEC_LATEX LBRACE ID RBRACE EQ IT_MATH_CLOSE BLANK LBRACE COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN X_VAR COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN RBRACE *)
   
-  val fun_sub_int: fun_or_var -> (int) -> linear_function
+  val vec_prob_2: (string) -> (string) -> set_enum -> set_enum -> vector_prob
   
-  (* linear_function -> INT SUB_OP fun_or_var *)
+  (* vector_prob -> IT_MATH_OPEN LEFT_NORM_LATEX VEC_LATEX LBRACE ID RBRACE RIGHT_NORM_LATEX EQ IT_MATH_CLOSE BLANK LBRACE NORM_METH LPAREN COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN RPAREN RBRACE *)
   
-  val int_sub_fun: (int) -> fun_or_var -> linear_function
+  val vec_prob_3: (string) -> set_enum -> vector_prob
   
-  (* linear_function -> INT MUL_OP fun_or_var *)
+  (* vector_prob -> VECTOR_UNIT_PROB IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE IT_MATH_CLOSE PERIOD BLANK LBRACE UNIT_METH LPAREN COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN RPAREN RBRACE *)
   
-  val int_mul_fun: (int) -> fun_or_var -> linear_function
+  val vec_prob_4: (string) -> set_enum -> vector_prob
   
-  (* linear_function -> fun_or_var MUL_OP INT *)
+  (* vector_prob -> VECTOR_PARA_PROB IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE IT_MATH_CLOSE PERIOD BLANK LBRACE COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN ARROW CMP_1 RBRACE *)
   
-  val fun_mul_int: fun_or_var -> (int) -> linear_function
+  val vec_prob_5: (string) -> set_enum -> vector_prob
   
-  (* The binary choice constructor at type [log_function]. *)
+  (* vector_prob -> VECTOR_SAME_PROB IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE IT_MATH_CLOSE PERIOD BLANK LBRACE COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN ARROW CMP_2 RBRACE *)
   
-  val log_function_choice: log_function -> log_function -> log_function
+  val vec_prob_6: (string) -> set_enum -> vector_prob
   
-  (* log_function -> LN_OP LPAREN fun_or_var RPAREN *)
+  (* The binary choice constructor at type [vector_list]. *)
   
-  val ln_fun: fun_or_var -> log_function
+  val vector_list_choice: vector_list -> vector_list -> vector_list
   
-  (* The binary choice constructor at type [macro]. *)
+  (* vector_list -> SUB_OP IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE EQ LANGLE_LATEX set_enum RANGLE_LATEX IT_MATH_CLOSE NEWLINE vector_list *)
   
-  val macro_choice: macro -> macro -> macro
+  val vec_list_cons: (string) -> set_enum -> vector_list -> vector_list
   
-  (* macro -> DOUBLE_QUOTE MACRO DOUBLE_QUOTE COMMA macro *)
+  (* vector_list -> SUB_OP IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE EQ LANGLE_LATEX set_enum RANGLE_LATEX IT_MATH_CLOSE NEWLINE *)
   
-  val macro_cons: (string) -> macro -> macro
+  val vec_list_last: (string) -> set_enum -> vector_list
   
-  (* macro -> DOUBLE_QUOTE MACRO DOUBLE_QUOTE *)
+  (* The binary choice constructor at type [variable_list]. *)
   
-  val macro_atom: (string) -> macro
+  val variable_list_choice: variable_list -> variable_list -> variable_list
   
-  (* The binary choice constructor at type [main]. *)
+  (* variable_list -> variable_declaration NEWLINE variable_list *)
   
-  val main_choice: main -> main -> main
+  val var_list: variable_declaration -> variable_list -> variable_list
   
-  (* main -> DOCUMENT LPAREN RPAREN SEMI NEWLINE header context_setup_list problem_section ENDDOCUMENT LPAREN RPAREN SEMI EOF *)
+  (* variable_list -> variable_declaration NEWLINE *)
   
-  val doc_no_sol: header -> context_setup_list -> problem_section -> main
+  val var_list_single: variable_declaration -> variable_list
   
-  (* The binary choice constructor at type [math_expr]. *)
+  (* The binary choice constructor at type [variable_declaration]. *)
   
-  val math_expr_choice: math_expr -> math_expr -> math_expr
+  val variable_declaration_choice: variable_declaration -> variable_declaration -> variable_declaration
   
-  (* math_expr -> math_expr ADD_OP term *)
+  (* variable_declaration -> NAMING ID EQ variable SEMI *)
   
-  val madd: math_expr -> term -> math_expr
+  val var_decl: (string) -> variable -> variable_declaration
   
-  (* math_expr -> math_expr SUB_OP term *)
+  (* The binary choice constructor at type [variable]. *)
   
-  val msub: math_expr -> term -> math_expr
+  val variable_choice: variable -> variable -> variable
   
-  (* math_expr -> term *)
+  (* variable -> value *)
   
-  val mterm: term -> math_expr
+  val var_value: value -> variable
   
-  (* The binary choice constructor at type [math_object_method]. *)
+  (* variable -> math_object_method *)
   
-  val math_object_method_choice: math_object_method -> math_object_method -> math_object_method
+  val var_meth: math_object_method -> variable
   
-  (* math_object_method -> RANDOM_METH LPAREN INT COMMA INT COMMA INT RPAREN *)
+  (* variable -> NAMING ID ARROW math_object_method *)
   
-  val meth_rand: (int) -> (int) -> (int) -> math_object_method
+  val var_field: (string) -> math_object_method -> variable
   
-  (* math_object_method -> FORMULA_METH LPAREN SINGLE_QUOTE math_expr SINGLE_QUOTE RPAREN *)
+  (* variable -> math_object_method ARROW math_object_method *)
   
-  val meth_form: math_expr -> math_object_method
+  val var_chain: math_object_method -> math_object_method -> variable
   
-  (* math_object_method -> FORMULA_METH LPAREN DOUBLE_QUOTE function_expr DOUBLE_QUOTE RPAREN *)
+  (* The binary choice constructor at type [value]. *)
   
-  val meth_form_fun: function_expr -> math_object_method
+  val value_choice: value -> value -> value
   
-  (* math_object_method -> REAL_METH LPAREN value RPAREN *)
+  (* value -> SUB_OP INT *)
   
-  val meth_real: value -> math_object_method
+  val value_int_neg: (int) -> value
   
-  (* math_object_method -> D_METH LPAREN RPAREN *)
+  (* value -> INT *)
   
-  val meth_d_none: unit -> math_object_method
+  val value_int_pos: (int) -> value
   
-  (* math_object_method -> D_METH LPAREN SINGLE_QUOTE ID SINGLE_QUOTE RPAREN *)
+  (* value -> SUB_OP NUMBER *)
   
-  val meth_d: (string) -> math_object_method
+  val value_num_neg: (float) -> value
   
-  (* math_object_method -> EVAL_METH LPAREN property RPAREN *)
+  (* value -> NUMBER *)
   
-  val meth_eval: property -> math_object_method
+  val value_num_pos: (float) -> value
   
-  (* math_object_method -> WITH_METH LPAREN property RPAREN *)
+  (* value -> DOUBLE_QUOTE ID DOUBLE_QUOTE *)
   
-  val meth_with: property -> math_object_method
+  val value_str_dou: (string) -> value
   
-  (* math_object_method -> SET_DEF_METH LPAREN set_enum RPAREN *)
+  (* value -> SINGLE_QUOTE ID SINGLE_QUOTE *)
   
-  val meth_set: set_enum -> math_object_method
+  val value_str_sin: (string) -> value
   
-  (* math_object_method -> COMPUTE_METH LPAREN DOUBLE_QUOTE set_compute DOUBLE_QUOTE RPAREN *)
+  (* value -> NAMING ID *)
   
-  val meth_compute: set_compute -> math_object_method
+  val value_ident: (string) -> value
   
-  (* math_object_method -> INTERSECT_METH LPAREN variable RPAREN *)
+  (* The binary choice constructor at type [trig_function]. *)
   
-  val meth_intersect: variable -> math_object_method
+  val trig_function_choice: trig_function -> trig_function -> trig_function
   
-  (* The binary choice constructor at type [module_]. *)
+  (* trig_function -> SIN_OP LPAREN fun_or_var RPAREN *)
   
-  val module__choice: module_ -> module_ -> module_
+  val trig_sin: fun_or_var -> trig_function
   
-  (* module_ -> ID *)
+  (* trig_function -> COS_OP LPAREN fun_or_var RPAREN *)
   
-  val module_: (string) -> module_
+  val trig_cos: fun_or_var -> trig_function
   
-  (* The binary choice constructor at type [operator]. *)
+  (* The binary choice constructor at type [term]. *)
   
-  val operator_choice: operator -> operator -> operator
+  val term_choice: term -> term -> term
   
-  (* operator -> ADD_OP *)
+  (* term -> term MUL_OP factor *)
   
-  val operator_add: unit -> operator
+  val tmul: term -> factor -> term
   
-  (* operator -> SUB_OP *)
+  (* term -> term DIV_OP factor *)
   
-  val operator_sub: unit -> operator
+  val tdiv: term -> factor -> term
   
-  (* operator -> MUL_OP *)
+  (* term -> term CDOT_LATEX factor *)
   
-  val operator_mul: unit -> operator
+  val tmul_latex: term -> factor -> term
   
-  (* operator -> DIV_OP *)
+  (* term -> term DIV_LATEX factor *)
   
-  val operator_div: unit -> operator
+  val tdiv_latex: term -> factor -> term
   
-  (* The binary choice constructor at type [operator_list]. *)
+  (* term -> factor *)
   
-  val operator_list_choice: operator_list -> operator_list -> operator_list
+  val tfac: factor -> term
   
-  (* operator_list -> DOUBLE_QUOTE operator DOUBLE_QUOTE COMMA operator_list *)
+  (* The binary choice constructor at type [set_term]. *)
   
-  val operator_list_dou: operator -> operator_list -> operator_list
+  val set_term_choice: set_term -> set_term -> set_term
   
-  (* operator_list -> SINGLE_QUOTE operator SINGLE_QUOTE COMMA operator_list *)
+  (* set_term -> set_term CAP set_factor *)
   
-  val operator_list_sin: operator -> operator_list -> operator_list
+  val set_op_inter: set_term -> set_factor -> set_term
   
-  (* operator_list -> DOUBLE_QUOTE operator DOUBLE_QUOTE *)
+  (* set_term -> set_factor *)
   
-  val operator_list_single_dou: operator -> operator_list
+  val set_op_factor: set_factor -> set_term
   
-  (* operator_list -> SINGLE_QUOTE operator SINGLE_QUOTE *)
+  (* The binary choice constructor at type [set_prob_list]. *)
   
-  val operator_list_single_sin: operator -> operator_list
+  val set_prob_list_choice: set_prob_list -> set_prob_list -> set_prob_list
   
-  (* The binary choice constructor at type [power_function]. *)
+  (* set_prob_list -> SUB_OP IT_MATH_OPEN set_operation EQ IT_MATH_CLOSE BLANK LBRACE answer_item RBRACE NEWLINE set_prob_list *)
   
-  val power_function_choice: power_function -> power_function -> power_function
+  val set_prob_list_cons: set_operation -> answer_item -> set_prob_list -> set_prob_list
   
-  (* power_function -> fun_or_var POWER_OP INT *)
+  (* set_prob_list -> SUB_OP IT_MATH_OPEN set_operation EQ IT_MATH_CLOSE BLANK LBRACE answer_item RBRACE NEWLINE *)
   
-  val power_fun_int_expr: fun_or_var -> (int) -> power_function
+  val set_prob_list_last: set_operation -> answer_item -> set_prob_list
+  
+  (* The binary choice constructor at type [set_primary]. *)
+  
+  val set_primary_choice: set_primary -> set_primary -> set_primary
+  
+  (* set_primary -> ID *)
+  
+  val set_primary_var: (string) -> set_primary
+  
+  (* set_primary -> LPAREN set_operation RPAREN *)
+  
+  val set_primary_paren: set_operation -> set_primary
+  
+  (* The binary choice constructor at type [set_operation]. *)
+  
+  val set_operation_choice: set_operation -> set_operation -> set_operation
+  
+  (* set_operation -> set_operation CUP set_term *)
+  
+  val set_op_union: set_operation -> set_term -> set_operation
+  
+  (* set_operation -> set_term *)
+  
+  val set_op_term: set_term -> set_operation
+  
+  (* The binary choice constructor at type [set_list]. *)
+  
+  val set_list_choice: set_list -> set_list -> set_list
+  
+  (* set_list -> SUB_OP IT_MATH_OPEN ID EQ LBRACE_LATEX set_expr RBRACE_LATEX IT_MATH_CLOSE NEWLINE set_list *)
+  
+  val set_list_cons: (string) -> set_expr -> set_list -> set_list
+  
+  (* set_list -> SUB_OP IT_MATH_OPEN ID EQ LBRACE_LATEX set_expr RBRACE_LATEX IT_MATH_CLOSE NEWLINE *)
+  
+  val set_list_last: (string) -> set_expr -> set_list
+  
+  (* The binary choice constructor at type [set_interval]. *)
+  
+  val set_interval_choice: set_interval -> set_interval -> set_interval
+  
+  (* set_interval -> X_VAR PIPE predicate *)
+  
+  val set_interval: predicate -> set_interval
+  
+  (* The binary choice constructor at type [set_factor]. *)
+  
+  val set_factor_choice: set_factor -> set_factor -> set_factor
+  
+  (* set_factor -> set_factor SUB_OP set_primary *)
+  
+  val set_op_diff: set_factor -> set_primary -> set_factor
+  
+  (* set_factor -> set_primary *)
+  
+  val set_op_primary: set_primary -> set_factor
+  
+  (* The binary choice constructor at type [set_expr]. *)
+  
+  val set_expr_choice: set_expr -> set_expr -> set_expr
+  
+  (* set_expr -> set_enum *)
+  
+  val set_expr_enum: set_enum -> set_expr
+  
+  (* set_expr -> set_interval *)
+  
+  val set_expr_interval: set_interval -> set_expr
+  
+  (* The binary choice constructor at type [set_enum]. *)
+  
+  val set_enum_choice: set_enum -> set_enum -> set_enum
+  
+  (* set_enum -> int_with_sign COMMA set_enum *)
+  
+  val set_enum_cons: int_with_sign -> set_enum -> set_enum
+  
+  (* set_enum -> int_with_sign *)
+  
+  val set_enum_last: int_with_sign -> set_enum
+  
+  (* The binary choice constructor at type [set_compute_term]. *)
+  
+  val set_compute_term_choice: set_compute_term -> set_compute_term -> set_compute_term
+  
+  (* set_compute_term -> set_compute_term SUB_OP set_compute_factor *)
+  
+  val set_compute_diff: set_compute_term -> set_compute_factor -> set_compute_term
+  
+  (* set_compute_term -> set_compute_factor *)
+  
+  val set_compute_factor: set_compute_factor -> set_compute_term
+  
+  (* The binary choice constructor at type [set_compute_interval]. *)
+  
+  val set_compute_interval_choice: set_compute_interval -> set_compute_interval -> set_compute_interval
+  
+  (* set_compute_interval -> LPAREN interval_value COMMA interval_value RPAREN *)
+  
+  val set_compute_interval_open: interval_value -> interval_value -> set_compute_interval
+  
+  (* set_compute_interval -> LPAREN interval_value COMMA interval_value RBRACKET *)
+  
+  val set_compute_interval_left_open: interval_value -> interval_value -> set_compute_interval
+  
+  (* set_compute_interval -> LBRACKET interval_value COMMA interval_value RPAREN *)
+  
+  val set_compute_interval_right_open: interval_value -> interval_value -> set_compute_interval
+  
+  (* set_compute_interval -> LBRACKET interval_value COMMA interval_value RBRACKET *)
+  
+  val set_compute_interval_closed: interval_value -> interval_value -> set_compute_interval
+  
+  (* The binary choice constructor at type [set_compute_factor]. *)
+  
+  val set_compute_factor_choice: set_compute_factor -> set_compute_factor -> set_compute_factor
+  
+  (* set_compute_factor -> LPAREN set_compute RPAREN *)
+  
+  val set_compute_paren: set_compute -> set_compute_factor
+  
+  (* set_compute_factor -> LBRACE set_enum RBRACE *)
+  
+  val set_compute_enum: set_enum -> set_compute_factor
+  
+  (* set_compute_factor -> set_compute_interval *)
+  
+  val set_compute_interval: set_compute_interval -> set_compute_factor
+  
+  (* The binary choice constructor at type [set_compute]. *)
+  
+  val set_compute_choice: set_compute -> set_compute -> set_compute
+  
+  (* set_compute -> set_compute UNION set_compute_term *)
+  
+  val set_compute_union: set_compute -> set_compute_term -> set_compute
+  
+  (* set_compute -> set_compute_term *)
+  
+  val set_compute_term: set_compute_term -> set_compute
+  
+  (* The binary choice constructor at type [sequence_param]. *)
+  
+  val sequence_param_choice: sequence_param -> sequence_param -> sequence_param
+  
+  (* sequence_param -> IT_MATH_OPEN ID EQ int_with_sign IT_MATH_CLOSE *)
+  
+  val sequence_param: (string) -> int_with_sign -> sequence_param
+  
+  (* The binary choice constructor at type [rational_function]. *)
+  
+  val rational_function_choice: rational_function -> rational_function -> rational_function
+  
+  (* rational_function -> fun_or_var DIV_OP INT *)
+  
+  val fun_div_int: fun_or_var -> (int) -> rational_function
+  
+  (* rational_function -> INT DIV_OP LPAREN fun_or_var RPAREN *)
+  
+  val int_div_fun: (int) -> fun_or_var -> rational_function
+  
+  (* The binary choice constructor at type [radical_function]. *)
+  
+  val radical_function_choice: radical_function -> radical_function -> radical_function
+  
+  (* radical_function -> SQRT_OP LPAREN fun_or_var RPAREN *)
+  
+  val radi_sqrt: fun_or_var -> radical_function
+  
+  (* radical_function -> LPAREN fun_or_var RPAREN POWER_OP LPAREN INT DIV_OP INT RPAREN *)
+  
+  val radi_root: fun_or_var -> (int) -> (int) -> radical_function
+  
+  (* The binary choice constructor at type [question_text]. *)
+  
+  val question_text_choice: question_text -> question_text -> question_text
+  
+  (* question_text -> WHAT_WORD IS_WORD THE_WORD VALUE_WORD OF_WORD intext_call QUESTION_MARK *)
+  
+  val qvalue: intext_call -> question_text
+  
+  (* question_text -> intext_call IS_WORD EQUAL_WORD TO_WORD *)
+  
+  val qis: intext_call -> question_text
+  
+  (* The binary choice constructor at type [question_list]. *)
+  
+  val question_list_choice: question_list -> question_list -> question_list
+  
+  (* question_list -> question_item NEWLINE NEWLINE question_list *)
+  
+  val qlist: question_item -> question_list -> question_list
+  
+  (* question_list -> question_item NEWLINE *)
+  
+  val qlist_single: question_item -> question_list
+  
+  (* The binary choice constructor at type [question_item]. *)
+  
+  val question_item_choice: question_item -> question_item -> question_item
+  
+  (* question_item -> question_text BLANK LBRACE answer_item RBRACE *)
+  
+  val qitem1: question_text -> answer_item -> question_item
+  
+  (* question_item -> question_text BLANK LBRACE ANSWER_WORD FAT_COMMA answer_item COMMA WIDTH_WORD FAT_COMMA INT RBRACE *)
+  
+  val qitem2: question_text -> answer_item -> (int) -> question_item
+  
+  (* question_item -> GIVEN_PROB NEWLINE set_list NEWLINE COMPUTE_PROB NEWLINE set_prob_list *)
+  
+  val qset: set_list -> set_prob_list -> question_item
+  
+  (* question_item -> SUPPOSE_PROB NEWLINE vector_list NEWLINE COMPUTE_PROB NEWLINE vector_prob_list *)
+  
+  val qvector: vector_list -> vector_prob_list -> question_item
+  
+  (* question_item -> GIVEN_FUN NEWLINE NEWLINE IT_VAR_OPEN NAMING ID IT_VAR_CLOSE NEWLINE NEWLINE COMPUTE_PROB NEWLINE derivative_prob_list *)
+  
+  val qderivative: (string) -> derivative_prob_list -> question_item
+  
+  (* question_item -> EVALUATE_BOOL_PROB NEWLINE IT_MATH_OPEN bool_expr IT_MATH_CLOSE NEWLINE WHEN_WORD NEWLINE bool_assignment_list BOOL_ANSWER_HINT NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qbool_eval: bool_expr -> bool_assignment_list -> answer_item -> question_item
+  
+  (* question_item -> EVALUATE_BOOL_PROB NEWLINE IT_MATH_OPEN bool_expr IT_MATH_CLOSE NEWLINE WHEN_WORD NEWLINE bool_assignment_list BOOL_ANSWER_HINT NEWLINE BLANK LBRACE ANSWER_WORD FAT_COMMA answer_item COMMA WIDTH_WORD FAT_COMMA INT RBRACE *)
+  
+  val qbool_eval_width: bool_expr -> bool_assignment_list -> answer_item -> (int) -> question_item
+  
+  (* question_item -> BOOLEAN_EQUIV_PROB NEWLINE IT_MATH_OPEN bool_expr IT_MATH_CLOSE NEWLINE IT_MATH_OPEN bool_expr IT_MATH_CLOSE NEWLINE BOOL_EQUIV_ANSWER_HINT NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qbool_equiv: bool_expr -> bool_expr -> answer_item -> question_item
+  
+  (* question_item -> BOOLEAN_EQUIV_PROB NEWLINE IT_MATH_OPEN bool_expr IT_MATH_CLOSE NEWLINE IT_MATH_OPEN bool_expr IT_MATH_CLOSE NEWLINE BOOL_EQUIV_ANSWER_HINT NEWLINE BLANK LBRACE ANSWER_WORD FAT_COMMA answer_item COMMA WIDTH_WORD FAT_COMMA INT RBRACE *)
+  
+  val qbool_equiv_width: bool_expr -> bool_expr -> answer_item -> (int) -> question_item
+  
+  (* question_item -> COMPLEX_ARITH_PROB NEWLINE IT_MATH_OPEN complex_expr IT_MATH_CLOSE NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qcomplex_arith: complex_expr -> answer_item -> question_item
+  
+  (* question_item -> COMPLEX_CONJ_PROB NEWLINE IT_MATH_OPEN complex_num IT_MATH_CLOSE NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qcomplex_conj: complex_num -> answer_item -> question_item
+  
+  (* question_item -> COMPLEX_MOD_PROB NEWLINE IT_MATH_OPEN complex_num IT_MATH_CLOSE NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qcomplex_mod: complex_num -> answer_item -> question_item
+  
+  (* question_item -> COMPLEX_POWER_I_PROB NEWLINE IT_MATH_OPEN I_UNIT POWER_OP INT IT_MATH_CLOSE NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qcomplex_power_i: (int) -> answer_item -> question_item
+  
+  (* question_item -> ARITH_SEQ_NTH_PROB NEWLINE sequence_param NEWLINE sequence_param NEWLINE sequence_param NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qsequence_arith_nth: sequence_param -> sequence_param -> sequence_param -> answer_item -> question_item
+  
+  (* question_item -> GEOM_SEQ_NTH_PROB NEWLINE sequence_param NEWLINE sequence_param NEWLINE sequence_param NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qsequence_geom_nth: sequence_param -> sequence_param -> sequence_param -> answer_item -> question_item
+  
+  (* question_item -> ARITH_SEQ_SUM_PROB NEWLINE sequence_param NEWLINE sequence_param NEWLINE sequence_param NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qsequence_arith_sum: sequence_param -> sequence_param -> sequence_param -> answer_item -> question_item
+  
+  (* question_item -> GEOM_SEQ_SUM_PROB NEWLINE sequence_param NEWLINE sequence_param NEWLINE sequence_param NEWLINE BLANK LBRACE answer_item RBRACE *)
+  
+  val qsequence_geom_sum: sequence_param -> sequence_param -> sequence_param -> answer_item -> question_item
+  
+  (* The binary choice constructor at type [quadratic_function]. *)
+  
+  val quadratic_function_choice: quadratic_function -> quadratic_function -> quadratic_function
+  
+  (* quadratic_function -> fun_or_var POWER_OP INT ADD_OP INT MUL_OP fun_or_var ADD_OP INT *)
+  
+  val quad_add: fun_or_var -> (int) -> (int) -> fun_or_var -> (int) -> quadratic_function
+  
+  (* quadratic_function -> fun_or_var POWER_OP INT SUB_OP INT MUL_OP fun_or_var ADD_OP INT *)
+  
+  val quad_sub: fun_or_var -> (int) -> (int) -> fun_or_var -> (int) -> quadratic_function
+  
+  (* quadratic_function -> LPAREN fun_or_var RPAREN POWER_OP INT *)
+  
+  val quad_square: fun_or_var -> (int) -> quadratic_function
+  
+  (* The binary choice constructor at type [property]. *)
+  
+  val property_choice: property -> property -> property
+  
+  (* property -> key FAT_COMMA value *)
+  
+  val property: key -> value -> property
+  
+  (* The binary choice constructor at type [properties]. *)
+  
+  val properties_choice: properties -> properties -> properties
+  
+  (* properties -> property COMMA properties *)
+  
+  val properties: property -> properties -> properties
+  
+  (* properties -> property *)
+  
+  val properties_single: property -> properties
+  
+  (* The binary choice constructor at type [problem_section]. *)
+  
+  val problem_section_choice: problem_section -> problem_section -> problem_section
+  
+  (* problem_section -> BEGIN_PGML NEWLINE question_list END_PGML NEWLINE *)
+  
+  val problem_section: question_list -> problem_section
   
   (* The binary choice constructor at type [predicate]. *)
   
@@ -861,685 +1171,851 @@ module DCST : sig
   
   val pred_between_closed: int_with_sign -> int_with_sign -> predicate
   
-  (* The binary choice constructor at type [problem_section]. *)
+  (* The binary choice constructor at type [power_function]. *)
   
-  val problem_section_choice: problem_section -> problem_section -> problem_section
+  val power_function_choice: power_function -> power_function -> power_function
   
-  (* problem_section -> BEGIN_PGML NEWLINE question_list END_PGML NEWLINE *)
+  (* power_function -> fun_or_var POWER_OP INT *)
   
-  val problem_section: question_list -> problem_section
+  val power_fun_int_expr: fun_or_var -> (int) -> power_function
   
-  (* The binary choice constructor at type [properties]. *)
+  (* The binary choice constructor at type [operator_list]. *)
   
-  val properties_choice: properties -> properties -> properties
+  val operator_list_choice: operator_list -> operator_list -> operator_list
   
-  (* properties -> property COMMA properties *)
+  (* operator_list -> DOUBLE_QUOTE operator DOUBLE_QUOTE COMMA operator_list *)
   
-  val properties: property -> properties -> properties
+  val operator_list_dou: operator -> operator_list -> operator_list
   
-  (* properties -> property *)
+  (* operator_list -> SINGLE_QUOTE operator SINGLE_QUOTE COMMA operator_list *)
   
-  val properties_single: property -> properties
+  val operator_list_sin: operator -> operator_list -> operator_list
   
-  (* The binary choice constructor at type [property]. *)
+  (* operator_list -> DOUBLE_QUOTE operator DOUBLE_QUOTE *)
   
-  val property_choice: property -> property -> property
+  val operator_list_single_dou: operator -> operator_list
   
-  (* property -> key FAT_COMMA value *)
+  (* operator_list -> SINGLE_QUOTE operator SINGLE_QUOTE *)
   
-  val property: key -> value -> property
+  val operator_list_single_sin: operator -> operator_list
   
-  (* The binary choice constructor at type [quadratic_function]. *)
+  (* The binary choice constructor at type [operator]. *)
   
-  val quadratic_function_choice: quadratic_function -> quadratic_function -> quadratic_function
+  val operator_choice: operator -> operator -> operator
   
-  (* quadratic_function -> fun_or_var POWER_OP INT ADD_OP INT MUL_OP fun_or_var ADD_OP INT *)
+  (* operator -> ADD_OP *)
   
-  val quad_add: fun_or_var -> (int) -> (int) -> fun_or_var -> (int) -> quadratic_function
+  val operator_add: unit -> operator
   
-  (* quadratic_function -> fun_or_var POWER_OP INT SUB_OP INT MUL_OP fun_or_var ADD_OP INT *)
+  (* operator -> SUB_OP *)
   
-  val quad_sub: fun_or_var -> (int) -> (int) -> fun_or_var -> (int) -> quadratic_function
+  val operator_sub: unit -> operator
   
-  (* quadratic_function -> LPAREN fun_or_var RPAREN POWER_OP INT *)
+  (* operator -> MUL_OP *)
   
-  val quad_square: fun_or_var -> (int) -> quadratic_function
+  val operator_mul: unit -> operator
   
-  (* The binary choice constructor at type [question_item]. *)
+  (* operator -> DIV_OP *)
   
-  val question_item_choice: question_item -> question_item -> question_item
+  val operator_div: unit -> operator
   
-  (* question_item -> question_text BLANK LBRACE answer_item RBRACE *)
+  (* The binary choice constructor at type [module_]. *)
   
-  val qitem1: question_text -> answer_item -> question_item
+  val module__choice: module_ -> module_ -> module_
   
-  (* question_item -> question_text BLANK LBRACE ANSWER_WORD FAT_COMMA answer_item COMMA WIDTH_WORD FAT_COMMA INT RBRACE *)
+  (* module_ -> ID *)
   
-  val qitem2: question_text -> answer_item -> (int) -> question_item
+  val module_: (string) -> module_
   
-  (* question_item -> GIVEN_PROB NEWLINE set_list NEWLINE COMPUTE_PROB NEWLINE set_prob_list *)
+  (* The binary choice constructor at type [math_object_method]. *)
   
-  val qset: set_list -> set_prob_list -> question_item
+  val math_object_method_choice: math_object_method -> math_object_method -> math_object_method
   
-  (* question_item -> SUPPOSE_PROB NEWLINE vector_list NEWLINE COMPUTE_PROB NEWLINE vector_prob_list *)
+  (* math_object_method -> RANDOM_METH LPAREN INT COMMA INT COMMA INT RPAREN *)
   
-  val qvector: vector_list -> vector_prob_list -> question_item
+  val meth_rand: (int) -> (int) -> (int) -> math_object_method
   
-  (* question_item -> GIVEN_FUN NEWLINE NEWLINE IT_VAR_OPEN NAMING ID IT_VAR_CLOSE NEWLINE NEWLINE COMPUTE_PROB NEWLINE derivative_prob_list *)
+  (* math_object_method -> FORMULA_METH LPAREN SINGLE_QUOTE math_expr SINGLE_QUOTE RPAREN *)
   
-  val qderivative: (string) -> derivative_prob_list -> question_item
+  val meth_form: math_expr -> math_object_method
   
-  (* The binary choice constructor at type [question_list]. *)
+  (* math_object_method -> FORMULA_METH LPAREN DOUBLE_QUOTE function_expr DOUBLE_QUOTE RPAREN *)
   
-  val question_list_choice: question_list -> question_list -> question_list
+  val meth_form_fun: function_expr -> math_object_method
   
-  (* question_list -> question_item NEWLINE NEWLINE question_list *)
+  (* math_object_method -> COMPLEX_METH LPAREN int_with_sign COMMA int_with_sign RPAREN *)
   
-  val qlist: question_item -> question_list -> question_list
+  val meth_complex: int_with_sign -> int_with_sign -> math_object_method
   
-  (* question_list -> question_item NEWLINE *)
+  (* math_object_method -> REAL_METH LPAREN value RPAREN *)
   
-  val qlist_single: question_item -> question_list
+  val meth_real: value -> math_object_method
   
-  (* The binary choice constructor at type [question_text]. *)
+  (* math_object_method -> D_METH LPAREN RPAREN *)
   
-  val question_text_choice: question_text -> question_text -> question_text
+  val meth_d_none: unit -> math_object_method
   
-  (* question_text -> WHAT_WORD IS_WORD THE_WORD VALUE_WORD OF_WORD intext_call QUESTION_MARK *)
+  (* math_object_method -> D_METH LPAREN SINGLE_QUOTE ID SINGLE_QUOTE RPAREN *)
   
-  val qvalue: intext_call -> question_text
+  val meth_d: (string) -> math_object_method
   
-  (* question_text -> intext_call IS_WORD EQUAL_WORD TO_WORD *)
+  (* math_object_method -> EVAL_METH LPAREN property RPAREN *)
   
-  val qis: intext_call -> question_text
+  val meth_eval: property -> math_object_method
   
-  (* The binary choice constructor at type [radical_function]. *)
+  (* math_object_method -> WITH_METH LPAREN property RPAREN *)
   
-  val radical_function_choice: radical_function -> radical_function -> radical_function
+  val meth_with: property -> math_object_method
   
-  (* radical_function -> SQRT_OP LPAREN fun_or_var RPAREN *)
+  (* math_object_method -> SET_DEF_METH LPAREN set_enum RPAREN *)
   
-  val radi_sqrt: fun_or_var -> radical_function
+  val meth_set: set_enum -> math_object_method
   
-  (* radical_function -> LPAREN fun_or_var RPAREN POWER_OP LPAREN INT DIV_OP INT RPAREN *)
+  (* math_object_method -> COMPUTE_METH LPAREN DOUBLE_QUOTE set_compute DOUBLE_QUOTE RPAREN *)
   
-  val radi_root: fun_or_var -> (int) -> (int) -> radical_function
+  val meth_compute: set_compute -> math_object_method
   
-  (* The binary choice constructor at type [rational_function]. *)
+  (* math_object_method -> INTERSECT_METH LPAREN variable RPAREN *)
   
-  val rational_function_choice: rational_function -> rational_function -> rational_function
+  val meth_intersect: variable -> math_object_method
   
-  (* rational_function -> fun_or_var DIV_OP INT *)
+  (* The binary choice constructor at type [math_expr]. *)
   
-  val fun_div_int: fun_or_var -> (int) -> rational_function
+  val math_expr_choice: math_expr -> math_expr -> math_expr
   
-  (* rational_function -> INT DIV_OP LPAREN fun_or_var RPAREN *)
+  (* math_expr -> math_expr ADD_OP term *)
   
-  val int_div_fun: (int) -> fun_or_var -> rational_function
+  val madd: math_expr -> term -> math_expr
   
-  (* The binary choice constructor at type [set_compute]. *)
+  (* math_expr -> math_expr SUB_OP term *)
   
-  val set_compute_choice: set_compute -> set_compute -> set_compute
+  val msub: math_expr -> term -> math_expr
   
-  (* set_compute -> set_compute UNION set_compute_term *)
+  (* math_expr -> term *)
   
-  val set_compute_union: set_compute -> set_compute_term -> set_compute
+  val mterm: term -> math_expr
   
-  (* set_compute -> set_compute_term *)
+  (* The binary choice constructor at type [main]. *)
   
-  val set_compute_term: set_compute_term -> set_compute
+  val main_choice: main -> main -> main
   
-  (* The binary choice constructor at type [set_compute_factor]. *)
+  (* main -> DOCUMENT LPAREN RPAREN SEMI NEWLINE header context_setup_list problem_section ENDDOCUMENT LPAREN RPAREN SEMI EOF *)
   
-  val set_compute_factor_choice: set_compute_factor -> set_compute_factor -> set_compute_factor
+  val doc_no_sol: header -> context_setup_list -> problem_section -> main
   
-  (* set_compute_factor -> LPAREN set_compute RPAREN *)
+  (* The binary choice constructor at type [macro]. *)
   
-  val set_compute_paren: set_compute -> set_compute_factor
+  val macro_choice: macro -> macro -> macro
   
-  (* set_compute_factor -> LBRACE set_enum RBRACE *)
+  (* macro -> DOUBLE_QUOTE MACRO DOUBLE_QUOTE COMMA macro *)
   
-  val set_compute_enum: set_enum -> set_compute_factor
+  val macro_cons: (string) -> macro -> macro
   
-  (* set_compute_factor -> set_compute_interval *)
+  (* macro -> DOUBLE_QUOTE MACRO DOUBLE_QUOTE *)
   
-  val set_compute_interval: set_compute_interval -> set_compute_factor
+  val macro_atom: (string) -> macro
   
-  (* The binary choice constructor at type [set_compute_interval]. *)
+  (* The binary choice constructor at type [log_function]. *)
   
-  val set_compute_interval_choice: set_compute_interval -> set_compute_interval -> set_compute_interval
+  val log_function_choice: log_function -> log_function -> log_function
   
-  (* set_compute_interval -> LPAREN interval_value COMMA interval_value RPAREN *)
+  (* log_function -> LN_OP LPAREN fun_or_var RPAREN *)
   
-  val set_compute_interval_open: interval_value -> interval_value -> set_compute_interval
+  val ln_fun: fun_or_var -> log_function
   
-  (* set_compute_interval -> LPAREN interval_value COMMA interval_value RBRACKET *)
+  (* The binary choice constructor at type [linear_function]. *)
   
-  val set_compute_interval_left_open: interval_value -> interval_value -> set_compute_interval
+  val linear_function_choice: linear_function -> linear_function -> linear_function
   
-  (* set_compute_interval -> LBRACKET interval_value COMMA interval_value RPAREN *)
+  (* linear_function -> fun_or_var ADD_OP INT *)
   
-  val set_compute_interval_right_open: interval_value -> interval_value -> set_compute_interval
+  val fun_add_int: fun_or_var -> (int) -> linear_function
   
-  (* set_compute_interval -> LBRACKET interval_value COMMA interval_value RBRACKET *)
+  (* linear_function -> fun_or_var SUB_OP INT *)
   
-  val set_compute_interval_closed: interval_value -> interval_value -> set_compute_interval
+  val fun_sub_int: fun_or_var -> (int) -> linear_function
   
-  (* The binary choice constructor at type [set_compute_term]. *)
+  (* linear_function -> INT SUB_OP fun_or_var *)
   
-  val set_compute_term_choice: set_compute_term -> set_compute_term -> set_compute_term
+  val int_sub_fun: (int) -> fun_or_var -> linear_function
   
-  (* set_compute_term -> set_compute_term SUB_OP set_compute_factor *)
+  (* linear_function -> INT MUL_OP fun_or_var *)
   
-  val set_compute_diff: set_compute_term -> set_compute_factor -> set_compute_term
+  val int_mul_fun: (int) -> fun_or_var -> linear_function
   
-  (* set_compute_term -> set_compute_factor *)
+  (* linear_function -> fun_or_var MUL_OP INT *)
   
-  val set_compute_factor: set_compute_factor -> set_compute_term
+  val fun_mul_int: fun_or_var -> (int) -> linear_function
   
-  (* The binary choice constructor at type [set_enum]. *)
+  (* The binary choice constructor at type [key]. *)
   
-  val set_enum_choice: set_enum -> set_enum -> set_enum
+  val key_choice: key -> key -> key
   
-  (* set_enum -> int_with_sign COMMA set_enum *)
+  (* key -> NAMING ID *)
   
-  val set_enum_cons: int_with_sign -> set_enum -> set_enum
+  val key_ident: (string) -> key
   
-  (* set_enum -> int_with_sign *)
+  (* key -> ID *)
   
-  val set_enum_last: int_with_sign -> set_enum
+  val key_str: (string) -> key
   
-  (* The binary choice constructor at type [set_expr]. *)
+  (* The binary choice constructor at type [intext_call]. *)
   
-  val set_expr_choice: set_expr -> set_expr -> set_expr
+  val intext_call_choice: intext_call -> intext_call -> intext_call
   
-  (* set_expr -> set_enum *)
+  (* intext_call -> IT_VAR_OPEN variable IT_VAR_CLOSE *)
   
-  val set_expr_enum: set_enum -> set_expr
+  val ict_varv: variable -> intext_call
   
-  (* set_expr -> set_interval *)
+  (* intext_call -> IT_MATH_OPEN math_expr IT_MATH_CLOSE *)
   
-  val set_expr_interval: set_interval -> set_expr
+  val ict_math: math_expr -> intext_call
   
-  (* The binary choice constructor at type [set_factor]. *)
+  (* The binary choice constructor at type [interval_value]. *)
   
-  val set_factor_choice: set_factor -> set_factor -> set_factor
+  val interval_value_choice: interval_value -> interval_value -> interval_value
   
-  (* set_factor -> set_factor SUB_OP set_primary *)
+  (* interval_value -> int_with_sign *)
   
-  val set_op_diff: set_factor -> set_primary -> set_factor
+  val interval_int: int_with_sign -> interval_value
   
-  (* set_factor -> set_primary *)
+  (* interval_value -> INFINITY *)
   
-  val set_op_primary: set_primary -> set_factor
+  val interval_infinity: unit -> interval_value
   
-  (* The binary choice constructor at type [set_interval]. *)
+  (* interval_value -> NEG_INFINITY *)
   
-  val set_interval_choice: set_interval -> set_interval -> set_interval
+  val interval_neg_infinity: unit -> interval_value
   
-  (* set_interval -> X_VAR PIPE predicate *)
+  (* The binary choice constructor at type [int_with_sign]. *)
   
-  val set_interval: predicate -> set_interval
+  val int_with_sign_choice: int_with_sign -> int_with_sign -> int_with_sign
   
-  (* The binary choice constructor at type [set_list]. *)
+  (* int_with_sign -> SUB_OP INT *)
   
-  val set_list_choice: set_list -> set_list -> set_list
+  val negative_int: (int) -> int_with_sign
   
-  (* set_list -> SUB_OP IT_MATH_OPEN ID EQ LBRACE_LATEX set_expr RBRACE_LATEX IT_MATH_CLOSE NEWLINE set_list *)
+  (* int_with_sign -> INT *)
   
-  val set_list_cons: (string) -> set_expr -> set_list -> set_list
+  val positive_int: (int) -> int_with_sign
   
-  (* set_list -> SUB_OP IT_MATH_OPEN ID EQ LBRACE_LATEX set_expr RBRACE_LATEX IT_MATH_CLOSE NEWLINE *)
+  (* The binary choice constructor at type [header]. *)
   
-  val set_list_last: (string) -> set_expr -> set_list
+  val header_choice: header -> header -> header
   
-  (* The binary choice constructor at type [set_operation]. *)
+  (* header -> LOADMACROS LPAREN DOUBLE_QUOTE PGSTANDARD DOUBLE_QUOTE COMMA DOUBLE_QUOTE MATHOBJECTS DOUBLE_QUOTE COMMA DOUBLE_QUOTE PGML DOUBLE_QUOTE COMMA macro RPAREN SEMI NEWLINE *)
   
-  val set_operation_choice: set_operation -> set_operation -> set_operation
+  val header_with_macro: macro -> header
   
-  (* set_operation -> set_operation CUP set_term *)
+  (* header -> LOADMACROS LPAREN DOUBLE_QUOTE PGSTANDARD DOUBLE_QUOTE COMMA DOUBLE_QUOTE MATHOBJECTS DOUBLE_QUOTE COMMA DOUBLE_QUOTE PGML DOUBLE_QUOTE RPAREN SEMI NEWLINE *)
   
-  val set_op_union: set_operation -> set_term -> set_operation
+  val header_simple: unit -> header
   
-  (* set_operation -> set_term *)
+  (* The binary choice constructor at type [function_expr]. *)
   
-  val set_op_term: set_term -> set_operation
+  val function_expr_choice: function_expr -> function_expr -> function_expr
   
-  (* The binary choice constructor at type [set_primary]. *)
+  (* function_expr -> linear_function *)
   
-  val set_primary_choice: set_primary -> set_primary -> set_primary
+  val linear_fun: linear_function -> function_expr
   
-  (* set_primary -> ID *)
+  (* function_expr -> quadratic_function *)
   
-  val set_primary_var: (string) -> set_primary
+  val quadratic_fun: quadratic_function -> function_expr
   
-  (* set_primary -> LPAREN set_operation RPAREN *)
+  (* function_expr -> power_function *)
   
-  val set_primary_paren: set_operation -> set_primary
+  val power_fun: power_function -> function_expr
   
-  (* The binary choice constructor at type [set_prob_list]. *)
+  (* function_expr -> radical_function *)
   
-  val set_prob_list_choice: set_prob_list -> set_prob_list -> set_prob_list
+  val radical_fun: radical_function -> function_expr
   
-  (* set_prob_list -> SUB_OP IT_MATH_OPEN set_operation EQ IT_MATH_CLOSE BLANK LBRACE answer_item RBRACE NEWLINE set_prob_list *)
+  (* function_expr -> rational_function *)
   
-  val set_prob_list_cons: set_operation -> answer_item -> set_prob_list -> set_prob_list
+  val rational_fun: rational_function -> function_expr
   
-  (* set_prob_list -> SUB_OP IT_MATH_OPEN set_operation EQ IT_MATH_CLOSE BLANK LBRACE answer_item RBRACE NEWLINE *)
+  (* function_expr -> log_function *)
   
-  val set_prob_list_last: set_operation -> answer_item -> set_prob_list
+  val log_fun: log_function -> function_expr
   
-  (* The binary choice constructor at type [set_term]. *)
+  (* function_expr -> trig_function *)
   
-  val set_term_choice: set_term -> set_term -> set_term
+  val trig_fun: trig_function -> function_expr
   
-  (* set_term -> set_term CAP set_factor *)
+  (* function_expr -> exp_function *)
   
-  val set_op_inter: set_term -> set_factor -> set_term
+  val exp_fun: exp_function -> function_expr
   
-  (* set_term -> set_factor *)
+  (* The binary choice constructor at type [fun_or_var]. *)
   
-  val set_op_factor: set_factor -> set_term
+  val fun_or_var_choice: fun_or_var -> fun_or_var -> fun_or_var
   
-  (* The binary choice constructor at type [term]. *)
+  (* fun_or_var -> X_VAR *)
   
-  val term_choice: term -> term -> term
+  val var_x: unit -> fun_or_var
   
-  (* term -> term MUL_OP factor *)
+  (* fun_or_var -> LPAREN function_expr RPAREN *)
   
-  val tmul: term -> factor -> term
+  val func: function_expr -> fun_or_var
   
-  (* term -> term DIV_OP factor *)
+  (* The binary choice constructor at type [factor]. *)
   
-  val tdiv: term -> factor -> term
+  val factor_choice: factor -> factor -> factor
   
-  (* term -> factor *)
+  (* factor -> LPAREN math_expr RPAREN *)
   
-  val tfac: factor -> term
+  val fparen: math_expr -> factor
   
-  (* The binary choice constructor at type [trig_function]. *)
+  (* factor -> NUMBER *)
   
-  val trig_function_choice: trig_function -> trig_function -> trig_function
+  val fnum: (float) -> factor
   
-  (* trig_function -> SIN_OP LPAREN fun_or_var RPAREN *)
+  (* factor -> INT *)
   
-  val trig_sin: fun_or_var -> trig_function
+  val fint: (int) -> factor
   
-  (* trig_function -> COS_OP LPAREN fun_or_var RPAREN *)
+  (* factor -> SUB_OP NUMBER *)
   
-  val trig_cos: fun_or_var -> trig_function
+  val fnum_neg: (float) -> factor
   
-  (* The binary choice constructor at type [value]. *)
+  (* factor -> SUB_OP INT *)
   
-  val value_choice: value -> value -> value
+  val fint_neg: (int) -> factor
   
-  (* value -> SUB_OP INT *)
+  (* The binary choice constructor at type [exp_function]. *)
   
-  val value_int_neg: (int) -> value
+  val exp_function_choice: exp_function -> exp_function -> exp_function
   
-  (* value -> INT *)
+  (* exp_function -> NAT_LOG POWER_OP LPAREN fun_or_var RPAREN *)
   
-  val value_int_pos: (int) -> value
+  val exp: fun_or_var -> exp_function
   
-  (* value -> SUB_OP NUMBER *)
+  (* The binary choice constructor at type [entry_list]. *)
   
-  val value_num_neg: (float) -> value
+  val entry_list_choice: entry_list -> entry_list -> entry_list
   
-  (* value -> NUMBER *)
+  (* entry_list -> entry COMMA entry_list *)
   
-  val value_num_pos: (float) -> value
+  val entry_list: entry -> entry_list -> entry_list
   
-  (* value -> DOUBLE_QUOTE ID DOUBLE_QUOTE *)
+  (* entry_list -> entry *)
   
-  val value_str_dou: (string) -> value
+  val entry_list_single: entry -> entry_list
   
-  (* value -> SINGLE_QUOTE ID SINGLE_QUOTE *)
+  (* The binary choice constructor at type [entry]. *)
   
-  val value_str_sin: (string) -> value
+  val entry_choice: entry -> entry -> entry
   
-  (* value -> NAMING ID *)
+  (* entry -> key FAT_COMMA LBRACE RBRACE *)
   
-  val value_ident: (string) -> value
+  val entry_map_none: key -> entry
   
-  (* The binary choice constructor at type [variable]. *)
+  (* entry -> key FAT_COMMA LBRACE properties RBRACE *)
   
-  val variable_choice: variable -> variable -> variable
+  val entry_map: key -> properties -> entry
   
-  (* variable -> value *)
+  (* entry -> property *)
   
-  val var_value: value -> variable
+  val entry_prop: property -> entry
   
-  (* variable -> math_object_method *)
+  (* The binary choice constructor at type [derivative_prob_list]. *)
   
-  val var_meth: math_object_method -> variable
+  val derivative_prob_list_choice: derivative_prob_list -> derivative_prob_list -> derivative_prob_list
   
-  (* variable -> NAMING ID ARROW math_object_method *)
+  (* derivative_prob_list -> SUB_OP derivative_prob NEWLINE derivative_prob_list *)
   
-  val var_field: (string) -> math_object_method -> variable
+  val der_prob_list_cons: derivative_prob -> derivative_prob_list -> derivative_prob_list
   
-  (* variable -> math_object_method ARROW math_object_method *)
+  (* derivative_prob_list -> SUB_OP derivative_prob NEWLINE *)
   
-  val var_chain: math_object_method -> math_object_method -> variable
+  val der_prob_list_last: derivative_prob -> derivative_prob_list
   
-  (* The binary choice constructor at type [variable_declaration]. *)
+  (* The binary choice constructor at type [derivative_prob]. *)
   
-  val variable_declaration_choice: variable_declaration -> variable_declaration -> variable_declaration
+  val derivative_prob_choice: derivative_prob -> derivative_prob -> derivative_prob
   
-  (* variable_declaration -> NAMING ID EQ variable SEMI *)
+  (* derivative_prob -> IT_MATH_OPEN F_FUN SINGLE_QUOTE LPAREN X_VAR RPAREN EQ IT_MATH_CLOSE BLANK LBRACE NAMING ID ARROW D_METH LPAREN RPAREN RBRACE *)
   
-  val var_decl: (string) -> variable -> variable_declaration
+  val der_prob_1: (string) -> derivative_prob
   
-  (* The binary choice constructor at type [variable_list]. *)
+  (* derivative_prob -> IT_MATH_OPEN F_FUN SINGLE_QUOTE LPAREN INT RPAREN EQ IT_MATH_CLOSE BLANK LBRACE NAMING ID ARROW D_METH LPAREN RPAREN ARROW EVAL_METH LPAREN X_VAR FAT_COMMA INT RPAREN RBRACE *)
   
-  val variable_list_choice: variable_list -> variable_list -> variable_list
+  val der_prob_2: (int) -> (string) -> (int) -> derivative_prob
   
-  (* variable_list -> variable_declaration NEWLINE variable_list *)
+  (* derivative_prob -> IT_MATH_OPEN F_FUN SINGLE_QUOTE SINGLE_QUOTE LPAREN X_VAR RPAREN EQ IT_MATH_CLOSE BLANK LBRACE NAMING ID ARROW D_METH LPAREN RPAREN ARROW D_METH LPAREN RPAREN RBRACE *)
   
-  val var_list: variable_declaration -> variable_list -> variable_list
+  val der_prob_3: (string) -> derivative_prob
   
-  (* variable_list -> variable_declaration NEWLINE *)
+  (* derivative_prob -> INDEFINITE_INTEGRAL_PROB BLANK LBRACE NAMING ID RBRACE *)
   
-  val var_list_single: variable_declaration -> variable_list
+  val integral_prob: (string) -> derivative_prob
   
-  (* The binary choice constructor at type [vector_list]. *)
+  (* The binary choice constructor at type [context_setup_list]. *)
   
-  val vector_list_choice: vector_list -> vector_list -> vector_list
+  val context_setup_list_choice: context_setup_list -> context_setup_list -> context_setup_list
   
-  (* vector_list -> SUB_OP IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE EQ LANGLE_LATEX set_enum RANGLE_LATEX IT_MATH_CLOSE NEWLINE vector_list *)
+  (* context_setup_list -> context_setup NEWLINE answer_vars NEWLINE context_setup_list *)
   
-  val vec_list_cons: (string) -> set_enum -> vector_list -> vector_list
+  val ctx_setup_vars_cons: context_setup -> answer_vars -> context_setup_list -> context_setup_list
   
-  (* vector_list -> SUB_OP IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE EQ LANGLE_LATEX set_enum RANGLE_LATEX IT_MATH_CLOSE NEWLINE *)
+  (* context_setup_list -> context_setup NEWLINE answer_vars NEWLINE *)
   
-  val vec_list_last: (string) -> set_enum -> vector_list
+  val ctx_setup_vars_last: context_setup -> answer_vars -> context_setup_list
   
-  (* The binary choice constructor at type [vector_prob]. *)
+  (* context_setup_list -> context_setup NEWLINE context_setup_list *)
   
-  val vector_prob_choice: vector_prob -> vector_prob -> vector_prob
+  val ctx_setup_no_vars_cons: context_setup -> context_setup_list -> context_setup_list
   
-  (* vector_prob -> IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE CDOT_LATEX VEC_LATEX LBRACE ID RBRACE EQ IT_MATH_CLOSE BLANK LBRACE COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN PERIOD COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN RBRACE *)
+  (* context_setup_list -> context_setup NEWLINE *)
   
-  val vec_prob_1: (string) -> (string) -> set_enum -> set_enum -> vector_prob
+  val ctx_setup_no_vars_last: context_setup -> context_setup_list
   
-  (* vector_prob -> IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE TIMES_LATEX VEC_LATEX LBRACE ID RBRACE EQ IT_MATH_CLOSE BLANK LBRACE COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN X_VAR COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN RBRACE *)
+  (* The binary choice constructor at type [context_setup]. *)
   
-  val vec_prob_2: (string) -> (string) -> set_enum -> set_enum -> vector_prob
+  val context_setup_choice: context_setup -> context_setup -> context_setup
   
-  (* vector_prob -> IT_MATH_OPEN LEFT_NORM_LATEX VEC_LATEX LBRACE ID RBRACE RIGHT_NORM_LATEX EQ IT_MATH_CLOSE BLANK LBRACE NORM_METH LPAREN COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN RPAREN RBRACE *)
+  (* context_setup -> CONTEXT LPAREN DOUBLE_QUOTE ID DOUBLE_QUOTE RPAREN SEMI NEWLINE context_config *)
   
-  val vec_prob_3: (string) -> set_enum -> vector_prob
+  val ctx_with_cfg: (string) -> context_config -> context_setup
   
-  (* vector_prob -> VECTOR_UNIT_PROB IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE IT_MATH_CLOSE PERIOD BLANK LBRACE UNIT_METH LPAREN COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN RPAREN RBRACE *)
+  (* context_setup -> CONTEXT LPAREN DOUBLE_QUOTE ID DOUBLE_QUOTE RPAREN SEMI NEWLINE *)
   
-  val vec_prob_4: (string) -> set_enum -> vector_prob
+  val ctx_only: (string) -> context_setup
   
-  (* vector_prob -> VECTOR_PARA_PROB IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE IT_MATH_CLOSE PERIOD BLANK LBRACE COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN ARROW CMP_1 RBRACE *)
+  (* The binary choice constructor at type [context_method]. *)
   
-  val vec_prob_5: (string) -> set_enum -> vector_prob
+  val context_method_choice: context_method -> context_method -> context_method
   
-  (* vector_prob -> VECTOR_SAME_PROB IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE IT_MATH_CLOSE PERIOD BLANK LBRACE COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN ARROW CMP_2 RBRACE *)
+  (* context_method -> ADD_METH LPAREN entry_list RPAREN *)
   
-  val vec_prob_6: (string) -> set_enum -> vector_prob
+  val cm_add: entry_list -> context_method
   
-  (* The binary choice constructor at type [vector_prob_list]. *)
+  (* context_method -> SET_METH LPAREN entry_list RPAREN *)
   
-  val vector_prob_list_choice: vector_prob_list -> vector_prob_list -> vector_prob_list
+  val cm_set: entry_list -> context_method
   
-  (* vector_prob_list -> SUB_OP vector_prob NEWLINE vector_prob_list *)
+  (* context_method -> ARE_METH LPAREN entry_list RPAREN *)
   
-  val vec_prob_list_cons: vector_prob -> vector_prob_list -> vector_prob_list
+  val cm_are: entry_list -> context_method
   
-  (* vector_prob_list -> SUB_OP vector_prob NEWLINE *)
+  (* context_method -> UNDEFINE_METH LPAREN operator_list RPAREN *)
   
-  val vec_prob_list_last: vector_prob -> vector_prob_list
+  val cm_undefine: operator_list -> context_method
+  
+  (* context_method -> REDEFINE_METH LPAREN operator_list RPAREN *)
+  
+  val cm_redefine: operator_list -> context_method
+  
+  (* The binary choice constructor at type [context_config]. *)
+  
+  val context_config_choice: context_config -> context_config -> context_config
+  
+  (* context_config -> CONTEXT LPAREN RPAREN ARROW module_ ARROW context_method SEMI NEWLINE context_config *)
+  
+  val cfg_cons: module_ -> context_method -> context_config -> context_config
+  
+  (* context_config -> CONTEXT LPAREN RPAREN ARROW module_ ARROW context_method SEMI NEWLINE *)
+  
+  val cfg_last: module_ -> context_method -> context_config
+  
+  (* The binary choice constructor at type [complex_num]. *)
+  
+  val complex_num_choice: complex_num -> complex_num -> complex_num
+  
+  (* complex_num -> int_with_sign ADD_OP INT I_UNIT *)
+  
+  val complex_num_pos_im: int_with_sign -> (int) -> complex_num
+  
+  (* complex_num -> int_with_sign SUB_OP INT I_UNIT *)
+  
+  val complex_num_neg_im: int_with_sign -> (int) -> complex_num
+  
+  (* complex_num -> int_with_sign I_UNIT *)
+  
+  val complex_num_imag: int_with_sign -> complex_num
+  
+  (* complex_num -> int_with_sign *)
+  
+  val complex_num_real: int_with_sign -> complex_num
+  
+  (* The binary choice constructor at type [complex_expr]. *)
+  
+  val complex_expr_choice: complex_expr -> complex_expr -> complex_expr
+  
+  (* complex_expr -> LPAREN complex_expr RPAREN ADD_OP LPAREN complex_expr RPAREN *)
+  
+  val complex_add: complex_expr -> complex_expr -> complex_expr
+  
+  (* complex_expr -> LPAREN complex_expr RPAREN SUB_OP LPAREN complex_expr RPAREN *)
+  
+  val complex_sub: complex_expr -> complex_expr -> complex_expr
+  
+  (* complex_expr -> LPAREN complex_expr RPAREN MUL_OP LPAREN complex_expr RPAREN *)
+  
+  val complex_mul: complex_expr -> complex_expr -> complex_expr
+  
+  (* complex_expr -> complex_num *)
+  
+  val complex_lit: complex_num -> complex_expr
+  
+  (* The binary choice constructor at type [bool_expr]. *)
+  
+  val bool_expr_choice: bool_expr -> bool_expr -> bool_expr
+  
+  (* bool_expr -> bool_expr AND_WORD bool_expr *)
+  
+  val bool_and: bool_expr -> bool_expr -> bool_expr
+  
+  (* bool_expr -> bool_expr OR_WORD bool_expr *)
+  
+  val bool_or: bool_expr -> bool_expr -> bool_expr
+  
+  (* bool_expr -> bool_expr XOR_WORD bool_expr *)
+  
+  val bool_xor: bool_expr -> bool_expr -> bool_expr
+  
+  (* bool_expr -> bool_expr IMPLIES_WORD bool_expr *)
+  
+  val bool_implies: bool_expr -> bool_expr -> bool_expr
+  
+  (* bool_expr -> bool_expr IFF_WORD bool_expr *)
+  
+  val bool_iff: bool_expr -> bool_expr -> bool_expr
+  
+  (* bool_expr -> NOT_WORD bool_expr *)
+  
+  val bool_not: bool_expr -> bool_expr
+  
+  (* bool_expr -> LPAREN bool_expr RPAREN *)
+  
+  val bool_paren: bool_expr -> bool_expr
+  
+  (* bool_expr -> TRUE_WORD *)
+  
+  val bool_true: unit -> bool_expr
+  
+  (* bool_expr -> FALSE_WORD *)
+  
+  val bool_false: unit -> bool_expr
+  
+  (* bool_expr -> ID *)
+  
+  val bool_var: (string) -> bool_expr
+  
+  (* The binary choice constructor at type [bool_assignment_list]. *)
+  
+  val bool_assignment_list_choice: bool_assignment_list -> bool_assignment_list -> bool_assignment_list
+  
+  (* bool_assignment_list -> bool_assignment NEWLINE bool_assignment_list *)
+  
+  val bool_assignment_list_cons: bool_assignment -> bool_assignment_list -> bool_assignment_list
+  
+  (* bool_assignment_list -> bool_assignment NEWLINE *)
+  
+  val bool_assignment_list_last: bool_assignment -> bool_assignment_list
+  
+  (* The binary choice constructor at type [bool_assignment]. *)
+  
+  val bool_assignment_choice: bool_assignment -> bool_assignment -> bool_assignment
+  
+  (* bool_assignment -> SUB_OP ID EQ TRUE_WORD *)
+  
+  val bool_assignment_true: (string) -> bool_assignment
+  
+  (* bool_assignment -> SUB_OP ID EQ FALSE_WORD *)
+  
+  val bool_assignment_false: (string) -> bool_assignment
+  
+  (* The binary choice constructor at type [answer_vars]. *)
+  
+  val answer_vars_choice: answer_vars -> answer_vars -> answer_vars
+  
+  (* answer_vars -> variable_list *)
+  
+  val answer_vars: variable_list -> answer_vars
+  
+  (* The binary choice constructor at type [answer_item]. *)
+  
+  val answer_item_choice: answer_item -> answer_item -> answer_item
+  
+  (* answer_item -> variable *)
+  
+  val ans_var: variable -> answer_item
   
 end
 
+(* Deconstructing concrete syntax trees (CSTs). *)
+
 module CST : sig
   
-  (* The type of CSTs for the nonterminal symbol [answer_item]. *)
+  (* The type of CSTs for the nonterminal symbol [vector_prob_list]. *)
   
-  type answer_item
-  
-  (* The type of CSTs for the nonterminal symbol [answer_vars]. *)
-  
-  type answer_vars
-  
-  (* The type of CSTs for the nonterminal symbol [context_config]. *)
-  
-  type context_config
-  
-  (* The type of CSTs for the nonterminal symbol [context_method]. *)
-  
-  type context_method
-  
-  (* The type of CSTs for the nonterminal symbol [context_setup]. *)
-  
-  type context_setup
-  
-  (* The type of CSTs for the nonterminal symbol [context_setup_list]. *)
-  
-  type context_setup_list
-  
-  (* The type of CSTs for the nonterminal symbol [derivative_prob]. *)
-  
-  type derivative_prob
-  
-  (* The type of CSTs for the nonterminal symbol [derivative_prob_list]. *)
-  
-  type derivative_prob_list
-  
-  (* The type of CSTs for the nonterminal symbol [entry]. *)
-  
-  type entry
-  
-  (* The type of CSTs for the nonterminal symbol [entry_list]. *)
-  
-  type entry_list
-  
-  (* The type of CSTs for the nonterminal symbol [exp_function]. *)
-  
-  type exp_function
-  
-  (* The type of CSTs for the nonterminal symbol [factor]. *)
-  
-  type factor
-  
-  (* The type of CSTs for the nonterminal symbol [fun_or_var]. *)
-  
-  type fun_or_var
-  
-  (* The type of CSTs for the nonterminal symbol [function_expr]. *)
-  
-  type function_expr
-  
-  (* The type of CSTs for the nonterminal symbol [header]. *)
-  
-  type header
-  
-  (* The type of CSTs for the nonterminal symbol [int_with_sign]. *)
-  
-  type int_with_sign
-  
-  (* The type of CSTs for the nonterminal symbol [interval_value]. *)
-  
-  type interval_value
-  
-  (* The type of CSTs for the nonterminal symbol [intext_call]. *)
-  
-  type intext_call
-  
-  (* The type of CSTs for the nonterminal symbol [key]. *)
-  
-  type key
-  
-  (* The type of CSTs for the nonterminal symbol [linear_function]. *)
-  
-  type linear_function
-  
-  (* The type of CSTs for the nonterminal symbol [log_function]. *)
-  
-  type log_function
-  
-  (* The type of CSTs for the nonterminal symbol [macro]. *)
-  
-  type macro
-  
-  (* The type of CSTs for the nonterminal symbol [main]. *)
-  
-  type main
-  
-  (* The type of CSTs for the nonterminal symbol [math_expr]. *)
-  
-  type math_expr
-  
-  (* The type of CSTs for the nonterminal symbol [math_object_method]. *)
-  
-  type math_object_method
-  
-  (* The type of CSTs for the nonterminal symbol [module_]. *)
-  
-  type module_
-  
-  (* The type of CSTs for the nonterminal symbol [operator]. *)
-  
-  type operator
-  
-  (* The type of CSTs for the nonterminal symbol [operator_list]. *)
-  
-  type operator_list
-  
-  (* The type of CSTs for the nonterminal symbol [power_function]. *)
-  
-  type power_function
-  
-  (* The type of CSTs for the nonterminal symbol [predicate]. *)
-  
-  type predicate
-  
-  (* The type of CSTs for the nonterminal symbol [problem_section]. *)
-  
-  type problem_section
-  
-  (* The type of CSTs for the nonterminal symbol [properties]. *)
-  
-  type properties
-  
-  (* The type of CSTs for the nonterminal symbol [property]. *)
-  
-  type property
-  
-  (* The type of CSTs for the nonterminal symbol [quadratic_function]. *)
-  
-  type quadratic_function
-  
-  (* The type of CSTs for the nonterminal symbol [question_item]. *)
-  
-  type question_item
-  
-  (* The type of CSTs for the nonterminal symbol [question_list]. *)
-  
-  type question_list
-  
-  (* The type of CSTs for the nonterminal symbol [question_text]. *)
-  
-  type question_text
-  
-  (* The type of CSTs for the nonterminal symbol [radical_function]. *)
-  
-  type radical_function
-  
-  (* The type of CSTs for the nonterminal symbol [rational_function]. *)
-  
-  type rational_function
-  
-  (* The type of CSTs for the nonterminal symbol [set_compute]. *)
-  
-  type set_compute
-  
-  (* The type of CSTs for the nonterminal symbol [set_compute_factor]. *)
-  
-  type set_compute_factor
-  
-  (* The type of CSTs for the nonterminal symbol [set_compute_interval]. *)
-  
-  type set_compute_interval
-  
-  (* The type of CSTs for the nonterminal symbol [set_compute_term]. *)
-  
-  type set_compute_term
-  
-  (* The type of CSTs for the nonterminal symbol [set_enum]. *)
-  
-  type set_enum
-  
-  (* The type of CSTs for the nonterminal symbol [set_expr]. *)
-  
-  type set_expr
-  
-  (* The type of CSTs for the nonterminal symbol [set_factor]. *)
-  
-  type set_factor
-  
-  (* The type of CSTs for the nonterminal symbol [set_interval]. *)
-  
-  type set_interval
-  
-  (* The type of CSTs for the nonterminal symbol [set_list]. *)
-  
-  type set_list
-  
-  (* The type of CSTs for the nonterminal symbol [set_operation]. *)
-  
-  type set_operation
-  
-  (* The type of CSTs for the nonterminal symbol [set_primary]. *)
-  
-  type set_primary
-  
-  (* The type of CSTs for the nonterminal symbol [set_prob_list]. *)
-  
-  type set_prob_list
-  
-  (* The type of CSTs for the nonterminal symbol [set_term]. *)
-  
-  type set_term
-  
-  (* The type of CSTs for the nonterminal symbol [term]. *)
-  
-  type term
-  
-  (* The type of CSTs for the nonterminal symbol [trig_function]. *)
-  
-  type trig_function
-  
-  (* The type of CSTs for the nonterminal symbol [value]. *)
-  
-  type value
-  
-  (* The type of CSTs for the nonterminal symbol [variable]. *)
-  
-  type variable
-  
-  (* The type of CSTs for the nonterminal symbol [variable_declaration]. *)
-  
-  type variable_declaration
-  
-  (* The type of CSTs for the nonterminal symbol [variable_list]. *)
-  
-  type variable_list
-  
-  (* The type of CSTs for the nonterminal symbol [vector_list]. *)
-  
-  type vector_list
+  type vector_prob_list
   
   (* The type of CSTs for the nonterminal symbol [vector_prob]. *)
   
   type vector_prob
   
-  (* The type of CSTs for the nonterminal symbol [vector_prob_list]. *)
+  (* The type of CSTs for the nonterminal symbol [vector_list]. *)
   
-  type vector_prob_list
+  type vector_list
+  
+  (* The type of CSTs for the nonterminal symbol [variable_list]. *)
+  
+  type variable_list
+  
+  (* The type of CSTs for the nonterminal symbol [variable_declaration]. *)
+  
+  type variable_declaration
+  
+  (* The type of CSTs for the nonterminal symbol [variable]. *)
+  
+  type variable
+  
+  (* The type of CSTs for the nonterminal symbol [value]. *)
+  
+  type value
+  
+  (* The type of CSTs for the nonterminal symbol [trig_function]. *)
+  
+  type trig_function
+  
+  (* The type of CSTs for the nonterminal symbol [term]. *)
+  
+  type term
+  
+  (* The type of CSTs for the nonterminal symbol [set_term]. *)
+  
+  type set_term
+  
+  (* The type of CSTs for the nonterminal symbol [set_prob_list]. *)
+  
+  type set_prob_list
+  
+  (* The type of CSTs for the nonterminal symbol [set_primary]. *)
+  
+  type set_primary
+  
+  (* The type of CSTs for the nonterminal symbol [set_operation]. *)
+  
+  type set_operation
+  
+  (* The type of CSTs for the nonterminal symbol [set_list]. *)
+  
+  type set_list
+  
+  (* The type of CSTs for the nonterminal symbol [set_interval]. *)
+  
+  type set_interval
+  
+  (* The type of CSTs for the nonterminal symbol [set_factor]. *)
+  
+  type set_factor
+  
+  (* The type of CSTs for the nonterminal symbol [set_expr]. *)
+  
+  type set_expr
+  
+  (* The type of CSTs for the nonterminal symbol [set_enum]. *)
+  
+  type set_enum
+  
+  (* The type of CSTs for the nonterminal symbol [set_compute_term]. *)
+  
+  type set_compute_term
+  
+  (* The type of CSTs for the nonterminal symbol [set_compute_interval]. *)
+  
+  type set_compute_interval
+  
+  (* The type of CSTs for the nonterminal symbol [set_compute_factor]. *)
+  
+  type set_compute_factor
+  
+  (* The type of CSTs for the nonterminal symbol [set_compute]. *)
+  
+  type set_compute
+  
+  (* The type of CSTs for the nonterminal symbol [sequence_param]. *)
+  
+  type sequence_param
+  
+  (* The type of CSTs for the nonterminal symbol [rational_function]. *)
+  
+  type rational_function
+  
+  (* The type of CSTs for the nonterminal symbol [radical_function]. *)
+  
+  type radical_function
+  
+  (* The type of CSTs for the nonterminal symbol [question_text]. *)
+  
+  type question_text
+  
+  (* The type of CSTs for the nonterminal symbol [question_list]. *)
+  
+  type question_list
+  
+  (* The type of CSTs for the nonterminal symbol [question_item]. *)
+  
+  type question_item
+  
+  (* The type of CSTs for the nonterminal symbol [quadratic_function]. *)
+  
+  type quadratic_function
+  
+  (* The type of CSTs for the nonterminal symbol [property]. *)
+  
+  type property
+  
+  (* The type of CSTs for the nonterminal symbol [properties]. *)
+  
+  type properties
+  
+  (* The type of CSTs for the nonterminal symbol [problem_section]. *)
+  
+  type problem_section
+  
+  (* The type of CSTs for the nonterminal symbol [predicate]. *)
+  
+  type predicate
+  
+  (* The type of CSTs for the nonterminal symbol [power_function]. *)
+  
+  type power_function
+  
+  (* The type of CSTs for the nonterminal symbol [operator_list]. *)
+  
+  type operator_list
+  
+  (* The type of CSTs for the nonterminal symbol [operator]. *)
+  
+  type operator
+  
+  (* The type of CSTs for the nonterminal symbol [module_]. *)
+  
+  type module_
+  
+  (* The type of CSTs for the nonterminal symbol [math_object_method]. *)
+  
+  type math_object_method
+  
+  (* The type of CSTs for the nonterminal symbol [math_expr]. *)
+  
+  type math_expr
+  
+  (* The type of CSTs for the nonterminal symbol [main]. *)
+  
+  type main
+  
+  (* The type of CSTs for the nonterminal symbol [macro]. *)
+  
+  type macro
+  
+  (* The type of CSTs for the nonterminal symbol [log_function]. *)
+  
+  type log_function
+  
+  (* The type of CSTs for the nonterminal symbol [linear_function]. *)
+  
+  type linear_function
+  
+  (* The type of CSTs for the nonterminal symbol [key]. *)
+  
+  type key
+  
+  (* The type of CSTs for the nonterminal symbol [intext_call]. *)
+  
+  type intext_call
+  
+  (* The type of CSTs for the nonterminal symbol [interval_value]. *)
+  
+  type interval_value
+  
+  (* The type of CSTs for the nonterminal symbol [int_with_sign]. *)
+  
+  type int_with_sign
+  
+  (* The type of CSTs for the nonterminal symbol [header]. *)
+  
+  type header
+  
+  (* The type of CSTs for the nonterminal symbol [function_expr]. *)
+  
+  type function_expr
+  
+  (* The type of CSTs for the nonterminal symbol [fun_or_var]. *)
+  
+  type fun_or_var
+  
+  (* The type of CSTs for the nonterminal symbol [factor]. *)
+  
+  type factor
+  
+  (* The type of CSTs for the nonterminal symbol [exp_function]. *)
+  
+  type exp_function
+  
+  (* The type of CSTs for the nonterminal symbol [entry_list]. *)
+  
+  type entry_list
+  
+  (* The type of CSTs for the nonterminal symbol [entry]. *)
+  
+  type entry
+  
+  (* The type of CSTs for the nonterminal symbol [derivative_prob_list]. *)
+  
+  type derivative_prob_list
+  
+  (* The type of CSTs for the nonterminal symbol [derivative_prob]. *)
+  
+  type derivative_prob
+  
+  (* The type of CSTs for the nonterminal symbol [context_setup_list]. *)
+  
+  type context_setup_list
+  
+  (* The type of CSTs for the nonterminal symbol [context_setup]. *)
+  
+  type context_setup
+  
+  (* The type of CSTs for the nonterminal symbol [context_method]. *)
+  
+  type context_method
+  
+  (* The type of CSTs for the nonterminal symbol [context_config]. *)
+  
+  type context_config
+  
+  (* The type of CSTs for the nonterminal symbol [complex_num]. *)
+  
+  type complex_num
+  
+  (* The type of CSTs for the nonterminal symbol [complex_expr]. *)
+  
+  type complex_expr
+  
+  (* The type of CSTs for the nonterminal symbol [bool_expr]. *)
+  
+  type bool_expr
+  
+  (* The type of CSTs for the nonterminal symbol [bool_assignment_list]. *)
+  
+  type bool_assignment_list
+  
+  (* The type of CSTs for the nonterminal symbol [bool_assignment]. *)
+  
+  type bool_assignment
+  
+  (* The type of CSTs for the nonterminal symbol [answer_vars]. *)
+  
+  type answer_vars
+  
+  (* The type of CSTs for the nonterminal symbol [answer_item]. *)
+  
+  type answer_item
   
   (* This visitor helps transform concrete syntax trees into something else. *)
   
@@ -1561,9 +2037,13 @@ module CST : sig
     
     method virtual visit_X_VAR : 'r
     
+    method virtual visit_XOR_WORD : 'r
+    
     method virtual visit_WITH_METH : 'r
     
     method virtual visit_WIDTH_WORD : 'r
+    
+    method virtual visit_WHEN_WORD : 'r
     
     method virtual visit_WHAT_WORD : 'r
     
@@ -1582,6 +2062,8 @@ module CST : sig
     method virtual visit_UNION : 'r
     
     method virtual visit_UNDEFINE_METH : 'r
+    
+    method virtual visit_TRUE_WORD : 'r
     
     method virtual visit_TO_WORD : 'r
     
@@ -1635,9 +2117,13 @@ module CST : sig
     
     method virtual visit_PERIOD : 'r
     
+    method virtual visit_OR_WORD : 'r
+    
     method virtual visit_OF_WORD : 'r
     
     method virtual visit_NUMBER : (float) -> 'r
+    
+    method virtual visit_NOT_WORD : 'r
     
     method virtual visit_NORM_METH : 'r
     
@@ -1675,6 +2161,8 @@ module CST : sig
     
     method virtual visit_LANGLE_LATEX : 'r
     
+    method virtual visit_I_UNIT : 'r
+    
     method virtual visit_IT_VAR_OPEN : 'r
     
     method virtual visit_IT_VAR_CLOSE : 'r
@@ -1691,6 +2179,12 @@ module CST : sig
     
     method virtual visit_INFINITY : 'r
     
+    method virtual visit_INDEFINITE_INTEGRAL_PROB : 'r
+    
+    method virtual visit_IMPLIES_WORD : 'r
+    
+    method virtual visit_IFF_WORD : 'r
+    
     method virtual visit_ID : (string) -> 'r
     
     method virtual visit_GT : 'r
@@ -1701,13 +2195,21 @@ module CST : sig
     
     method virtual visit_GEQ_LATEX : 'r
     
+    method virtual visit_GEOM_SEQ_SUM_PROB : 'r
+    
+    method virtual visit_GEOM_SEQ_NTH_PROB : 'r
+    
     method virtual visit_F_FUN : 'r
     
     method virtual visit_FORMULA_METH : 'r
     
     method virtual visit_FAT_COMMA : 'r
     
+    method virtual visit_FALSE_WORD : 'r
+    
     method virtual visit_EVAL_METH : 'r
+    
+    method virtual visit_EVALUATE_BOOL_PROB : 'r
     
     method virtual visit_EQUAL_WORD : 'r
     
@@ -1727,6 +2229,8 @@ module CST : sig
     
     method virtual visit_DIV_OP : 'r
     
+    method virtual visit_DIV_LATEX : 'r
+    
     method virtual visit_CUP : 'r
     
     method virtual visit_COS_OP : 'r
@@ -1736,6 +2240,16 @@ module CST : sig
     method virtual visit_COMPUTE_PROB : 'r
     
     method virtual visit_COMPUTE_METH : 'r
+    
+    method virtual visit_COMPLEX_POWER_I_PROB : 'r
+    
+    method virtual visit_COMPLEX_MOD_PROB : 'r
+    
+    method virtual visit_COMPLEX_METH : 'r
+    
+    method virtual visit_COMPLEX_CONJ_PROB : 'r
+    
+    method virtual visit_COMPLEX_ARITH_PROB : 'r
     
     method virtual visit_COMMA : 'r
     
@@ -1747,15 +2261,27 @@ module CST : sig
     
     method virtual visit_CAP : 'r
     
+    method virtual visit_BOOL_EQUIV_ANSWER_HINT : 'r
+    
+    method virtual visit_BOOL_ANSWER_HINT : 'r
+    
+    method virtual visit_BOOLEAN_EQUIV_PROB : 'r
+    
     method virtual visit_BLANK : 'r
     
     method virtual visit_BEGIN_PGML : 'r
     
     method virtual visit_ARROW : 'r
     
+    method virtual visit_ARITH_SEQ_SUM_PROB : 'r
+    
+    method virtual visit_ARITH_SEQ_NTH_PROB : 'r
+    
     method virtual visit_ARE_METH : 'r
     
     method virtual visit_ANSWER_WORD : 'r
+    
+    method virtual visit_AND_WORD : 'r
     
     method virtual visit_ADD_OP : 'r
     
@@ -1763,127 +2289,139 @@ module CST : sig
     
     (* One method per nonterminal symbol. *)
     
-    method visit_answer_item : answer_item -> 'r
-    
-    method visit_answer_vars : answer_vars -> 'r
-    
-    method visit_context_config : context_config -> 'r
-    
-    method visit_context_method : context_method -> 'r
-    
-    method visit_context_setup : context_setup -> 'r
-    
-    method visit_context_setup_list : context_setup_list -> 'r
-    
-    method visit_derivative_prob : derivative_prob -> 'r
-    
-    method visit_derivative_prob_list : derivative_prob_list -> 'r
-    
-    method visit_entry : entry -> 'r
-    
-    method visit_entry_list : entry_list -> 'r
-    
-    method visit_exp_function : exp_function -> 'r
-    
-    method visit_factor : factor -> 'r
-    
-    method visit_fun_or_var : fun_or_var -> 'r
-    
-    method visit_function_expr : function_expr -> 'r
-    
-    method visit_header : header -> 'r
-    
-    method visit_int_with_sign : int_with_sign -> 'r
-    
-    method visit_interval_value : interval_value -> 'r
-    
-    method visit_intext_call : intext_call -> 'r
-    
-    method visit_key : key -> 'r
-    
-    method visit_linear_function : linear_function -> 'r
-    
-    method visit_log_function : log_function -> 'r
-    
-    method visit_macro : macro -> 'r
-    
-    method visit_main : main -> 'r
-    
-    method visit_math_expr : math_expr -> 'r
-    
-    method visit_math_object_method : math_object_method -> 'r
-    
-    method visit_module_ : module_ -> 'r
-    
-    method visit_operator : operator -> 'r
-    
-    method visit_operator_list : operator_list -> 'r
-    
-    method visit_power_function : power_function -> 'r
-    
-    method visit_predicate : predicate -> 'r
-    
-    method visit_problem_section : problem_section -> 'r
-    
-    method visit_properties : properties -> 'r
-    
-    method visit_property : property -> 'r
-    
-    method visit_quadratic_function : quadratic_function -> 'r
-    
-    method visit_question_item : question_item -> 'r
-    
-    method visit_question_list : question_list -> 'r
-    
-    method visit_question_text : question_text -> 'r
-    
-    method visit_radical_function : radical_function -> 'r
-    
-    method visit_rational_function : rational_function -> 'r
-    
-    method visit_set_compute : set_compute -> 'r
-    
-    method visit_set_compute_factor : set_compute_factor -> 'r
-    
-    method visit_set_compute_interval : set_compute_interval -> 'r
-    
-    method visit_set_compute_term : set_compute_term -> 'r
-    
-    method visit_set_enum : set_enum -> 'r
-    
-    method visit_set_expr : set_expr -> 'r
-    
-    method visit_set_factor : set_factor -> 'r
-    
-    method visit_set_interval : set_interval -> 'r
-    
-    method visit_set_list : set_list -> 'r
-    
-    method visit_set_operation : set_operation -> 'r
-    
-    method visit_set_primary : set_primary -> 'r
-    
-    method visit_set_prob_list : set_prob_list -> 'r
-    
-    method visit_set_term : set_term -> 'r
-    
-    method visit_term : term -> 'r
-    
-    method visit_trig_function : trig_function -> 'r
-    
-    method visit_value : value -> 'r
-    
-    method visit_variable : variable -> 'r
-    
-    method visit_variable_declaration : variable_declaration -> 'r
-    
-    method visit_variable_list : variable_list -> 'r
-    
-    method visit_vector_list : vector_list -> 'r
+    method visit_vector_prob_list : vector_prob_list -> 'r
     
     method visit_vector_prob : vector_prob -> 'r
     
-    method visit_vector_prob_list : vector_prob_list -> 'r
+    method visit_vector_list : vector_list -> 'r
+    
+    method visit_variable_list : variable_list -> 'r
+    
+    method visit_variable_declaration : variable_declaration -> 'r
+    
+    method visit_variable : variable -> 'r
+    
+    method visit_value : value -> 'r
+    
+    method visit_trig_function : trig_function -> 'r
+    
+    method visit_term : term -> 'r
+    
+    method visit_set_term : set_term -> 'r
+    
+    method visit_set_prob_list : set_prob_list -> 'r
+    
+    method visit_set_primary : set_primary -> 'r
+    
+    method visit_set_operation : set_operation -> 'r
+    
+    method visit_set_list : set_list -> 'r
+    
+    method visit_set_interval : set_interval -> 'r
+    
+    method visit_set_factor : set_factor -> 'r
+    
+    method visit_set_expr : set_expr -> 'r
+    
+    method visit_set_enum : set_enum -> 'r
+    
+    method visit_set_compute_term : set_compute_term -> 'r
+    
+    method visit_set_compute_interval : set_compute_interval -> 'r
+    
+    method visit_set_compute_factor : set_compute_factor -> 'r
+    
+    method visit_set_compute : set_compute -> 'r
+    
+    method visit_sequence_param : sequence_param -> 'r
+    
+    method visit_rational_function : rational_function -> 'r
+    
+    method visit_radical_function : radical_function -> 'r
+    
+    method visit_question_text : question_text -> 'r
+    
+    method visit_question_list : question_list -> 'r
+    
+    method visit_question_item : question_item -> 'r
+    
+    method visit_quadratic_function : quadratic_function -> 'r
+    
+    method visit_property : property -> 'r
+    
+    method visit_properties : properties -> 'r
+    
+    method visit_problem_section : problem_section -> 'r
+    
+    method visit_predicate : predicate -> 'r
+    
+    method visit_power_function : power_function -> 'r
+    
+    method visit_operator_list : operator_list -> 'r
+    
+    method visit_operator : operator -> 'r
+    
+    method visit_module_ : module_ -> 'r
+    
+    method visit_math_object_method : math_object_method -> 'r
+    
+    method visit_math_expr : math_expr -> 'r
+    
+    method visit_main : main -> 'r
+    
+    method visit_macro : macro -> 'r
+    
+    method visit_log_function : log_function -> 'r
+    
+    method visit_linear_function : linear_function -> 'r
+    
+    method visit_key : key -> 'r
+    
+    method visit_intext_call : intext_call -> 'r
+    
+    method visit_interval_value : interval_value -> 'r
+    
+    method visit_int_with_sign : int_with_sign -> 'r
+    
+    method visit_header : header -> 'r
+    
+    method visit_function_expr : function_expr -> 'r
+    
+    method visit_fun_or_var : fun_or_var -> 'r
+    
+    method visit_factor : factor -> 'r
+    
+    method visit_exp_function : exp_function -> 'r
+    
+    method visit_entry_list : entry_list -> 'r
+    
+    method visit_entry : entry -> 'r
+    
+    method visit_derivative_prob_list : derivative_prob_list -> 'r
+    
+    method visit_derivative_prob : derivative_prob -> 'r
+    
+    method visit_context_setup_list : context_setup_list -> 'r
+    
+    method visit_context_setup : context_setup -> 'r
+    
+    method visit_context_method : context_method -> 'r
+    
+    method visit_context_config : context_config -> 'r
+    
+    method visit_complex_num : complex_num -> 'r
+    
+    method visit_complex_expr : complex_expr -> 'r
+    
+    method visit_bool_expr : bool_expr -> 'r
+    
+    method visit_bool_assignment_list : bool_assignment_list -> 'r
+    
+    method visit_bool_assignment : bool_assignment -> 'r
+    
+    method visit_answer_vars : answer_vars -> 'r
+    
+    method visit_answer_item : answer_item -> 'r
     
     (* One method per production. *)
     
@@ -1943,6 +2481,10 @@ module CST : sig
     
     method case_tdiv : term -> factor -> 'r
     
+    method case_tmul_latex : term -> factor -> 'r
+    
+    method case_tdiv_latex : term -> factor -> 'r
+    
     method case_tfac : factor -> 'r
     
     method case_set_op_inter : set_term -> set_factor -> 'r
@@ -2001,6 +2543,8 @@ module CST : sig
     
     method case_set_compute_term : set_compute_term -> 'r
     
+    method case_sequence_param : (string) -> int_with_sign -> 'r
+    
     method case_fun_div_int : fun_or_var -> (int) -> 'r
     
     method case_int_div_fun : (int) -> fun_or_var -> 'r
@@ -2026,6 +2570,30 @@ module CST : sig
     method case_qvector : vector_list -> vector_prob_list -> 'r
     
     method case_qderivative : (string) -> derivative_prob_list -> 'r
+    
+    method case_qbool_eval : bool_expr -> bool_assignment_list -> answer_item -> 'r
+    
+    method case_qbool_eval_width : bool_expr -> bool_assignment_list -> answer_item -> (int) -> 'r
+    
+    method case_qbool_equiv : bool_expr -> bool_expr -> answer_item -> 'r
+    
+    method case_qbool_equiv_width : bool_expr -> bool_expr -> answer_item -> (int) -> 'r
+    
+    method case_qcomplex_arith : complex_expr -> answer_item -> 'r
+    
+    method case_qcomplex_conj : complex_num -> answer_item -> 'r
+    
+    method case_qcomplex_mod : complex_num -> answer_item -> 'r
+    
+    method case_qcomplex_power_i : (int) -> answer_item -> 'r
+    
+    method case_qsequence_arith_nth : sequence_param -> sequence_param -> sequence_param -> answer_item -> 'r
+    
+    method case_qsequence_geom_nth : sequence_param -> sequence_param -> sequence_param -> answer_item -> 'r
+    
+    method case_qsequence_arith_sum : sequence_param -> sequence_param -> sequence_param -> answer_item -> 'r
+    
+    method case_qsequence_geom_sum : sequence_param -> sequence_param -> sequence_param -> answer_item -> 'r
     
     method case_quad_add : fun_or_var -> (int) -> (int) -> fun_or_var -> (int) -> 'r
     
@@ -2082,6 +2650,8 @@ module CST : sig
     method case_meth_form : math_expr -> 'r
     
     method case_meth_form_fun : function_expr -> 'r
+    
+    method case_meth_complex : int_with_sign -> int_with_sign -> 'r
     
     method case_meth_real : value -> 'r
     
@@ -2171,6 +2741,10 @@ module CST : sig
     
     method case_fint : (int) -> 'r
     
+    method case_fnum_neg : (float) -> 'r
+    
+    method case_fint_neg : (int) -> 'r
+    
     method case_exp : fun_or_var -> 'r
     
     method case_entry_list : entry -> entry_list -> 'r
@@ -2192,6 +2766,8 @@ module CST : sig
     method case_der_prob_2 : (int) -> (string) -> (int) -> 'r
     
     method case_der_prob_3 : (string) -> 'r
+    
+    method case_integral_prob : (string) -> 'r
     
     method case_ctx_setup_vars_cons : context_setup -> answer_vars -> context_setup_list -> 'r
     
@@ -2219,6 +2795,50 @@ module CST : sig
     
     method case_cfg_last : module_ -> context_method -> 'r
     
+    method case_complex_num_pos_im : int_with_sign -> (int) -> 'r
+    
+    method case_complex_num_neg_im : int_with_sign -> (int) -> 'r
+    
+    method case_complex_num_imag : int_with_sign -> 'r
+    
+    method case_complex_num_real : int_with_sign -> 'r
+    
+    method case_complex_add : complex_expr -> complex_expr -> 'r
+    
+    method case_complex_sub : complex_expr -> complex_expr -> 'r
+    
+    method case_complex_mul : complex_expr -> complex_expr -> 'r
+    
+    method case_complex_lit : complex_num -> 'r
+    
+    method case_bool_and : bool_expr -> bool_expr -> 'r
+    
+    method case_bool_or : bool_expr -> bool_expr -> 'r
+    
+    method case_bool_xor : bool_expr -> bool_expr -> 'r
+    
+    method case_bool_implies : bool_expr -> bool_expr -> 'r
+    
+    method case_bool_iff : bool_expr -> bool_expr -> 'r
+    
+    method case_bool_not : bool_expr -> 'r
+    
+    method case_bool_paren : bool_expr -> 'r
+    
+    method case_bool_true : unit -> 'r
+    
+    method case_bool_false : unit -> 'r
+    
+    method case_bool_var : (string) -> 'r
+    
+    method case_bool_assignment_list_cons : bool_assignment -> bool_assignment_list -> 'r
+    
+    method case_bool_assignment_list_last : bool_assignment -> 'r
+    
+    method case_bool_assignment_true : (string) -> 'r
+    
+    method case_bool_assignment_false : (string) -> 'r
+    
     method case_answer_vars : variable_list -> 'r
     
     method case_ans_var : variable -> 'r
@@ -2227,8 +2847,18 @@ module CST : sig
   
 end
 
+(* Transforming DCSTs to CSTs. *)
+
 module Settle : sig
   
   val main: DCST.main -> CST.main option
   
 end
+
+(* The parse tables. *)
+
+(* Warning: this submodule is undocumented. In the future,
+   its type could change, or it could disappear altogether. *)
+
+module Tables : MenhirLib.TableFormat.TABLES
+  with type token = token

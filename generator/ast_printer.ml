@@ -132,6 +132,7 @@ and pp_math_object_method fmt = function
   | Ast.M_Random (a,b,c)    -> fprintf fmt "M_Random(%d,@ %d,@ %d)" a b c
   | Ast.M_Formula expr      -> fprintf fmt "M_Formula(%a)"     pp_math_expr expr
   | Ast.M_Formula_Fun expr  -> fprintf fmt "M_Formula_Fun(%a)" pp_function_expr expr
+  | Ast.M_Complex (re, im)  -> fprintf fmt "M_Complex(%d,@ %d)" re im
   | Ast.M_Real v            -> fprintf fmt "M_Real(%a)"        pp_value v
   | Ast.M_D s               -> fprintf fmt "M_D(@ %a)"         pp_string_opt s
   | Ast.M_Eval p            -> fprintf fmt "M_Eval(%a)"        pp_property p
@@ -356,6 +357,8 @@ and pp_derivative_prob fmt = function
       fprintf fmt "Derivative_Algebra(%d,%S,%d)" i1 fun_name i2
   | Ast.Second_Derivative fun_name ->
       fprintf fmt "Second_Derivative(%S)" fun_name
+  | Ast.Indefinite_Integral anti_name ->
+      fprintf fmt "Indefinite_Integral(%S)" anti_name
 
 and pp_problem_section fmt = function
   | Ast.Problem ql ->
@@ -373,8 +376,41 @@ and pp_question_item fmt = function
     fprintf fmt "Q_Given_Set(%a,@ %a)" pp_set_list s_list pp_set_prob_list sp_list
   | Ast.Q_Suppose_Vector (vec_list, vecp_list) -> 
     fprintf fmt "Q_Suppose_Vector(%a,@ %a)" pp_vector_list vec_list pp_vector_prob_list vecp_list
-  | Ast.Q_Given_Function (fun_name, derp_list) -> 
+  | Ast.Q_Given_Function (fun_name, derp_list) ->
     fprintf fmt "Q_Given_Function(%S,@ %a)" fun_name pp_derivative_prob_list derp_list
+  | Ast.Q_Boolean_Eval (expr, assignments, ans, oi) ->
+    fprintf fmt "Q_Boolean_Eval(%a,@ %a,@ %a,@ %a)"
+      pp_bool_expr expr
+      pp_bool_assignments assignments
+      pp_answer_item ans
+      pp_int_option oi
+  | Ast.Q_Boolean_Equiv (left, right, ans, oi) ->
+    fprintf fmt "Q_Boolean_Equiv(%a,@ %a,@ %a,@ %a)"
+      pp_bool_expr left
+      pp_bool_expr right
+      pp_answer_item ans
+      pp_int_option oi
+  | Ast.Q_Complex_Arithmetic (expr, ans) ->
+    fprintf fmt "Q_Complex_Arithmetic(%a,@ %a)"
+      pp_complex_expr expr
+      pp_answer_item ans
+  | Ast.Q_Complex_Conjugate (num, ans) ->
+    fprintf fmt "Q_Complex_Conjugate(%a,@ %a)"
+      pp_complex_num num
+      pp_answer_item ans
+  | Ast.Q_Complex_Modulus (num, ans) ->
+    fprintf fmt "Q_Complex_Modulus(%a,@ %a)"
+      pp_complex_num num
+      pp_answer_item ans
+  | Ast.Q_Complex_Power_I (exponent, ans) ->
+    fprintf fmt "Q_Complex_Power_I(%d,@ %a)"
+      exponent
+      pp_answer_item ans
+  | Ast.Q_Sequence (seq, ans, oi) ->
+    fprintf fmt "Q_Sequence(%a,@ %a,@ %a)"
+      pp_sequence_question seq
+      pp_answer_item ans
+      pp_int_option oi
 
 and pp_question_text fmt = function
   | Ast.Q_Value  ic -> fprintf fmt "Q_Value(%a)"   pp_intext_call ic
@@ -382,6 +418,16 @@ and pp_question_text fmt = function
 
 and pp_answer_item fmt = function
   | Ast.A_Var v -> fprintf fmt "A_Var(%a)" pp_variable v
+
+and pp_sequence_question fmt = function
+  | Ast.Arithmetic_Nth (first, diff, index) ->
+    fprintf fmt "Arithmetic_Nth(%d,@ %d,@ %d)" first diff index
+  | Ast.Geometric_Nth (first, ratio, index) ->
+    fprintf fmt "Geometric_Nth(%d,@ %d,@ %d)" first ratio index
+  | Ast.Arithmetic_Sum (first, diff, count) ->
+    fprintf fmt "Arithmetic_Sum(%d,@ %d,@ %d)" first diff count
+  | Ast.Geometric_Sum (first, ratio, count) ->
+    fprintf fmt "Geometric_Sum(%d,@ %d,@ %d)" first ratio count
 
 and pp_intext_call fmt = function
   | Ast.IC_VarV v -> fprintf fmt "IC_VarV(%a)" pp_variable v
@@ -405,3 +451,41 @@ and pp_factor fmt = function
 and pp_int_option fmt = function
   | None   -> fprintf fmt "None"
   | Some i -> fprintf fmt "Some(%d)" i
+
+and pp_bool_assignments fmt assignments =
+  pp_list pp_bool_assignment fmt assignments
+
+and pp_bool_assignment fmt (name, value) =
+  fprintf fmt "(%S,@ %B)" name value
+
+and pp_bool_expr fmt = function
+  | Ast.Bool_Const b ->
+      fprintf fmt "Bool_Const(%B)" b
+  | Ast.Bool_Var name ->
+      fprintf fmt "Bool_Var(%S)" name
+  | Ast.Bool_Not expr ->
+      fprintf fmt "Bool_Not(%a)" pp_bool_expr expr
+  | Ast.Bool_And (left, right) ->
+      fprintf fmt "Bool_And(%a,@ %a)" pp_bool_expr left pp_bool_expr right
+  | Ast.Bool_Or (left, right) ->
+      fprintf fmt "Bool_Or(%a,@ %a)" pp_bool_expr left pp_bool_expr right
+  | Ast.Bool_Xor (left, right) ->
+      fprintf fmt "Bool_Xor(%a,@ %a)" pp_bool_expr left pp_bool_expr right
+  | Ast.Bool_Implies (left, right) ->
+      fprintf fmt "Bool_Implies(%a,@ %a)" pp_bool_expr left pp_bool_expr right
+  | Ast.Bool_Iff (left, right) ->
+      fprintf fmt "Bool_Iff(%a,@ %a)" pp_bool_expr left pp_bool_expr right
+
+and pp_complex_num fmt = function
+  | Ast.Complex_Num (re, im) ->
+      fprintf fmt "Complex_Num(%d,@ %d)" re im
+
+and pp_complex_expr fmt = function
+  | Ast.Complex_Lit num ->
+      fprintf fmt "Complex_Lit(%a)" pp_complex_num num
+  | Ast.Complex_Add (left, right) ->
+      fprintf fmt "Complex_Add(%a,@ %a)" pp_complex_expr left pp_complex_expr right
+  | Ast.Complex_Sub (left, right) ->
+      fprintf fmt "Complex_Sub(%a,@ %a)" pp_complex_expr left pp_complex_expr right
+  | Ast.Complex_Mul (left, right) ->
+      fprintf fmt "Complex_Mul(%a,@ %a)" pp_complex_expr left pp_complex_expr right

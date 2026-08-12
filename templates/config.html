@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,12 +20,15 @@
         <h1>Generator Settings</h1>
         <p>Adjust parameters of the generator to control the behavior of question generation.</p>
 
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="showTab('general')">General settings</button>
-            <button class="nav-tab" onclick="showTab('arithmetic')">Arithmetic problem</button>
-            <button class="nav-tab" onclick="showTab('set')">Set problem</button>
-            <button class="nav-tab" onclick="showTab('vector')">Vector problem</button>
-            <button class="nav-tab" onclick="showTab('derivative')">Derivative problem</button>
+        <div class="nav-tabs" role="tablist" aria-label="Generator setting categories">
+            <button type="button" class="nav-tab active" role="tab" aria-selected="true" aria-controls="general" onclick="showTab('general', this)">General</button>
+            <button type="button" class="nav-tab" role="tab" aria-selected="false" aria-controls="arithmetic" onclick="showTab('arithmetic', this)">Arithmetic</button>
+            <button type="button" class="nav-tab" role="tab" aria-selected="false" aria-controls="set" onclick="showTab('set', this)">Sets</button>
+            <button type="button" class="nav-tab" role="tab" aria-selected="false" aria-controls="vector" onclick="showTab('vector', this)">Vectors</button>
+            <button type="button" class="nav-tab" role="tab" aria-selected="false" aria-controls="derivative" onclick="showTab('derivative', this)">Calculus</button>
+            <button type="button" class="nav-tab" role="tab" aria-selected="false" aria-controls="boolean" onclick="showTab('boolean', this)">Boolean</button>
+            <button type="button" class="nav-tab" role="tab" aria-selected="false" aria-controls="complex" onclick="showTab('complex', this)">Complex</button>
+            <button type="button" class="nav-tab" role="tab" aria-selected="false" aria-controls="sequence" onclick="showTab('sequence', this)">Sequences</button>
         </div>
 
         <div id="message" class="message"></div>
@@ -72,9 +75,13 @@
                             <option value="1" {% if config.problem_type == 1 %}selected{% endif %}>Arithmetic Only</option>
                             <option value="2" {% if config.problem_type == 2 %}selected{% endif %}>Set Only</option>
                             <option value="3" {% if config.problem_type == 3 %}selected{% endif %}>Vector Only</option>
-                            <option value="4" {% if config.problem_type == 4 %}selected{% endif %}>Derivative Only</option>
+                            <option value="4" {% if config.problem_type == 4 %}selected{% endif %}>Calculus Only</option>
+                            <option value="5" {% if config.problem_type == 5 %}selected{% endif %}>Boolean Algebra Only</option>
+                            <option value="6" {% if config.problem_type == 6 %}selected{% endif %}>Complex Number Only</option>
+                            <option value="7" {% if config.problem_type == 7 %}selected{% endif %}>Sequence Only</option>
                         </select>
                     </div>
+                    
                     <div id="all-types-settings">
                         <div class="form-group">
                             <div class="checkbox-group">
@@ -85,12 +92,12 @@
                         </div>
 
                         <div id="question-type-amounts-container">
-                            <div class="form-row">
-                                {% set type_names = ["Arithmetic", "Set", "Vector", "Derivative"] %}
-                                {% for i in range(4) %}
+                            <div class="form-row question-type-amounts-grid">
+                                {% set type_names = ["Arithmetic", "Set", "Vector", "Calculus", "Boolean", "Complex", "Sequence"] %}
+                                {% for i in range(7) %}
                                 <div class="form-group">
                                     <label for="question_type_amounts_{{ i }}">{{ type_names[i] }} num</label>
-                                    <input type="number" id="question_type_amounts_{{ i }}" 
+                                    <input type="number" id="question_type_amounts_{{ i }}"
                                         name="question_type_amounts_{{ i }}" 
                                         value="{{ config.question_type_amounts[i] if config.question_type_amounts and i < config.question_type_amounts|length else 0 }}" 
                                         min="0" max="10">
@@ -173,8 +180,8 @@
                     <!-- Remaining set configuration fields -->
                     <div class="form-group">
                         <label for="max_set_def_num">Maximum quantity of set definitions</label>
-                        <input type="number" id="max_set_def_num" name="max_set_def_num" 
-                            value="{{ config.max_set_def_num }}" min="1" max="100">
+                        <input type="number" id="max_set_def_num" name="max_set_def_num"
+                            value="{{ config.max_set_def_num }}" min="2" max="100">
                     </div>
                     <div class="form-group">
                         <label for="set_variables">Available variable names (separated by commas)</label>
@@ -209,8 +216,8 @@
                     
                     <div class="form-group">
                         <label for="vector_dimension">Vector dimension</label>
-                        <input type="number" id="vector_dimension" name="vector_dimension" 
-                            value="{{ config.vector_dimension }}" min="2" max="10">
+                        <input type="number" id="vector_dimension" name="vector_dimension"
+                            value="{{ config.vector_dimension }}" min="3" max="3">
                     </div>
                     
                     <!-- Vector elements range section -->
@@ -263,10 +270,10 @@
                 </div>
             </div>
 
-            <!-- Derivative problem configs -->
+            <!-- Calculus problem configs -->
             <div id="derivative" class="tab-content">
                 <div class="config-section">
-                    <h3>Derivative Problem Configs</h3>
+                    <h3>Calculus Problem Configs</h3>
 
                     <!-- Function expression section -->
                     <div class="form-section">
@@ -285,7 +292,32 @@
                             </div>
                         </div>
                     </div>
-                    
+
+                    <div class="form-section">
+                        <h4>Question Mode</h4>
+                        <p class="config-description">Select derivative, integral, or a mixed calculus question set. Weights are used only in mixed mode.</p>
+                        <div class="form-group">
+                            <label for="calculus_question_mode">Calculus question mode</label>
+                            <select id="calculus_question_mode" name="calculus_question_mode">
+                                <option value="0" {% if config.get('calculus_question_mode', 0) == 0 %}selected{% endif %}>Mixed (Derivative + Integral)</option>
+                                <option value="1" {% if config.get('calculus_question_mode', 0) == 1 %}selected{% endif %}>Derivative only</option>
+                                <option value="2" {% if config.get('calculus_question_mode', 0) == 2 %}selected{% endif %}>Integral only</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="derivative_weight">Derivative weight</label>
+                                <input type="number" id="derivative_weight" name="derivative_weight"
+                                    value="{{ config.get('derivative_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="integral_weight">Integral weight</label>
+                                <input type="number" id="integral_weight" name="integral_weight"
+                                    value="{{ config.get('integral_weight', 1) }}" min="0" max="20">
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Derivative problem quantity section -->
                     <div class="form-section">
                         <h4>Derivative Problem Quantity</h4>
@@ -293,17 +325,273 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="min_derivative_prob_num">Min number</label>
-                                <input type="number" id="min_derivative_prob_num" name="min_derivative_prob_num" 
-                                    value="{{ config.min_derivative_prob_num }}" min="1" max="100">
+                                <input type="number" id="min_derivative_prob_num" name="min_derivative_prob_num"
+                                    value="{{ config.min_derivative_prob_num }}" min="1" max="12">
                             </div>
                             <div class="form-group">
                                 <label for="max_derivative_prob_num">Max number</label>
-                                <input type="number" id="max_derivative_prob_num" name="max_derivative_prob_num" 
-                                    value="{{ config.max_derivative_prob_num }}" min="1" max="100">
+                                <input type="number" id="max_derivative_prob_num" name="max_derivative_prob_num"
+                                    value="{{ config.max_derivative_prob_num }}" min="1" max="12">
                             </div>
                         </div>
                     </div>
-                    
+
+                    <div class="form-section">
+                        <h4>Integral Expression Depth</h4>
+                        <p class="config-description">Control the nested depth of antiderivatives used to generate integral questions.</p>
+                        <div class="form-group">
+                            <label for="integral_expr_depth">Integral expression depth</label>
+                            <input type="number" id="integral_expr_depth" name="integral_expr_depth"
+                                value="{{ config.get('integral_expr_depth', 3) }}" min="0" max="20">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Boolean problem configs -->
+            <div id="boolean" class="tab-content">
+                <div class="config-section">
+                    <h3>Boolean Algebra Configs</h3>
+
+                    <div class="form-section">
+                        <h4>Question Mode</h4>
+                        <p class="config-description">Select the type of Boolean questions to generate. Use weights in mixed mode to control the ratio.</p>
+                        <div class="form-group">
+                            <label for="boolean_question_mode">Boolean question mode</label>
+                            <select id="boolean_question_mode" name="boolean_question_mode">
+                                <option value="0" {% if config.get('boolean_question_mode', 0) == 0 %}selected{% endif %}>Mixed (Evaluation + Equivalence)</option>
+                                <option value="1" {% if config.get('boolean_question_mode', 0) == 1 %}selected{% endif %}>Evaluation only</option>
+                                <option value="2" {% if config.get('boolean_question_mode', 0) == 2 %}selected{% endif %}>Equivalence only</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="boolean_eval_weight">Evaluation weight</label>
+                                <input type="number" id="boolean_eval_weight" name="boolean_eval_weight"
+                                    value="{{ config.get('boolean_eval_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="boolean_equiv_weight">Equivalence weight</label>
+                                <input type="number" id="boolean_equiv_weight" name="boolean_equiv_weight"
+                                    value="{{ config.get('boolean_equiv_weight', 1) }}" min="0" max="20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Boolean Expression Depth</h4>
+                        <p class="config-description">Control the nested depth of generated Boolean expressions.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_bool_expr_depth">Min depth</label>
+                                <input type="number" id="min_bool_expr_depth" name="min_bool_expr_depth"
+                                    value="{{ config.min_bool_expr_depth }}" min="1" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_bool_expr_depth">Max depth</label>
+                                <input type="number" id="max_bool_expr_depth" name="max_bool_expr_depth"
+                                    value="{{ config.max_bool_expr_depth }}" min="1" max="20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Boolean Variables</h4>
+                        <p class="config-description">Choose how many variables may appear and which variable names are available.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_bool_var_num">Min variables</label>
+                                <input type="number" id="min_bool_var_num" name="min_bool_var_num"
+                                    value="{{ config.min_bool_var_num }}" min="1" max="10">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_bool_var_num">Max variables</label>
+                                <input type="number" id="max_bool_var_num" name="max_bool_var_num"
+                                    value="{{ config.max_bool_var_num }}" min="1" max="10">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="boolean_variables">Available variable names (separated by commas)</label>
+                            <input type="text" id="boolean_variables" name="boolean_variables"
+                                value="{{ config.boolean_variables | join(', ') }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complex problem configs -->
+            <div id="complex" class="tab-content">
+                <div class="config-section">
+                    <h3>Complex Number Configs</h3>
+
+                    <div class="form-section">
+                        <h4>Question Mode</h4>
+                        <p class="config-description">Select the type of complex number questions to generate. Weights are used only in mixed mode.</p>
+                        <div class="form-group">
+                            <label for="complex_question_mode">Complex question mode</label>
+                            <select id="complex_question_mode" name="complex_question_mode">
+                                <option value="0" {% if config.get('complex_question_mode', 0) == 0 %}selected{% endif %}>Mixed</option>
+                                <option value="1" {% if config.get('complex_question_mode', 0) == 1 %}selected{% endif %}>Arithmetic only</option>
+                                <option value="2" {% if config.get('complex_question_mode', 0) == 2 %}selected{% endif %}>Conjugate only</option>
+                                <option value="3" {% if config.get('complex_question_mode', 0) == 3 %}selected{% endif %}>Modulus only</option>
+                                <option value="4" {% if config.get('complex_question_mode', 0) == 4 %}selected{% endif %}>Powers of i only</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="complex_arithmetic_weight">Arithmetic weight</label>
+                                <input type="number" id="complex_arithmetic_weight" name="complex_arithmetic_weight"
+                                    value="{{ config.get('complex_arithmetic_weight', 2) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="complex_conjugate_weight">Conjugate weight</label>
+                                <input type="number" id="complex_conjugate_weight" name="complex_conjugate_weight"
+                                    value="{{ config.get('complex_conjugate_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="complex_modulus_weight">Modulus weight</label>
+                                <input type="number" id="complex_modulus_weight" name="complex_modulus_weight"
+                                    value="{{ config.get('complex_modulus_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="complex_power_i_weight">Powers of i weight</label>
+                                <input type="number" id="complex_power_i_weight" name="complex_power_i_weight"
+                                    value="{{ config.get('complex_power_i_weight', 1) }}" min="0" max="20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Complex Components Range</h4>
+                        <p class="config-description">Control the integer range for real and imaginary components.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_complex_component">Min component</label>
+                                <input type="number" id="min_complex_component" name="min_complex_component"
+                                    value="{{ config.get('min_complex_component', -8) }}" min="-100" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_complex_component">Max component</label>
+                                <input type="number" id="max_complex_component" name="max_complex_component"
+                                    value="{{ config.get('max_complex_component', 8) }}" min="-100" max="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Powers of i Range</h4>
+                        <p class="config-description">Control the exponent range used in i^n questions.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_complex_power">Min exponent</label>
+                                <input type="number" id="min_complex_power" name="min_complex_power"
+                                    value="{{ config.get('min_complex_power', 2) }}" min="0" max="1000">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_complex_power">Max exponent</label>
+                                <input type="number" id="max_complex_power" name="max_complex_power"
+                                    value="{{ config.get('max_complex_power', 40) }}" min="0" max="1000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sequence problem configs -->
+            <div id="sequence" class="tab-content">
+                <div class="config-section">
+                    <h3>Sequence Problem Configs</h3>
+
+                    <div class="form-section">
+                        <h4>Question Mode</h4>
+                        <p class="config-description">Select the type of sequence questions to generate. Weights are used only in mixed mode.</p>
+                        <div class="form-group">
+                            <label for="sequence_question_mode">Sequence question mode</label>
+                            <select id="sequence_question_mode" name="sequence_question_mode">
+                                <option value="0" {% if config.get('sequence_question_mode', 0) == 0 %}selected{% endif %}>Mixed</option>
+                                <option value="1" {% if config.get('sequence_question_mode', 0) == 1 %}selected{% endif %}>Arithmetic nth term only</option>
+                                <option value="2" {% if config.get('sequence_question_mode', 0) == 2 %}selected{% endif %}>Geometric nth term only</option>
+                                <option value="3" {% if config.get('sequence_question_mode', 0) == 3 %}selected{% endif %}>Arithmetic finite sum only</option>
+                                <option value="4" {% if config.get('sequence_question_mode', 0) == 4 %}selected{% endif %}>Geometric finite sum only</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="arithmetic_sequence_weight">Arithmetic nth weight</label>
+                                <input type="number" id="arithmetic_sequence_weight" name="arithmetic_sequence_weight"
+                                    value="{{ config.get('arithmetic_sequence_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="geometric_sequence_weight">Geometric nth weight</label>
+                                <input type="number" id="geometric_sequence_weight" name="geometric_sequence_weight"
+                                    value="{{ config.get('geometric_sequence_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="arithmetic_sequence_sum_weight">Arithmetic sum weight</label>
+                                <input type="number" id="arithmetic_sequence_sum_weight" name="arithmetic_sequence_sum_weight"
+                                    value="{{ config.get('arithmetic_sequence_sum_weight', 1) }}" min="0" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="geometric_sequence_sum_weight">Geometric sum weight</label>
+                                <input type="number" id="geometric_sequence_sum_weight" name="geometric_sequence_sum_weight"
+                                    value="{{ config.get('geometric_sequence_sum_weight', 1) }}" min="0" max="20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Index and Term Ranges</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_sequence_index">Min n</label>
+                                <input type="number" id="min_sequence_index" name="min_sequence_index"
+                                    value="{{ config.get('min_sequence_index', 2) }}" min="1" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_sequence_index">Max n</label>
+                                <input type="number" id="max_sequence_index" name="max_sequence_index"
+                                    value="{{ config.get('max_sequence_index', 8) }}" min="1" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="min_sequence_term">Min first term</label>
+                                <input type="number" id="min_sequence_term" name="min_sequence_term"
+                                    value="{{ config.get('min_sequence_term', -10) }}" min="-100" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_sequence_term">Max first term</label>
+                                <input type="number" id="max_sequence_term" name="max_sequence_term"
+                                    value="{{ config.get('max_sequence_term', 10) }}" min="-100" max="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Difference and Ratio Ranges</h4>
+                        <p class="config-description">Generated common differences and common ratios are never 0. A range of 0 to 0 is invalid.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="min_sequence_difference">Min difference</label>
+                                <input type="number" id="min_sequence_difference" name="min_sequence_difference"
+                                    value="{{ config.get('min_sequence_difference', -8) }}" min="-100" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_sequence_difference">Max difference</label>
+                                <input type="number" id="max_sequence_difference" name="max_sequence_difference"
+                                    value="{{ config.get('max_sequence_difference', 8) }}" min="-100" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="min_sequence_ratio">Min ratio</label>
+                                <input type="number" id="min_sequence_ratio" name="min_sequence_ratio"
+                                    value="{{ config.get('min_sequence_ratio', -5) }}" min="-20" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_sequence_ratio">Max ratio</label>
+                                <input type="number" id="max_sequence_ratio" name="max_sequence_ratio"
+                                    value="{{ config.get('max_sequence_ratio', 5) }}" min="-20" max="20">
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -315,7 +603,7 @@
     </div>
 
     <script>
-        function showTab(tabName) {
+        function showTab(tabName, button) {
             // 隐藏所有标签页内容
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
@@ -323,11 +611,13 @@
             // 移除所有标签页的活动状态
             document.querySelectorAll('.nav-tab').forEach(tab => {
                 tab.classList.remove('active');
+                tab.setAttribute('aria-selected', 'false');
             });
             // 显示选中的标签页内容
             document.getElementById(tabName).classList.add('active');
             // 设置选中的标签页为活动状态
-            event.target.classList.add('active');
+            button.classList.add('active');
+            button.setAttribute('aria-selected', 'true');
         }
 
         function showLoading(message = 'Saving Configuration...') {
@@ -361,7 +651,7 @@
             .then(response => response.json())
             .then(data => {
                 hideLoading();
-                
+
                 if (data.success) {
                     messageDiv.textContent = data.message;
                     messageDiv.className = 'message success';
@@ -379,7 +669,17 @@
                         }
                     }, 2000);
                 } else {
-                    messageDiv.textContent = data.error;
+                    const details = [];
+                    if (data.error) {
+                        details.push(data.error);
+                    }
+                    if (Array.isArray(data.errors) && data.errors.length > 0) {
+                        details.push(data.errors.map(item => '- ' + item).join('\n'));
+                    }
+                    if (data.build_error) {
+                        details.push('Build error:\n' + data.build_error);
+                    }
+                    messageDiv.textContent = details.join('\n');
                     messageDiv.className = 'message error';
                     messageDiv.style.display = 'block';
                 }

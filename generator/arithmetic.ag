@@ -1,0 +1,16 @@
+# Arithmetic Attribute Grammar
+#
+# "split" divides the remaining budget between child nonterminals.
+# "copy" passes the same value to every child.
+attribute len = 2 split
+attribute digit = 2 copy
+
+start E
+
+E -> E + E { len = -1 } when len > 0 weight 3
+E -> E - E { len = -1 } when len > 0 weight 3
+E -> E * E { len = -1 } when len > 0 weight 2
+E -> E / E { len = -1 } when len > 0 weight 1
+E -> num { len = -0 } when len = 0 weight 1
+
+num -> integer { digit = -0 } when digit > 0 weight 1

@@ -74,6 +74,7 @@ class print = object (self)
   method visit_WITH_METH           = string "with"
   method visit_SET_DEF_METH        = string "Set"
   method visit_COMPUTE_METH        = string "Compute"
+  method visit_COMPLEX_METH        = string "Complex"
   method visit_INTERSECT_METH      = string "intersect"
   method visit_NORM_METH      = string "norm"
   method visit_UNIT_METH      = string "unit"
@@ -81,6 +82,10 @@ class print = object (self)
   method visit_NAMING         = string "$"
   method visit_COLON          = string ":"
   method visit_QUESTION_MARK  = string "?"
+  method visit_ARITH_SEQ_NTH_PROB = string "Arithmetic sequence: find a_n."
+  method visit_GEOM_SEQ_NTH_PROB = string "Geometric sequence: find a_n."
+  method visit_ARITH_SEQ_SUM_PROB = string "Arithmetic sequence: find the finite sum."
+  method visit_GEOM_SEQ_SUM_PROB = string "Geometric sequence: find the finite sum."
   method visit_FAT_COMMA      = string "=>"
   method visit_ARROW          = string "->"
 
@@ -112,6 +117,15 @@ class print = object (self)
   
   method visit_GIVEN_PROB     = string "Given the sets:"
   method visit_COMPUTE_PROB   = string "Compute:"
+  method visit_EVALUATE_BOOL_PROB = string "Evaluate the Boolean expression:"
+  method visit_BOOLEAN_EQUIV_PROB = string "Determine whether the Boolean expressions are equivalent:"
+  method visit_COMPLEX_ARITH_PROB = string "Compute the complex number expression:"
+  method visit_COMPLEX_CONJ_PROB  = string "Find the conjugate of:"
+  method visit_COMPLEX_MOD_PROB   = string "Find the modulus of:"
+  method visit_COMPLEX_POWER_I_PROB = string "Simplify the power of i:"
+  method visit_WHEN_WORD      = string "When:"
+  method visit_BOOL_ANSWER_HINT = string "Enter 1 for True and 0 for False."
+  method visit_BOOL_EQUIV_ANSWER_HINT = string "Enter 1 if equivalent and 0 otherwise."
 
   method visit_SUPPOSE_PROB       = string "Suppose the vectors:"
   method visit_PERIOD             = string "."
@@ -120,6 +134,7 @@ class print = object (self)
   method visit_VECTOR_SAME_PROB   = string "Enter a vector in the same direction as "
   (* ------------------- NEW CODE START ------------------- *)
   method visit_GIVEN_FUN          = string "Given this function:"
+  method visit_INDEFINITE_INTEGRAL_PROB = string "Find an antiderivative F(x) with C = 0:"
   (* ------------------- NEW CODE END ------------------- *)
 
   method visit_UNION          = string "U"
@@ -130,6 +145,7 @@ class print = object (self)
   method visit_GEQ_LATEX      = string "\\geq"
   method visit_LEQ_LATEX      = string "\\leq"
   method visit_X_VAR          = string "x"
+  method visit_I_UNIT         = string "i"
   (* ------------------- NEW CODE START ------------------- *)
   method visit_F_FUN          = string "f"
   method visit_NAT_LOG        = string "e"
@@ -146,12 +162,21 @@ class print = object (self)
   method visit_LANGLE_LATEX   = string "\\langle"
   method visit_RANGLE_LATEX   = string "\\rangle"
   method visit_CDOT_LATEX     = string "\\cdot"
+  method visit_DIV_LATEX      = string "\\div"
   method visit_TIMES_LATEX    = string "\\times"
   method visit_LEFT_NORM_LATEX   = string "\\left\\|"
   method visit_RIGHT_NORM_LATEX  = string "\\right\\|"
 
   method visit_CMP_1          = string "cmp(parallel=>1)"
   method visit_CMP_2          = string "cmp(parallel=>1,sameDirection=>1)"
+  method visit_TRUE_WORD      = string "True"
+  method visit_FALSE_WORD     = string "False"
+  method visit_AND_WORD       = string "AND"
+  method visit_OR_WORD        = string "OR"
+  method visit_NOT_WORD       = string "NOT"
+  method visit_XOR_WORD       = string "XOR"
+  method visit_IMPLIES_WORD   = string "IMPLIES"
+  method visit_IFF_WORD       = string "IFF"
 
   (*────────────────────────────────────────────────────────────────────────*)
   (* document variants                                                      *)
@@ -370,6 +395,15 @@ class print = object (self)
       string "Formula(" ^^ string "\"" ^^ (super#visit_function_expr s) ^^ string "\"" ^^ string ")"
   (* ------------------- NEW CODE END ------------------- *)
 
+  method! case_meth_complex
+      re im =
+    self#visit_COMPLEX_METH
+    ^^ lparen
+    ^^ super#visit_int_with_sign re
+    ^^ comma
+    ^^ super#visit_int_with_sign im
+    ^^ rparen
+
   method! case_meth_real
       v    = 
       string "Real(" ^^ self#visit_value v ^^ string ")"
@@ -467,7 +501,160 @@ class print = object (self)
      ^^ string ">> [`[$" ^^ string fun_name ^^ string "]`] <<" ^^ hardline ^^ hardline
     ^^ self#visit_COMPUTE_PROB ^^ hardline
     ^^ super#visit_derivative_prob_list derp_list
+
   (* ------------------- NEW CODE END ------------------- *)
+
+  method! case_qbool_eval
+      expr assignments ans =
+    self#visit_EVALUATE_BOOL_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr expr ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_WHEN_WORD ^^ hardline
+    ^^ super#visit_bool_assignment_list assignments
+    ^^ self#visit_BOOL_ANSWER_HINT ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qbool_equiv
+      left right ans =
+    self#visit_BOOLEAN_EQUIV_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr left
+    ^^ string ", "
+    ^^ super#visit_bool_expr right
+    ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_BOOL_EQUIV_ANSWER_HINT ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qbool_equiv_width
+      left right ans w =
+    self#visit_BOOLEAN_EQUIV_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr left
+    ^^ string ", "
+    ^^ super#visit_bool_expr right
+    ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_BOOL_EQUIV_ANSWER_HINT ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{answer=>"
+    ^^ super#visit_answer_item ans
+    ^^ string ",width=>"
+    ^^ string (string_of_int w)
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qbool_eval_width
+      expr assignments ans w =
+    self#visit_EVALUATE_BOOL_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_bool_expr expr ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_WHEN_WORD ^^ hardline
+    ^^ super#visit_bool_assignment_list assignments
+    ^^ self#visit_BOOL_ANSWER_HINT ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{answer=>"
+    ^^ super#visit_answer_item ans
+    ^^ string ",width=>"
+    ^^ string (string_of_int w)
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qcomplex_arith
+      expr ans =
+    self#visit_COMPLEX_ARITH_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_complex_expr expr ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qcomplex_conj
+      num ans =
+    self#visit_COMPLEX_CONJ_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_complex_num num ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qcomplex_mod
+      num ans =
+    self#visit_COMPLEX_MOD_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN ^^ super#visit_complex_num num ^^ self#visit_IT_MATH_CLOSE ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qcomplex_power_i
+      exponent ans =
+    self#visit_COMPLEX_POWER_I_PROB ^^ hardline
+    ^^ self#visit_IT_MATH_OPEN
+    ^^ self#visit_I_UNIT
+    ^^ self#visit_POWER_OP
+    ^^ string (string_of_int exponent)
+    ^^ self#visit_IT_MATH_CLOSE
+    ^^ hardline
+    ^^ self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_sequence_param
+      label value =
+    self#visit_IT_MATH_OPEN
+    ^^ string label
+    ^^ space
+    ^^ self#visit_EQ
+    ^^ space
+    ^^ super#visit_int_with_sign value
+    ^^ self#visit_IT_MATH_CLOSE
+
+  method sequence_answer ans =
+    self#visit_BLANK
+    ^^ string "{"
+    ^^ super#visit_answer_item ans
+    ^^ string "}"
+    ^^ hardline ^^ string "---"
+
+  method! case_qsequence_arith_nth
+      first diff index ans =
+    self#visit_ARITH_SEQ_NTH_PROB ^^ hardline
+    ^^ super#visit_sequence_param first ^^ hardline
+    ^^ super#visit_sequence_param diff ^^ hardline
+    ^^ super#visit_sequence_param index ^^ hardline
+    ^^ self#sequence_answer ans
+
+  method! case_qsequence_geom_nth
+      first ratio index ans =
+    self#visit_GEOM_SEQ_NTH_PROB ^^ hardline
+    ^^ super#visit_sequence_param first ^^ hardline
+    ^^ super#visit_sequence_param ratio ^^ hardline
+    ^^ super#visit_sequence_param index ^^ hardline
+    ^^ self#sequence_answer ans
+
+  method! case_qsequence_arith_sum
+      first diff count ans =
+    self#visit_ARITH_SEQ_SUM_PROB ^^ hardline
+    ^^ super#visit_sequence_param first ^^ hardline
+    ^^ super#visit_sequence_param diff ^^ hardline
+    ^^ super#visit_sequence_param count ^^ hardline
+    ^^ self#sequence_answer ans
+
+  method! case_qsequence_geom_sum
+      first ratio count ans =
+    self#visit_GEOM_SEQ_SUM_PROB ^^ hardline
+    ^^ super#visit_sequence_param first ^^ hardline
+    ^^ super#visit_sequence_param ratio ^^ hardline
+    ^^ super#visit_sequence_param count ^^ hardline
+    ^^ self#sequence_answer ans
 
   method! case_qvalue
       call =
@@ -520,6 +707,105 @@ class print = object (self)
   method! case_ict_math
       expr =
     string "[`" ^^ super#visit_math_expr expr ^^ string "`]"
+
+  (*─────────────────────────────────────────────────────────────────────────*)
+  (* Boolean expression evaluation printing methods                          *)
+  method! case_bool_assignment_list_cons
+      assignment rest =
+    super#visit_bool_assignment assignment ^^ hardline
+    ^^ super#visit_bool_assignment_list rest
+
+  method! case_bool_assignment_list_last
+      assignment =
+    super#visit_bool_assignment assignment ^^ hardline
+
+  method! case_bool_assignment_true
+      name =
+    string "- " ^^ string name ^^ string " = \\mathsf{T}"
+
+  method! case_bool_assignment_false
+      name =
+    string "- " ^^ string name ^^ string " = \\mathsf{F}"
+
+  method! case_bool_and
+      left right =
+    lparen ^^ super#visit_bool_expr left ^^ string " \\land " ^^ super#visit_bool_expr right ^^ rparen
+
+  method! case_bool_or
+      left right =
+    lparen ^^ super#visit_bool_expr left ^^ string " \\lor " ^^ super#visit_bool_expr right ^^ rparen
+
+  method! case_bool_xor
+      left right =
+    lparen ^^ super#visit_bool_expr left ^^ string " \\oplus " ^^ super#visit_bool_expr right ^^ rparen
+
+  method! case_bool_implies
+      left right =
+    lparen ^^ super#visit_bool_expr left ^^ string " \\to " ^^ super#visit_bool_expr right ^^ rparen
+
+  method! case_bool_iff
+      left right =
+    lparen ^^ super#visit_bool_expr left ^^ string " \\leftrightarrow " ^^ super#visit_bool_expr right ^^ rparen
+
+  method! case_bool_not
+      expr =
+    string "\\neg " ^^ super#visit_bool_expr expr
+
+  method! case_bool_paren
+      expr =
+    lparen ^^ super#visit_bool_expr expr ^^ rparen
+
+  method! case_bool_true
+      () =
+    string "\\mathsf{T}"
+
+  method! case_bool_false
+      () =
+    string "\\mathsf{F}"
+
+  method! case_bool_var
+      name =
+    string name
+
+  (*─────────────────────────────────────────────────────────────────────────*)
+  (* Complex number printing methods                                         *)
+  method! case_complex_add
+      left right =
+    lparen ^^ super#visit_complex_expr left ^^ rparen
+    ^^ string " + "
+    ^^ lparen ^^ super#visit_complex_expr right ^^ rparen
+
+  method! case_complex_sub
+      left right =
+    lparen ^^ super#visit_complex_expr left ^^ rparen
+    ^^ string " - "
+    ^^ lparen ^^ super#visit_complex_expr right ^^ rparen
+
+  method! case_complex_mul
+      left right =
+    lparen ^^ super#visit_complex_expr left ^^ rparen
+    ^^ string " * "
+    ^^ lparen ^^ super#visit_complex_expr right ^^ rparen
+
+  method! case_complex_lit
+      num =
+    super#visit_complex_num num
+
+  method! case_complex_num_pos_im
+      re im =
+    super#visit_int_with_sign re ^^ string " + " ^^ string (string_of_int im) ^^ self#visit_I_UNIT
+
+  method! case_complex_num_neg_im
+      re im =
+    super#visit_int_with_sign re ^^ string " - " ^^ string (string_of_int im) ^^ self#visit_I_UNIT
+
+  method! case_complex_num_imag
+      im =
+    super#visit_int_with_sign im ^^ self#visit_I_UNIT
+
+  method! case_complex_num_real
+      re =
+    super#visit_int_with_sign re
 
   (*─────────────────────────────────────────────────────────────────────────*)
   (* math_expr, term, factor                                                 *)
@@ -940,9 +1226,18 @@ class print = object (self)
 
   method! case_der_prob_3
       fun_name =
-    string "[`f\'\'(x) =`] [_____]{$" 
-    ^^ string fun_name 
+    string "[`f\'\'(x) =`] [_____]{$"
+    ^^ string fun_name
     ^^ string "->D()->D()}"
+
+  method! case_integral_prob
+      anti_name =
+    self#visit_INDEFINITE_INTEGRAL_PROB
+    ^^ space
+    ^^ self#visit_BLANK
+    ^^ string "{$"
+    ^^ string anti_name
+    ^^ string "}"
 (* ------------------- NEW CODE END ------------------- *)
 
 end

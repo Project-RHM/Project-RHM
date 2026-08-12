@@ -310,3 +310,37 @@ RBRACE NEWLINE END_PGML NEWLINE ENDDOCUMENT LPAREN RPAREN SEMI EOF
 
 
 ========================================================
+
+Regenerating lexer.ml / parser.ml / parser.mli
+----------------------------------------------
+lexer.ml, parser.ml and parser.mli are all generated and checked in; dune runs
+neither ocamllex nor menhir on lexer.mll and parser.mly. After editing either
+source, regenerate by hand.
+
+For the lexer:
+
+    ocamllex lexer.mll
+
+Note that the checked-in lexer.ml uses CRLF line endings while ocamllex writes
+LF, so convert before overwriting if you want to keep the diff small. Run it
+under the name lexer.mll, not a copy under another name: the generated file
+embeds the source filename in its # line directives.
+
+For the parser:
+
+    ocamlfind ocamlc -c ast.ml
+    menhir --table --unparsing --infer --inspection --explain parser.mly
+
+Adding a token also means adding a `method visit_<TOKEN>` to print_pprint.ml
+and a case to the token printer in visualization.ml; both fail to compile
+otherwise, which is the intended reminder.
+
+All four flags matter: --unparsing produces the DCST/CST/Settle modules,
+--infer fills in concrete types (it needs ast.cmi, hence the ocamlc line),
+and --inspection produces the MenhirInterpreter indexed types. Running this on
+an unmodified parser.mly reproduces the checked-in files byte for byte, so the
+step is verifiable. --explain writes parser.conflicts; the file is created even
+when empty, so check its size rather than its presence.
+
+Do the regeneration in a scratch directory and copy the results in: a failed
+--infer run leaves a truncated parser.ml behind.

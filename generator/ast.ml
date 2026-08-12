@@ -46,7 +46,7 @@ and key = Ident of string | Str of string
 and value = VInt of int | VNum of float | VStr of string | VIdent of string
 
 and operator_list = operator list
-and operator = 
+and operator =
   | Add_Op
   | Sub_Op
   | Mul_Op
@@ -68,6 +68,7 @@ and math_object_method =
   (* ------------------- NEW CODE START ------------------- *)
   | M_Formula_Fun of function_expr
   (* ------------------- NEW CODE END ------------------- *)
+  | M_Complex  of int * int
   | M_Real     of value
   | M_D        of string option
   | M_Eval     of property
@@ -111,12 +112,24 @@ and question_item =
 (* ------------------- NEW CODE START ------------------- *)
   | Q_Given_Function of string * derivative_prob_list
 (* ------------------- NEW CODE END ------------------- *)
+  | Q_Boolean_Eval of bool_expr * bool_assignment list * answer_item * int option
+  | Q_Boolean_Equiv of bool_expr * bool_expr * answer_item * int option
+  | Q_Complex_Arithmetic of complex_expr * answer_item
+  | Q_Complex_Conjugate of complex_num * answer_item
+  | Q_Complex_Modulus of complex_num * answer_item
+  | Q_Complex_Power_I of int * answer_item
+  | Q_Sequence of sequence_question * answer_item * int option
 
+and sequence_question =
+  | Arithmetic_Nth of int * int * int
+  | Geometric_Nth of int * int * int
+  | Arithmetic_Sum of int * int * int
+  | Geometric_Sum of int * int * int
 and question_text =
   | Q_Value     of intext_call
   | Q_IsEqual   of intext_call
 
-and set_list = 
+and set_list =
   | Set_List_Cons of string * set_expr * set_list
   | Set_List_Last of string * set_expr
 
@@ -149,7 +162,7 @@ and set_term =
   | Set_Op_Inter  of set_term * set_factor
   | Set_Op_Factor of set_factor
 
-and set_factor = 
+and set_factor =
   | Set_Op_Diff    of set_factor * set_primary
   | Set_Op_Primary of set_primary
 
@@ -160,7 +173,7 @@ and set_primary =
 and answer_item =
   | A_Var   of variable
 
-and vector_list = 
+and vector_list =
   | Vector_List_Cons of string * set_enum * vector_list
   | Vector_List_Last of string * set_enum
 
@@ -229,8 +242,32 @@ and derivative_prob =
   | First_Derivative    of string
   | Derivative_Algebra  of int * string * int
   | Second_Derivative   of string
+  | Indefinite_Integral of string
 
 (* ------------------- NEW CODE END ------------------- *)
+(* ================================================================ *)
+(* ============== Boolean Algebra Types =========================== *)
+(* ================================================================ *)
+
+and bool_assignment = string * bool
+
+and bool_expr =
+  | Bool_Const   of bool
+  | Bool_Var     of string
+  | Bool_Not     of bool_expr
+  | Bool_And     of bool_expr * bool_expr
+  | Bool_Or      of bool_expr * bool_expr
+  | Bool_Xor     of bool_expr * bool_expr
+  | Bool_Implies of bool_expr * bool_expr
+  | Bool_Iff     of bool_expr * bool_expr
+
+and complex_num = Complex_Num of int * int
+
+and complex_expr =
+  | Complex_Lit of complex_num
+  | Complex_Add of complex_expr * complex_expr
+  | Complex_Sub of complex_expr * complex_expr
+  | Complex_Mul of complex_expr * complex_expr
 
 (*
 and solution_section = Solution of solution_list

@@ -20,13 +20,16 @@ let min_cfg_depth = 1
 let min_question_num = 4
 let max_question_num = 10
 
-(* Problem type: 
-    0 = all question type, 
-    1 = arithmetic only, 
-    2 = set only, 
+(* Problem type:
+    0 = all question type,
+    1 = arithmetic only,
+    2 = set only,
     3 = vector only
-    4 = derivative only *)
-let problem_type = 0
+    4 = calculus only (derivative and integral),
+    5 = Boolean Algebra only (includes evaluation and equivalence),
+    6 = Complex Number only,
+    7 = Sequence only *)
+let problem_type = 1
 
 (* For problem type is 0 (all question type):
    you can set the amount of each question type.
@@ -35,10 +38,10 @@ let problem_type = 0
    *)
 let question_random_amounts = false
 (* The amount of each question type:
-   - [arithmetic_amount; set_amount; vector_amount; derivative_amount]
-   - the total amount of questions should be within the interval [min_question_num, max_question_num]
+     - [arithmetic_amount; set_amount; vector_amount; calculus_amount; boolean_amount; complex_amount; sequence_amount]
+     - the total amount of questions should be within the interval [min_question_num, max_question_num]
    *)
-let question_type_amounts = [4; 2; 2; 2]
+let question_type_amounts = [1; 1; 1; 2; 2; 1; 1]
 (* Set shuffle_questions_for_0_type as true if you want to shuffle the order of the questions. *)
 let shuffle_questions_for_0_type = false
 
@@ -48,7 +51,7 @@ let shuffle_questions_for_0_type = false
 (* ======= Arithmetic Question Difficulty ======= *)
 (* ============================================== *)
 (* The absolute max depth of a math expression *)
-let max_expr_depth = 2
+let max_expr_depth = 3
 
 (* Control whether to generate floats *)
 let allow_float = false (* Set to false to generate only integers *)
@@ -101,15 +104,101 @@ let max_vector_prob_num = 6
 (* ----------------------------------------------- *)
 
 (* ============================================== *)
-(* ======= Derivative Question Difficulty ======= *)
+(* ======= Calculus Question Difficulty ======= *)
 (* ============================================== *)
 (* The max depth of a function expression:
    - Set min_fun_expr_depth and max_fun_expr_depth both as 1 to generate only basic functions *)
 let min_fun_expr_depth = 3
 let max_fun_expr_depth = 5
 
+(* 0 = mixed, 1 = derivative only, 2 = integral only. *)
+let calculus_question_mode = 0
+
+(* Used when calculus_question_mode = 0. Weights for each type: *)
+let derivative_weight = 1
+let integral_weight = 1
+
 (* Derivative problem configuration *)
 let min_derivative_prob_num = 2
 let max_derivative_prob_num = 4
+
+(* Integral problem configuration *)
+let integral_expr_depth = 3
+
+(* ----------------------------------------------- *)
+
+(* ============================================== *)
+(* ======= Boolean Algebra Difficulty =========== *)
+(* ============================================== *)
+(* 0 = mixed, 1 = evaluation only, 2 = equivalence only. *)
+let boolean_question_mode = 0
+
+(* Used when boolean_question_mode = 0. Weights for each type: *)
+let boolean_eval_weight = 1
+let boolean_equiv_weight = 1
+
+(* The min and max depth of a Boolean expression. *)
+let min_bool_expr_depth = 2
+let max_bool_expr_depth = 3
+
+(* The number of Boolean variables used in one problem. *)
+let min_bool_var_num = 2
+let max_bool_var_num = 3
+
+(* The Boolean variable names used in Boolean expression questions. *)
+let boolean_variables = ["A"; "B"; "C"; "D"; "E"]
+
+(* ----------------------------------------------- *)
+
+(* ============================================== *)
+(* ======= Complex Number Difficulty ============ *)
+(* ============================================== *)
+(* 0 = mixed, 1 = arithmetic only, 2 = conjugate only, 3 = modulus only, 4 = powers of i only. *)
+let complex_question_mode = 0
+
+(* Used when complex_question_mode = 0. Weights for each type: *)
+let complex_arithmetic_weight = 2
+let complex_conjugate_weight = 1
+let complex_modulus_weight = 1
+let complex_power_i_weight = 1
+
+(* The range of real and imaginary components in generated complex numbers. *)
+let min_complex_component = -8
+let max_complex_component = 8
+
+(* The exponent range for i^n questions. *)
+let min_complex_power = 1
+let max_complex_power = 40
+
+(* ----------------------------------------------- *)
+
+(* ============================================== *)
+(* ======= Sequence Difficulty ================== *)
+(* ============================================== *)
+(* 0 = mixed, 1 = arithmetic nth term, 2 = geometric nth term,
+   3 = arithmetic finite sum, 4 = geometric finite sum. *)
+let sequence_question_mode = 0
+
+(* Used when sequence_question_mode = 0. *)
+let arithmetic_sequence_weight = 1
+let geometric_sequence_weight = 1
+let arithmetic_sequence_sum_weight = 1
+let geometric_sequence_sum_weight = 1
+
+(* The n range for a_n and finite sums. *)
+let min_sequence_index = 2
+let max_sequence_index = 8
+
+(* The first term range. *)
+let min_sequence_term = -10
+let max_sequence_term = 10
+
+(* Arithmetic sequence common difference range. 0 is never generated. *)
+let min_sequence_difference = -8
+let max_sequence_difference = 8
+
+(* Geometric sequence common ratio range. 0 is never generated. *)
+let min_sequence_ratio = -5
+let max_sequence_ratio = 5
 
 (* ----------------------------------------------- *)
