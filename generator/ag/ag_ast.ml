@@ -107,6 +107,7 @@ type declaration =
          synth left on Q      — carried only by Q, so the other rules are not
                                 asked to compute something meaningless to them *)
   | Start_decl of string * position
+  | Context_decl of string * position
   | Precedence_decl of int * associativity * string list * position
   | Prompt_decl of string * position
   | Answer_decl of expr * position
@@ -119,6 +120,7 @@ let declaration_position = function
   | Let_decl (_, _, position)
   | Synthesized_decl (_, _, position)
   | Start_decl (_, position)
+  | Context_decl (_, position)
   | Precedence_decl (_, _, _, position)
   | Prompt_decl (_, position)
   | Answer_decl (_, position)

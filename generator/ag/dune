@@ -1,7 +1,7 @@
 (library
  (name ag)
  (wrapped false)
- (modules ag_ast ag_lexer ag_parser ag_check ag_load ag_number ag_engine ag_pgml)
+ (modules ag_ast ag_lexer ag_parser ag_check ag_load ag_number ag_engine ag_pgml ag_visualization)
  (libraries menhirLib))
 
 (menhir
@@ -26,6 +26,24 @@
  (name ag_equiv_test)
  (modules ag_equiv_test)
  (deps boolean_equiv.ag)
+ (libraries ag))
+
+(test
+ (name ag_sequence_test)
+ (modules ag_sequence_test)
+ (deps sequence.ag)
+ (libraries ag))
+
+(test
+ (name ag_complex_test)
+ (modules ag_complex_test)
+ (deps complex.ag)
+ (libraries ag))
+
+(test
+ (name ag_visualization_test)
+ (modules ag_visualization_test)
+ (deps arithmetic.ag boolean.ag boolean_equiv.ag sequence.ag complex.ag)
  (libraries ag))
 
 ; The round-trip check needs the project's own PG front-end as well.

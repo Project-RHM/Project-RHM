@@ -90,7 +90,7 @@
                         <label class="mode-option">
                             <input type="radio" name="generatorMode" value="ag">
                             <span class="mode-label"><span class="mode-icon">AG</span> Attribute Grammar</span>
-                            <span class="mode-hint">editable arithmetic and Boolean grammars</span>
+                            <span class="mode-hint">editable arithmetic, Boolean, sequence, and complex grammars</span>
                         </label>
                     </div>
 
@@ -105,10 +105,8 @@
                             </button>
                         </div>
                         <p class="ag-note">
-                            The grammar file defines everything: the shape of the
-                            expression, the answer, the wording, and the difficulty
-                            (<code>attribute len</code> sets the operator count,
-                            <code>attribute digit</code> the digits per number).
+                            The grammar file defines the generated structure, random
+                            parameters, constraints, answer, wording, and difficulty.
                             Editing it takes effect immediately — no rebuild.
                         </p>
                     </div>
@@ -928,6 +926,23 @@
             }
         }
 
+        function setTreeViewLabels(area, visualizationKind) {
+            const isAttributeGrammar = visualizationKind === 'attribute_grammar';
+            const switcher = document.getElementById(
+                area === 'generate' ? 'generateViewSwitch' : 'historyViewSwitch'
+            );
+            const switchButton = switcher.querySelector('[data-view="trees"]');
+            const actionButton = document.getElementById(
+                area === 'generate' ? 'showAstBtn' : 'historyShowAstBtn'
+            );
+            switchButton.textContent = isAttributeGrammar
+                ? 'Productions / Attributes'
+                : 'AST / DCST Trees';
+            actionButton.textContent = isAttributeGrammar
+                ? 'Open Production / Attribute Trees'
+                : 'Open AST / DCST Trees';
+        }
+
         function loadHistoryContent(filename) {
             currentHistoryFile = filename;
             currentHistoryVisualizationFilename = '';
@@ -979,6 +994,7 @@
                             originalData.has_visualization
                                 ? originalData.visualization_filename
                                 : '';
+                        setTreeViewLabels('history', originalData.visualization_kind);
                         // 保存原始内容 - 这是关键修复
                         originalPgmlContent = originalData.pgml_content;
                         document.getElementById('historyOriginalOutput').value = originalPgmlContent;
@@ -1341,14 +1357,16 @@
             let agDirty = false;
 
             const agKeywords = new Set([
-                'attribute', 'random', 'let', 'boolean', 'synth', 'on', 'start',
+                'context', 'attribute', 'random', 'let', 'boolean', 'synth', 'on', 'start',
                 'precedence', 'left', 'right', 'nonassoc', 'copy', 'split',
                 'when', 'weight', 'require', 'prompt', 'answer', 'width',
                 'and', 'or', 'not'
             ]);
             const agBuiltins = new Set([
-                'integer', 'nonzero_integer', 'str', 'paren', 'infix', 'prefix',
-                'cond', 'abs', 'min', 'max', 'bit_and', 'bit_or', 'bit_xor'
+                'integer', 'nonzero_integer', 'integer_between',
+                'nonzero_integer_between', 'str', 'paren', 'infix', 'prefix',
+                'cond', 'abs', 'min', 'max', 'bit_and', 'bit_or', 'bit_xor',
+                'complex', 'complex_latex'
             ]);
 
             function escapeAgHtml(text) {
@@ -1788,12 +1806,14 @@
                 // 按生成方式分流：属性文法走 /run_ag，经典生成器走 /run
                 const useAttributeGrammar = currentGeneratorMode() === 'ag';
                 const endpoint = useAttributeGrammar ? '/run_ag' : '/run';
+                setTreeViewLabels(
+                    'generate',
+                    useAttributeGrammar ? 'attribute_grammar' : 'ast_dcst'
+                );
                 let body = 'student_id=' + encodeURIComponent(studentId);
                 if (useAttributeGrammar) {
                     body += '&grammar=' + encodeURIComponent(document.getElementById('agGrammarSelect').value)
                           + '&count=' + encodeURIComponent(document.getElementById('agCount').value);
-                    // 属性文法这条路目前不产出 AST/树视图
-                    showAstBtn.style.display = 'none';
                 }
 
                 // 发送请求

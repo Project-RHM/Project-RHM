@@ -39,6 +39,7 @@ type spec = {
   (* name, and the nonterminal it belongs to (None = every nonterminal) *)
   synthesized : (string * string option) list;
   start : string;
+  context : string;
   precedences : (string * int * associativity) list;
   rules : rule list;
   prompt : template_piece list;
@@ -83,6 +84,8 @@ let expression_builtins =
     ("abs", 1);
     ("min", 2);
     ("max", 2);
+    ("complex", 2);
+    ("complex_latex", 2);
     (* Bitwise operations on whole numbers. A question that asks whether two
        expressions are equivalent has to compare them under every assignment,
        not just one; the usual way to carry that is a truth table, and a truth
@@ -94,11 +97,36 @@ let expression_builtins =
 
 (* Builtins usable as a right-hand side symbol, i.e. leaves that draw a random
    value during generation. *)
-let generator_builtins = [ ("integer", 1); ("nonzero_integer", 1) ]
+let generator_builtins =
+  [
+    ("integer", 1);
+    ("nonzero_integer", 1);
+    ("integer_between", 2);
+    ("nonzero_integer_between", 2);
+  ]
 
 (* Draws available to a `random` declaration. boolean is handled separately
    because it takes no argument. *)
-let random_builtins = [ ("integer", 1); ("nonzero_integer", 1) ]
+let random_builtins = generator_builtins
+
+let integer_literal = function
+  | Int value -> Some value
+  | Unary ("-", Int value) -> Some (-value)
+  | _ -> None
+
+let check_known_generator_range report position name arguments =
+  match (name, arguments) with
+  | ("integer_between" | "nonzero_integer_between"), [ lower; upper ] -> (
+      match (integer_literal lower, integer_literal upper) with
+      | Some lower, Some upper when lower > upper ->
+          report position
+            (Printf.sprintf "%s lower bound %d is greater than upper bound %d" name
+               lower upper)
+      | Some 0, Some 0 when name = "nonzero_integer_between" ->
+          report position
+            "nonzero_integer_between(0, 0) has no non-zero value to draw"
+      | _ -> ())
+  | _ -> ()
 
 (* ------------------------------------------------------------------ *)
 (* Walking expressions                                                 *)
@@ -201,6 +229,7 @@ let check (declarations : file) : (spec, error list) result =
   let lets = ref [] in
   let synthesized : (string * string option) list ref = ref [] in
   let start = ref None in
+  let output_context = ref None in
   let precedences = ref [] in
   let prompt = ref None in
   let answer = ref None in
@@ -250,7 +279,15 @@ let check (declarations : file) : (spec, error list) result =
                   if expected <> List.length arguments then
                     report position
                       (Printf.sprintf "%s takes %d argument(s), but %d were given"
-                         generator expected (List.length arguments))));
+                         generator expected (List.length arguments));
+                  List.iter
+                    (fun argument ->
+                      if integer_literal argument = None then
+                        report position
+                          (Printf.sprintf
+                             "random %s arguments must be integer literals" generator))
+                    arguments;
+                  check_known_generator_range report position generator arguments));
           randoms := !randoms @ [ (name, how) ]
       | Let_decl (name, body, position) ->
           if List.mem_assoc name !randoms || List.mem_assoc name !lets then
@@ -282,6 +319,17 @@ let check (declarations : file) : (spec, error list) result =
                  "'%s' is already declared as an inherited attribute" name);
           synthesized := !synthesized @ [ (name, scope) ]
       | Start_decl (name, position) -> declared_once "start" start position name
+      | Context_decl (name, position) ->
+          let valid_character = function
+            | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | ' ' | '-' | '_' -> true
+            | _ -> false
+          in
+          if name = "" || String.trim name <> name || not (String.for_all valid_character name)
+          then
+            report position
+              "context must be a non-empty WeBWorK context name containing only \
+               letters, numbers, spaces, underscores, or hyphens";
+          declared_once "context" output_context position name
       | Precedence_decl (level, associativity, operators, position) ->
           if level < 0 then
             report position "a precedence level cannot be negative";
@@ -343,10 +391,6 @@ let check (declarations : file) : (spec, error list) result =
             (Printf.sprintf "start symbol '%s' has no rules" name);
         name
   in
-  if inherited = [] then
-    report dummy_position
-      "declare at least one inherited attribute, for example: attribute len = \
-       3 split";
   List.iter
     (fun (name, scope) ->
       match scope with
@@ -518,6 +562,7 @@ let check (declarations : file) : (spec, error list) result =
                       (Printf.sprintf
                          "%s takes %d argument(s), but %d were given" name
                          expected (List.length arguments));
+                  check_known_generator_range report position name arguments;
                   List.iter
                     (check_expr ~context:`Downward ~arity ~position)
                     arguments)
@@ -665,6 +710,7 @@ let check (declarations : file) : (spec, error list) result =
           lets;
           synthesized;
           start = start_symbol;
+          context = Option.value ~default:"Numeric" !output_context;
           precedences = !precedences;
           rules;
           prompt = prompt_pieces;

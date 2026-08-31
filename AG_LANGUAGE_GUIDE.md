@@ -2,11 +2,13 @@
 
 本文档介绍项目中新加入的 `.ag` 题目文法语言。它面向希望新增或修改题型的文法作者（grammar author），重点说明 `.ag` 文件怎么写、每个关键字表示什么，以及通用生成引擎（generic generation engine）如何执行这些规则。
 
-当前通用引擎主要通过以下三个示例进行验证：
+当前通用引擎主要通过以下五个示例进行验证：
 
 - `generator/ag/arithmetic.ag`：四则运算（arithmetic）
 - `generator/ag/boolean.ag`：布尔表达式求值（Boolean evaluation）
 - `generator/ag/boolean_equiv.ag`：布尔等价判断（Boolean equivalence）
+- `generator/ag/sequence.ag`：等差/等比数列的第 n 项与有限和（Sequence）
+- `generator/ag/complex.ag`：递归复数运算、共轭、模及 `i` 的幂（Complex Number）
 
 ## 1. `.ag` 文件是什么
 
@@ -155,6 +157,9 @@ copy  = 广播配置（broadcast a setting）
 split = 分配资源（partition a resource）
 ```
 
+非递归题型不必声明 inherited attribute。例如数列题可以只用题目级
+`random` 生成参数，再由 `Q` 的 synthesized attributes 计算题干和答案。
+
 ### 3.2 综合属性（Synthesized attribute）
 
 综合属性由子节点向父节点返回，用来描述“已经生成的子树是什么”。声明格式为：
@@ -239,6 +244,8 @@ V -> "A"
 ```ag
 num -> integer(digit)
 num -> nonzero_integer(digit)
+num -> integer_between(-10, 10)
+num -> nonzero_integer_between(-8, 8)
 ```
 
 当前支持：
@@ -247,6 +254,8 @@ num -> nonzero_integer(digit)
 |---|---|
 | `integer(digits)` | 生成指定十进制位数的整数 |
 | `nonzero_integer(digits)` | 生成指定十进制位数的非零整数 |
+| `integer_between(lower, upper)` | 在闭区间 `[lower, upper]` 内生成整数，支持负数 |
+| `nonzero_integer_between(lower, upper)` | 在闭区间内生成非零整数 |
 
 生成器叶子携带一个 `value` 属性。例如 `integer(2)` 可能得到 `value=47`。
 
@@ -463,13 +472,14 @@ latex = prefix("\neg", $2)
 
 ## 12. 表达式和值类型（Expressions and value types）
 
-当前运行时支持三类值：
+当前运行时支持四类值：
 
 | 类型（Type） | 说明 | 示例 |
 |---|---|---|
 | `Num` | 精确有理数（exact rational number） | `3`、`7/2` |
 | `Text` | 文本（text） | `"A \land B"` |
 | `Truth` | 布尔值（Boolean value） | `true`、`false` |
+| `Complex` | 精确复数（typed complex value） | `complex(3, -4)` |
 
 支持的主要运算符包括：
 
@@ -493,8 +503,12 @@ latex = prefix("\neg", $2)
 | `bit_and(a, b)` | 2 | 按位与（bitwise AND） |
 | `bit_or(a, b)` | 2 | 按位或（bitwise OR） |
 | `bit_xor(a, b)` | 2 | 按位异或（bitwise XOR） |
+| `complex(real, imaginary)` | 2 | 构造类型化复数答案（typed complex answer） |
+| `complex_latex(real, imaginary)` | 2 | 生成规范的复数显示文本（complex rendering） |
 
 位运算主要用于把 Boolean 表达式的完整真值表编码成整数。
+`complex` 的实部和虚部使用精确数值；`complex_latex` 会正确处理零、负号和
+单位虚部，例如把 `(3, -1)` 显示为 `3 - i`。
 
 ## 13. 题目级随机值（Question-level random value）
 
@@ -504,6 +518,8 @@ latex = prefix("\neg", $2)
 random NAME = boolean
 random NAME = integer(CONSTANT_DIGITS)
 random NAME = nonzero_integer(CONSTANT_DIGITS)
+random NAME = integer_between(CONSTANT_LOWER, CONSTANT_UPPER)
+random NAME = nonzero_integer_between(CONSTANT_LOWER, CONSTANT_UPPER)
 ```
 
 例如：
@@ -513,6 +529,16 @@ random A = boolean
 random B = boolean
 random C = boolean
 ```
+
+数列等需要有符号范围的题型可以写成：
+
+```ag
+random first = integer_between(-10, 10)
+random difference = nonzero_integer_between(-8, 8)
+```
+
+区间包含上下界。下界大于上界，或使用
+`nonzero_integer_between(0, 0)`，都会在检查阶段报告错误。
 
 这些值在每道题开始时只抽取一次，并在整道题中保持不变。这样同一道表达式中每次出现 `A` 都对应同一个真值。
 
@@ -542,7 +568,16 @@ start Q
 
 执行器从该非终结符开始生成整棵题目树。
 
-## 16. 题干、答案和输入宽度（Prompt, answer, and width）
+## 16. PGML Context、题干、答案和输入宽度（Context, prompt, answer, and width）
+
+### 16.0 `context`
+
+```ag
+context "Complex"
+```
+
+`context` 指定生成文件使用的 WeBWorK MathObjects Context。省略时默认为
+`Numeric`。返回 `complex(...)` 答案的文法应声明 `context "Complex"`。
 
 ### 16.1 `prompt`
 
@@ -649,6 +684,11 @@ width 8
 - 增加 `when` 或 `require`；
 - 修改题干和答案公式。
 
+`sequence.ag` 展示了非递归题型的写法：四条 weighted `Q` rules 共用随机首项、
+公差、公比和项数，并分别计算 arithmetic/geometric nth term 与 finite sum。
+`complex.ag` 展示了递归表达式的写法：`len` 控制整棵表达式树的运算符数量，
+`re`、`im` 和 `latex` 综合属性分别计算实部、虚部和显示文本。
+
 如果题目需要 DSL 当前不存在的底层能力，则需要扩展通用引擎。例如：
 
 ```text
@@ -678,6 +718,7 @@ differentiate(...)
 
 | 关键字 | 英文术语 | 作用 |
 |---|---|---|
+| `context` | PGML MathObjects context | 指定输出使用的 WeBWorK Context |
 | `attribute` | inherited attribute declaration | 声明继承属性及初始值 |
 | `copy` | copy distribution | 向每个子非终结符复制完整属性值 |
 | `split` | split distribution | 把属性预算拆分给子非终结符 |
@@ -744,6 +785,29 @@ dune exec ag/agrun.exe -- --count 5 --seed 21 ag/arithmetic.ag
 dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/arithmetic.ag
 ```
 
+生成数列题：
+
+```bash
+dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/sequence.ag
+```
+
+生成复数题：
+
+```bash
+dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/complex.ag
+```
+
+同时保存 PGML、可读 derivation 和交互式 production/attribute trees：
+
+```bash
+dune exec ag/agrun.exe -- \
+  --pg --count 5 --seed-from STUDENT_ID \
+  --out generated_questions/STUDENT_ID.pg \
+  --ast-out generated_asts/STUDENT_ID_ast.txt \
+  --visualization-out generated_visualizations/STUDENT_ID_trees.html \
+  ag/sequence.ag
+```
+
 覆盖继承属性初始值：
 
 ```bash
@@ -769,4 +833,3 @@ dune exec ag/agrun.exe -- --seed-from STUDENT_ID ag/arithmetic.ag
 - 尽量让答案由综合属性计算，而不是根据选中的规则名称写死；
 - 给复杂文法固定 seed 测试，便于复现生成错误；
 - 避免只能靠极低概率满足的 `require`，否则生成会频繁重试甚至失败。
-

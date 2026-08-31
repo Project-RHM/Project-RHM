@@ -13,7 +13,7 @@ let position (start : Lexing.position) =
   }
 %}
 
-%token ATTRIBUTE SYNTH START PRECEDENCE LEFT RIGHT NONASSOC
+%token ATTRIBUTE SYNTH START CONTEXT PRECEDENCE LEFT RIGHT NONASSOC
 %token RANDOM LET BOOLEAN ON
 %token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH
 %token AND OR NOT
@@ -66,6 +66,9 @@ declaration:
 
   | START; name = IDENT
       { Start_decl (name, position $startpos) }
+
+  | CONTEXT; name = STRING
+      { Context_decl (name, position $startpos) }
 
   | PRECEDENCE; level = INT; associativity = associativity;
     operators = nonempty_list(operator_name)

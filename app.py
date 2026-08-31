@@ -957,6 +957,11 @@ def run_attribute_grammar():
     student_id = request.form.get('student_id', '').strip()
     if not student_id:
         return jsonify({'error': 'Please enter a student number.'}), 400
+    if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', student_id):
+        return jsonify({
+            'error': ('Student number may contain only letters, numbers, '
+                      'underscores, and hyphens.')
+        }), 400
 
     grammar = request.form.get('grammar', '').strip() or AG_DEFAULT_GRAMMAR
     # Keep the choice inside the grammar directory.
@@ -978,9 +983,15 @@ def run_attribute_grammar():
     count = max(1, min(count, 50))
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    relative_output = f"generated_questions/{student_id}_{timestamp}.pg"
+    base_name = f"{student_id}_{timestamp}"
+    relative_output = f"generated_questions/{base_name}.pg"
+    relative_ast = f"generated_asts/{base_name}_ast.txt"
+    relative_visualization = f"generated_visualizations/{base_name}_trees.html"
     output_path = os.path.join(OCAML_PROJECT_DIR, relative_output)
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    ast_path = os.path.join(OCAML_PROJECT_DIR, relative_ast)
+    visualization_path = os.path.join(OCAML_PROJECT_DIR, relative_visualization)
+    for path in (output_path, ast_path, visualization_path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
 
     command = [
         AG_PROGRAM_PATH,
@@ -991,6 +1002,8 @@ def run_attribute_grammar():
         # here would silently ignore what the user just typed into the grammar
         # editor, which defeats the point of the file being the definition.
         "--out", relative_output,
+        "--ast-out", relative_ast,
+        "--visualization-out", relative_visualization,
         os.path.join("ag", grammar),
     ]
 
@@ -1025,6 +1038,9 @@ def run_attribute_grammar():
         'grammar': grammar,
         'pgml_code': pgml_code,
         'pgml_path': relative_output,
+        'ast_path': relative_ast,
+        'visualization_path': relative_visualization,
+        'visualization_kind': 'attribute_grammar',
         'original_pgml_content': pgml_code,
     })
 
@@ -1231,6 +1247,11 @@ def get_history_content():
         if os.path.exists(ast_path):
             with open(ast_path, 'r', encoding='utf-8') as f:
                 ast_content = f.read()
+        visualization_kind = (
+            'attribute_grammar'
+            if ast_content.startswith('Attribute Grammar Generated Derivations')
+            else 'ast_dcst'
+        )
 
         return jsonify({
             'success': True,
@@ -1238,7 +1259,8 @@ def get_history_content():
             'ast_content': ast_content,
             'has_ast': bool(ast_content),
             'has_visualization': os.path.exists(visualization_path),
-            'visualization_filename': visualization_filename
+            'visualization_filename': visualization_filename,
+            'visualization_kind': visualization_kind
         })
         
     except Exception as e:

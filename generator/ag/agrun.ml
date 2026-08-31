@@ -12,6 +12,9 @@
                        Generator.seed_of_id, which the existing generator uses)
      --set NAME=VALUE  override an inherited attribute's starting value
      --out FILE        write to FILE instead of standard output
+     --ast-out FILE    write the attributed derivations as readable text
+     --visualization-out FILE
+                       write an interactive production/attribute tree
 
    --set is how difficulty arrives from outside: the .ag file decides what a
    question looks like, the caller decides how hard it starts. Without it, the
@@ -24,11 +27,14 @@ type options = {
   overrides : (string * int) list;
   as_pg : bool;
   output : string option;
+  ast_output : string option;
+  visualization_output : string option;
 }
 
 let usage () =
   prerr_endline
-    "usage: agrun [--pg] [--count N] [--seed N] [--set NAME=VALUE]... [--out FILE] FILE.ag";
+    "usage: agrun [--pg] [--count N] [--seed N] [--set NAME=VALUE]... \
+     [--out FILE] [--ast-out FILE] [--visualization-out FILE] FILE.ag";
   exit 2
 
 (* The same derivation the existing generator uses, so a student id maps to the
@@ -64,6 +70,10 @@ let parse_arguments () =
         walk rest
           { accumulated with overrides = accumulated.overrides @ [ parse_override value ] }
     | "--out" :: value :: rest -> walk rest { accumulated with output = Some value }
+    | "--ast-out" :: value :: rest ->
+        walk rest { accumulated with ast_output = Some value }
+    | "--visualization-out" :: value :: rest ->
+        walk rest { accumulated with visualization_output = Some value }
     | option :: _ when String.length option > 1 && option.[0] = '-' ->
         prerr_endline ("unknown option: " ^ option);
         usage ()
@@ -74,7 +84,16 @@ let parse_arguments () =
   let options =
     walk
       (Array.to_list Sys.argv |> List.tl)
-      { filename = ""; count = 5; seed = 0; overrides = []; as_pg = false; output = None }
+      {
+        filename = "";
+        count = 5;
+        seed = 0;
+        overrides = [];
+        as_pg = false;
+        output = None;
+        ast_output = None;
+        visualization_output = None;
+      }
   in
   if options.filename = "" then usage ();
   options
@@ -97,24 +116,39 @@ let () =
           spec options.overrides
       in
       Random.init options.seed;
-      let text =
+      let questions =
         try
-          if options.as_pg then Ag_pgml.of_spec ~count:options.count spec
-          else
-            List.init options.count (fun index ->
-                let question = Ag_engine.generate spec in
-                Printf.sprintf "%2d. %s\n    answer: %s\n" (index + 1)
-                  question.Ag_engine.prompt question.Ag_engine.answer_text)
-            |> String.concat ""
+          List.init options.count (fun _ -> Ag_engine.generate spec)
         with Ag_engine.Generation_error message ->
           prerr_endline ("generation failed: " ^ message);
           exit 1
       in
-      match options.output with
+      let text =
+        if options.as_pg then
+          Ag_pgml.document ?width:spec.Ag_check.width ~context:spec.Ag_check.context
+            questions
+        else
+          questions
+          |> List.mapi (fun index question ->
+                 Printf.sprintf "%2d. %s\n    answer: %s\n" (index + 1)
+                   question.Ag_engine.prompt question.Ag_engine.answer_text)
+          |> String.concat ""
+      in
+      (match options.output with
       | None -> print_string text
       | Some path ->
           let channel = open_out path in
           Fun.protect
             ~finally:(fun () -> close_out channel)
             (fun () -> output_string channel text);
-          prerr_endline ("written to " ^ path))
+          prerr_endline ("written to " ^ path));
+      (match options.ast_output with
+      | None -> ()
+      | Some path ->
+          Ag_visualization.write_ast path questions;
+          prerr_endline ("AST saved to: " ^ path));
+      (match options.visualization_output with
+      | None -> ()
+      | Some path ->
+          Ag_visualization.write_html path ~grammar:options.filename questions;
+          prerr_endline ("Tree visualization saved to: " ^ path)))

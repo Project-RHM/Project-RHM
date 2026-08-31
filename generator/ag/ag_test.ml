@@ -46,6 +46,7 @@ let () =
         (List.length spec.Ag_check.inherited);
       check_int "synthesized attributes" 2
         (List.length spec.Ag_check.synthesized);
+      check_string "default context" "Numeric" spec.Ag_check.context;
       check_int "precedence entries" 4 (List.length spec.Ag_check.precedences);
       (match spec.Ag_check.inherited with
       | [ len; digit ] ->
@@ -184,6 +185,14 @@ let broken_cases =
          $3.value latex = infix($1, \"+\", $3) }\n"
       ^ terminator,
       "weight must be positive",
+      true );
+    ( "invalid PGML context name",
+      "context \"../Complex\"\n" ^ preamble ^ terminator,
+      "context must be a non-empty WeBWorK context name",
+      true );
+    ( "duplicate PGML context",
+      "context \"Complex\"\ncontext \"Numeric\"\n" ^ preamble ^ terminator,
+      "duplicate 'context' declaration",
       true );
     ( "prompt uses a symbol other than the start symbol",
       preamble ^ terminating_rules

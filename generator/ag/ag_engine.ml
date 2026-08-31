@@ -26,12 +26,16 @@ type value =
   | Num of Ag_number.t
   | Text of string
   | Truth of bool
+  | Complex of Ag_number.t * Ag_number.t
 
 let describe_value = function
   | Num number -> Ag_number.to_string number
   | Text text -> text
   | Truth true -> "true"
   | Truth false -> "false"
+  | Complex (real, imaginary) ->
+      Printf.sprintf "Complex(%s,%s)" (Ag_number.to_string real)
+        (Ag_number.to_string imaginary)
 
 let as_number context = function
   | Num number -> number
@@ -43,9 +47,9 @@ let as_number context = function
 let as_text context = function
   | Text text -> text
   | Num number -> Ag_number.to_string number
-  | Truth _ ->
+  | Truth _ | Complex _ ->
       error
-        (Printf.sprintf "%s expected text but received a true/false value" context)
+        (Printf.sprintf "%s expected text but received a non-text value" context)
 
 let as_truth context = function
   | Truth truth -> truth
@@ -53,6 +57,24 @@ let as_truth context = function
       error
         (Printf.sprintf "%s expected a true/false value but received \"%s\"" context
            (describe_value other))
+
+let format_complex_latex real imaginary =
+  let zero = Ag_number.zero and one = Ag_number.of_int 1 in
+  let real_is_zero = Ag_number.equal real zero in
+  let imaginary_is_zero = Ag_number.equal imaginary zero in
+  let imaginary_is_negative = Ag_number.compare imaginary zero < 0 in
+  let magnitude = Ag_number.absolute imaginary in
+  let imaginary_term =
+    if Ag_number.equal magnitude one then "i"
+    else Ag_number.to_string magnitude ^ "i"
+  in
+  if imaginary_is_zero then Ag_number.to_string real
+  else if real_is_zero then
+    (if imaginary_is_negative then "-" else "") ^ imaginary_term
+  else
+    Ag_number.to_string real
+    ^ (if imaginary_is_negative then " - " else " + ")
+    ^ imaginary_term
 
 (* ------------------------------------------------------------------ *)
 (* Generated trees                                                     *)
@@ -67,6 +89,7 @@ type node = {
   symbol : string;
   applied_rule : rule option;
   children : node list;
+  inherited_attributes : (string * int) list;
   attributes : (string * value) list;
   level : int;
 }
@@ -158,6 +181,63 @@ let weighted_pick rules =
   in
   choose 0 rules
 
+let draw_integer digits =
+  if digits <= 1 then Random.int 10
+  else
+    let rec power_of_ten accumulator exponent =
+      if exponent <= 0 then accumulator
+      else power_of_ten (accumulator * 10) (exponent - 1)
+    in
+    let lower = power_of_ten 1 (digits - 1) in
+    let upper = (power_of_ten 1 digits) - 1 in
+    lower + Random.int (upper - lower + 1)
+
+let draw_integer_between name lower upper =
+  if lower > upper then
+    error
+      (Printf.sprintf "%s lower bound %d is greater than upper bound %d" name lower
+         upper);
+  let width = upper - lower + 1 in
+  if width <= 0 then error (Printf.sprintf "%s range is too wide" name);
+  lower + Random.int width
+
+let draw_nonzero_integer_between lower upper =
+  if lower > upper then
+    error
+      (Printf.sprintf
+         "nonzero_integer_between lower bound %d is greater than upper bound %d"
+         lower upper);
+  if lower = 0 && upper = 0 then
+    error "nonzero_integer_between(0, 0) has no non-zero value to draw";
+  if upper < 0 || lower > 0 then
+    draw_integer_between "nonzero_integer_between" lower upper
+  else
+    let negative_count = -lower in
+    let positive_count = upper in
+    let choice = Random.int (negative_count + positive_count) in
+    if choice < negative_count then lower + choice
+    else 1 + (choice - negative_count)
+
+let draw_generator name arguments =
+  match (name, arguments) with
+  | "integer", [ digits ] -> draw_integer digits
+  | "nonzero_integer", [ digits ] ->
+      let rec attempt remaining =
+        if remaining <= 0 then error "nonzero_integer could not find a value"
+        else
+          let candidate = draw_integer digits in
+          if candidate = 0 then attempt (remaining - 1) else candidate
+      in
+      attempt 50
+  | "integer_between", [ lower; upper ] ->
+      draw_integer_between name lower upper
+  | "nonzero_integer_between", [ lower; upper ] ->
+      draw_nonzero_integer_between lower upper
+  | _ ->
+      error
+        (Printf.sprintf "cannot apply generator '%s' to %d argument(s)" name
+           (List.length arguments))
+
 (* ------------------------------------------------------------------ *)
 (* Evaluating the right-hand side of an equation                       *)
 (* ------------------------------------------------------------------ *)
@@ -238,6 +318,14 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
             else
               error
                 (Printf.sprintf "'%s' cannot order true/false values" operator)
+        | Complex (left_real, left_imaginary), Complex (right_real, right_imaginary) ->
+            let equal =
+              Ag_number.equal left_real right_real
+              && Ag_number.equal left_imaginary right_imaginary
+            in
+            if operator = "=" then Truth equal
+            else if operator = "!=" then Truth (not equal)
+            else error (Printf.sprintf "'%s' cannot order complex values" operator)
         | _ ->
             Truth
               (apply
@@ -302,6 +390,14 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
       else recurse alternative
   | Call ("paren", [ body ]) -> Text ("(" ^ as_text "paren" (recurse body) ^ ")")
   | Call ("str", [ body ]) -> Text (as_text "str" (recurse body))
+  | Call ("complex", [ real; imaginary ]) ->
+      Complex
+        (as_number "complex" (recurse real), as_number "complex" (recurse imaginary))
+  | Call ("complex_latex", [ real; imaginary ]) ->
+      Text
+        (format_complex_latex
+           (as_number "complex_latex" (recurse real))
+           (as_number "complex_latex" (recurse imaginary)))
   | Call (("bit_and" | "bit_or" | "bit_xor") as operation, [ left; right ]) ->
       let whole name value =
         Ag_number.require_integer name (as_number name value)
@@ -334,6 +430,7 @@ type question = {
   prompt : string;
   answer : value;
   answer_text : string;
+  globals : (string * value) list;
   tree : node;
 }
 
@@ -425,22 +522,13 @@ let generate_tree (spec : Ag_check.spec) ~globals =
           | None -> error (Printf.sprintf "%s is missing an argument" name)
         in
         let drawn =
-          match name with
-          | "integer" -> draw_integer (argument 0)
-          | "nonzero_integer" ->
-              let rec attempt remaining =
-                if remaining <= 0 then error "nonzero_integer could not find a value"
-                else
-                  let candidate = draw_integer (argument 0) in
-                  if candidate = 0 then attempt (remaining - 1) else candidate
-              in
-              attempt 50
-          | _ -> error (Printf.sprintf "unknown generator '%s'" name)
+          arguments |> List.mapi (fun index _ -> argument index) |> draw_generator name
         in
         {
           symbol = name;
           applied_rule = None;
           children = [];
+          inherited_attributes = [];
           attributes = [ ("value", Num (Ag_number.of_int drawn)) ];
           level = atom_level;
         }
@@ -449,6 +537,7 @@ let generate_tree (spec : Ag_check.spec) ~globals =
           symbol = text;
           applied_rule = None;
           children = [];
+          inherited_attributes = [];
           attributes = [ ("value", Text text) ];
           level = atom_level;
         }
@@ -457,20 +546,11 @@ let generate_tree (spec : Ag_check.spec) ~globals =
           symbol = name;
           applied_rule = None;
           children = [];
+          inherited_attributes = [];
           attributes = [ ("value", Text name) ];
           level = atom_level;
         }
     | Symbol name -> expand_nonterminal name environment
-
-  and draw_integer digits =
-    if digits <= 1 then Random.int 10
-    else
-      let rec power_of_ten accumulator exponent =
-        if exponent <= 0 then accumulator else power_of_ten (accumulator * 10) (exponent - 1)
-      in
-      let lower = power_of_ten 1 (digits - 1) in
-      let upper = (power_of_ten 1 digits) - 1 in
-      lower + Random.int (upper - lower + 1)
 
   and expand_nonterminal name environment =
     let candidates =
@@ -576,6 +656,7 @@ let generate_tree (spec : Ag_check.spec) ~globals =
       symbol = name;
       applied_rule = Some rule;
       children;
+      inherited_attributes = environment;
       attributes;
       level =
         (match rule_precedence rule with Some (_, level, _) -> level | None -> atom_level);
@@ -612,27 +693,15 @@ let draw_globals (spec : Ag_check.spec) =
           match how with
           | Draw_boolean -> Truth (Random.bool ())
           | Draw_generator (generator, arguments) ->
-              let digits =
-                match arguments with
-                | [ Int value ] -> value
-                | _ -> error (Printf.sprintf "%s needs a constant argument" generator)
+              let constant_integer = function
+                | Int value -> value
+                | Unary ("-", Int value) -> -value
+                | _ ->
+                    error
+                      (Printf.sprintf "%s needs constant integer arguments" generator)
               in
-              let rec draw remaining =
-                let candidate =
-                  if digits <= 1 then Random.int 10
-                  else
-                    let rec power accumulator exponent =
-                      if exponent <= 0 then accumulator
-                      else power (accumulator * 10) (exponent - 1)
-                    in
-                    let lower = power 1 (digits - 1) in
-                    lower + Random.int ((power 1 digits) - lower)
-                in
-                if generator = "nonzero_integer" && candidate = 0 && remaining > 0 then
-                  draw (remaining - 1)
-                else candidate
-              in
-              Num (Ag_number.of_int (draw 50))
+              let arguments = List.map constant_integer arguments in
+              Num (Ag_number.of_int (draw_generator generator arguments))
         in
         (name, value))
       spec.randoms
@@ -670,7 +739,7 @@ let generate_once (spec : Ag_check.spec) =
              as_text "prompt" (attribute tree attribute_name))
     |> String.concat ""
   in
-  { prompt; answer; answer_text = describe_value answer; tree }
+  { prompt; answer; answer_text = describe_value answer; globals; tree }
 
 let generate spec =
   let rec attempt remaining last_failure =

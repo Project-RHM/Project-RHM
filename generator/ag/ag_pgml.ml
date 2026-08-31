@@ -15,11 +15,24 @@
    Questions are separated by a blank line instead, which the grammar does
    accept. *)
 
-let header =
-  "DOCUMENT();\n\
-   loadMacros(\"PGstandard.pl\", \"MathObjects.pl\", \"PGML.pl\");\n\
-   Context(\"Numeric\");\n\
-   \n"
+let perl_string text =
+  let buffer = Buffer.create (String.length text) in
+  String.iter
+    (function
+      | ('\\' | '"' | '$' | '@') as character ->
+          Buffer.add_char buffer '\\';
+          Buffer.add_char buffer character
+      | character -> Buffer.add_char buffer character)
+    text;
+  Buffer.contents buffer
+
+let header context =
+  Printf.sprintf
+    "DOCUMENT();\n\
+     loadMacros(\"PGstandard.pl\", \"MathObjects.pl\", \"PGML.pl\");\n\
+     Context(\"%s\");\n\
+     \n"
+    (perl_string context)
 
 let footer = "END_PGML\nENDDOCUMENT();\n"
 
@@ -32,6 +45,9 @@ let answer_of_value = function
   | Ag_engine.Num number -> Printf.sprintf "Formula('%s')" (Ag_number.to_string number)
   | Ag_engine.Text text -> Printf.sprintf "Formula('%s')" text
   | Ag_engine.Truth truth -> if truth then "1" else "0"
+  | Ag_engine.Complex (real, imaginary) ->
+      Printf.sprintf "Complex(%s,%s)" (Ag_number.to_string real)
+        (Ag_number.to_string imaginary)
 
 let blank ?width answer =
   match width with
@@ -42,12 +58,12 @@ let question_block ?width (question : Ag_engine.question) =
   Printf.sprintf "%s %s" question.Ag_engine.prompt
     (blank ?width (answer_of_value question.Ag_engine.answer))
 
-let document ?width questions =
-  header ^ "BEGIN_PGML\n"
+let document ?width ?(context = "Numeric") questions =
+  header context ^ "BEGIN_PGML\n"
   ^ (questions |> List.map (question_block ?width) |> String.concat "\n\n")
   ^ "\n" ^ footer
 
 let of_spec ?count (spec : Ag_check.spec) =
   let count = match count with Some count -> count | None -> 6 in
   let questions = List.init count (fun _ -> Ag_engine.generate spec) in
-  document ?width:spec.Ag_check.width questions
+  document ?width:spec.Ag_check.width ~context:spec.Ag_check.context questions

@@ -24,13 +24,17 @@ let describe_symbol = function
 let summarize (spec : Ag_check.spec) =
   print_endline "OK";
   Printf.printf "  start symbol : %s\n" spec.Ag_check.start;
-  Printf.printf "  inherited    : %s\n"
-    (spec.Ag_check.inherited
+  Printf.printf "  context      : %s\n" spec.Ag_check.context;
+  let inherited =
+    spec.Ag_check.inherited
     |> List.map (fun (a : Ag_check.inherited_attribute) ->
            Printf.sprintf "%s = %d %s" a.Ag_check.attribute_name
              a.Ag_check.initial
              (describe_distribution a.Ag_check.distribution))
-    |> String.concat ", ");
+    |> String.concat ", "
+  in
+  Printf.printf "  inherited    : %s\n"
+    (if inherited = "" then "(none)" else inherited);
   Printf.printf "  synthesized  : %s\n"
     (spec.Ag_check.synthesized
     |> List.map (fun (name, scope) ->

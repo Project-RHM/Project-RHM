@@ -16,6 +16,7 @@ let keywords = [
   "synth",      SYNTH;
   "on",         ON;
   "start",      START;
+  "context",    CONTEXT;
   "precedence", PRECEDENCE;
   "left",       LEFT;
   "right",      RIGHT;
