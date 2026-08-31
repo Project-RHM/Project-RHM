@@ -5,6 +5,8 @@ import json
 import sys
 import re
 import glob
+import time
+import webbrowser
 from datetime import datetime
 import shutil
 import tempfile
@@ -1266,5 +1268,24 @@ def get_history_content():
     except Exception as e:
         return jsonify({'success': False, 'error': f'Failed to load content: {str(e)}'})
 
+def open_browser_when_ready(url):
+    """Open the local UI after Flask has had time to start listening."""
+    time.sleep(1)
+    webbrowser.open_new_tab(url)
+
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    host = '0.0.0.0'
+    port = 5001
+    browser_url = f'http://127.0.0.1:{port}'
+
+    # Werkzeug starts this file twice in debug mode. Only the reloader parent
+    # should launch the browser, otherwise two tabs are opened.
+    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+        Thread(
+            target=open_browser_when_ready,
+            args=(browser_url,),
+            daemon=True
+        ).start()
+
+    app.run(debug=True, host=host, port=port)
