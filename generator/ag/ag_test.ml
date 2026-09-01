@@ -51,7 +51,7 @@ let () =
       (match spec.Ag_check.inherited with
       | [ len; digit ] ->
           check_string "first attribute" "len" len.Ag_check.attribute_name;
-          check_int "len initial" 3 len.Ag_check.initial;
+          check_int "len initial" 8 len.Ag_check.initial;
           if len.Ag_check.distribution <> Ag_ast.Split then
             fail "len should be a split attribute";
           check_string "second attribute" "digit"
@@ -221,6 +221,21 @@ let broken_cases =
     ( "string literal runs to end of file",
       preamble ^ terminator ^ "prompt \"oops",
       "unterminated string literal",
+      true );
+    ( "no rule lets the derivation finish",
+      preamble
+      ^ "E -> E + E when len > 0 { len = -1 value = $1.value + $3.value latex \
+         = infix($1, \"+\", $3) }\n"
+      ^ "num -> integer(digit) { value = $1.value latex = str($1.value) }\n"
+      ^ question,
+      "keeps the derivation going",
+      true );
+    ( "recursion never spends a budget",
+      preamble
+      ^ "E -> E + E when len > 0 { len = 0 value = $1.value + $3.value latex \
+         = infix($1, \"+\", $3) }\n"
+      ^ terminator,
+      "without spending any inherited attribute",
       true );
   ]
 
