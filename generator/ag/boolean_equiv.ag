@@ -68,7 +68,7 @@ start Q
 # ---- laws that hold -------------------------------------------------------
 
 # De Morgan
-Q -> P P   weight 2 {
+Q -> P P   weight 6 {
        lhs = "\neg (" ++ $1.safe ++ " \land " ++ $2.safe ++ ")"
        rhs = "\neg " ++ $1.safe ++ " \lor \neg " ++ $2.safe
        holds = 255 - bit_and($1.table, $2.table)
@@ -154,8 +154,9 @@ P -> P "\land" P   when len > 0  weight 2 {
 P -> P "\lor" P    when len > 0  weight 2 {
        len   = -1
        require $1.latex != $3.latex
-       table = bit_or($1.table, $3.table)
+       
        latex = infix($1, "\lor", $3)
+       table = bit_or($1.table, $3.table)
        safe  = "(" ++ latex ++ ")"
        }
 

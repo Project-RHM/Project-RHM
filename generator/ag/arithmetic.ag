@@ -11,8 +11,8 @@
 #   split = the remaining budget is divided between the child nodes
 #   copy  = the same value is passed unchanged to every child
 
-attribute len   = 3 split      # operator count: len = 3 produces exactly 3 operators
-attribute digit = 2 copy       # digits per number: every integer is 2 digits
+attribute len   = 8 split      # operator count: len = 3 produces exactly 3 operators
+attribute digit = 4 copy       # digits per number: every integer is 2 digits
 
 
 # ---- Synthesized attributes: results computed on the way back up ----
@@ -37,7 +37,7 @@ start E
 #   $1 $2 $3 refer to the symbols on the right of the arrow, counting from 1.
 #   In E -> E + E, $1 is the left E, $2 is the plus sign, $3 is the right E.
 
-E -> E + E   when len > 0   weight 3 {
+E -> E + E   when len > 0   weight 10 {
        len   = -1
        value = $1.value + $3.value
        latex = infix($1, "+", $3)
