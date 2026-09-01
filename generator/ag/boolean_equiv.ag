@@ -122,6 +122,7 @@ Q -> P P   weight 3 {
 
 # Implication turned around
 Q -> P P   weight 3 {
+       require $1.latex != $2.latex   # identical sides would read "X -> X, X -> X"
        lhs = $1.safe ++ " \to " ++ $2.safe
        rhs = $2.safe ++ " \to " ++ $1.safe
        holds = bit_or(255 - $1.table, $2.table) = bit_or(255 - $2.table, $1.table)
