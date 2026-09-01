@@ -86,6 +86,39 @@ let expression_builtins =
     ("max", 2);
     ("complex", 2);
     ("complex_latex", 2);
+    ("formula_constant", 1);
+    ("formula_variable", 1);
+    ("formula_add", 2);
+    ("formula_subtract", 2);
+    ("formula_multiply", 2);
+    ("formula_power", 2);
+    ("formula_sin", 1);
+    ("formula_cos", 1);
+    ("formula_exp", 1);
+    ("differentiate", 2);
+    ("formula_latex", 1);
+    ("formula_is_zero", 1);
+    ("set_empty", 0);
+    ("set_insert", 2);
+    ("set_interval", 4);
+    ("set_union", 2);
+    ("set_intersection", 2);
+    ("set_difference", 2);
+    ("set_latex", 1);
+    ("vector2", 2);
+    ("vector3", 3);
+    ("vector4", 4);
+    ("vector_add", 2);
+    ("vector_subtract", 2);
+    ("vector_scale", 2);
+    ("vector_dot", 2);
+    ("vector_cross", 2);
+    ("vector_latex", 1);
+    ("vector_is_zero", 1);
+    ("vector_norm_answer", 1);
+    ("vector_unit_answer", 1);
+    ("vector_parallel_answer", 1);
+    ("vector_same_direction_answer", 1);
     (* Bitwise operations on whole numbers. A question that asks whether two
        expressions are equivalent has to compare them under every assignment,
        not just one; the usual way to carry that is a truth table, and a truth

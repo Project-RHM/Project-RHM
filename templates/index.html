@@ -90,7 +90,7 @@
                         <label class="mode-option">
                             <input type="radio" name="generatorMode" value="ag">
                             <span class="mode-label"><span class="mode-icon">AG</span> Attribute Grammar</span>
-                            <span class="mode-hint">editable arithmetic, Boolean, sequence, and complex grammars</span>
+                            <span class="mode-hint">editable grammars for every Stage 1 question family</span>
                         </label>
                     </div>
 
@@ -1366,7 +1366,17 @@
                 'integer', 'nonzero_integer', 'integer_between',
                 'nonzero_integer_between', 'str', 'paren', 'infix', 'prefix',
                 'cond', 'abs', 'min', 'max', 'bit_and', 'bit_or', 'bit_xor',
-                'complex', 'complex_latex'
+                'complex', 'complex_latex', 'formula_constant', 'formula_variable',
+                'formula_add', 'formula_subtract', 'formula_multiply',
+                'formula_power', 'formula_sin', 'formula_cos', 'formula_exp',
+                'differentiate', 'formula_latex', 'formula_is_zero',
+                'set_empty', 'set_insert', 'set_interval', 'set_union',
+                'set_intersection', 'set_difference', 'set_latex',
+                'vector2', 'vector3', 'vector4', 'vector_add',
+                'vector_subtract', 'vector_scale', 'vector_dot', 'vector_cross',
+                'vector_latex', 'vector_is_zero', 'vector_norm_answer',
+                'vector_unit_answer', 'vector_parallel_answer',
+                'vector_same_direction_answer'
             ]);
 
             function escapeAgHtml(text) {

@@ -34,13 +34,22 @@ attributes, constraints, wording, and answers. The shipped specifications are:
 - `boolean_equiv.ag`
 - `sequence.ag`
 - `complex.ag`
+- `calculus.ag`
+- `set.ag`
+- `vector.ag`
 
 `sequence.ag` covers arithmetic/geometric nth-term and finite-sum questions.
 It also exercises the signed inclusive range generators `integer_between` and
 `nonzero_integer_between`. `complex.ag` uses recursive expression productions
 for arithmetic, together with conjugate, modulus, and powers of `i`; typed
 complex answers are rendered in WeBWorK's `Complex` context. See
-`AG_LANGUAGE_GUIDE.md` for the language and CLI.
+`AG_LANGUAGE_GUIDE.md` for the language and CLI. `calculus.ag` shares a typed
+symbolic Formula AST between derivative questions and reverse-generated
+indefinite integrals, with mixed and single-question modes.
+`set.ag` recursively composes union, intersection, and difference over stable
+finite-set or interval definitions. `vector.ag` covers dot product, cross
+product, norm, unit-vector, parallel-vector, and same-direction questions with
+typed Vector answers and comparators.
 
 Attribute Grammar generation also writes a native visualization. Its applied
 production tree shows which weighted rule was selected at each nonterminal;

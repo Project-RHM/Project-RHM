@@ -27,6 +27,12 @@ type value =
   | Text of string
   | Truth of bool
   | Complex of Ag_number.t * Ag_number.t
+  | Formula of Ag_formula.t
+  | Set of Ag_set.t
+  | Vector of Ag_vector.t
+  | VectorNormAnswer of Ag_vector.t
+  | VectorUnitAnswer of Ag_vector.t
+  | VectorDirectionAnswer of Ag_vector.t * bool
 
 let describe_value = function
   | Num number -> Ag_number.to_string number
@@ -36,6 +42,14 @@ let describe_value = function
   | Complex (real, imaginary) ->
       Printf.sprintf "Complex(%s,%s)" (Ag_number.to_string real)
         (Ag_number.to_string imaginary)
+  | Formula expression -> "Formula(" ^ Ag_formula.to_pg expression ^ ")"
+  | Set set -> "Set(" ^ Ag_set.to_pg set ^ ")"
+  | Vector vector -> "Vector(" ^ Ag_vector.component_text vector ^ ")"
+  | VectorNormAnswer vector -> "VectorNorm(" ^ Ag_vector.component_text vector ^ ")"
+  | VectorUnitAnswer vector -> "VectorUnit(" ^ Ag_vector.component_text vector ^ ")"
+  | VectorDirectionAnswer (vector, same_direction) ->
+      Printf.sprintf "VectorDirection(%s,sameDirection=%b)"
+        (Ag_vector.component_text vector) same_direction
 
 let as_number context = function
   | Num number -> number
@@ -47,7 +61,8 @@ let as_number context = function
 let as_text context = function
   | Text text -> text
   | Num number -> Ag_number.to_string number
-  | Truth _ | Complex _ ->
+  | Truth _ | Complex _ | Formula _ | Set _ | Vector _ | VectorNormAnswer _
+  | VectorUnitAnswer _ | VectorDirectionAnswer _ ->
       error
         (Printf.sprintf "%s expected text but received a non-text value" context)
 
@@ -56,6 +71,27 @@ let as_truth context = function
   | other ->
       error
         (Printf.sprintf "%s expected a true/false value but received \"%s\"" context
+           (describe_value other))
+
+let as_formula context = function
+  | Formula expression -> expression
+  | other ->
+      error
+        (Printf.sprintf "%s expected a formula but received \"%s\"" context
+           (describe_value other))
+
+let as_set context = function
+  | Set set -> set
+  | other ->
+      error
+        (Printf.sprintf "%s expected a set but received \"%s\"" context
+           (describe_value other))
+
+let as_vector context = function
+  | Vector vector -> vector
+  | other ->
+      error
+        (Printf.sprintf "%s expected a vector but received \"%s\"" context
            (describe_value other))
 
 let format_complex_latex real imaginary =
@@ -326,6 +362,18 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
             if operator = "=" then Truth equal
             else if operator = "!=" then Truth (not equal)
             else error (Printf.sprintf "'%s' cannot order complex values" operator)
+        | Formula left, Formula right ->
+            if operator = "=" then Truth (Ag_formula.equal left right)
+            else if operator = "!=" then Truth (not (Ag_formula.equal left right))
+            else error (Printf.sprintf "'%s' cannot order formulas" operator)
+        | Set left, Set right ->
+            if operator = "=" then Truth (Ag_set.equal left right)
+            else if operator = "!=" then Truth (not (Ag_set.equal left right))
+            else error (Printf.sprintf "'%s' cannot order sets" operator)
+        | Vector left, Vector right ->
+            if operator = "=" then Truth (Ag_vector.equal left right)
+            else if operator = "!=" then Truth (not (Ag_vector.equal left right))
+            else error (Printf.sprintf "'%s' cannot order vectors" operator)
         | _ ->
             Truth
               (apply
@@ -398,6 +446,136 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
         (format_complex_latex
            (as_number "complex_latex" (recurse real))
            (as_number "complex_latex" (recurse imaginary)))
+  | Call ("formula_constant", [ number ]) ->
+      Formula (Ag_formula.constant (as_number "formula_constant" (recurse number)))
+  | Call ("formula_variable", [ name ]) ->
+      let name = as_text "formula_variable" (recurse name) in
+      (try Formula (Ag_formula.variable name)
+       with Invalid_argument message -> error message)
+  | Call ("formula_add", [ left; right ]) ->
+      Formula
+        (Ag_formula.add
+           (as_formula "formula_add" (recurse left))
+           (as_formula "formula_add" (recurse right)))
+  | Call ("formula_subtract", [ left; right ]) ->
+      Formula
+        (Ag_formula.subtract
+           (as_formula "formula_subtract" (recurse left))
+           (as_formula "formula_subtract" (recurse right)))
+  | Call ("formula_multiply", [ left; right ]) ->
+      Formula
+        (Ag_formula.multiply
+           (as_formula "formula_multiply" (recurse left))
+           (as_formula "formula_multiply" (recurse right)))
+  | Call ("formula_power", [ base; exponent ]) ->
+      let exponent =
+        Ag_number.require_integer "formula_power"
+          (as_number "formula_power" (recurse exponent))
+      in
+      Formula
+        (Ag_formula.power (as_formula "formula_power" (recurse base)) exponent)
+  | Call ("formula_sin", [ body ]) ->
+      Formula (Ag_formula.sin (as_formula "formula_sin" (recurse body)))
+  | Call ("formula_cos", [ body ]) ->
+      Formula (Ag_formula.cos (as_formula "formula_cos" (recurse body)))
+  | Call ("formula_exp", [ body ]) ->
+      Formula (Ag_formula.exp (as_formula "formula_exp" (recurse body)))
+  | Call ("differentiate", [ body; variable ]) ->
+      let expression = as_formula "differentiate" (recurse body) in
+      let variable = as_text "differentiate" (recurse variable) in
+      Formula (Ag_formula.differentiate ~variable expression)
+  | Call ("formula_latex", [ body ]) ->
+      Text (Ag_formula.to_latex (as_formula "formula_latex" (recurse body)))
+  | Call ("formula_is_zero", [ body ]) ->
+      Truth (Ag_formula.is_zero (as_formula "formula_is_zero" (recurse body)))
+  | Call ("set_empty", []) -> Set Ag_set.empty
+  | Call ("set_insert", [ set; element ]) ->
+      let set = as_set "set_insert" (recurse set) in
+      let element = as_number "set_insert" (recurse element) in
+      (try Set (Ag_set.insert set element) with Invalid_argument message -> error message)
+  | Call ("set_interval", [ lower; upper; left_closed; right_closed ]) ->
+      let lower = as_number "set_interval" (recurse lower) in
+      let upper = as_number "set_interval" (recurse upper) in
+      let endpoint context value =
+        if as_truth context (recurse value) then Ag_set.Closed else Ag_set.Open
+      in
+      (try
+         Set
+           (Ag_set.interval lower upper (endpoint "set_interval" left_closed)
+              (endpoint "set_interval" right_closed))
+       with Invalid_argument message -> error message)
+  | Call ("set_union", [ left; right ]) ->
+      Set
+        (Ag_set.union (as_set "set_union" (recurse left))
+           (as_set "set_union" (recurse right)))
+  | Call ("set_intersection", [ left; right ]) ->
+      Set
+        (Ag_set.intersection (as_set "set_intersection" (recurse left))
+           (as_set "set_intersection" (recurse right)))
+  | Call ("set_difference", [ left; right ]) ->
+      Set
+        (Ag_set.difference (as_set "set_difference" (recurse left))
+           (as_set "set_difference" (recurse right)))
+  | Call ("set_latex", [ set ]) ->
+      Text (Ag_set.to_latex (as_set "set_latex" (recurse set)))
+  | Call ("vector2", [ first; second ]) ->
+      Vector
+        (Ag_vector.make
+           [ as_number "vector2" (recurse first); as_number "vector2" (recurse second) ])
+  | Call ("vector3", [ first; second; third ]) ->
+      Vector
+        (Ag_vector.make
+           [ as_number "vector3" (recurse first);
+             as_number "vector3" (recurse second);
+             as_number "vector3" (recurse third) ])
+  | Call ("vector4", [ first; second; third; fourth ]) ->
+      Vector
+        (Ag_vector.make
+           [ as_number "vector4" (recurse first);
+             as_number "vector4" (recurse second);
+             as_number "vector4" (recurse third);
+             as_number "vector4" (recurse fourth) ])
+  | Call ("vector_add", [ left; right ]) ->
+      (try
+         Vector
+           (Ag_vector.add (as_vector "vector_add" (recurse left))
+              (as_vector "vector_add" (recurse right)))
+       with Invalid_argument message -> error message)
+  | Call ("vector_subtract", [ left; right ]) ->
+      (try
+         Vector
+           (Ag_vector.subtract (as_vector "vector_subtract" (recurse left))
+              (as_vector "vector_subtract" (recurse right)))
+       with Invalid_argument message -> error message)
+  | Call ("vector_scale", [ scalar; vector ]) ->
+      Vector
+        (Ag_vector.scale (as_number "vector_scale" (recurse scalar))
+           (as_vector "vector_scale" (recurse vector)))
+  | Call ("vector_dot", [ left; right ]) ->
+      (try
+         Num
+           (Ag_vector.dot (as_vector "vector_dot" (recurse left))
+              (as_vector "vector_dot" (recurse right)))
+       with Invalid_argument message -> error message)
+  | Call ("vector_cross", [ left; right ]) ->
+      (try
+         Vector
+           (Ag_vector.cross (as_vector "vector_cross" (recurse left))
+              (as_vector "vector_cross" (recurse right)))
+       with Invalid_argument message -> error message)
+  | Call ("vector_latex", [ vector ]) ->
+      Text (Ag_vector.to_latex (as_vector "vector_latex" (recurse vector)))
+  | Call ("vector_is_zero", [ vector ]) ->
+      Truth (Ag_vector.is_zero (as_vector "vector_is_zero" (recurse vector)))
+  | Call ("vector_norm_answer", [ vector ]) ->
+      VectorNormAnswer (as_vector "vector_norm_answer" (recurse vector))
+  | Call ("vector_unit_answer", [ vector ]) ->
+      VectorUnitAnswer (as_vector "vector_unit_answer" (recurse vector))
+  | Call ("vector_parallel_answer", [ vector ]) ->
+      VectorDirectionAnswer (as_vector "vector_parallel_answer" (recurse vector), false)
+  | Call ("vector_same_direction_answer", [ vector ]) ->
+      VectorDirectionAnswer
+        (as_vector "vector_same_direction_answer" (recurse vector), true)
   | Call (("bit_and" | "bit_or" | "bit_xor") as operation, [ left; right ]) ->
       let whole name value =
         Ag_number.require_integer name (as_number name value)

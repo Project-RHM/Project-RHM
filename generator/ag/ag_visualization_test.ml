@@ -57,6 +57,9 @@ let () =
   check_file "boolean_equiv.ag" 30;
   check_file "sequence.ag" 40;
   check_file "complex.ag" 50;
+  check_file "calculus.ag" 60;
+  check_file "set.ag" 60;
+  check_file "vector.ag" 60;
   let escaped = Ag_visualization.json_escape "</script>" in
   if contains escaped "<" || contains escaped ">" then
     fail "JSON embedded in HTML did not escape a script-closing tag";
