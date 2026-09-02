@@ -431,6 +431,75 @@ let () =
         | _ -> ())
   done
 
+(* ------------------------------------------------------------------ *)
+(* 8. A failure no retry can fix is reported immediately               *)
+(* ------------------------------------------------------------------ *)
+
+let message_contains haystack needle =
+  let haystack_length = String.length haystack in
+  let needle_length = String.length needle in
+  let rec search index =
+    if index + needle_length > haystack_length then false
+    else if String.sub haystack index needle_length = needle then true
+    else search (index + 1)
+  in
+  search 0
+
+let () =
+  (* integer_between(5, 5) has one possible value, so the require can never
+     hold and no amount of retrying changes that. The engine must say so
+     instead of burning its 200 question attempts. *)
+  let impossible =
+    "attribute len = 0 split\n\
+     synth value\n\
+     synth latex\n\
+     start E\n\
+     E -> num when len = 0 { value = $1.value latex = $1.latex }\n\
+     num -> integer_between(5, 5) { value = $1.value require value != 5 latex = \
+     str($1.value) }\n\
+     prompt \"[`{E.latex}`]\"\n\
+     answer E.value\n"
+  in
+  let spec = load "impossible.ag" impossible in
+  Random.init 1;
+  match Ag_engine.generate spec with
+  | _ -> fail "the impossible grammar generated a question"
+  | exception Ag_engine.Generation_error message ->
+      if not (message_contains message "can never satisfy") then
+        fail ("expected a 'can never satisfy' diagnosis, got: " ^ message)
+
+(* ------------------------------------------------------------------ *)
+(* 9. Running out of retries names the failing constraint              *)
+(* ------------------------------------------------------------------ *)
+
+let () =
+  (* This require is possible to state but impossible to draw: values are 1 or
+     2 and it wants more than 5. The draws are random, so the engine will use
+     its full retry budget — and the final error must say how often which
+     require failed, so the author knows what to fix. *)
+  let unlucky =
+    "attribute len = 0 split\n\
+     synth value\n\
+     synth latex\n\
+     start E\n\
+     E -> num when len = 0 { value = $1.value latex = $1.latex }\n\
+     num -> integer_between(1, 2) { value = $1.value require value > 5 latex = \
+     str($1.value) }\n\
+     prompt \"[`{E.latex}`]\"\n\
+     answer E.value\n"
+  in
+  let spec = load "unlucky.ag" unlucky in
+  Random.init 1;
+  match Ag_engine.generate spec with
+  | _ -> fail "the unlucky grammar generated a question"
+  | exception Ag_engine.Generation_error message ->
+      if not (message_contains message "attempts") then
+        fail ("expected the attempt count in the error, got: " ^ message);
+      if not (message_contains message "most frequent failure") then
+        fail ("expected a failure tally in the error, got: " ^ message);
+      if not (message_contains message "line") then
+        fail ("expected the failing line in the error, got: " ^ message)
+
 let () =
   if !failures = 0 then print_endline "Ag engine tests passed."
   else (

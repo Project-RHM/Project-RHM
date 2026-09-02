@@ -173,6 +173,28 @@ let lookup environment name =
 
 let bind environment name value = (name, value) :: List.remove_assoc name environment
 
+(* Every random decision that could have gone another way bumps this counter.
+   The retry loops compare it before and after a failed attempt: if nothing
+   was drawn, the exact same failure would repeat forever, so they stop
+   immediately instead of burning the remaining retries. A draw whose range
+   holds a single value does not count — it could not have gone differently. *)
+let choice_points = ref 0
+
+let chose () = incr choice_points
+
+(* Tag a failure message as unfixable-by-retry, once, no matter how many
+   retry loops it bubbles up through on the way out. *)
+let deterministic_tag = "; retrying cannot help, no random choice was involved"
+
+let mark_deterministic message =
+  let tag_length = String.length deterministic_tag in
+  let message_length = String.length message in
+  if
+    message_length >= tag_length
+    && String.sub message (message_length - tag_length) tag_length = deterministic_tag
+  then message
+  else message ^ deterministic_tag
+
 (* Split [total] into [count] non-negative parts, uniformly across every way of
    doing so. Drawing each part in turn and shuffling, as an earlier version
    did, favours lopsided splits once there are more than two parts. *)
@@ -180,6 +202,7 @@ let random_partition total count =
   if count <= 0 then []
   else if count = 1 then [ total ]
   else begin
+    if total > 0 then chose ();
     (* Stars and bars: pick count-1 distinct bar positions among
        total + count - 1 slots; the gaps between the bars are the parts. *)
     let slots = total + count - 1 in
@@ -209,6 +232,7 @@ let random_partition total count =
 let weighted_pick rules =
   let total = List.fold_left (fun sum rule -> sum + rule.weight) 0 rules in
   if total <= 0 then error "no candidate rule has a positive weight";
+  if List.length rules > 1 then chose ();
   let target = Random.int total in
   let rec choose offset = function
     | [] -> error "internal: ran off the end of the candidate list"
@@ -218,6 +242,7 @@ let weighted_pick rules =
   choose 0 rules
 
 let draw_integer digits =
+  chose ();
   if digits <= 1 then Random.int 10
   else
     let rec power_of_ten accumulator exponent =
@@ -235,6 +260,7 @@ let draw_integer_between name lower upper =
          upper);
   let width = upper - lower + 1 in
   if width <= 0 then error (Printf.sprintf "%s range is too wide" name);
+  if width > 1 then chose ();
   lower + Random.int width
 
 let draw_nonzero_integer_between lower upper =
@@ -250,6 +276,7 @@ let draw_nonzero_integer_between lower upper =
   else
     let negative_count = -lower in
     let positive_count = upper in
+    if negative_count + positive_count > 1 then chose ();
     let choice = Random.int (negative_count + positive_count) in
     if choice < negative_count then lower + choice
     else 1 + (choice - negative_count)
@@ -752,13 +779,22 @@ let generate_tree (spec : Ag_check.spec) ~globals =
       if remaining <= 0 then
         raise
           (Requirement_failed
-             (match last_failure with
-             | Some message -> message
-             | None -> Printf.sprintf "could not satisfy the requirements of '%s'" name))
+             (Printf.sprintf "'%s' still failed after %d attempts; last failure: %s"
+                name retries_per_node
+                (match last_failure with
+                | Some message -> message
+                | None -> "no requirement could be satisfied")))
       else
+        let before = !choice_points in
         match build_once name environment candidates with
         | node -> node
-        | exception Requirement_failed message -> attempt (remaining - 1) (Some message)
+        | exception Requirement_failed message ->
+            if !choice_points = before then
+              (* Nothing random happened on the way to this failure, so every
+                 retry would fail identically. Stop now instead of burning the
+                 remaining attempts on a foregone conclusion. *)
+              raise (Requirement_failed (mark_deterministic message))
+            else attempt (remaining - 1) (Some message)
     in
     attempt retries_per_node None
 
@@ -869,7 +905,9 @@ let draw_globals (spec : Ag_check.spec) =
       (fun (name, how) ->
         let value =
           match how with
-          | Draw_boolean -> Truth (Random.bool ())
+          | Draw_boolean ->
+              chose ();
+              Truth (Random.bool ())
           | Draw_generator (generator, arguments) ->
               let constant_integer = function
                 | Int value -> value
@@ -920,17 +958,46 @@ let generate_once (spec : Ag_check.spec) =
   { prompt; answer; answer_text = describe_value answer; globals; tree }
 
 let generate spec =
-  let rec attempt remaining last_failure =
+  (* Which failure happened how often, so the final error tells the grammar
+     author what to fix instead of just that generation gave up. *)
+  let failure_counts : (string, int) Hashtbl.t = Hashtbl.create 8 in
+  let record message =
+    let seen = try Hashtbl.find failure_counts message with Not_found -> 0 in
+    Hashtbl.replace failure_counts message (seen + 1)
+  in
+  let most_frequent_failure () =
+    Hashtbl.fold
+      (fun message count best ->
+        match best with
+        | Some (_, best_count) when best_count >= count -> best
+        | _ -> Some (message, count))
+      failure_counts None
+  in
+  let rec attempt remaining =
     if remaining <= 0 then
       error
-        (match last_failure with
-        | Some message -> "could not generate a question: " ^ message
+        (match most_frequent_failure () with
+        | Some (message, count) ->
+            Printf.sprintf
+              "could not generate a question after %d attempts; the most \
+               frequent failure (%d of %d) was: %s"
+              retries_per_question count retries_per_question message
         | None -> "could not generate a question")
     else
+      let before = !choice_points in
       match generate_once spec with
       | question -> question
-      | exception Requirement_failed message -> attempt (remaining - 1) (Some message)
+      | exception Requirement_failed message ->
+          record message;
+          if !choice_points = before then
+            (* The whole question was built without a single random draw, so
+               this grammar fails the same way every time. *)
+            error ("this grammar can never satisfy its own constraints: " ^ message)
+          else attempt (remaining - 1)
       | exception Ag_number.Arithmetic_error message ->
-          attempt (remaining - 1) (Some message)
+          record message;
+          if !choice_points = before then
+            error ("this grammar always fails the same way: " ^ message)
+          else attempt (remaining - 1)
   in
-  attempt retries_per_question None
+  attempt retries_per_question

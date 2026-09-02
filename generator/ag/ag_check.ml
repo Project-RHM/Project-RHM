@@ -655,6 +655,97 @@ let check (declarations : file) : (spec, error list) result =
         (synthesized_of rule.lhs))
     rules;
 
+  (* ---- termination ---- *)
+  (* Both checks below are conservative shape checks, not proofs: they ignore
+     guards entirely and only ask whether the bare productions allow every
+     derivation to reach a floor. Their job is to catch the two classic
+     authoring mistakes — no base case, and a recursion that forgets to spend
+     its budget — before generation runs into the fuel limit. *)
+  let rhs_nonterminals rule =
+    rule.rhs
+    |> List.filter_map (fun symbol ->
+           match symbol with
+           | Symbol name when is_nonterminal name -> Some name
+           | _ -> None)
+  in
+
+  (* 1. A derivation can finish at 'X' only if some rule for X has every
+     nonterminal on its right-hand side already able to finish. *)
+  let can_finish : (string, unit) Hashtbl.t = Hashtbl.create 8 in
+  let keep_looking = ref true in
+  while !keep_looking do
+    keep_looking := false;
+    List.iter
+      (fun rule ->
+        if
+          (not (Hashtbl.mem can_finish rule.lhs))
+          && List.for_all (Hashtbl.mem can_finish) (rhs_nonterminals rule)
+        then (
+          Hashtbl.add can_finish rule.lhs ();
+          keep_looking := true))
+      rules
+  done;
+  List.iter
+    (fun name ->
+      if not (Hashtbl.mem can_finish name) then
+        let position =
+          match List.find_opt (fun rule -> rule.lhs = name) rules with
+          | Some rule -> rule.rule_position
+          | None -> dummy_position
+        in
+        report position
+          (Printf.sprintf
+             "every rule for '%s' keeps the derivation going; give it a rule \
+              whose right-hand side can finish"
+             name))
+    nonterminals;
+
+  (* 2. A cycle that spends nothing repeats the exact same attribute
+     environment forever (copy passes values through unchanged, and guards
+     see the same environment every lap). So on every cycle of the grammar at
+     least one rule must shrink an inherited budget. Equivalently: after
+     removing the rules that do spend, what is left must be acyclic. An
+     update that is not a plain constant is given the benefit of the doubt. *)
+  let spends rule =
+    List.exists
+      (fun equation ->
+        match equation with
+        | Assign (name, body, _) when is_inherited name -> (
+            match body with
+            | Int value -> value < 0
+            | Unary ("-", Int value) -> value > 0
+            | _ -> true)
+        | _ -> false)
+      rule.equations
+  in
+  let free_rules = List.filter (fun rule -> not (spends rule)) rules in
+  (* Can [source] come back around to [target] using only non-spending rules?
+     Zero steps count: a rule whose own right-hand side mentions its
+     left-hand side is already a loop. *)
+  let reaches_freely source target =
+    let visited : (string, unit) Hashtbl.t = Hashtbl.create 8 in
+    let rec walk name =
+      name = target
+      || (not (Hashtbl.mem visited name))
+         && (Hashtbl.add visited name ();
+             free_rules
+             |> List.exists (fun rule ->
+                    rule.lhs = name && List.exists walk (rhs_nonterminals rule)))
+    in
+    walk source
+  in
+  List.iter
+    (fun rule ->
+      if List.exists (fun child -> reaches_freely child rule.lhs) (rhs_nonterminals rule)
+      then
+        report rule.rule_position
+          (Printf.sprintf
+             "this rule can reach '%s' again without spending any inherited \
+              attribute, so a derivation could circle forever; make the loop \
+              consume a budget, for example 'len = -1'"
+             rule.lhs))
+    free_rules;
+
   (* ---- prompt and answer ---- *)
   let prompt_pieces =
     match !prompt with
