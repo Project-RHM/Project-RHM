@@ -48,6 +48,17 @@ let answer_of_value = function
   | Ag_engine.Complex (real, imaginary) ->
       Printf.sprintf "Complex(%s,%s)" (Ag_number.to_string real)
         (Ag_number.to_string imaginary)
+  | Ag_engine.Formula expression ->
+      Printf.sprintf "Formula('%s')" (Ag_formula.to_pg expression)
+  | Ag_engine.Set set -> Printf.sprintf "Compute(\"%s\")" (perl_string (Ag_set.to_pg set))
+  | Ag_engine.Vector vector -> Ag_vector.to_compute vector
+  | Ag_engine.VectorNormAnswer vector ->
+      Printf.sprintf "norm(%s)" (Ag_vector.to_compute vector)
+  | Ag_engine.VectorUnitAnswer vector ->
+      Printf.sprintf "unit(%s)" (Ag_vector.to_compute vector)
+  | Ag_engine.VectorDirectionAnswer (vector, same_direction) ->
+      Printf.sprintf "%s->cmp(parallel=>1%s)" (Ag_vector.to_compute vector)
+        (if same_direction then ",sameDirection=>1" else "")
 
 let blank ?width answer =
   match width with

@@ -2,13 +2,16 @@
 
 本文档介绍项目中新加入的 `.ag` 题目文法语言。它面向希望新增或修改题型的文法作者（grammar author），重点说明 `.ag` 文件怎么写、每个关键字表示什么，以及通用生成引擎（generic generation engine）如何执行这些规则。
 
-当前通用引擎主要通过以下五个示例进行验证：
+当前通用引擎主要通过以下八个示例进行验证：
 
 - `generator/ag/arithmetic.ag`：四则运算（arithmetic）
 - `generator/ag/boolean.ag`：布尔表达式求值（Boolean evaluation）
 - `generator/ag/boolean_equiv.ag`：布尔等价判断（Boolean equivalence）
 - `generator/ag/sequence.ag`：等差/等比数列的第 n 项与有限和（Sequence）
 - `generator/ag/complex.ag`：递归复数运算、共轭、模及 `i` 的幂（Complex Number）
+- `generator/ag/calculus.ag`：微分与反向构造的不定积分（Calculus）
+- `generator/ag/set.ag`：finite set/interval 定义及递归集合运算（Set）
+- `generator/ag/vector.ag`：dot、cross、norm、unit 与方向关系（Vector）
 
 ## 1. `.ag` 文件是什么
 
@@ -472,7 +475,8 @@ latex = prefix("\neg", $2)
 
 ## 12. 表达式和值类型（Expressions and value types）
 
-当前运行时支持四类值：
+当前运行时支持七类主要值；Vector 另外包含 norm、unit 和方向 comparator
+三种受控答案包装，确保 grammar 不需要拼接原始 PGML：
 
 | 类型（Type） | 说明 | 示例 |
 |---|---|---|
@@ -480,6 +484,9 @@ latex = prefix("\neg", $2)
 | `Text` | 文本（text） | `"A \land B"` |
 | `Truth` | 布尔值（Boolean value） | `true`、`false` |
 | `Complex` | 精确复数（typed complex value） | `complex(3, -4)` |
+| `Formula` | 类型化符号表达式（typed symbolic expression） | `formula_power(formula_variable("x"), 2)` |
+| `Set` | symbolic finite/interval set expression | `set_union(A, B)` |
+| `Vector` | 精确有理数分量向量（typed exact vector） | `vector3(2, -3, 4)` |
 
 支持的主要运算符包括：
 
@@ -505,10 +512,36 @@ latex = prefix("\neg", $2)
 | `bit_xor(a, b)` | 2 | 按位异或（bitwise XOR） |
 | `complex(real, imaginary)` | 2 | 构造类型化复数答案（typed complex answer） |
 | `complex_latex(real, imaginary)` | 2 | 生成规范的复数显示文本（complex rendering） |
+| `formula_constant(number)` | 1 | 构造常数 Formula |
+| `formula_variable(name)` | 1 | 构造变量 Formula |
+| `formula_add/subtract/multiply(a, b)` | 2 | 构造并化简二元 Formula |
+| `formula_power(base, exponent)` | 2 | 构造整数幂 Formula |
+| `formula_sin/cos/exp(body)` | 1 | 构造三角或指数 Formula |
+| `differentiate(formula, variable)` | 2 | 计算 symbolic derivative |
+| `formula_latex(formula)` | 1 | 生成带优先级括号的 LaTeX |
+| `formula_is_zero(formula)` | 1 | 判断化简后的 Formula 是否为零 |
+| `set_empty()` | 0 | 构造空 finite set |
+| `set_insert(set, number)` | 2 | 插入元素并自动排序、去重 |
+| `set_interval(low, high, left_closed, right_closed)` | 4 | 构造 bounded interval |
+| `set_union/intersection/difference(a, b)` | 2 | 构造 symbolic set operation |
+| `set_latex(set)` | 1 | 输出带 precedence 的集合 LaTeX |
+| `vector2/3/4(...)` | 2/3/4 | 构造指定维度的 typed Vector |
+| `vector_add/subtract(a, b)` | 2 | 精确向量加减 |
+| `vector_scale(scalar, vector)` | 2 | 精确 scalar multiplication |
+| `vector_dot/cross(a, b)` | 2 | dot product 或 3D cross product |
+| `vector_latex(vector)` | 1 | 输出向量 LaTeX |
+| `vector_is_zero(vector)` | 1 | 检查零向量 |
+| `vector_norm/unit_answer(vector)` | 1 | 构造 norm/unit 的受控 PGML answer |
+| `vector_parallel/same_direction_answer(vector)` | 1 | 构造方向 comparator answer |
 
 位运算主要用于把 Boolean 表达式的完整真值表编码成整数。
 `complex` 的实部和虚部使用精确数值；`complex_latex` 会正确处理零、负号和
 单位虚部，例如把 `(3, -1)` 显示为 `3 - i`。
+`Formula` 在生成期间保持为 symbolic AST；只有题干输出时才转换为 LaTeX，
+答案输出时则转换为 WeBWorK `Formula('...')`。
+`Set` 同时保留 student-facing LaTeX 和 `Context("Interval")` 的 Compute
+表达式；`Vector` 分量保持 exact rational，并在 `Context("Vector")` 中输出
+`Compute("<...>")`、`norm(...)`、`unit(...)` 或受控 direction comparator。
 
 ## 13. 题目级随机值（Question-level random value）
 
@@ -577,7 +610,8 @@ context "Complex"
 ```
 
 `context` 指定生成文件使用的 WeBWorK MathObjects Context。省略时默认为
-`Numeric`。返回 `complex(...)` 答案的文法应声明 `context "Complex"`。
+`Numeric`。返回 `complex(...)` 答案的文法应声明 `context "Complex"`；集合和
+向量 specification 分别使用 `Interval` 和 `Vector`。
 
 ### 16.1 `prompt`
 
@@ -688,6 +722,13 @@ width 8
 公差、公比和项数，并分别计算 arithmetic/geometric nth term 与 finite sum。
 `complex.ag` 展示了递归表达式的写法：`len` 控制整棵表达式树的运算符数量，
 `re`、`im` 和 `latex` 综合属性分别计算实部、虚部和显示文本。
+`calculus.ag` 使用同一棵 typed Formula tree 生成 derivative 和 integral。
+Integral rule 先生成 `F(x)`，再用 `differentiate(F, "x")` 构造 integrand，
+从而保证标准答案确实是被积函数的 antiderivative。
+`set.ag` 把 `A/B/C` 作为 question-level typed Set 固定下来，再由 recursive
+productions 按 `len` budget 组合 union、intersection 和 difference。
+`vector.ag` 用 `V -> "u" | "v" | "w"` 选择同一题中的稳定向量定义，并由
+weighted `Q` productions 选择六种 Stage 1 vector question forms。
 
 如果题目需要 DSL 当前不存在的底层能力，则需要扩展通用引擎。例如：
 
@@ -696,8 +737,7 @@ prime(digit)
 random_real(...)
 gcd(...)
 sqrt(...)
-differentiate(...)
-集合、向量或符号表达式类型
+matrix 或其他专用答案类型
 ```
 
 通常需要：
@@ -795,6 +835,35 @@ dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/sequence.ag
 
 ```bash
 dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/complex.ag
+```
+
+生成 mixed 微分与积分题：
+
+```bash
+dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/calculus.ag
+```
+
+只生成微分或积分题：
+
+```bash
+dune exec ag/agrun.exe -- --set calculus_mode=1 ag/calculus.ag
+dune exec ag/agrun.exe -- --set calculus_mode=2 ag/calculus.ag
+```
+
+生成 mixed 集合题，或限制为 union/intersection/difference：
+
+```bash
+dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/set.ag
+dune exec ag/agrun.exe -- --set set_mode=1 ag/set.ag
+dune exec ag/agrun.exe -- --set set_mode=2 ag/set.ag
+dune exec ag/agrun.exe -- --set set_mode=3 ag/set.ag
+```
+
+生成 mixed 向量题，或用 `vector_mode=1..6` 选择单一操作：
+
+```bash
+dune exec ag/agrun.exe -- --pg --count 6 --seed 21 ag/vector.ag
+dune exec ag/agrun.exe -- --set vector_mode=2 ag/vector.ag
 ```
 
 同时保存 PGML、可读 derivation 和交互式 production/attribute trees：
