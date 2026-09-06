@@ -108,6 +108,10 @@ let rec record_constructors seen = function
       Hashtbl.replace seen "multiply" true;
       record_constructors seen left;
       record_constructors seen right
+  | Ag_formula.Divide (left, right) ->
+      Hashtbl.replace seen "divide" true;
+      record_constructors seen left;
+      record_constructors seen right
   | Ag_formula.Power (base, _) ->
       Hashtbl.replace seen "power" true;
       record_constructors seen base
@@ -120,8 +124,17 @@ let rec record_constructors seen = function
   | Ag_formula.Cos body ->
       Hashtbl.replace seen "cos" true;
       record_constructors seen body
+  | Ag_formula.Tan body ->
+      Hashtbl.replace seen "tan" true;
+      record_constructors seen body
   | Ag_formula.Exp body ->
       Hashtbl.replace seen "exp" true;
+      record_constructors seen body
+  | Ag_formula.Ln body ->
+      Hashtbl.replace seen "ln" true;
+      record_constructors seen body
+  | Ag_formula.Sqrt body ->
+      Hashtbl.replace seen "sqrt" true;
       record_constructors seen body
 
 let check_formula_core () =

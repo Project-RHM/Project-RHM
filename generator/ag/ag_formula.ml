@@ -6,11 +6,15 @@ type t =
   | Add of t * t
   | Subtract of t * t
   | Multiply of t * t
+  | Divide of t * t
   | Power of t * int
   | Negate of t
   | Sin of t
   | Cos of t
+  | Tan of t
   | Exp of t
+  | Ln of t
+  | Sqrt of t
 
 let zero = Constant Ag_number.zero
 let one = Constant (Ag_number.of_int 1)
@@ -89,6 +93,18 @@ let rec multiply left right =
   | Negate left, right | left, Negate right -> negate (multiply left right)
   | left, right -> Multiply (left, right)
 
+let rec divide numerator denominator =
+  match (numerator, denominator) with
+  | _, denominator when is_zero denominator -> invalid_arg "formula division by zero"
+  | Constant numerator, Constant denominator ->
+      Constant (Ag_number.divide numerator denominator)
+  | numerator, denominator when is_one denominator -> numerator
+  | numerator, denominator when is_minus_one denominator -> negate numerator
+  | Negate numerator, Negate denominator -> divide numerator denominator
+  | Negate numerator, denominator | numerator, Negate denominator ->
+      negate (divide numerator denominator)
+  | numerator, denominator -> Divide (numerator, denominator)
+
 let power base exponent =
   if exponent = 0 then one
   else if exponent = 1 then base
@@ -96,7 +112,16 @@ let power base exponent =
 
 let sin body = Sin body
 let cos body = Cos body
+let tan body = Tan body
 let exp body = Exp body
+let ln = function body when is_one body -> zero | body -> Ln body
+
+let sqrt = function
+  | Constant value -> (
+      match Ag_number.square_root_exact value with
+      | Some root -> Constant root
+      | None -> Sqrt (Constant value))
+  | body -> Sqrt body
 
 let rec differentiate ~variable:name = function
   | Constant _ -> zero
@@ -109,6 +134,12 @@ let rec differentiate ~variable:name = function
       add
         (multiply (differentiate ~variable:name left) right)
         (multiply left (differentiate ~variable:name right))
+  | Divide (numerator, denominator) ->
+      divide
+        (subtract
+           (multiply (differentiate ~variable:name numerator) denominator)
+           (multiply numerator (differentiate ~variable:name denominator)))
+        (power denominator 2)
   | Power (base, exponent) ->
       multiply
         (multiply
@@ -120,34 +151,79 @@ let rec differentiate ~variable:name = function
       multiply (cos body) (differentiate ~variable:name body)
   | Cos body ->
       negate (multiply (sin body) (differentiate ~variable:name body))
+  | Tan body ->
+      divide (differentiate ~variable:name body) (power (cos body) 2)
   | Exp body ->
       multiply (exp body) (differentiate ~variable:name body)
+  | Ln body -> divide (differentiate ~variable:name body) body
+  | Sqrt body ->
+      divide (differentiate ~variable:name body)
+        (multiply (constant (Ag_number.of_int 2)) (sqrt body))
 
-let rec evaluate ~variable:name ~at = function
-  | Constant value -> Ag_number.to_float value
-  | Variable variable_name ->
-      if variable_name = name then at
-      else invalid_arg (Printf.sprintf "no value was provided for variable %s" variable_name)
+let rec variables = function
+  | Constant _ -> []
+  | Variable name -> [ name ]
+  | Add (left, right) | Subtract (left, right) | Multiply (left, right)
+  | Divide (left, right) ->
+      List.sort_uniq String.compare (variables left @ variables right)
+  | Power (body, _) | Negate body | Sin body | Cos body | Tan body | Exp body
+  | Ln body | Sqrt body ->
+      variables body
+
+let rec substitute ~variable:name ~replacement = function
+  | Constant _ as expression -> expression
+  | Variable variable_name as expression ->
+      if variable_name = name then replacement else expression
   | Add (left, right) ->
-      evaluate ~variable:name ~at left +. evaluate ~variable:name ~at right
+      add (substitute ~variable:name ~replacement left)
+        (substitute ~variable:name ~replacement right)
   | Subtract (left, right) ->
-      evaluate ~variable:name ~at left -. evaluate ~variable:name ~at right
+      subtract (substitute ~variable:name ~replacement left)
+        (substitute ~variable:name ~replacement right)
   | Multiply (left, right) ->
-      evaluate ~variable:name ~at left *. evaluate ~variable:name ~at right
-  | Power (base, exponent) ->
-      evaluate ~variable:name ~at base ** float_of_int exponent
-  | Negate body -> -.evaluate ~variable:name ~at body
-  | Sin body -> Stdlib.sin (evaluate ~variable:name ~at body)
-  | Cos body -> Stdlib.cos (evaluate ~variable:name ~at body)
-  | Exp body -> Stdlib.exp (evaluate ~variable:name ~at body)
+      multiply (substitute ~variable:name ~replacement left)
+        (substitute ~variable:name ~replacement right)
+  | Divide (left, right) ->
+      divide (substitute ~variable:name ~replacement left)
+        (substitute ~variable:name ~replacement right)
+  | Power (body, exponent) -> power (substitute ~variable:name ~replacement body) exponent
+  | Negate body -> negate (substitute ~variable:name ~replacement body)
+  | Sin body -> sin (substitute ~variable:name ~replacement body)
+  | Cos body -> cos (substitute ~variable:name ~replacement body)
+  | Tan body -> tan (substitute ~variable:name ~replacement body)
+  | Exp body -> exp (substitute ~variable:name ~replacement body)
+  | Ln body -> ln (substitute ~variable:name ~replacement body)
+  | Sqrt body -> sqrt (substitute ~variable:name ~replacement body)
+
+let rec evaluate_with lookup = function
+  | Constant value -> Ag_number.to_float value
+  | Variable name -> (
+      match lookup name with
+      | Some value -> value
+      | None -> invalid_arg (Printf.sprintf "no value was provided for variable %s" name))
+  | Add (left, right) -> evaluate_with lookup left +. evaluate_with lookup right
+  | Subtract (left, right) -> evaluate_with lookup left -. evaluate_with lookup right
+  | Multiply (left, right) -> evaluate_with lookup left *. evaluate_with lookup right
+  | Divide (left, right) -> evaluate_with lookup left /. evaluate_with lookup right
+  | Power (base, exponent) -> evaluate_with lookup base ** float_of_int exponent
+  | Negate body -> -.evaluate_with lookup body
+  | Sin body -> Stdlib.sin (evaluate_with lookup body)
+  | Cos body -> Stdlib.cos (evaluate_with lookup body)
+  | Tan body -> Stdlib.tan (evaluate_with lookup body)
+  | Exp body -> Stdlib.exp (evaluate_with lookup body)
+  | Ln body -> Stdlib.log (evaluate_with lookup body)
+  | Sqrt body -> Stdlib.sqrt (evaluate_with lookup body)
+
+let evaluate ~variable:name ~at expression =
+  evaluate_with (fun variable_name -> if variable_name = name then Some at else None) expression
 
 let precedence = function
   | Add _ | Subtract _ -> 10
-  | Multiply _ -> 20
+  | Multiply _ | Divide _ -> 20
   | Negate _ -> 30
   | Constant value when Ag_number.compare value Ag_number.zero < 0 -> 30
   | Power _ -> 40
-  | Constant _ | Variable _ | Sin _ | Cos _ | Exp _ -> 50
+  | Constant _ | Variable _ | Sin _ | Cos _ | Tan _ | Exp _ | Ln _ | Sqrt _ -> 50
 
 let parenthesize needed text = if needed then "(" ^ text ^ ")" else text
 
@@ -163,12 +239,17 @@ let rec to_pg_with_context context expression =
         to_pg_with_context level left ^ "-" ^ to_pg_with_context (level + 1) right
     | Multiply (left, right) ->
         to_pg_with_context level left ^ "*" ^ to_pg_with_context level right
+    | Divide (left, right) ->
+        to_pg_with_context level left ^ "/" ^ to_pg_with_context (level + 1) right
     | Power (base, exponent) ->
         to_pg_with_context (level + 1) base ^ "^" ^ string_of_int exponent
     | Negate body -> "-" ^ to_pg_with_context level body
     | Sin body -> "sin(" ^ to_pg_with_context 0 body ^ ")"
     | Cos body -> "cos(" ^ to_pg_with_context 0 body ^ ")"
+    | Tan body -> "tan(" ^ to_pg_with_context 0 body ^ ")"
     | Exp body -> "exp(" ^ to_pg_with_context 0 body ^ ")"
+    | Ln body -> "ln(" ^ to_pg_with_context 0 body ^ ")"
+    | Sqrt body -> "sqrt(" ^ to_pg_with_context 0 body ^ ")"
   in
   parenthesize (level < context) text
 
@@ -188,12 +269,18 @@ let rec to_latex_with_context context expression =
     | Multiply (left, right) ->
         to_latex_with_context level left ^ " \\cdot "
         ^ to_latex_with_context level right
+    | Divide (left, right) ->
+        "\\frac{" ^ to_latex_with_context 0 left ^ "}{"
+        ^ to_latex_with_context 0 right ^ "}"
     | Power (base, exponent) ->
         to_latex_with_context (level + 1) base ^ "^{" ^ string_of_int exponent ^ "}"
     | Negate body -> "-" ^ to_latex_with_context level body
     | Sin body -> "\\sin\\left(" ^ to_latex_with_context 0 body ^ "\\right)"
     | Cos body -> "\\cos\\left(" ^ to_latex_with_context 0 body ^ "\\right)"
+    | Tan body -> "\\tan\\left(" ^ to_latex_with_context 0 body ^ "\\right)"
     | Exp body -> "e^{" ^ to_latex_with_context 0 body ^ "}"
+    | Ln body -> "\\ln\\left(" ^ to_latex_with_context 0 body ^ "\\right)"
+    | Sqrt body -> "\\sqrt{" ^ to_latex_with_context 0 body ^ "}"
   in
   parenthesize (level < context) text
 

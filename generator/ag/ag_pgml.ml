@@ -50,6 +50,11 @@ let answer_of_value = function
         (Ag_number.to_string imaginary)
   | Ag_engine.Formula expression ->
       Printf.sprintf "Formula('%s')" (Ag_formula.to_pg expression)
+  | Ag_engine.Polynomial polynomial ->
+      Printf.sprintf "Formula('%s')" (Ag_polynomial.to_pg polynomial)
+  | Ag_engine.Equation _ ->
+      invalid_arg
+        "an Equation is not a direct answer; use equation_solution_set or equation_unique_solution"
   | Ag_engine.Set set -> Printf.sprintf "Compute(\"%s\")" (perl_string (Ag_set.to_pg set))
   | Ag_engine.Vector vector -> Ag_vector.to_compute vector
   | Ag_engine.VectorNormAnswer vector ->

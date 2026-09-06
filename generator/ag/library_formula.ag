@@ -1,0 +1,63 @@
+# Formula library examples. question_mode: 0 mixed, 1 quotient derivative,
+# 2 logarithm derivative, 3 square-root derivative, 4 tangent derivative,
+# 5 function composition, 6 exponential/trigonometric derivative.
+context "Numeric"
+attribute question_mode = 0 copy
+random a = integer_between(2, 4)
+random b = integer_between(1, 5)
+random c = nonzero_integer_between(-4, 4)
+let x = formula_variable("x")
+let ax = formula_multiply(formula_constant(a), x)
+let positive = formula_add(formula_power(x, 2), formula_constant(b))
+let linear = formula_add(ax, formula_constant(c))
+let quotient = formula_divide(linear, positive)
+let logarithm = formula_ln(positive)
+let radical = formula_sqrt(positive)
+let tangent = formula_tan(ax)
+let original = formula_add(formula_power(x, 2), formula_multiply(formula_constant(c), x))
+let composed = formula_substitute(original, "x", linear)
+let combined = formula_add(
+  formula_multiply(formula_exp(x), formula_sin(ax)),
+  formula_negate(formula_cos(x))
+)
+synth kind on Q
+synth text on Q
+synth value on Q
+start Q
+Q -> "quotient" when question_mode = 0 or question_mode = 1 {
+  kind = "quotient"
+  value = differentiate(quotient, "x")
+  require not formula_is_zero(value)
+  text = "Differentiate [`f(x) = " ++ formula_latex(quotient) ++ "`] with respect to [`x`]."
+}
+Q -> "logarithm" when question_mode = 0 or question_mode = 2 {
+  kind = "logarithm"
+  value = differentiate(logarithm, "x")
+  text = "Differentiate [`f(x) = " ++ formula_latex(logarithm) ++ "`] with respect to [`x`]."
+}
+Q -> "radical" when question_mode = 0 or question_mode = 3 {
+  kind = "radical"
+  value = differentiate(radical, "x")
+  text = "Differentiate [`f(x) = " ++ formula_latex(radical) ++ "`] with respect to [`x`]."
+}
+Q -> "tangent" when question_mode = 0 or question_mode = 4 {
+  kind = "tangent"
+  value = differentiate(tangent, "x")
+  text = "Differentiate [`f(x) = " ++ formula_latex(tangent)
+    ++ "`] at points where the function is defined."
+}
+Q -> "composition" when question_mode = 0 or question_mode = 5 {
+  kind = "composition"
+  value = composed
+  text = "Given [`f(x) = " ++ formula_latex(original)
+    ++ "`] and [`g(x) = " ++ formula_latex(linear)
+    ++ "`], find [`f(g(x))`]. Enter an expression in [`x`]."
+}
+Q -> "combined" when question_mode = 0 or question_mode = 6 {
+  kind = "combined"
+  value = differentiate(combined, "x")
+  text = "Differentiate [`f(x) = " ++ formula_latex(combined) ++ "`] with respect to [`x`]."
+}
+prompt "{Q.text}"
+answer Q.value
+width 35

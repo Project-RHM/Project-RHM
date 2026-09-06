@@ -1,0 +1,65 @@
+# Linear equations constructed from a known root.
+# question_mode: 0 mixed, 1 one bracket, 2 brackets on both sides,
+# 3 fractional expression. Each equation has a unique integer solution.
+context "Numeric"
+attribute question_mode = 0 copy
+random root = nonzero_integer_between(-8, 8)
+random a = integer_between(2, 5)
+random gap = integer_between(1, 4)
+random b = nonzero_integer_between(-5, 5)
+random shift = nonzero_integer_between(-5, 5)
+random denominator = integer_between(2, 5)
+let c = a + gap
+let d = (a - c) * root + a * b
+let offset = d - c * shift
+let fraction_offset = a * (root + b) - denominator * c * root
+let x = formula_variable("x")
+let lhs_expr = formula_multiply(formula_constant(a), formula_add(x, formula_constant(b)))
+let rhs_expr = formula_add(formula_multiply(formula_constant(c), x), formula_constant(d))
+let bracket_rhs = formula_add(
+  formula_multiply(formula_constant(c), formula_add(x, formula_constant(shift))),
+  formula_constant(offset)
+)
+let fraction_rhs = formula_add(
+  formula_multiply(formula_constant(c), x),
+  formula_constant(fraction_offset / denominator)
+)
+let simple_eq = equation(lhs_expr, rhs_expr)
+let bracket_eq = equation(lhs_expr, bracket_rhs)
+let fraction_eq = equation(formula_divide(lhs_expr, formula_constant(denominator)), fraction_rhs)
+synth kind on Q
+synth problem on Q
+synth text on Q
+synth value on Q
+start Q
+Q -> "one_bracket" when question_mode = 0 or question_mode = 1 {
+  kind = "one_bracket"
+  problem = simple_eq
+  require equation_has_exact_solutions(problem, "x")
+  require equation_solution_count(problem, "x") = 1
+  value = equation_unique_solution(problem, "x")
+  require value = root
+  require equation_is_satisfied(problem, "x", value)
+  text = "Solve for [`x`]: [`" ++ equation_latex(problem) ++ "`]."
+}
+Q -> "two_brackets" when question_mode = 0 or question_mode = 2 {
+  kind = "two_brackets"
+  problem = bracket_eq
+  require equation_solution_count(problem, "x") = 1
+  value = equation_unique_solution(problem, "x")
+  require value = root
+  require equation_is_satisfied(problem, "x", value)
+  text = "Solve for [`x`]: [`" ++ equation_latex(problem) ++ "`]."
+}
+Q -> "fraction" when question_mode = 0 or question_mode = 3 {
+  kind = "fraction"
+  problem = fraction_eq
+  require equation_solution_count(problem, "x") = 1
+  value = equation_unique_solution(problem, "x")
+  require value = root
+  require equation_is_satisfied(problem, "x", value)
+  text = "Solve for [`x`]: [`" ++ equation_latex(problem) ++ "`]."
+}
+prompt "{Q.text}"
+answer Q.value
+width 12

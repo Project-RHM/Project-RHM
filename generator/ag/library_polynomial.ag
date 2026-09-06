@@ -1,0 +1,62 @@
+# Polynomial examples. question_mode: 0 mixed, 1 evaluation, 2 expansion,
+# 3 coefficient extraction, 4 differentiation, 5 degree after cancellation.
+context "Numeric"
+attribute question_mode = 0 copy
+random a = integer_between(2, 4)
+random b = nonzero_integer_between(-4, 4)
+random c = nonzero_integer_between(-4, 4)
+random point = integer_between(-3, 3)
+random exponent = integer_between(2, 3)
+let px = polynomial_variable("x")
+let factor_p = polynomial_linear(a, b, "x")
+let factor_q = polynomial_add(px, polynomial_constant(c, "x"))
+let product = polynomial_multiply(polynomial_power(factor_p, exponent), factor_q)
+let quadratic = polynomial_quadratic(a, b, c, "x")
+let derivative = polynomial_derivative(product)
+let reduced = polynomial_subtract(
+  polynomial_add(polynomial_monomial(a, 4, "x"), quadratic),
+  polynomial_scale(a, polynomial_power(px, 4))
+)
+let symbolic_derivative = differentiate(polynomial_formula(product), "x")
+let converted_derivative = formula_to_polynomial(symbolic_derivative, "x")
+let product_text = "(" ++ polynomial_latex(factor_p) ++ ")^{" ++ str(exponent)
+  ++ "} (" ++ polynomial_latex(factor_q) ++ ")"
+synth kind on Q
+synth text on Q
+synth value on Q
+start Q
+Q -> "evaluation" when question_mode = 0 or question_mode = 1 {
+  kind = "evaluation"
+  value = polynomial_evaluate(quadratic, point)
+  text = "Given [`P(x) = " ++ polynomial_latex(quadratic)
+    ++ "`], evaluate [`P(" ++ str(point) ++ ")`]."
+}
+Q -> "expansion" when question_mode = 0 or question_mode = 2 {
+  kind = "expansion"
+  value = product
+  require not polynomial_is_zero(value)
+  text = "Expand and collect like terms: [`" ++ product_text ++ "`]."
+}
+Q -> "coefficient" when question_mode = 0 or question_mode = 3 {
+  kind = "coefficient"
+  value = polynomial_coefficient(product, exponent)
+  text = "Find the coefficient of [`x^{" ++ str(exponent)
+    ++ "}`] in the expansion of [`" ++ product_text ++ "`]."
+}
+Q -> "derivative" when question_mode = 0 or question_mode = 4 {
+  kind = "derivative"
+  value = derivative
+  require value = converted_derivative
+  text = "Differentiate [`P(x) = " ++ product_text ++ "`] with respect to [`x`]."
+}
+Q -> "degree" when question_mode = 0 or question_mode = 5 {
+  kind = "degree"
+  value = polynomial_degree(reduced)
+  require not polynomial_is_zero(reduced)
+  text = "Find the degree after collecting like terms: [`("
+    ++ polynomial_latex(polynomial_add(polynomial_monomial(a, 4, "x"), quadratic))
+    ++ ") - (" ++ polynomial_latex(polynomial_scale(a, polynomial_power(px, 4))) ++ ")`]."
+}
+prompt "{Q.text}"
+answer Q.value
+width 35

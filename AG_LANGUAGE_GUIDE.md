@@ -475,7 +475,7 @@ latex = prefix("\neg", $2)
 
 ## 12. 表达式和值类型（Expressions and value types）
 
-当前运行时支持七类主要值；Vector 另外包含 norm、unit 和方向 comparator
+当前运行时支持九类主要值；Vector 另外包含 norm、unit 和方向 comparator
 三种受控答案包装，确保 grammar 不需要拼接原始 PGML：
 
 | 类型（Type） | 说明 | 示例 |
@@ -485,6 +485,8 @@ latex = prefix("\neg", $2)
 | `Truth` | 布尔值（Boolean value） | `true`、`false` |
 | `Complex` | 精确复数（typed complex value） | `complex(3, -4)` |
 | `Formula` | 类型化符号表达式（typed symbolic expression） | `formula_power(formula_variable("x"), 2)` |
+| `Polynomial` | 标准化精确系数的一元多项式 | `polynomial_quadratic(1, -5, 6, "x")` |
+| `Equation` | 由左右两个 Formula 组成的方程 | `polynomial_equation(p, q)` |
 | `Set` | symbolic finite/interval set expression | `set_union(A, B)` |
 | `Vector` | 精确有理数分量向量（typed exact vector） | `vector3(2, -3, 4)` |
 
@@ -514,12 +516,37 @@ latex = prefix("\neg", $2)
 | `complex_latex(real, imaginary)` | 2 | 生成规范的复数显示文本（complex rendering） |
 | `formula_constant(number)` | 1 | 构造常数 Formula |
 | `formula_variable(name)` | 1 | 构造变量 Formula |
-| `formula_add/subtract/multiply(a, b)` | 2 | 构造并化简二元 Formula |
+| `formula_add/subtract/multiply/divide(a, b)` | 2 | 构造并化简二元 Formula |
 | `formula_power(base, exponent)` | 2 | 构造整数幂 Formula |
-| `formula_sin/cos/exp(body)` | 1 | 构造三角或指数 Formula |
+| `formula_negate(body)` | 1 | 构造负号 Formula |
+| `formula_sin/cos/tan/exp/ln/sqrt(body)` | 1 | 构造三角、指数、对数或根式 Formula |
+| `formula_substitute(formula, name, replacement)` | 3 | 对一个变量作 symbolic substitution |
 | `differentiate(formula, variable)` | 2 | 计算 symbolic derivative |
 | `formula_latex(formula)` | 1 | 生成带优先级括号的 LaTeX |
 | `formula_is_zero(formula)` | 1 | 判断化简后的 Formula 是否为零 |
+| `formula_to_polynomial(formula, variable)` | 2 | 将合法的一元多项式 Formula 转成 Polynomial |
+| `polynomial_constant(value, variable)` | 2 | 构造常数 Polynomial |
+| `polynomial_variable(variable)` | 1 | 构造指定变量的一次单项式 |
+| `polynomial_monomial(coefficient, degree, variable)` | 3 | 构造单项式 |
+| `polynomial_linear(a, b, variable)` | 3 | 构造 `a*x+b` |
+| `polynomial_quadratic(a, b, c, variable)` | 4 | 构造 `a*x^2+b*x+c` |
+| `polynomial_add/subtract/multiply(a, b)` | 2 | 多项式精确运算并自动合并同类项 |
+| `polynomial_scale(number, polynomial)` | 2 | 多项式数乘 |
+| `polynomial_power(polynomial, exponent)` | 2 | 非负整数次幂 |
+| `polynomial_derivative(polynomial)` | 1 | 计算 Polynomial derivative |
+| `polynomial_evaluate(polynomial, value)` | 2 | 精确代入并返回 Num |
+| `polynomial_coefficient(polynomial, degree)` | 2 | 读取指定次数的系数 |
+| `polynomial_degree(polynomial)` | 1 | 返回次数；零多项式返回 `-1` |
+| `polynomial_is_zero(polynomial)` | 1 | 判断零多项式 |
+| `polynomial_formula/polynomial_latex(polynomial)` | 1 | 转成 Formula 或 LaTeX |
+| `equation(left, right)` | 2 | 用两个 Formula 构造方程 |
+| `polynomial_equation(left, right)` | 2 | 用两个 Polynomial 构造方程 |
+| `equation_normal_form/equation_latex(equation)` | 1 | 返回 `left-right` Formula 或方程 LaTeX |
+| `equation_is_satisfied(equation, variable, value)` | 3 | 精确检查给定值是否满足方程 |
+| `equation_has_exact_solutions(equation, variable)` | 2 | 判断是否至少有一个可精确表示的解 |
+| `equation_solution_count(equation, variable)` | 2 | 返回有限精确解的数量 |
+| `equation_solution_set(equation, variable)` | 2 | 返回 finite Set；无解时返回空集 |
+| `equation_unique_solution(equation, variable)` | 2 | 仅在恰好一个精确解时返回 Num |
 | `set_empty()` | 0 | 构造空 finite set |
 | `set_insert(set, number)` | 2 | 插入元素并自动排序、去重 |
 | `set_interval(low, high, left_closed, right_closed)` | 4 | 构造 bounded interval |
@@ -539,9 +566,32 @@ latex = prefix("\neg", $2)
 单位虚部，例如把 `(3, -1)` 显示为 `3 - i`。
 `Formula` 在生成期间保持为 symbolic AST；只有题干输出时才转换为 LaTeX，
 答案输出时则转换为 WeBWorK `Formula('...')`。
+`Polynomial` 使用升幂排列的 exact rational coefficients，并在每次运算后
+去除高次零系数，因此 degree、equality、evaluation 和 derivative 都不依赖
+显示字符串。`Equation` 保留左右 Formula；当前 exact solver 明确限制为一元
+一次和具有有理实根的一元二次方程。无理根、高次方程和恒等式不会被猜测为
+有限答案，而是报告 unsupported，供 grammar 用 `require` 或反向构造避开。
 `Set` 同时保留 student-facing LaTeX 和 `Context("Interval")` 的 Compute
 表达式；`Vector` 分量保持 exact rational，并在 `Context("Vector")` 中输出
 `Compute("<...>")`、`norm(...)`、`unit(...)` 或受控 direction comparator。
+
+例如，下面的 question-level bindings 构造并求解
+`x^2 - 5x + 6 = 0`：
+
+```ag
+context "Interval"
+let p = polynomial_quadratic(1, -5, 6, "x")
+let zero = polynomial_constant(0, "x")
+let eq = polynomial_equation(p, zero)
+
+# 在 Q rule 中使用：
+text = equation_latex(eq)
+answer_value = equation_solution_set(eq, "x")
+```
+
+这里的 `Equation` 是生成和验证过程中的 typed intermediate value。若题目要求
+解方程，应把 `equation_solution_set(...)` 或 `equation_unique_solution(...)`
+作为答案，而不是直接把 Equation 当答案。
 
 ## 13. 题目级随机值（Question-level random value）
 

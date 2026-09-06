@@ -81,3 +81,23 @@ let to_string value =
   else Printf.sprintf "%d/%d" value.numerator value.denominator
 
 let to_float value = float_of_int value.numerator /. float_of_int value.denominator
+
+(* Return an exact rational square root when both the numerator and denominator
+   are perfect squares.  Equation solving uses this to distinguish answers that
+   can stay exact from irrational roots that need a richer answer type. *)
+let integer_square_root_exact value =
+  if value < 0 then None
+  else
+    let root = int_of_float (Stdlib.sqrt (float_of_int value)) in
+    let candidates = [ root - 1; root; root + 1 ] in
+    List.find_opt (fun candidate -> candidate >= 0 && candidate * candidate = value) candidates
+
+let square_root_exact value =
+  if value.numerator < 0 then None
+  else
+    match
+      ( integer_square_root_exact value.numerator,
+        integer_square_root_exact value.denominator )
+    with
+    | Some numerator, Some denominator -> Some (make numerator denominator)
+    | _ -> None
