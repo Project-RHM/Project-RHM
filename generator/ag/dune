@@ -16,16 +16,11 @@
  (deps arithmetic.ag)
  (libraries ag))
 
-(test
- (name ag_boolean_test)
- (modules ag_boolean_test)
- (deps boolean.ag)
- (libraries ag))
-
-(test
- (name ag_equiv_test)
- (modules ag_equiv_test)
- (deps boolean_equiv.ag)
+; The two Boolean suites share one independent reader for the questions.
+(tests
+ (names ag_boolean_test ag_equiv_test)
+ (modules ag_boolean_test ag_equiv_test ag_boolean_reader)
+ (deps boolean.ag boolean_equiv.ag)
  (libraries ag))
 
 (test
