@@ -32,7 +32,7 @@ let tokenize text =
     | ')' ->
         tokens := Close :: !tokens;
         incr index
-    | 'A' .. 'Z' ->
+    | 'A' .. 'Z' | 'a' .. 'z' ->
         tokens := Variable (String.make 1 text.[!index]) :: !tokens;
         incr index
     | '\\' ->
@@ -139,15 +139,22 @@ let rec evaluate assignment = function
       | "\\leftrightarrow" -> a = b
       | other -> raise (Reread_error ("unknown connective " ^ other)))
 
-(* All eight assignments over A, B, C. *)
-let all_assignments =
-  List.init 8 (fun row ->
-      [ ("A", row land 4 <> 0); ("B", row land 2 <> 0); ("C", row land 1 <> 0) ])
-
+(* Every assignment over the variables of both sides, evaluated one at a
+   time. This is the independent answer to "are these equivalent": no
+   engine, just 2^n evaluations of each side. *)
 let equivalent left right =
+  let rec variables = function
+    | Var name -> [ name ]
+    | Not body -> variables body
+    | Bin (_, l, r) -> variables l @ variables r
+  in
+  let names = List.sort_uniq compare (variables left @ variables right) in
+  let count = 1 lsl List.length names in
   List.for_all
-    (fun assignment -> evaluate assignment left = evaluate assignment right)
-    all_assignments
+    (fun row ->
+      let assignment = List.mapi (fun index name -> (name, row land (1 lsl index) <> 0)) names in
+      evaluate assignment left = evaluate assignment right)
+    (List.init count Fun.id)
 
 (* ------------------------------------------------------------------ *)
 (* Shape                                                               *)
@@ -185,6 +192,19 @@ let rec stacked_negations = function
   | Not (Not body) -> 1 + stacked_negations body
   | Not body -> stacked_negations body
   | Bin (_, left, right) -> stacked_negations left + stacked_negations right
+
+(* How many variables would change the value if flipped under this
+   assignment. *)
+let sensitivity assignment expression =
+  let here = evaluate assignment expression in
+  List.length
+    (List.filter
+       (fun (name, _) ->
+         let flipped =
+           List.map (fun (n, v) -> if n = name then (n, not v) else (n, v)) assignment
+         in
+         List.mem name (variables expression) && evaluate flipped expression <> here)
+       assignment)
 
 (* ------------------------------------------------------------------ *)
 (* Rendering                                                           *)
@@ -254,7 +274,29 @@ let rec smells expression =
               else [])
           indexed
       in
-      same_variables @ standing_alone @ List.concat_map smells chain
+      let nested =
+        if not (is_chain_operator operator) then []
+        else
+          List.concat_map
+            (fun (index, a) ->
+              match a with
+              | Bin (inner, _, _) when is_chain_operator inner ->
+                  List.concat_map
+                    (fun (i, b) ->
+                      match b with
+                      | Bin (other, _, _)
+                        when i <> index && other = inner
+                             && List.for_all (fun v -> List.mem v (variable_set b)) (variable_set a) ->
+                          [
+                            Printf.sprintf "%s and %s are over nested sets of variables: %s"
+                              (render a) (render b) (render expression);
+                          ]
+                      | _ -> [])
+                    indexed
+              | _ -> [])
+            indexed
+      in
+      same_variables @ standing_alone @ nested @ List.concat_map smells chain
 
 (* X \land (X \lor Y) or X \lor (X \land Y): the one shape that repeats an
    operand on purpose, because absorption is a law about that repetition. *)
@@ -290,7 +332,7 @@ let math_blocks prompt =
   in
   find_from 0 []
 
-(* "A = \mathsf{T}" read as ("A", true); anything else as None. *)
+(* "p = \mathsf{T}" read as ("p", true); anything else as None. *)
 let assignment_entry text =
   let text = String.trim text in
   if String.length text = 14 && String.sub text 1 13 = " = \\mathsf{T}" then

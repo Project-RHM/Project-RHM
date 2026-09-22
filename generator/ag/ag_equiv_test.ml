@@ -153,7 +153,15 @@ let () =
                 fail (Printf.sprintf "seed %d: stacked negation in %S" seed text);
               let again = render expression in
               if again <> text then
-                fail (Printf.sprintf "seed %d: %S re-renders as %S" seed text again))
+                fail (Printf.sprintf "seed %d: %S re-renders as %S" seed text again);
+              (* The course rarely writes more than two negations on a side. *)
+              let rec count = function
+                | Var _ -> 0
+                | Not body -> 1 + count body
+                | Bin (_, l, r) -> count l + count r
+              in
+              if count expression > 2 then
+                fail (Printf.sprintf "seed %d: %d negations in %S" seed (count expression) text))
             [ left; right ])
 
 (* ------------------------------------------------------------------ *)

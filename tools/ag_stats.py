@@ -28,7 +28,7 @@ AGRUN = PROJECT / "generator" / "_build" / "default" / "ag" / "agrun.exe"
 QUESTION_START = re.compile(r"^\s*(\d+)\. (.*)$")
 ANSWER_LINE = re.compile(r"^\s+answer: (.*)$")
 MATH_BLOCK = re.compile(r"\[`(.*?)`\]")
-ASSIGNMENT = re.compile(r"^[A-Z] = \\mathsf\{[TF]\}(,\\; [A-Z] = \\mathsf\{[TF]\})*$")
+ASSIGNMENT = re.compile(r"^[A-Za-z] = \\mathsf\{[TF]\}(,\\; [A-Za-z] = \\mathsf\{[TF]\})*$")
 BINARY = re.compile(r"\\(land|lor|to|leftrightarrow|oplus)\b")
 EXTRA = re.compile(r"\\(to|leftrightarrow|oplus)\b")
 COMPOUND_NEGATION = re.compile(r"\\neg \(")

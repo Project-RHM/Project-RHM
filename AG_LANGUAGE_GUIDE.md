@@ -525,6 +525,23 @@ latex = prefix("\neg", $2)
 | `set_interval(low, high, left_closed, right_closed)` | 4 | 构造 bounded interval |
 | `set_union/intersection/difference(a, b)` | 2 | 构造 symbolic set operation |
 | `set_latex(set)` | 1 | 输出带 precedence 的集合 LaTeX |
+| `bool_var(name)` | 1 | 命题变量，如 `bool_var("p")` |
+| `bool_true()` / `bool_false()` | 0 | 常量 |
+| `bool_not(f)` | 1 | 否定 |
+| `bool_and(f, g)` / `bool_or(f, g)` / `bool_xor(f, g)` | 2 | 合取 / 析取 / 异或 |
+| `bool_imp(f, g)` / `bool_iff(f, g)` | 2 | 蕴含 / 双条件 |
+| `bool_latex(f)` | 1 | 按课程习惯加括号的 LaTeX：同连接词链平铺，其余复合操作数加括号，否定不加括号 |
+| `bool_equivalent(f, g)` | 2 | 枚举全部赋值判断逻辑等价；`f = g` 也是这个意思 |
+| `bool_evaluate(f, names, mask)` | 3 | 在赋值下求值。`names` 是 `"p,q,r"`，`mask` 的第 i 位对应第 i 个变量 |
+| `bool_sensitivity(f, names, mask)` | 3 | 该赋值下翻转后会改变真值的变量个数 |
+| `bool_is_tautology(f)` / `bool_is_contradiction(f)` | 1 | 重言式 / 矛盾式 |
+| `bool_is_tidy(f)` | 1 | 形状是否像人写的：无常量、无 `\neg \neg`、二元连接词两边变量集合不同、链里单独出现的变量不再出现在其他操作数里、同连接词的复合操作数变量集合不互相包含 |
+| `bool_is_atom(f)` | 1 | 是否为变量或带否定的变量 |
+| `bool_top(f)` | 1 | 顶层连接词：`var`、`not`、`and`、`or`、`xor`、`imp`、`iff`、`const` |
+| `bool_size(f)` | 1 | 连接词个数，按课程算法：二元连接词加复合式的否定，变量的否定不算 |
+| `bool_negations(f)` / `bool_depth(f)` | 1 | 否定个数 / 树深 |
+| `bool_count(f, top)` | 2 | 顶层连接词为 `top` 的子式个数 |
+| `bool_variable_count(f)` / `bool_model_count(f)` | 1 | 变量个数 / 使公式为真的赋值个数 |
 | `vector2/3/4(...)` | 2/3/4 | 构造指定维度的 typed Vector |
 | `vector_add/subtract(a, b)` | 2 | 精确向量加减 |
 | `vector_scale(scalar, vector)` | 2 | 精确 scalar multiplication |
@@ -610,7 +627,7 @@ context "Complex"
 ```
 
 `context` 指定生成文件使用的 WeBWorK MathObjects Context。省略时默认为
-`Numeric`。返回 `complex(...)` 答案的文法应声明 `context "Complex"`；集合和
+`Numeric`。返回 `complex(...)` 答案的文法应声明 `context "Complex"`；直接把布尔公式作为答案的文法应声明 `context "Boolean"`（WeBWorK 的 `contextBoolean.pl` 按真值表判等价）；集合和
 向量 specification 分别使用 `Interval` 和 `Vector`。
 
 ### 16.1 `prompt`

@@ -153,28 +153,26 @@ let () =
     [ 2; 3; 4 ]
 
 (* ------------------------------------------------------------------ *)
-(* 4. The rarer connectives are rationed                               *)
+(* 4. The conditional family is budgeted                               *)
 (* ------------------------------------------------------------------ *)
 
 let () =
   let base = load_file "boolean.ag" in
+  let doubled = ref false in
   for_seeds base 300 (fun seed question ->
       let _, text = read_prompt question.Ag_engine.prompt in
       let found = extras (parse text) in
-      if found > 1 then
+      if found = 2 then doubled := true;
+      if found > 2 then
         fail (Printf.sprintf "seed %d: %S has %d of \\to/\\leftrightarrow/\\oplus" seed text found));
+  if not !doubled then fail "the default budget never produced two conditionals in 300 seeds";
   for_seeds (with_initial base "extras" 0) 100 (fun seed question ->
       let _, text = read_prompt question.Ag_engine.prompt in
       if extras (parse text) > 0 then
-        fail (Printf.sprintf "extras 0 seed %d: %S still has one" seed text));
-  let doubled = ref false in
-  for_seeds (with_initial base "extras" 2) 200 (fun _ question ->
-      let _, text = read_prompt question.Ag_engine.prompt in
-      if extras (parse text) = 2 then doubled := true);
-  if not !doubled then fail "extras 2 never produced a question with two of them"
+        fail (Printf.sprintf "extras 0 seed %d: %S still has one" seed text))
 
 (* ------------------------------------------------------------------ *)
-(* 5. Nothing a person would have simplified away                      *)
+(* 5. Set the way the course sets them                                *)
 (* ------------------------------------------------------------------ *)
 
 let () =
@@ -182,6 +180,7 @@ let () =
   for_seeds spec 500 (fun seed question ->
       let assignment, text = read_prompt question.Ag_engine.prompt in
       let expression = parse text in
+      (* Nothing a person would have simplified away. *)
       List.iter
         (fun smell -> fail (Printf.sprintf "seed %d: %s" seed smell))
         (smells expression);
@@ -192,6 +191,29 @@ let () =
       let again = render expression in
       if again <> text then
         fail (Printf.sprintf "seed %d: %S re-renders as %S" seed text again);
+      (* Never a negation around the whole proposition, and at most two
+         negations in it. *)
+      (match expression with
+      | Not (Bin _) -> fail (Printf.sprintf "seed %d: the whole proposition is negated: %S" seed text)
+      | _ -> ());
+      let negation_count =
+        let rec count = function
+          | Var _ -> 0
+          | Not body -> 1 + count body
+          | Bin (_, l, r) -> count l + count r
+        in
+        count expression
+      in
+      if negation_count > 2 then
+        fail (Printf.sprintf "seed %d: %d negations in %S" seed negation_count text);
+      (* Three leaves or more use all three variables. *)
+      if size expression >= 2 && List.length (variable_set expression) < 3 then
+        fail (Printf.sprintf "seed %d: %S does not use every variable" seed text);
+      (* The assignment is chosen with intent: no single variable settles the
+         answer, so at least two of them change it when flipped. *)
+      let sensitive = sensitivity assignment expression in
+      if sensitive < 2 then
+        fail (Printf.sprintf "seed %d: only %d variable(s) matter in %S" seed sensitive text);
       (* All-true or all-false assignments let a student skip the expression. *)
       match List.sort_uniq compare (List.map snd assignment) with
       | [ _ ] -> fail (Printf.sprintf "seed %d: every variable has the same value" seed)

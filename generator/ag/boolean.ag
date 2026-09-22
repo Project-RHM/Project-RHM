@@ -1,80 +1,54 @@
 # ==========================================================================
 #  Boolean expression evaluation
 #
-#  The student is shown a truth assignment and an expression, and answers
-#  1 or 0. As with arithmetic, the shape, the answer and the wording are all
-#  defined here; no OCaml is involved.
+#  The student is shown a truth assignment and a proposition, and answers
+#  1 or 0. The proposition is a real value (see ag_boolean.ml): the engine
+#  renders it, evaluates it and judges its shape, so this file only says
+#  what a good question looks like.
 #
-#  Beyond being correct, a question has to read like a lecturer wrote it.
-#  Most of the `require` lines and the bracketing below exist for that, and
-#  each says what it rules out.
+#  "Good" is calibrated against the course's own assignments: variables
+#  p, q, r; two to four connectives; \to, \leftrightarrow and \oplus as
+#  ordinary connectives, not rarities; negation on variables, at most two
+#  of them, never around the whole proposition; and an assignment chosen
+#  so that the student has to read the whole expression.
 # ==========================================================================
 
 
-# ---- Inherited attributes: the budgets handed down ----
+# ---- Budgets handed down ----
 
-attribute len = 4 split        # most connectives in the expression (S trims it)
-attribute extras = 1 split     # how many of \to, \leftrightarrow, \oplus may appear
+attribute len = 4 split        # most connectives (S trims it to 2, 3 or 4)
+attribute extras = 2 split     # how many of \to, \leftrightarrow, \oplus may appear
 
 
 # ---- Synthesized attributes ----
 
-synth value on E               # truth of the subtree under the assignment
-synth latex on E               # how the subtree is written
-synth vars on E                # variables used, as a bitmask: A = 1, B = 2, C = 4
-synth atom on E                # 1 for a variable or a negated variable
-synth op on E                  # the top connective; "" for a variable
-synth chain on E               # variables standing alone in this subtree's chain (see below)
-
-synth value on V
-synth latex on V
-synth vars on V
-
-synth value on S
-synth latex on S
-
-synth value on T
-synth latex on T
-
-synth value on Q
-synth text on Q
+synth f on E                   # the proposition built so far
+synth f on V
+synth f on S
+synth value on Q               # its truth under the assignment
+synth text on Q                # the question
 
 
 # ---- Drawn once per question ----
 #
-# A truth assignment belongs to the whole question, not to one leaf: every
-# occurrence of A in the expression has to agree. So it cannot be drawn while
-# expanding the tree, and is drawn here instead.
+# A truth assignment belongs to the whole question, not to one leaf, so it
+# is drawn here and every occurrence of a variable sees the same value.
 
-random A = boolean
-random B = boolean
-random C = boolean
+random p = boolean
+random q = boolean
+random r = boolean
 random phrasing = integer_between(1, 3)
+random target = boolean         # the answer this question is to have
 
-let ta = cond(A, "\mathsf{T}", "\mathsf{F}")
-let tb = cond(B, "\mathsf{T}", "\mathsf{F}")
-let tc = cond(C, "\mathsf{T}", "\mathsf{F}")
+let names = "p,q,r"
+let mask  = cond(p, 1, 0) + cond(q, 2, 0) + cond(r, 4, 0)
 
-# The assignment as it appears in the question, always inside math mode.
-let given = "[`A = " ++ ta ++ "`], [`B = " ++ tb ++ "`] and [`C = " ++ tc ++ "`]"
-let given_one = "[`A = " ++ ta ++ ",\; B = " ++ tb ++ ",\; C = " ++ tc ++ "`]"
+let tp = cond(p, "\mathsf{T}", "\mathsf{F}")
+let tq = cond(q, "\mathsf{T}", "\mathsf{F}")
+let tr = cond(r, "\mathsf{T}", "\mathsf{F}")
 
-
-# ---- Precedence ----
-#
-# Kept for the record. The binary rules below bracket by hand, more
-# generously than precedence alone would: a mixed pair such as
-# A \lor (B \land C) keeps its brackets, and so does every operand of \to,
-# \leftrightarrow and \oplus, because that is how the expressions are written
-# in a course. A chain of one connective, A \land B \land C, stays flat, and
-# a negation never needs brackets around it.
-
-precedence 1 nonassoc "\leftrightarrow"
-precedence 2 nonassoc "\to"
-precedence 3 left  "\lor"
-precedence 4 left  "\oplus"
-precedence 5 left  "\land"
-precedence 6 right "\neg"
+let given     = "[`p = " ++ tp ++ "`], [`q = " ++ tq ++ "`] and [`r = " ++ tr ++ "`]"
+let given_one = "[`p = " ++ tp ++ ",\; q = " ++ tq ++ ",\; r = " ++ tr ++ "`]"
 
 
 start Q
@@ -83,179 +57,101 @@ start Q
 # ---- Question ----
 
 Q -> S {
-       # An assignment where every variable has the same value lets a student
-       # answer without reading the expression.
-       require ta != tb or tb != tc
-       value = $1.value
+       # An assignment with every variable the same lets a student answer
+       # without reading the proposition.
+       require tp != tq or tq != tr
+       # The course never negates a whole proposition, and rarely writes
+       # more than two negations.
+       require bool_top($1.f) != "not"
+       require bool_negations($1.f) <= 2
+       # With three or more leaves, all three variables take part.
+       require bool_variable_count($1.f) = 3 or bool_size($1.f) < 2
+       # The assignment is chosen with intent: at least two variables have
+       # to be read to get the answer, so no single value settles it.
+       require bool_variable_count($1.f) < 2 or bool_sensitivity($1.f, names, mask) >= 2
+       value = bool_evaluate($1.f, names, mask)
+       # A person balances a set by deciding the answer first; the coin toss
+       # `target` does the same, so neither answer can dominate.
+       require value = target
        text  = cond(phrasing = 1,
-                 "Suppose " ++ given ++ ". What is the truth value of [`" ++ $1.latex ++ "`]?",
+                 "Suppose " ++ given ++ ". What is the truth value of [`" ++ bool_latex($1.f) ++ "`]?",
                cond(phrasing = 2,
-                 "Let " ++ given_one ++ ". Is the proposition [`" ++ $1.latex ++ "`] true or false?",
-                 "Evaluate [`" ++ $1.latex ++ "`] when " ++ given ++ "."))
+                 "Let " ++ given_one ++ ". Is the proposition [`" ++ bool_latex($1.f) ++ "`] true or false?",
+                 "Evaluate [`" ++ bool_latex($1.f) ++ "`] when " ++ given ++ "."))
      }
 
 
 # ---- Size ----
 #
-# A set of questions that all have exactly the same number of connectives
-# looks generated. `len` is the most a question may have; half the questions
-# are one connective shorter and a quarter two shorter, so the default of 4
-# gives two, three or four connectives. (A budget may only ever shrink, so
-# the variation has to trim from the top rather than add to a centre.)
+# A set of questions that all have the same number of connectives looks
+# generated. `len` is the most a question may have; the default of 4 gives
+# two, three or four connectives in the ratio 2 : 3 : 1, three being the
+# course's usual size. (A budget may only shrink, so the variation trims
+# from the top.)
 
-S -> T  when len > 2  weight 1 { len = -2  value = $1.value  latex = $1.latex }
-S -> T  when len > 1  weight 2 { len = -1  value = $1.value  latex = $1.latex }
-S -> T                weight 1 {           value = $1.value  latex = $1.latex }
-
-# Half the questions give up their `extras` budget here, so that half use
-# nothing but \neg, \land and \lor, as most exercises in a course do.
-
-T -> E  when extras > 0  weight 1 { extras = -1  value = $1.value  latex = $1.latex }
-T -> E                   weight 1 {              value = $1.value  latex = $1.latex }
+S -> E  when len > 2  weight 2 { len = -2  f = $1.f }
+S -> E  when len > 1  weight 3 { len = -1  f = $1.f }
+S -> E                weight 1 {           f = $1.f }
 
 
 # ---- Productions ----
 #
-# Every binary rule refuses the shapes a person would have simplified away
-# before setting the question:
-#
-#   - two operands over the same variables: A \land A, A \lor \neg A,
-#     (A \land B) \lor (B \land A);
-#   - a variable standing alone beside an operand that also contains it:
-#     A \land (A \land B), \neg B \lor (B \lor C), A \to (A \land B).
-#
-# A chain of one connective is written flat, A \lor B \lor C, so the second
-# rule is applied to the whole chain: `chain` collects the variables that
-# stand alone in it, and none of them may occur in any other operand of the
-# chain. A variable may still recur inside two compound operands, as in
-# (A \lor B) \land (\neg A \lor C), which is how a person reuses one.
+# Every rule that builds a compound asks the engine whether it is tidy:
+# no operands over the same variables, no variable standing alone in a
+# chain that also contains it, no negation of a negation. Refusing early
+# keeps the retries cheap.
 
 E -> E "\land" E  when len > 0  weight 3 {
-       len   = -1
-       require $1.vars != $3.vars
-       require bit_and(cond($1.atom = 1 or $1.op = "\land", $1.chain, 0), $3.vars) = 0
-       require bit_and(cond($3.atom = 1 or $3.op = "\land", $3.chain, 0), $1.vars) = 0
-       value = $1.value and $3.value
-       latex = cond($1.atom = 1 or $1.op = "\land" or $1.op = "\neg", $1.latex, paren($1.latex))
-               ++ " \land " ++
-               cond($3.atom = 1 or $3.op = "\land" or $3.op = "\neg", $3.latex, paren($3.latex))
-       vars  = bit_or($1.vars, $3.vars)
-       atom  = 0
-       op    = "\land"
-       chain = bit_or(cond($1.atom = 1 or $1.op = "\land", $1.chain, 0),
-                      cond($3.atom = 1 or $3.op = "\land", $3.chain, 0))
+       len = -1
+       f = bool_and($1.f, $3.f)
+       require bool_is_tidy(f)
      }
 
 E -> E "\lor" E  when len > 0  weight 3 {
-       len   = -1
-       require $1.vars != $3.vars
-       require bit_and(cond($1.atom = 1 or $1.op = "\lor", $1.chain, 0), $3.vars) = 0
-       require bit_and(cond($3.atom = 1 or $3.op = "\lor", $3.chain, 0), $1.vars) = 0
-       value = $1.value or $3.value
-       latex = cond($1.atom = 1 or $1.op = "\lor" or $1.op = "\neg", $1.latex, paren($1.latex))
-               ++ " \lor " ++
-               cond($3.atom = 1 or $3.op = "\lor" or $3.op = "\neg", $3.latex, paren($3.latex))
-       vars  = bit_or($1.vars, $3.vars)
-       atom  = 0
-       op    = "\lor"
-       chain = bit_or(cond($1.atom = 1 or $1.op = "\lor", $1.chain, 0),
-                      cond($3.atom = 1 or $3.op = "\lor", $3.chain, 0))
+       len = -1
+       f = bool_or($1.f, $3.f)
+       require bool_is_tidy(f)
      }
 
-# The three less common connectives share the `extras` budget, so a question
-# has at most one of them unless the budget is raised. They do not chain, so
-# their operands are bracketed unless they are variables or negations, and
-# only a variable standing alone counts towards `chain`.
+# The conditional is the course's favourite connective; \leftrightarrow
+# and \oplus appear but less often. The three share the `extras` budget.
 
-# Implication is false only when a true premise leads to a false conclusion.
-E -> E "\to" E  when len > 0 and extras > 0  weight 2 {
+E -> E "\to" E  when len > 0 and extras > 0  weight 4 {
        len    = -1
        extras = -1
-       require $1.vars != $3.vars
-       require bit_and(cond($1.atom = 1, $1.chain, 0), $3.vars) = 0
-       require bit_and(cond($3.atom = 1, $3.chain, 0), $1.vars) = 0
-       value = (not $1.value) or $3.value
-       latex = cond($1.atom = 1 or $1.op = "\neg", $1.latex, paren($1.latex))
-               ++ " \to " ++
-               cond($3.atom = 1 or $3.op = "\neg", $3.latex, paren($3.latex))
-       vars  = bit_or($1.vars, $3.vars)
-       atom  = 0
-       op    = "\to"
-       chain = bit_or(cond($1.atom = 1, $1.chain, 0), cond($3.atom = 1, $3.chain, 0))
+       f = bool_imp($1.f, $3.f)
+       require bool_is_tidy(f)
      }
 
 E -> E "\leftrightarrow" E  when len > 0 and extras > 0  weight 1 {
        len    = -1
        extras = -1
-       require $1.vars != $3.vars
-       require bit_and(cond($1.atom = 1, $1.chain, 0), $3.vars) = 0
-       require bit_and(cond($3.atom = 1, $3.chain, 0), $1.vars) = 0
-       value = $1.value = $3.value
-       latex = cond($1.atom = 1 or $1.op = "\neg", $1.latex, paren($1.latex))
-               ++ " \leftrightarrow " ++
-               cond($3.atom = 1 or $3.op = "\neg", $3.latex, paren($3.latex))
-       vars  = bit_or($1.vars, $3.vars)
-       atom  = 0
-       op    = "\leftrightarrow"
-       chain = bit_or(cond($1.atom = 1, $1.chain, 0), cond($3.atom = 1, $3.chain, 0))
+       f = bool_iff($1.f, $3.f)
+       require bool_is_tidy(f)
      }
 
-# Exclusive or: true when the two sides disagree.
 E -> E "\oplus" E  when len > 0 and extras > 0  weight 1 {
        len    = -1
        extras = -1
-       require $1.vars != $3.vars
-       require bit_and(cond($1.atom = 1, $1.chain, 0), $3.vars) = 0
-       require bit_and(cond($3.atom = 1, $3.chain, 0), $1.vars) = 0
-       value = $1.value != $3.value
-       latex = cond($1.atom = 1 or $1.op = "\neg", $1.latex, paren($1.latex))
-               ++ " \oplus " ++
-               cond($3.atom = 1 or $3.op = "\neg", $3.latex, paren($3.latex))
-       vars  = bit_or($1.vars, $3.vars)
-       atom  = 0
-       op    = "\oplus"
-       chain = bit_or(cond($1.atom = 1, $1.chain, 0), cond($3.atom = 1, $3.chain, 0))
+       f = bool_xor($1.f, $3.f)
+       require bool_is_tidy(f)
      }
 
-# Negating a compound, \neg (A \lor B). The guard leaves the operand at least
-# one connective, so this rule never produces a negated variable (the leaf
-# rule below does that for free) and never stacks two negations. Nothing
-# inside a negation stands alone in the surrounding chain.
+# Negating a compound, \neg (p \lor q). The guard leaves the operand at
+# least one connective, so a negated variable comes only from the leaf
+# rule below, where it is free.
 E -> "\neg" E  when len > 1  weight 1 {
-       len   = -1
-       require $2.op != "\neg"
-       value = not $2.value
-       latex = "\neg " ++ paren($2.latex)
-       vars  = $2.vars
-       atom  = 0
-       op    = "\neg"
-       chain = 0
+       len = -1
+       f = bool_not($2.f)
+       require bool_is_tidy(f)
      }
 
-# The budget is spent: a variable, or a negated variable. A negated variable
-# does not count as a connective, which matches how the size of an expression
-# is judged in a course.
-E -> V  when len = 0  weight 2 {
-       value = $1.value
-       latex = $1.latex
-       vars  = $1.vars
-       atom  = 1
-       op    = ""
-       chain = $1.vars
-     }
+E -> V         when len = 0  weight 3 { f = $1.f }
+E -> "\neg" V  when len = 0  weight 1 { f = bool_not($2.f) }
 
-E -> "\neg" V  when len = 0  weight 1 {
-       value = not $2.value
-       latex = "\neg " ++ $2.latex
-       vars  = $2.vars
-       atom  = 1
-       op    = "\neg"
-       chain = $2.vars
-     }
-
-V -> "A" { value = A  latex = "A"  vars = 1 }
-V -> "B" { value = B  latex = "B"  vars = 2 }
-V -> "C" { value = C  latex = "C"  vars = 4 }
+V -> "p" { f = bool_var("p") }
+V -> "q" { f = bool_var("q") }
+V -> "r" { f = bool_var("r") }
 
 
 # ---- Question wording ----

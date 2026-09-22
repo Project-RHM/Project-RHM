@@ -1,98 +1,57 @@
 # ==========================================================================
 #  Boolean equivalence
 #
-#  The student is shown two propositions and answers 1 if they are logically
-#  equivalent and 0 otherwise. Equivalence is a claim about *every*
-#  assignment, not about one, so a single true/false value cannot express it.
+#  The student is shown two propositions and answers 1 if they are
+#  logically equivalent and 0 otherwise. Each question is one law of
+#  propositional logic, stated correctly or with one classic mistake, over
+#  parts drawn from a small expression language.
 #
-#  Instead each subexpression carries its whole truth table. With three
-#  variables there are eight assignments, so a truth table is an eight-bit
-#  number, and the connectives become bitwise operations on it. Two
-#  expressions are equivalent exactly when their tables are equal -- which is
-#  a comparison the engine already knows how to make, with no idea that logic
-#  is involved.
+#  The propositions are real values (see ag_boolean.ml): a law builds both
+#  sides as formulas, the engine renders them and decides equivalence by
+#  enumerating every assignment, so the text a student sees and the answer
+#  come from one object. A law that should hold asserts it; a mistake that
+#  happens to hold for some parts is drawn again rather than asked, so a
+#  student is never tested on a coincidence.
 #
-#      row     A B C        bit
-#       0      F F F         1
-#       1      F F T         2
-#       2      F T F         4
-#       3      F T T         8
-#       4      T F F        16
-#       5      T F T        32
-#       6      T T F        64
-#       7      T T T       128
-#
-#  so A is true in rows 4..7  -> 16+32+64+128 = 240
-#     B is true in rows 2,3,6,7 ->  4+ 8+64+128 = 204
-#     C is true in rows 1,3,5,7 ->  2+ 8+32+128 = 170
-#  and negation is 255 - table.
-#
-#  Each question is one law of propositional logic, stated correctly or with
-#  one classic mistake, over parts drawn from a small expression language.
-#  Which side is shown first is a coin toss, so the orientation gives nothing
-#  away, and `holds` is always computed from the tables rather than asserted:
-#  a broken law whose break happens to cancel out is still labelled 1.
+#  The laws follow the course's assignments: De Morgan, the conditional's
+#  disguises, contrapositive against converse and inverse, distribution
+#  (including the conditional over \lor and \land), exportation, and
+#  associativity, which holds for \leftrightarrow and \oplus but not \to.
 # ==========================================================================
 
 
 attribute len = 2 split        # connectives shared by the parts of a law
 
 
-# ---- The parts a law is built from ----
+# ---- Synthesized attributes ----
 
-synth table on P               # the truth table, as an eight-bit number
-synth latex on P               # the part on its own
-synth safe on P                # as an operand of \neg, \to or \leftrightarrow: bracketed unless a variable or a negation
-synth and_form on P            # as an operand of \land: bracketed unless a variable, a negation or a conjunction
-synth or_form on P             # as an operand of \lor: bracketed unless a variable, a negation or a disjunction
-synth vars on P                # variables used, as a bitmask: A = 1, B = 2, C = 4
-synth atom on P                # 1 for a variable or a negated variable
-synth op on P                  # the top connective; "" for a variable
-synth chain on P               # variables standing alone in this part's chain (see boolean.ag)
-synth and_chain on P           # what would stand alone if the part were spliced into a \land chain
-synth or_chain on P            # likewise for a \lor chain
+synth f on P                   # a part
+synth f on V
 
-synth table on V
-synth latex on V
-synth vars on V
+synth fa on L                  # the two sides of the claim
+synth fb on L
+synth fa on S
+synth fb on S
 
-# ---- A law: two sides and whether the claim holds ----
-
-synth side_a on L
-synth side_b on L
-synth holds on L
-
-# ---- The size of the parts ----
-
-synth side_a on S
-synth side_b on S
-synth holds on S
-
-# ---- The question ----
-
+synth holds on Q
 synth lhs on Q
 synth rhs on Q
-synth holds on Q
 synth text on Q
 
 random flip = boolean                  # which side is shown first
 random phrasing = integer_between(1, 2)
 
 
-precedence 1 nonassoc "\leftrightarrow"
-precedence 2 nonassoc "\to"
-precedence 3 left  "\lor"
-precedence 4 left  "\land"
-precedence 5 right "\neg"
-
-
 start Q
 
 
 Q -> S {
-       holds = $1.holds
-       lhs   = cond(flip, $1.side_a, $1.side_b)
-       rhs   = cond(flip, $1.side_b, $1.side_a)
+       # The course rarely writes more than two negations on a side.
+       require bool_negations($1.fa) <= 2
+       require bool_negations($1.fb) <= 2
+       holds = bool_equivalent($1.fa, $1.fb)
+       lhs   = bool_latex(cond(flip, $1.fa, $1.fb))
+       rhs   = bool_latex(cond(flip, $1.fb, $1.fa))
        text  = cond(phrasing = 1,
                  "Are the following two propositions logically equivalent?
 [`" ++ lhs ++ "`]
@@ -103,355 +62,332 @@ Q -> S {
 
 # ---- Size ----
 #
-# `len` is the most connectives the parts of a law may share. A law stated
-# over bare variables, \neg (A \land B), is the form a course teaches first,
-# so it gets the biggest share; the rest spread one or two connectives over
-# the parts. (A budget may only ever shrink, so the variation trims from the
-# top.)
+# `len` is the most connectives the parts of a law may share. Stated over
+# bare variables, \neg (p \land q) \equiv \neg p \lor \neg q, is how the
+# course writes a law, so that form gets the biggest share.
 
-S -> L  when len > 1  weight 2 { len = -2  side_a = $1.side_a  side_b = $1.side_b  holds = $1.holds }
-S -> L  when len > 0  weight 2 { len = -1  side_a = $1.side_a  side_b = $1.side_b  holds = $1.holds }
-S -> L                weight 1 {           side_a = $1.side_a  side_b = $1.side_b  holds = $1.holds }
+S -> L  when len > 1  weight 3 { len = -2  fa = $1.fa  fb = $1.fb }
+S -> L  when len > 0  weight 2 { len = -1  fa = $1.fa  fb = $1.fb }
+S -> L                weight 1 {           fa = $1.fa  fb = $1.fb }
 
 
 # ==========================================================================
 #  Laws
 #
-#  The parts of a law follow the same rules as the operands in boolean.ag:
-#  no two parts over the same variables, and a variable that stands alone
-#  in a chain of one side never occurs in another part of that side. Which
-#  `and_chain` / `or_chain` a law checks depends on how it joins its parts.
-#  Laws that put \neg in front of a part also refuse a part that already
-#  starts with \neg, so \neg \neg only ever appears in the double negation
-#  law itself. Absorption reuses a part on purpose; it is the one law whose
-#  sides are meant to contain a redundancy.
+#  Each law builds its two sides, refuses untidy ones (which also rules out
+#  \neg \neg when a part already starts with \neg), and then either asserts
+#  that it holds or insists that it does not.
 # ==========================================================================
 
 # ---- Laws that hold ------------------------------------------------------
 
 # De Morgan, conjunction
-L -> P P   weight 8 {
-       require $1.vars != $2.vars
-       require bit_and($1.and_chain, $2.vars) = 0
-       require bit_and($2.and_chain, $1.vars) = 0
-       require $1.op != "\neg"
-       require $2.op != "\neg"
-       side_a = "\neg (" ++ $1.and_form ++ " \land " ++ $2.and_form ++ ")"
-       side_b = "\neg " ++ $1.safe ++ " \lor \neg " ++ $2.safe
-       holds  = 255 - bit_and($1.table, $2.table)
-                = bit_or(255 - $1.table, 255 - $2.table)
+L -> P P   weight 6 {
+       fa = bool_not(bool_and($1.f, $2.f))
+       fb = bool_or(bool_not($1.f), bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
        }
 
 # De Morgan, disjunction
-L -> P P   weight 8 {
-       require $1.vars != $2.vars
-       require bit_and($1.or_chain, $2.vars) = 0
-       require bit_and($2.or_chain, $1.vars) = 0
-       require $1.op != "\neg"
-       require $2.op != "\neg"
-       side_a = "\neg (" ++ $1.or_form ++ " \lor " ++ $2.or_form ++ ")"
-       side_b = "\neg " ++ $1.safe ++ " \land \neg " ++ $2.safe
-       holds  = 255 - bit_or($1.table, $2.table)
-                = bit_and(255 - $1.table, 255 - $2.table)
+L -> P P   weight 6 {
+       fa = bool_not(bool_or($1.f, $2.f))
+       fb = bool_and(bool_not($1.f), bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
        }
 
-# Implication as a disjunction
+# The conditional as a disjunction
 L -> P P   weight 4 {
-       require $1.vars != $2.vars
-       require $1.atom = 0 or bit_and($1.vars, $2.vars) = 0
-       require bit_and($2.or_chain, $1.vars) = 0
-       require $1.op != "\neg"
-       side_a = $1.safe ++ " \to " ++ $2.safe
-       side_b = "\neg " ++ $1.safe ++ " \lor " ++ $2.or_form
-       holds  = bit_or(255 - $1.table, $2.table)
-                = bit_or(255 - $1.table, $2.table)
-       }
-
-# Implication as a negated conjunction
-L -> P P   weight 2 {
-       require $1.vars != $2.vars
-       require bit_and($1.and_chain, $2.vars) = 0
-       require $2.atom = 0 or bit_and($2.vars, $1.vars) = 0
-       require $2.op != "\neg"
-       side_a = $1.safe ++ " \to " ++ $2.safe
-       side_b = "\neg (" ++ $1.and_form ++ " \land \neg " ++ $2.safe ++ ")"
-       holds  = bit_or(255 - $1.table, $2.table)
-                = 255 - bit_and($1.table, 255 - $2.table)
+       fa = bool_imp($1.f, $2.f)
+       fb = bool_or(bool_not($1.f), $2.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
        }
 
 # Contrapositive
 L -> P P   weight 4 {
-       require $1.vars != $2.vars
-       require $1.atom = 0 or bit_and($1.vars, $2.vars) = 0
-       require $2.atom = 0 or bit_and($2.vars, $1.vars) = 0
-       require $1.op != "\neg"
-       require $2.op != "\neg"
-       side_a = $1.safe ++ " \to " ++ $2.safe
-       side_b = "\neg " ++ $2.safe ++ " \to \neg " ++ $1.safe
-       holds  = bit_or(255 - $1.table, $2.table)
-                = bit_or(255 - (255 - $2.table), 255 - $1.table)
+       fa = bool_imp($1.f, $2.f)
+       fb = bool_imp(bool_not($2.f), bool_not($1.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
        }
 
-# Double negation
-L -> P   weight 1 {
-       require $1.op != "\neg"
-       side_a = "\neg \neg " ++ $1.safe
-       side_b = $1.latex
-       holds  = 255 - (255 - $1.table) = $1.table
-       }
-
-# Absorption
-L -> P P   weight 2 {
-       require bit_and($1.vars, $2.vars) = 0
-       side_a = $1.and_form ++ " \land (" ++ $1.or_form ++ " \lor " ++ $2.or_form ++ ")"
-       side_b = $1.latex
-       holds  = bit_and($1.table, bit_or($1.table, $2.table)) = $1.table
+# The negated conditional
+L -> P P   weight 3 {
+       fa = bool_not(bool_imp($1.f, $2.f))
+       fb = bool_and($1.f, bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
        }
 
 # Distribution of \land over \lor
-L -> P P P   weight 6 {
-       require bit_and($1.vars, $2.vars) = 0
-       require bit_and($1.vars, $3.vars) = 0
-       require bit_and($2.vars, $3.vars) = 0
-       side_a = $1.and_form ++ " \land (" ++ $2.or_form ++ " \lor " ++ $3.or_form ++ ")"
-       side_b = "(" ++ $1.and_form ++ " \land " ++ $2.and_form ++ ") \lor ("
-                ++ $1.and_form ++ " \land " ++ $3.and_form ++ ")"
-       holds  = bit_and($1.table, bit_or($2.table, $3.table))
-                = bit_or(bit_and($1.table, $2.table), bit_and($1.table, $3.table))
+L -> P P P   weight 12 {
+       fa = bool_and($1.f, bool_or($2.f, $3.f))
+       fb = bool_or(bool_and($1.f, $2.f), bool_and($1.f, $3.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
        }
 
-# Biconditional as two implications
+# Distribution of \lor over \land
+L -> P P P   weight 12 {
+       fa = bool_or($1.f, bool_and($2.f, $3.f))
+       fb = bool_and(bool_or($1.f, $2.f), bool_or($1.f, $3.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# The conditional distributes over \lor in its conclusion
+L -> P P P   weight 12 {
+       fa = bool_imp($1.f, bool_or($2.f, $3.f))
+       fb = bool_or(bool_imp($1.f, $2.f), bool_imp($1.f, $3.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# ... and over \land
+L -> P P P   weight 12 {
+       fa = bool_imp($1.f, bool_and($2.f, $3.f))
+       fb = bool_and(bool_imp($1.f, $2.f), bool_imp($1.f, $3.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# Exportation
+L -> P P P   weight 12 {
+       fa = bool_imp(bool_and($1.f, $2.f), $3.f)
+       fb = bool_imp($1.f, bool_imp($2.f, $3.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# \leftrightarrow is associative
+L -> P P P   weight 8 {
+       fa = bool_iff($1.f, bool_iff($2.f, $3.f))
+       fb = bool_iff(bool_iff($1.f, $2.f), $3.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# \oplus is associative
+L -> P P P   weight 8 {
+       fa = bool_xor($1.f, bool_xor($2.f, $3.f))
+       fb = bool_xor(bool_xor($1.f, $2.f), $3.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# The biconditional as two conditionals
+L -> P P   weight 3 {
+       fa = bool_iff($1.f, $2.f)
+       fb = bool_and(bool_imp($1.f, $2.f), bool_imp($2.f, $1.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# The biconditional by cases
 L -> P P   weight 2 {
-       require $1.vars != $2.vars
-       require $1.atom = 0 or bit_and($1.vars, $2.vars) = 0
-       require $2.atom = 0 or bit_and($2.vars, $1.vars) = 0
-       side_a = $1.safe ++ " \leftrightarrow " ++ $2.safe
-       side_b = "(" ++ $1.safe ++ " \to " ++ $2.safe ++ ") \land ("
-                ++ $2.safe ++ " \to " ++ $1.safe ++ ")"
-       holds  = 255 - bit_xor($1.table, $2.table)
-                = bit_and(bit_or(255 - $1.table, $2.table),
-                          bit_or(255 - $2.table, $1.table))
+       fa = bool_iff($1.f, $2.f)
+       fb = bool_or(bool_and($1.f, $2.f), bool_and(bool_not($1.f), bool_not($2.f)))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# Double negation: the one place \neg \neg is meant to appear.
+L -> P     weight 1 {
+       fa = bool_not(bool_not($1.f))
+       fb = $1.f
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# Absorption: the one law whose side repeats a part on purpose, stated as
+# the course states it, over a variable.
+L -> P P   weight 1 {
+       require bool_is_atom($1.f)
+       fa = bool_and($1.f, bool_or($1.f, $2.f))
+       fb = $1.f
+       require bool_is_tidy(bool_and($1.f, $2.f))
+       require bool_equivalent(fa, fb)
        }
 
 # The same proposition with its operands reordered: looks different, holds.
-L -> P P P   weight 2 {
-       require bit_and($1.vars, $2.vars) = 0
-       require bit_and($1.vars, $3.vars) = 0
-       require bit_and($2.vars, $3.vars) = 0
-       side_a = $1.or_form ++ " \lor (" ++ $2.and_form ++ " \land " ++ $3.and_form ++ ")"
-       side_b = "(" ++ $3.and_form ++ " \land " ++ $2.and_form ++ ") \lor " ++ $1.or_form
-       holds  = bit_or($1.table, bit_and($2.table, $3.table))
-                = bit_or(bit_and($3.table, $2.table), $1.table)
+L -> P P P   weight 6 {
+       fa = bool_or($1.f, bool_and($2.f, $3.f))
+       fb = bool_or(bool_and($3.f, $2.f), $1.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
        }
 
-# ---- Laws with one classic mistake, so they usually fail --------------------
+# ---- Laws with one classic mistake --------------------------------------
 #
-# "Usually" is the point: whether the claim holds is computed, not assumed,
-# so the rare pair where the mistake makes no difference is still labelled 1.
+# Whether the mistake shows depends on the parts; a pair where it happens
+# not to is drawn again, so every one of these is asked only when it fails.
 
 # De Morgan with the connective left unchanged
-L -> P P   weight 6 {
-       require $1.vars != $2.vars
-       require bit_and($1.and_chain, $2.vars) = 0
-       require bit_and($2.and_chain, $1.vars) = 0
-       require $1.op != "\neg"
-       require $2.op != "\neg"
-       side_a = "\neg (" ++ $1.and_form ++ " \land " ++ $2.and_form ++ ")"
-       side_b = "\neg " ++ $1.safe ++ " \land \neg " ++ $2.safe
-       holds  = 255 - bit_and($1.table, $2.table)
-                = bit_and(255 - $1.table, 255 - $2.table)
+L -> P P   weight 4 {
+       fa = bool_not(bool_and($1.f, $2.f))
+       fb = bool_and(bool_not($1.f), bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
        }
 
-L -> P P   weight 6 {
-       require $1.vars != $2.vars
-       require bit_and($1.or_chain, $2.vars) = 0
-       require bit_and($2.or_chain, $1.vars) = 0
-       require $1.op != "\neg"
-       require $2.op != "\neg"
-       side_a = "\neg (" ++ $1.or_form ++ " \lor " ++ $2.or_form ++ ")"
-       side_b = "\neg " ++ $1.safe ++ " \lor \neg " ++ $2.safe
-       holds  = 255 - bit_or($1.table, $2.table)
-                = bit_or(255 - $1.table, 255 - $2.table)
+L -> P P   weight 4 {
+       fa = bool_not(bool_or($1.f, $2.f))
+       fb = bool_or(bool_not($1.f), bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
        }
 
 # De Morgan with a negation dropped
-L -> P P   weight 6 {
-       require $1.vars != $2.vars
-       require bit_and($1.and_chain, $2.vars) = 0
-       require bit_and($2.and_chain, $1.vars) = 0
-       require bit_and($2.or_chain, $1.vars) = 0
-       require $1.op != "\neg"
-       side_a = "\neg (" ++ $1.and_form ++ " \land " ++ $2.and_form ++ ")"
-       side_b = "\neg " ++ $1.safe ++ " \lor " ++ $2.or_form
-       holds  = 255 - bit_and($1.table, $2.table)
-                = bit_or(255 - $1.table, $2.table)
+L -> P P   weight 4 {
+       fa = bool_not(bool_and($1.f, $2.f))
+       fb = bool_or(bool_not($1.f), $2.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
        }
 
 # Converse
-L -> P P   weight 4 {
-       require $1.vars != $2.vars
-       require $1.atom = 0 or bit_and($1.vars, $2.vars) = 0
-       require $2.atom = 0 or bit_and($2.vars, $1.vars) = 0
-       side_a = $1.safe ++ " \to " ++ $2.safe
-       side_b = $2.safe ++ " \to " ++ $1.safe
-       holds  = bit_or(255 - $1.table, $2.table)
-                = bit_or(255 - $2.table, $1.table)
+L -> P P   weight 3 {
+       fa = bool_imp($1.f, $2.f)
+       fb = bool_imp($2.f, $1.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
        }
 
 # Inverse
 L -> P P   weight 4 {
-       require $1.vars != $2.vars
-       require $1.atom = 0 or bit_and($1.vars, $2.vars) = 0
-       require $2.atom = 0 or bit_and($2.vars, $1.vars) = 0
-       require $1.op != "\neg"
-       require $2.op != "\neg"
-       side_a = $1.safe ++ " \to " ++ $2.safe
-       side_b = "\neg " ++ $1.safe ++ " \to \neg " ++ $2.safe
-       holds  = bit_or(255 - $1.table, $2.table)
-                = bit_or(255 - (255 - $1.table), 255 - $2.table)
+       fa = bool_imp($1.f, $2.f)
+       fb = bool_imp(bool_not($1.f), bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
        }
 
-# Implication with the negation on the wrong side
-L -> P P   weight 4 {
-       require $1.vars != $2.vars
-       require bit_and($1.or_chain, $2.vars) = 0
-       require $2.atom = 0 or bit_and($2.vars, $1.vars) = 0
-       require $2.op != "\neg"
-       side_a = $1.safe ++ " \to " ++ $2.safe
-       side_b = $1.or_form ++ " \lor \neg " ++ $2.safe
-       holds  = bit_or(255 - $1.table, $2.table)
-                = bit_or($1.table, 255 - $2.table)
+# The conditional with the negation on the wrong side
+L -> P P   weight 3 {
+       fa = bool_imp($1.f, $2.f)
+       fb = bool_or($1.f, bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# The negated conditional done as a conditional of negations
+L -> P P   weight 3 {
+       fa = bool_not(bool_imp($1.f, $2.f))
+       fb = bool_imp(bool_not($1.f), bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# \to is not associative
+L -> P P P   weight 12 {
+       fa = bool_imp($1.f, bool_imp($2.f, $3.f))
+       fb = bool_imp(bool_imp($1.f, $2.f), $3.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
        }
 
 # Distribution that forgets to distribute over the second operand
-L -> P P P   weight 6 {
-       require bit_and($1.vars, $2.vars) = 0
-       require bit_and($1.vars, $3.vars) = 0
-       require bit_and($2.vars, $3.vars) = 0
-       side_a = $1.and_form ++ " \land (" ++ $2.or_form ++ " \lor " ++ $3.or_form ++ ")"
-       side_b = "(" ++ $1.and_form ++ " \land " ++ $2.and_form ++ ") \lor " ++ $3.or_form
-       holds  = bit_and($1.table, bit_or($2.table, $3.table))
-                = bit_or(bit_and($1.table, $2.table), $3.table)
+L -> P P P   weight 10 {
+       fa = bool_and($1.f, bool_or($2.f, $3.f))
+       fb = bool_or(bool_and($1.f, $2.f), $3.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# The conditional over \lor with the wrong connective between the halves
+L -> P P P   weight 10 {
+       fa = bool_imp($1.f, bool_or($2.f, $3.f))
+       fb = bool_and(bool_imp($1.f, $2.f), bool_imp($1.f, $3.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# Exportation with the brackets the wrong way
+L -> P P P   weight 8 {
+       fa = bool_imp(bool_and($1.f, $2.f), $3.f)
+       fb = bool_imp(bool_imp($1.f, $2.f), $3.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# The biconditional reduced to one conditional
+L -> P P   weight 2 {
+       fa = bool_iff($1.f, $2.f)
+       fb = bool_imp($1.f, $2.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
        }
 
 # Absorption with the connectives the wrong way round
-L -> P P   weight 2 {
-       require bit_and($1.vars, $2.vars) = 0
-       side_a = $1.or_form ++ " \lor (" ++ $1.and_form ++ " \land " ++ $2.and_form ++ ")"
-       side_b = $1.and_form ++ " \land " ++ $2.and_form
-       holds  = bit_or($1.table, bit_and($1.table, $2.table))
-                = bit_and($1.table, $2.table)
-       }
-
-# Biconditional reduced to one implication
-L -> P P   weight 2 {
-       require $1.vars != $2.vars
-       require $1.atom = 0 or bit_and($1.vars, $2.vars) = 0
-       require $2.atom = 0 or bit_and($2.vars, $1.vars) = 0
-       side_a = $1.safe ++ " \leftrightarrow " ++ $2.safe
-       side_b = $1.safe ++ " \to " ++ $2.safe
-       holds  = 255 - bit_xor($1.table, $2.table)
-                = bit_or(255 - $1.table, $2.table)
+L -> P P   weight 1 {
+       require bool_is_atom($1.f)
+       fa = bool_or($1.f, bool_and($1.f, $2.f))
+       fb = bool_and($1.f, $2.f)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
        }
 
 
 # ==========================================================================
 #  Parts
 #
-#  P is a small expression; the laws above are stated over whatever P
-#  produces, so the same law reads differently every time. The bracketing
-#  and the `require`s follow boolean.ag.
+#  P is a small expression over \neg, \land and \lor; the laws above are
+#  stated over whatever P produces, so the same law reads differently every
+#  time.
 # ==========================================================================
 
 P -> P "\land" P   when len > 0  weight 2 {
-       len   = -1
-       require $1.vars != $3.vars
-       require bit_and($1.and_chain, $3.vars) = 0
-       require bit_and($3.and_chain, $1.vars) = 0
-       table     = bit_and($1.table, $3.table)
-       latex     = cond($1.atom = 1 or $1.op = "\land" or $1.op = "\neg", $1.latex, paren($1.latex))
-                   ++ " \land " ++
-                   cond($3.atom = 1 or $3.op = "\land" or $3.op = "\neg", $3.latex, paren($3.latex))
-       and_form  = latex
-       or_form   = paren(latex)
-       safe      = paren(latex)
-       vars      = bit_or($1.vars, $3.vars)
-       atom      = 0
-       op        = "\land"
-       chain     = bit_or($1.and_chain, $3.and_chain)
-       and_chain = chain
-       or_chain  = 0
+       len = -1
+       f = bool_and($1.f, $3.f)
+       require bool_is_tidy(f)
        }
 
 P -> P "\lor" P    when len > 0  weight 2 {
-       len   = -1
-       require $1.vars != $3.vars
-       require bit_and($1.or_chain, $3.vars) = 0
-       require bit_and($3.or_chain, $1.vars) = 0
-       table     = bit_or($1.table, $3.table)
-       latex     = cond($1.atom = 1 or $1.op = "\lor" or $1.op = "\neg", $1.latex, paren($1.latex))
-                   ++ " \lor " ++
-                   cond($3.atom = 1 or $3.op = "\lor" or $3.op = "\neg", $3.latex, paren($3.latex))
-       or_form   = latex
-       and_form  = paren(latex)
-       safe      = paren(latex)
-       vars      = bit_or($1.vars, $3.vars)
-       atom      = 0
-       op        = "\lor"
-       chain     = bit_or($1.or_chain, $3.or_chain)
-       and_chain = 0
-       or_chain  = chain
+       len = -1
+       f = bool_or($1.f, $3.f)
+       require bool_is_tidy(f)
        }
 
-# Negating a compound. The guard leaves the operand at least one connective,
-# so this never negates a bare variable and never stacks negations.
 P -> "\neg" P      when len > 1  weight 1 {
-       len   = -1
-       require $2.op != "\neg"
-       table     = 255 - $2.table
-       latex     = "\neg " ++ paren($2.latex)
-       and_form  = latex
-       or_form   = latex
-       safe      = latex
-       vars      = $2.vars
-       atom      = 0
-       op        = "\neg"
-       chain     = 0
-       and_chain = 0
-       or_chain  = 0
+       len = -1
+       f = bool_not($2.f)
+       require bool_is_tidy(f)
        }
 
-P -> V             when len = 0  weight 2 {
-       table     = $1.table
-       latex     = $1.latex
-       and_form  = latex
-       or_form   = latex
-       safe      = latex
-       vars      = $1.vars
-       atom      = 1
-       op        = ""
-       chain     = $1.vars
-       and_chain = chain
-       or_chain  = chain
-       }
+P -> V             when len = 0  weight 3 { f = $1.f }
+P -> "\neg" V      when len = 0  weight 1 { f = bool_not($2.f) }
 
-P -> "\neg" V      when len = 0  weight 1 {
-       table     = 255 - $2.table
-       latex     = "\neg " ++ $2.latex
-       and_form  = latex
-       or_form   = latex
-       safe      = latex
-       vars      = $2.vars
-       atom      = 1
-       op        = "\neg"
-       chain     = $2.vars
-       and_chain = chain
-       or_chain  = chain
-       }
-
-V -> "A" { table = 240  latex = "A"  vars = 1 }
-V -> "B" { table = 204  latex = "B"  vars = 2 }
-V -> "C" { table = 170  latex = "C"  vars = 4 }
+V -> "p" { f = bool_var("p") }
+V -> "q" { f = bool_var("q") }
+V -> "r" { f = bool_var("r") }
 
 
 # ---- Question wording ----
