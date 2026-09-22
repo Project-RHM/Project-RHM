@@ -50,6 +50,9 @@ let answer_of_value = function
         (Ag_number.to_string imaginary)
   | Ag_engine.Formula expression ->
       Printf.sprintf "Formula('%s')" (Ag_formula.to_pg expression)
+  | Ag_engine.Boolean formula ->
+      (* Needs `context "Boolean"` in the grammar so contextBoolean.pl grades it. *)
+      Printf.sprintf "Compute(\"%s\")" (perl_string (Ag_boolean.to_pg formula))
   | Ag_engine.Set set -> Printf.sprintf "Compute(\"%s\")" (perl_string (Ag_set.to_pg set))
   | Ag_engine.Vector vector -> Ag_vector.to_compute vector
   | Ag_engine.VectorNormAnswer vector ->

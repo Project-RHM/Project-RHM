@@ -235,23 +235,24 @@ let rec smells expression =
         then [ "operands over the same variables: " ^ render expression ]
         else []
       in
+      let indexed = List.mapi (fun index member -> (index, member)) chain in
       let standing_alone =
         List.concat_map
-          (fun member ->
+          (fun (index, member) ->
             if not (is_atom member) then []
             else
               let name = List.hd (variables member) in
               if
                 List.exists
-                  (fun other -> other != member && List.mem name (variables other))
-                  chain
+                  (fun (i, other) -> i <> index && List.mem name (variables other))
+                  indexed
               then
                 [
                   Printf.sprintf "%s stands alone beside an operand that contains it: %s"
                     (render member) (render expression);
                 ]
               else [])
-          chain
+          indexed
       in
       same_variables @ standing_alone @ List.concat_map smells chain
 

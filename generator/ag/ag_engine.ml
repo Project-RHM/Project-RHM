@@ -28,6 +28,7 @@ type value =
   | Truth of bool
   | Complex of Ag_number.t * Ag_number.t
   | Formula of Ag_formula.t
+  | Boolean of Ag_boolean.t
   | Set of Ag_set.t
   | Vector of Ag_vector.t
   | VectorNormAnswer of Ag_vector.t
@@ -43,6 +44,7 @@ let describe_value = function
       Printf.sprintf "Complex(%s,%s)" (Ag_number.to_string real)
         (Ag_number.to_string imaginary)
   | Formula expression -> "Formula(" ^ Ag_formula.to_pg expression ^ ")"
+  | Boolean formula -> "Boolean(" ^ Ag_boolean.to_latex formula ^ ")"
   | Set set -> "Set(" ^ Ag_set.to_pg set ^ ")"
   | Vector vector -> "Vector(" ^ Ag_vector.component_text vector ^ ")"
   | VectorNormAnswer vector -> "VectorNorm(" ^ Ag_vector.component_text vector ^ ")"
@@ -61,7 +63,7 @@ let as_number context = function
 let as_text context = function
   | Text text -> text
   | Num number -> Ag_number.to_string number
-  | Truth _ | Complex _ | Formula _ | Set _ | Vector _ | VectorNormAnswer _
+  | Truth _ | Complex _ | Formula _ | Boolean _ | Set _ | Vector _ | VectorNormAnswer _
   | VectorUnitAnswer _ | VectorDirectionAnswer _ ->
       error
         (Printf.sprintf "%s expected text but received a non-text value" context)
@@ -78,6 +80,13 @@ let as_formula context = function
   | other ->
       error
         (Printf.sprintf "%s expected a formula but received \"%s\"" context
+           (describe_value other))
+
+let as_boolean context = function
+  | Boolean formula -> formula
+  | other ->
+      error
+        (Printf.sprintf "%s expected a propositional formula but received \"%s\"" context
            (describe_value other))
 
 let as_set context = function
@@ -393,6 +402,11 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
             if operator = "=" then Truth (Ag_formula.equal left right)
             else if operator = "!=" then Truth (not (Ag_formula.equal left right))
             else error (Printf.sprintf "'%s' cannot order formulas" operator)
+        | Boolean left, Boolean right ->
+            (* Two formulas are equal when they are logically equivalent. *)
+            if operator = "=" then Truth (Ag_boolean.equivalent left right)
+            else if operator = "!=" then Truth (not (Ag_boolean.equivalent left right))
+            else error (Printf.sprintf "'%s' cannot order propositional formulas" operator)
         | Set left, Set right ->
             if operator = "=" then Truth (Ag_set.equal left right)
             else if operator = "!=" then Truth (not (Ag_set.equal left right))
@@ -515,6 +529,81 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
       Text (Ag_formula.to_latex (as_formula "formula_latex" (recurse body)))
   | Call ("formula_is_zero", [ body ]) ->
       Truth (Ag_formula.is_zero (as_formula "formula_is_zero" (recurse body)))
+  | Call ("bool_var", [ name ]) ->
+      let name = as_text "bool_var" (recurse name) in
+      (try Boolean (Ag_boolean.variable name) with Invalid_argument message -> error message)
+  | Call ("bool_true", []) -> Boolean (Ag_boolean.constant true)
+  | Call ("bool_false", []) -> Boolean (Ag_boolean.constant false)
+  | Call ("bool_not", [ body ]) -> Boolean (Ag_boolean.negate (as_boolean "bool_not" (recurse body)))
+  | Call ("bool_and", [ left; right ]) ->
+      Boolean
+        (Ag_boolean.conjunction (as_boolean "bool_and" (recurse left))
+           (as_boolean "bool_and" (recurse right)))
+  | Call ("bool_or", [ left; right ]) ->
+      Boolean
+        (Ag_boolean.disjunction (as_boolean "bool_or" (recurse left))
+           (as_boolean "bool_or" (recurse right)))
+  | Call ("bool_xor", [ left; right ]) ->
+      Boolean
+        (Ag_boolean.exclusive (as_boolean "bool_xor" (recurse left))
+           (as_boolean "bool_xor" (recurse right)))
+  | Call ("bool_imp", [ left; right ]) ->
+      Boolean
+        (Ag_boolean.implication (as_boolean "bool_imp" (recurse left))
+           (as_boolean "bool_imp" (recurse right)))
+  | Call ("bool_iff", [ left; right ]) ->
+      Boolean
+        (Ag_boolean.biconditional (as_boolean "bool_iff" (recurse left))
+           (as_boolean "bool_iff" (recurse right)))
+  | Call ("bool_latex", [ body ]) -> Text (Ag_boolean.to_latex (as_boolean "bool_latex" (recurse body)))
+  | Call ("bool_equivalent", [ left; right ]) ->
+      Truth
+        (Ag_boolean.equivalent
+           (as_boolean "bool_equivalent" (recurse left))
+           (as_boolean "bool_equivalent" (recurse right)))
+  | Call ("bool_evaluate", [ body; names; mask ]) ->
+      let body = as_boolean "bool_evaluate" (recurse body)
+      and names = as_text "bool_evaluate" (recurse names)
+      and mask =
+        Ag_number.require_integer "bool_evaluate" (as_number "bool_evaluate" (recurse mask))
+      in
+      (try Truth (Ag_boolean.evaluate_mask body names mask)
+       with Invalid_argument message -> error ("bool_evaluate: " ^ message))
+  | Call ("bool_sensitivity", [ body; names; mask ]) ->
+      let body = as_boolean "bool_sensitivity" (recurse body)
+      and names = as_text "bool_sensitivity" (recurse names)
+      and mask =
+        Ag_number.require_integer "bool_sensitivity"
+          (as_number "bool_sensitivity" (recurse mask))
+      in
+      (try Num (Ag_number.of_int (Ag_boolean.sensitivity body names mask))
+       with Invalid_argument message -> error ("bool_sensitivity: " ^ message))
+  | Call ("bool_is_tautology", [ body ]) ->
+      Truth (Ag_boolean.is_tautology (as_boolean "bool_is_tautology" (recurse body)))
+  | Call ("bool_is_contradiction", [ body ]) ->
+      Truth (Ag_boolean.is_contradiction (as_boolean "bool_is_contradiction" (recurse body)))
+  | Call ("bool_is_tidy", [ body ]) ->
+      Truth (Ag_boolean.is_tidy (as_boolean "bool_is_tidy" (recurse body)))
+  | Call ("bool_is_atom", [ body ]) ->
+      Truth (Ag_boolean.is_atom (as_boolean "bool_is_atom" (recurse body)))
+  | Call ("bool_top", [ body ]) -> Text (Ag_boolean.top (as_boolean "bool_top" (recurse body)))
+  | Call ("bool_size", [ body ]) ->
+      Num (Ag_number.of_int (Ag_boolean.size (as_boolean "bool_size" (recurse body))))
+  | Call ("bool_negations", [ body ]) ->
+      Num (Ag_number.of_int (Ag_boolean.negations (as_boolean "bool_negations" (recurse body))))
+  | Call ("bool_depth", [ body ]) ->
+      Num (Ag_number.of_int (Ag_boolean.depth (as_boolean "bool_depth" (recurse body))))
+  | Call ("bool_count", [ body; name ]) ->
+      Num
+        (Ag_number.of_int
+           (Ag_boolean.count_top (as_text "bool_count" (recurse name))
+              (as_boolean "bool_count" (recurse body))))
+  | Call ("bool_variable_count", [ body ]) ->
+      Num
+        (Ag_number.of_int
+           (List.length (Ag_boolean.variable_set (as_boolean "bool_variable_count" (recurse body)))))
+  | Call ("bool_model_count", [ body ]) ->
+      Num (Ag_number.of_int (Ag_boolean.model_count (as_boolean "bool_model_count" (recurse body))))
   | Call ("set_empty", []) -> Set Ag_set.empty
   | Call ("set_insert", [ set; element ]) ->
       let set = as_set "set_insert" (recurse set) in
