@@ -1,18 +1,14 @@
-(* ag_equiv_test.ml — Boolean equivalence questions.
+(* ag_equiv_test.ml — equivalence claims justified by a truth table.
 
-   These questions state a claim about *every* assignment, so the grammar
-   carries a truth table rather than a truth value, and `holds` is a hand
-   written comparison of two tables. A hand written formula can be wrong: an
-   early draft compared the two sides with a bitwise AND against 255 instead of
-   comparing them for equality, and every De Morgan question came out labelled
-   "not equivalent".
-
-   Nothing here trusts that formula. Both sides are read back out of the
-   question text the student sees, each is evaluated under all eight
-   assignments independently, and the two tables are compared. The later
-   checks hold the questions to the same hand-written standard as the
-   evaluation questions: no redundant shapes, the promised brackets, both
-   wordings, and an even split of answers. *)
+   Each question shows a claim "X \equiv Y", a truth table to complete and a
+   choice of "logically equivalent" or "not logically equivalent". Nothing
+   here trusts the grammar: the two sides are read back out of the text the
+   student sees, evaluated under every assignment independently, and the
+   stated conclusion is compared with that. The table must be the table of
+   exactly those two sides. Then the properties that make the claim read as
+   a lecturer's are checked: two or three laws apart rather than one, sides
+   a person would write, a table of a sensible size, and an even split of
+   the two conclusions. *)
 
 open Ag_boolean_reader
 
@@ -42,172 +38,153 @@ let for_seeds spec seeds check =
     match generate spec seed with Some question -> check seed question | None -> ()
   done
 
-(* The two sides: either two math blocks, or one block joined by \equiv. *)
+let contains haystack needle =
+  let h = String.length haystack and n = String.length needle in
+  let rec search i = i + n <= h && (String.sub haystack i n = needle || search (i + 1)) in
+  n = 0 || search 0
+
+let count_occurrences haystack needle =
+  let h = String.length haystack and n = String.length needle in
+  let rec go i found =
+    if i + n > h then found else if String.sub haystack i n = needle then go (i + n) (found + 1) else go (i + 1) found
+  in
+  go 0 0
+
+let options = [ "logically equivalent"; "not logically equivalent" ]
+
+(* The claim is one math block, "X \equiv Y". *)
 let sides_of_prompt prompt =
   match expression_blocks (math_blocks prompt) with
-  | [ left; right ] -> (String.trim left, String.trim right)
-  | [ single ] -> (
-      match split_on " \\equiv " single with
+  | [ claim ] -> (
+      match split_on " \\equiv " claim with
       | [ left; right ] -> (String.trim left, String.trim right)
-      | _ -> raise (Reread_error ("no \\equiv between the sides of: " ^ single)))
-  | blocks ->
-      raise (Reread_error (Printf.sprintf "%d math blocks in the prompt" (List.length blocks)))
+      | _ -> raise (Reread_error ("no single \\equiv in: " ^ claim)))
+  | blocks -> raise (Reread_error (Printf.sprintf "%d math blocks in the prompt" (List.length blocks)))
 
-let stated_truth seed question =
+(* The answer: the table of both sides, then the labelled conclusion. *)
+let answer_parts seed question =
   match question.Ag_engine.answer with
-  | Ag_engine.Truth truth -> truth
+  | Ag_engine.Parts [ Ag_engine.TruthTable formulas; Ag_engine.Labelled (_, Ag_engine.Choice (offered, chosen)) ] ->
+      if offered <> options then fail (Printf.sprintf "seed %d: the conclusion offers other options" seed);
+      Some (formulas, chosen)
   | other ->
-      fail
-        (Printf.sprintf "seed %d: answer was not true/false: %s" seed
-           (Ag_engine.describe_value other));
-      false
+      fail (Printf.sprintf "seed %d: unexpected answer %s" seed (Ag_engine.describe_value other));
+      None
+
+let rec negation_count = function
+  | Var _ -> 0
+  | Not body -> 1 + negation_count body
+  | Bin (_, l, r) -> negation_count l + negation_count r
+
+let truth_values e =
+  let names = variable_set e in
+  let n = List.length names in
+  List.init (1 lsl n) (fun row -> evaluate (List.mapi (fun i name -> (name, row land (1 lsl i) <> 0)) names) e)
 
 (* ------------------------------------------------------------------ *)
-(* 1. The stated answer matches what the two displayed sides do        *)
-(* ------------------------------------------------------------------ *)
-
-let () =
-  let spec = load_file "boolean_equiv.ag" in
-  let saw_equivalent = ref false in
-  let saw_different = ref false in
-  for_seeds spec 300 (fun seed question ->
-      match sides_of_prompt question.Ag_engine.prompt with
-      | exception Reread_error message -> fail (Printf.sprintf "seed %d: %s" seed message)
-      | left, right -> (
-          match equivalent (parse left) (parse right) with
-          | exception Reread_error message ->
-              fail
-                (Printf.sprintf "seed %d: could not re-read %S / %S: %s" seed left right
-                   message)
-          | truly ->
-              if truly then saw_equivalent := true else saw_different := true;
-              let stated = stated_truth seed question in
-              if truly <> stated then
-                fail
-                  (Printf.sprintf "seed %d: %S vs %S is actually %s, but the answer says %s"
-                     seed left right
-                     (if truly then "equivalent" else "not equivalent")
-                     (if stated then "equivalent" else "not equivalent"))));
-  (* A question set that is all one answer would be useless, and would also
-     hide a formula that always returns the same thing. *)
-  if not !saw_equivalent then fail "no equivalent pair was ever produced";
-  if not !saw_different then fail "no inequivalent pair was ever produced"
-
-(* ------------------------------------------------------------------ *)
-(* 2. Neither answer dominates                                         *)
+(* 1. The stated conclusion and the table match the claim shown         *)
 (* ------------------------------------------------------------------ *)
 
 let () =
   let spec = load_file "boolean_equiv.ag" in
-  let total = 1000 and equivalent_count = ref 0 in
+  let equivalent_count = ref 0 and total = 600 in
   for_seeds spec total (fun seed question ->
-      if stated_truth seed question then incr equivalent_count);
+      match (answer_parts seed question, sides_of_prompt question.Ag_engine.prompt) with
+      | exception Reread_error message -> fail (Printf.sprintf "seed %d: %s" seed message)
+      | None, _ -> ()
+      | Some (formulas, chosen), (left, right) -> (
+          let l = parse left and r = parse right in
+          let truly = equivalent l r in
+          if truly then incr equivalent_count;
+          let expected = if truly then "logically equivalent" else "not logically equivalent" in
+          if chosen <> expected then
+            fail (Printf.sprintf "seed %d: %S vs %S is %s, but the answer says %s" seed left right expected chosen);
+          match formulas with
+          | [ fl; fr ] ->
+              if Ag_boolean.to_latex fl <> left || Ag_boolean.to_latex fr <> right then
+                fail (Printf.sprintf "seed %d: the table is not of the claim shown" seed);
+              List.iter
+                (fun row ->
+                  if evaluate row l <> Ag_boolean.evaluate row fl || evaluate row r <> Ag_boolean.evaluate row fr then
+                    fail (Printf.sprintf "seed %d: a cell of the table is wrong" seed))
+                (Ag_boolean.table_rows formulas)
+          | _ -> fail (Printf.sprintf "seed %d: the table is not of two sides" seed)));
+  (* A student who always picks the same conclusion should score about half. *)
   let share = float_of_int !equivalent_count /. float_of_int total in
   if share < 0.4 || share > 0.6 then
-    fail
-      (Printf.sprintf
-         "%.0f%% of questions answer 'equivalent'; a student could do well by always \
-          guessing the same way"
-         (share *. 100.))
+    fail (Printf.sprintf "%.0f%% of the claims hold; the two conclusions should be close to even" (share *. 100.))
 
 (* ------------------------------------------------------------------ *)
-(* 3. The two sides of a claim are never the same text                 *)
+(* 2. Set as a lecturer sets it                                        *)
 (* ------------------------------------------------------------------ *)
 
 let () =
   let spec = load_file "boolean_equiv.ag" in
-  for_seeds spec 300 (fun seed question ->
-      match sides_of_prompt question.Ag_engine.prompt with
-      | exception Reread_error _ -> ()
-      | left, right ->
-          if left = right then fail (Printf.sprintf "seed %d: both sides read %S" seed left))
-
-(* ------------------------------------------------------------------ *)
-(* 4. Each side looks set by hand                                      *)
-(* ------------------------------------------------------------------ *)
-
-let () =
-  let spec = load_file "boolean_equiv.ag" in
+  let widths = Hashtbl.create 8 in
   for_seeds spec 500 (fun seed question ->
-      match sides_of_prompt question.Ag_engine.prompt with
+      match (answer_parts seed question, sides_of_prompt question.Ag_engine.prompt) with
       | exception Reread_error _ -> ()
-      | left, right ->
+      | None, _ -> ()
+      | Some (formulas, _), (left, right) -> (
+          let l = parse left and r = parse right in
           List.iter
-            (fun text ->
-              let expression = parse text in
-              (* Absorption repeats an operand on purpose; every other law
-                 follows the same rules as the evaluation questions. *)
-              if not (absorption_shaped expression) then
-                List.iter
-                  (fun smell -> fail (Printf.sprintf "seed %d: %s" seed smell))
-                  (smells expression);
-              (* \neg \neg appears only as the whole of one side, in the
-                 double negation law, and never deeper. *)
-              let allowed =
-                match expression with
-                | Not (Not (Not _)) -> -1
-                | Not (Not _) -> 1
-                | _ -> 0
+            (fun (text, e) ->
+              if render e <> text then fail (Printf.sprintf "seed %d: %S re-renders as %S" seed text (render e));
+              if stacked_negations e > 0 then fail (Printf.sprintf "seed %d: stacked negation in %S" seed text);
+              if negation_count e > 2 then fail (Printf.sprintf "seed %d: %d negations in %S" seed (negation_count e) text);
+              (* No part written twice in one chain or on both sides of one
+                 connective, as in (p \to q) \land (p \to q). *)
+              let rec repeated = function
+                | Var _ -> false
+                | Not body -> repeated body
+                | Bin (op, l, r) as node ->
+                    let parts =
+                      if op = "\\land" || op = "\\lor" then List.map render (members op node) else [ render l; render r ]
+                    in
+                    List.length parts <> List.length (List.sort_uniq compare parts)
+                    || (if op = "\\land" || op = "\\lor" then List.exists repeated (members op node)
+                        else repeated l || repeated r)
               in
-              if stacked_negations expression <> allowed then
-                fail (Printf.sprintf "seed %d: stacked negation in %S" seed text);
-              let again = render expression in
-              if again <> text then
-                fail (Printf.sprintf "seed %d: %S re-renders as %S" seed text again);
-              (* The course rarely writes more than two negations on a side. *)
-              let rec count = function
-                | Var _ -> 0
-                | Not body -> 1 + count body
-                | Bin (_, l, r) -> count l + count r
-              in
-              if count expression > 2 then
-                fail (Printf.sprintf "seed %d: %d negations in %S" seed (count expression) text))
-            [ left; right ])
+              if repeated e then fail (Printf.sprintf "seed %d: a part is written twice in %S" seed text);
+              let values = truth_values e in
+              if List.for_all Fun.id values || not (List.exists Fun.id values) then
+                fail (Printf.sprintf "seed %d: %S is always true or always false" seed text))
+            [ (left, l); (right, r) ];
+          if size l < 2 && size r < 2 then fail (Printf.sprintf "seed %d: both sides are too slight" seed);
+          (* The table: two or three variables, three to seven columns to fill. *)
+          let variables = List.length (Ag_boolean.table_variables formulas) in
+          if variables < 2 || variables > 3 then fail (Printf.sprintf "seed %d: %d variables" seed variables);
+          let width = Ag_boolean.table_width formulas in
+          Hashtbl.replace widths width ();
+          if width < 3 || width > 7 then fail (Printf.sprintf "seed %d: %d columns to fill" seed width);
+          (* Two or three laws apart: not the same up to the order of
+             operands, and not one law or one classic mistake apart. These use
+             the engine's own law table, which ag_boolean_core_test checks
+             law by law. *)
+          match formulas with
+          | [ fl; fr ] ->
+              if Ag_boolean.same_shape fl fr then fail (Printf.sprintf "seed %d: the sides differ only in order" seed);
+              if Ag_boolean.one_step_apart fl fr then
+                fail (Printf.sprintf "seed %d: %S and %S are one step apart" seed left right)
+          | _ -> ()));
+  if Hashtbl.length widths < 3 then fail "the tables are all of one or two sizes"
 
 (* ------------------------------------------------------------------ *)
-(* 5. Both wordings appear                                             *)
-(* ------------------------------------------------------------------ *)
-
-let () =
-  let spec = load_file "boolean_equiv.ag" in
-  let two_blocks = ref false and one_block = ref false in
-  for_seeds spec 100 (fun _ question ->
-      match expression_blocks (math_blocks question.Ag_engine.prompt) with
-      | [ _; _ ] -> two_blocks := true
-      | [ _ ] -> one_block := true
-      | _ -> ());
-  if not !two_blocks then fail "the two-line wording never appeared in 100 seeds";
-  if not !one_block then fail "the \\equiv wording never appeared in 100 seeds"
-
-(* ------------------------------------------------------------------ *)
-(* 6. Answers reach the .pg file as 1 or 0                             *)
+(* 3. The .pg document                                                 *)
 (* ------------------------------------------------------------------ *)
 
 let () =
   let spec = load_file "boolean_equiv.ag" in
   Random.init 4;
-  let document = Ag_pgml.of_spec ~count:6 spec in
-  let marker = "[_____]" in
-  let blanks =
-    document |> String.split_on_char '\n'
-    |> List.filter_map (fun line ->
-           let rec find index =
-             if index + String.length marker > String.length line then None
-             else if String.sub line index (String.length marker) = marker then
-               Some
-                 (String.sub line
-                    (index + String.length marker)
-                    (String.length line - index - String.length marker))
-             else find (index + 1)
-           in
-           find 0)
-  in
+  let questions = List.init 3 (fun _ -> Ag_engine.generate spec) in
+  let document = Ag_pgml.document ?stem:spec.Ag_check.stem questions in
   List.iter
-    (fun blank ->
-      if blank <> "{1}" && blank <> "{0}" then
-        fail (Printf.sprintf "an equivalence answer was written as %s" blank))
-    blanks;
-  if blanks = [] then fail "no answer blanks were produced"
+    (fun marker -> if not (contains document marker) then fail (Printf.sprintf "the document lacks %S" marker))
+    [ "\"contextBoolean.pl\""; "\"parserPopUp.pl\""; "[#"; "#]{align";
+      "Therefore the two sides are [_]{$ans"; "\"logically equivalent\", \"not logically equivalent\"";
+      "Determine whether each of the following logical equivalences holds"; "a) "; "c) " ];
+  if count_occurrences document "[#" <> 3 then fail "expected one table per question";
+  if count_occurrences document "= PopUp([\"?\"" <> 3 then fail "expected one conclusion per question"
 
 let () =
   if !failures = 0 then print_endline "Ag equivalence tests passed."

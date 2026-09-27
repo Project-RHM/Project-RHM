@@ -31,7 +31,7 @@ MATH_BLOCK = re.compile(r"\[`(.*?)`\]")
 ASSIGNMENT = re.compile(r"^[A-Za-z] = \\mathsf\{[TF]\}(,\\; [A-Za-z] = \\mathsf\{[TF]\})*$")
 BINARY = re.compile(r"\\(land|lor|to|leftrightarrow|oplus)\b")
 EXTRA = re.compile(r"\\(to|leftrightarrow|oplus)\b")
-COMPOUND_NEGATION = re.compile(r"\\neg \(")
+COMPOUND_NEGATION = re.compile(r"\\neg [(\[]")
 
 
 def run_agrun(grammar: Path, count: int, seed: int, settings: list[str]) -> str:
@@ -52,12 +52,17 @@ def parse_questions(output: str) -> list[tuple[str, str]]:
     questions: list[tuple[str, str]] = []
     prompt_lines: list[str] = []
     for line in output.splitlines():
+        if line.startswith("Stem: "):
+            continue
         started = QUESTION_START.match(line)
         answered = ANSWER_LINE.match(line)
         if started:
             prompt_lines = [started.group(2)]
         elif answered:
-            questions.append(("\n".join(prompt_lines), answered.group(1).strip()))
+            # A question with several parts ("table | conclusion") is judged by
+            # its last part, the one a student states in words.
+            answer = answered.group(1).strip().split(" | ")[-1]
+            questions.append(("\n".join(prompt_lines), answer))
             prompt_lines = []
         elif prompt_lines is not None:
             prompt_lines.append(line)
@@ -112,9 +117,12 @@ def main() -> None:
           + (", " + ", ".join(args.settings) if args.settings else "") + ")")
     print(f"distinct prompts   : {distinct_prompts} ({100 * distinct_prompts / total:.1f}%)")
     print(f"distinct expressions: {distinct_expressions} ({100 * distinct_expressions / total:.1f}%)")
-    print("answers            : "
-          + ", ".join(f"{answer} {count} ({100 * count / total:.1f}%)"
-                      for answer, count in sorted(answers.items())))
+    if len(answers) <= 6:
+        print("answers            : "
+              + ", ".join(f"{answer} {count} ({100 * count / total:.1f}%)"
+                          for answer, count in sorted(answers.items())))
+    else:
+        print(f"answers            : {len(answers)} distinct")
     print("connectives        : "
           + ", ".join(f"{size}: {count}" for size, count in sorted(sizes.items())))
     print("extras per expr    : "

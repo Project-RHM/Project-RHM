@@ -6,7 +6,7 @@
 
 - `generator/ag/arithmetic.ag`：四则运算（arithmetic）
 - `generator/ag/boolean.ag`：布尔表达式求值（Boolean evaluation）
-- `generator/ag/boolean_equiv.ag`：布尔等价判断（Boolean equivalence）
+- `generator/ag/boolean_equiv.ag`：判断等价是否成立，并用真值表说明（Boolean equivalence）
 - `generator/ag/sequence.ag`：等差/等比数列的第 n 项与有限和（Sequence）
 - `generator/ag/complex.ag`：递归复数运算、共轭、模及 `i` 的幂（Complex Number）
 - `generator/ag/calculus.ag`：微分与反向构造的不定积分（Calculus）
@@ -542,6 +542,23 @@ latex = prefix("\neg", $2)
 | `bool_negations(f)` / `bool_depth(f)` | 1 | 否定个数 / 树深 |
 | `bool_count(f, top)` | 2 | 顶层连接词为 `top` 的子式个数 |
 | `bool_variable_count(f)` / `bool_model_count(f)` | 1 | 变量个数 / 使公式为真的赋值个数 |
+| `bool_neg(f)` | 1 | 否定，但 `\neg` 遇 `\neg` 相消：`bool_neg(¬q)` 是 `q`，用于逆否等定律作用在已带否定的部分上 |
+| `bool_without_conditionals(f)` | 1 | 用条件-析取等价消去全部 → 和 ↔，否定相遇即相消 |
+| `bool_is_plain(f)` | 1 | 宽松版整洁：∧/∨ 链内变量不重复；⊕、↔ 两边不共用单独出现的变量；→ 两边只允许异号重复，如 `(p∨q)→¬p` |
+| `bool_has_trivial_part(f)` | 1 | 是否有真子式恒真或恒假，如 `[q→(¬q→¬p)]→p` 里的 `q→(¬q→¬p)` |
+| `bool_in_order(f)` | 1 | 变量首次出现是否按字母序，`(p→q)→r` 是，`r↔(q→p)` 不是 |
+| `truth_table(f)` / `truth_table2(f, g)` | 1 / 2 | 真值表答案。列为变量和按构造顺序的每个复合子式，行序 TTT 到 FFF；两个参数时两边共用一张表 |
+| `choice(options, correct)` | 2 | 下拉选择答案。`options` 写成 `"a|b|c"`，`correct` 必须是其中之一 |
+| `parts(a, b)` | 2 | 一题两个答案，按顺序出现，如先填真值表再选结论 |
+| `labelled(words, answer)` | 2 | 答案框前的引导语，如 `labelled("Therefore the two sides are", choice(...))` |
+| `bool_derive(f, steps, seed)` | 3 | 从 `f` 出发连续施加 `steps` 条等价律，由 `seed` 决定选哪条、用在哪；每步结果都须公平、至多两个否定、至多五个连接词、不回到走过的式子 |
+| `bool_derive_wrong(f, steps, seed)` | 3 | 同上，但其中一步换成典型错误：逆命题、否命题、德摩根不换连接词等 |
+| `bool_derivation(f, steps, seed, wrong)` | 4 | 上述推导的文字记录「定律: 式子; ...」，用于 AST 和解答 |
+| `bool_steps(f, steps, seed, wrong)` | 4 | 推导实际走了几步；无路可走时少于要求 |
+| `bool_one_step_apart(f, g)` | 2 | 一条定律或一个典型错误施加一次就能互相转化，消去双重否定算作单独一步 |
+| `bool_same_shape(f, g)` | 2 | 忽略 ∧、∨、↔、⊕ 运算数顺序后是否相同 |
+| `bool_is_fair(f)` | 1 | 作为等价题一边是否像人写的：无常量、无 `¬¬`、同一链里无重复项或互补文字、文字不与自身相连、不对两个否定文字组成的复合式整体取反、无恒真恒假的真子式 |
+| `bool_table_width(f, g)` | 2 | 两边共用真值表要填的列数 |
 | `vector2/3/4(...)` | 2/3/4 | 构造指定维度的 typed Vector |
 | `vector_add/subtract(a, b)` | 2 | 精确向量加减 |
 | `vector_scale(scalar, vector)` | 2 | 精确 scalar multiplication |
@@ -666,6 +683,29 @@ width 8
 ```
 
 它设置生成的 PGML 答案输入框宽度。该值必须为正整数。
+
+### 16.4 `stem`
+
+```ag
+stem "Construct a truth table for each of the following compound statements."
+```
+
+一组同类题共用的说明，在 PGML 里只打印一次，下面的题目标成 a) b) c)，和课程作业的
+排法一致。有 `stem` 时 `prompt` 只写题目本身，比如一个式子或一个句子。`agrun` 的文本
+输出会在第一行打印 `Stem: ...`。
+
+### 16.5 需要具名答案对象的答案类型
+
+布尔公式、下拉选择和真值表三类答案不能像数字那样直接写进 `[_____]{...}`，
+`ag_pgml.ml` 会在 `BEGIN_PGML` 之前先建好具名对象：
+
+- 布尔公式在 `Context("Boolean")` 里建，文档自动加载 `contextBoolean.pl` 并声明用到的
+  变量。这个上下文只有 not、and、or、xor，没有 → 和 ↔，所以学生答案天然不含蕴含。
+- 下拉选择用 `parserPopUp.pl` 的 `PopUp`，第一项是 `?`，不预选答案。
+- 真值表输出为 PGML 表格 `[# ... #]`，变量列给出 T/F，其余每格一个答案框，
+  答案是布尔上下文里的常量 `$T`、`$F`。
+
+`contextBoolean.pl` 和 PGML 表格语法都是 WeBWorK 2.19 加入的。旧题型的输出不变。
 
 ## 17. 一道题的执行顺序（Execution order）
 
@@ -795,6 +835,7 @@ matrix 或其他专用答案类型
 | `prompt` | question prompt template | 声明题干模板 |
 | `answer` | answer expression | 声明正确答案表达式 |
 | `width` | answer field width | 设置答案输入框宽度 |
+| `stem` | shared instruction | 一组题共用的说明，只打印一次 |
 | `and` | Boolean AND | 逻辑与 |
 | `or` | Boolean OR | 逻辑或 |
 | `not` | Boolean NOT | 逻辑非 |

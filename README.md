@@ -31,7 +31,7 @@ attributes, constraints, wording, and answers. The shipped specifications are:
 
 - `arithmetic.ag`
 - `boolean.ag`
-- `boolean_equiv.ag`
+- `boolean_equiv.ag` (an equivalence claim two or three laws apart, justified by a truth table)
 - `sequence.ag`
 - `complex.ag`
 - `calculus.ag`

@@ -1,398 +1,139 @@
 # ==========================================================================
-#  Boolean equivalence
+#  Boolean equivalence, justified by a truth table
 #
-#  The student is shown two propositions and answers 1 if they are
-#  logically equivalent and 0 otherwise. Each question is one law of
-#  propositional logic, stated correctly or with one classic mistake, over
-#  parts drawn from a small expression language.
+#  The student is shown a claimed equivalence, completes its truth table,
+#  and says whether it holds. Set as the course sets these: a lecturer
+#  starts from a small proposition and rewrites it with two or three laws,
+#  so the two sides are genuinely a derivation apart, not one law apart.
 #
-#  The propositions are real values (see ag_boolean.ml): a law builds both
-#  sides as formulas, the engine renders them and decides equivalence by
-#  enumerating every assignment, so the text a student sees and the answer
-#  come from one object. A law that should hold asserts it; a mistake that
-#  happens to hold for some parts is drawn again rather than asked, so a
-#  student is never tested on a coincidence.
+#    p \to q            \equiv \neg (p \land \neg q)       (two steps)
+#    p \to (q \lor r)   \equiv (p \land \neg q) \to r      (three steps)
 #
-#  The laws follow the course's assignments: De Morgan, the conditional's
-#  disguises, contrapositive against converse and inverse, distribution
-#  (including the conditional over \lor and \land), exportation, and
-#  associativity, which holds for \leftrightarrow and \oplus but not \to.
+#  A pair that does not hold is built the same way with one step replaced
+#  by a classic mistake -- the converse, De Morgan without switching the
+#  connective, regrouping a conditional -- so it looks as plausible as a
+#  true one. The engine decides by enumeration whether each claim holds,
+#  and a "mistake" that happens to preserve the meaning is drawn again.
+#
+#  Laws and mistakes live in ag_boolean.ml (equivalence_laws, mistake_rules);
+#  this file chooses the core, the number of steps, and what a fair question
+#  looks like. The truth table follows the course's assignments: two or
+#  three variables, and at most seven columns to fill.
 # ==========================================================================
 
+attribute len = 2 split        # connectives of the core; S trims to 1 or 2
 
-attribute len = 2 split        # connectives shared by the parts of a law
-
-
-# ---- Synthesized attributes ----
-
-synth f on P                   # a part
+synth f on E
 synth f on V
-
-synth fa on L                  # the two sides of the claim
-synth fb on L
-synth fa on S
-synth fb on S
-
-synth holds on Q
-synth lhs on Q
+synth f on C
+synth fa on Q                  # the derived side
+synth fb on Q                  # the core, or a second derived side
+synth lhs on Q                 # the two sides in the order shown
 synth rhs on Q
-synth text on Q
+synth claim on Q
+synth solution on Q
+synth answer_value on Q
 
-random flip = boolean                  # which side is shown first
-random phrasing = integer_between(1, 2)
+# How the claim is set.
+random style = integer_between(1, 5)      # 1-3: a derived side against the core; 4-5: two derived sides
+random total = integer_between(2, 3)      # law steps between the two sides
+random wrong = boolean                    # one step is a mistake, so the claim fails
+random flip = boolean                     # which side is written first
+random k1 = integer_between(0, 999999)    # the choices of the first derivation
+random k2 = integer_between(0, 999999)    # and of the second
+random loose = integer_between(1, 5)      # 1: the core may read its variables out of order
+random roomy = integer_between(1, 10)     # 1-3: the table may have a sixth column
 
+let first_steps  = cond(style <= 3, total, 1)
+let second_steps = cond(style <= 3, 0, total - 1)
+
+stem "Determine whether each of the following logical equivalences holds, and justify your answer with a truth table. Fill in each blank with T or F."
 
 start Q
 
+Q -> C {
+       # The two sides: one derived from the core, the other the core itself
+       # or a second derivation from it.
+       fa = cond(wrong, bool_derive_wrong($1.f, first_steps, k1), bool_derive($1.f, first_steps, k1))
+       fb = cond(second_steps = 0, $1.f, bool_derive($1.f, second_steps, k2))
 
-Q -> S {
-       # The course rarely writes more than two negations on a side.
-       require bool_negations($1.fa) <= 2
-       require bool_negations($1.fb) <= 2
-       holds = bool_equivalent($1.fa, $1.fb)
-       lhs   = bool_latex(cond(flip, $1.fa, $1.fb))
-       rhs   = bool_latex(cond(flip, $1.fb, $1.fa))
-       text  = cond(phrasing = 1,
-                 "Are the following two propositions logically equivalent?
-[`" ++ lhs ++ "`]
-[`" ++ rhs ++ "`]",
-                 "Is [`" ++ lhs ++ " \equiv " ++ rhs ++ "`] a valid logical equivalence?")
+       # Every step asked for was taken.
+       require bool_steps($1.f, first_steps, k1, wrong) = first_steps
+       require second_steps = 0 or bool_steps($1.f, second_steps, k2, 1 = 0) = second_steps
+
+       # The claim holds exactly when no mistake was made.
+       require bool_equivalent(fa, fb) = (not wrong)
+
+       # Two or three steps apart, not a relabelling and not one law apart.
+       require not bool_same_shape(fa, fb)
+       require not bool_one_step_apart(fa, fb)
+
+       # Each side is something a person would write.
+       require bool_is_fair(fa)
+       require bool_is_fair(fb)
+       require not bool_is_tautology(fa)
+       require not bool_is_contradiction(fa)
+       require not bool_is_tautology(fb)
+       require not bool_is_contradiction(fb)
+       require bool_negations(fa) <= 2
+       require bool_negations(fb) <= 2
+
+       # A table a student can fill by hand: the assignments' tables have
+       # four or five columns to fill, so seven in ten questions keep to five
+       # and the rest to six; never fewer than three.
+       require bool_table_width(fa, fb) <= cond(roomy <= 3, 6, 5)
+       require bool_table_width(fa, fb) >= 3
+       # At least one side has two connectives: p \lor q against \neg p \lor \neg q
+       # is too slight for a derivation.
+       require bool_size(fa) >= 2 or bool_size(fb) >= 2
+
+       lhs = cond(flip, fa, fb)
+       rhs = cond(flip, fb, fa)
+       claim = "[`" ++ bool_latex(lhs) ++ " \equiv " ++ bool_latex(rhs) ++ "`]"
+       solution = "core " ++ bool_latex($1.f) ++ "; first side: " ++ bool_derivation($1.f, first_steps, k1, wrong)
+                  ++ cond(second_steps = 0, "", "; second side: " ++ bool_derivation($1.f, second_steps, k2, 1 = 0))
+       answer_value = parts(truth_table2(lhs, rhs),
+                            labelled("Therefore the two sides are ",
+                                     choice("logically equivalent|not logically equivalent",
+                                            cond(wrong, "not logically equivalent", "logically equivalent"))))
      }
 
 
-# ---- Size ----
+# ---- The core: a small proposition as a course writes one ----
 #
-# `len` is the most connectives the parts of a law may share. Stated over
-# bare variables, \neg (p \land q) \equiv \neg p \lor \neg q, is how the
-# course writes a law, so that form gets the biggest share.
+# One or two connectives over two or three variables, each variable once,
+# the conditional the most common, negation only on variables, variables
+# read p, q, r in order.
 
-S -> L  when len > 1  weight 3 { len = -2  fa = $1.fa  fb = $1.fb }
-S -> L  when len > 0  weight 2 { len = -1  fa = $1.fa  fb = $1.fb }
-S -> L                weight 1 {           fa = $1.fa  fb = $1.fb }
+C -> S {
+       # Each variable once, as laws are stated: p \to (q \lor r), not
+       # p \to (\neg p \to r). A derivation may repeat a variable later, when a
+       # law copies a part (distribution, the biconditional), as a person's
+       # derivation does.
+       require bool_variable_count($1.f) = bool_size($1.f) + 1
+       require bool_is_plain($1.f)
+       require not bool_has_trivial_part($1.f)
+       require loose = 1 or bool_in_order($1.f)
+       require bool_variable_count($1.f) >= 2
+       f = $1.f
+     }
 
+S -> E  when len > 1  weight 1 { len = -1  f = $1.f }
+S -> E                weight 2 {           f = $1.f }
 
-# ==========================================================================
-#  Laws
-#
-#  Each law builds its two sides, refuses untidy ones (which also rules out
-#  \neg \neg when a part already starts with \neg), and then either asserts
-#  that it holds or insists that it does not.
-# ==========================================================================
+E -> E "\to" E            when len > 0  weight 5 { len = -1  f = bool_imp($1.f, $3.f)  require bool_is_plain(f) }
+E -> E "\land" E          when len > 0  weight 3 { len = -1  f = bool_and($1.f, $3.f)  require bool_is_plain(f) }
+E -> E "\lor" E           when len > 0  weight 3 { len = -1  f = bool_or($1.f, $3.f)   require bool_is_plain(f) }
+E -> E "\leftrightarrow" E when len > 0 weight 1 { len = -1  f = bool_iff($1.f, $3.f)  require bool_is_plain(f) }
+E -> E "\oplus" E         when len > 0  weight 1 { len = -1  f = bool_xor($1.f, $3.f)  require bool_is_plain(f) }
 
-# ---- Laws that hold ------------------------------------------------------
-
-# De Morgan, conjunction
-L -> P P   weight 6 {
-       fa = bool_not(bool_and($1.f, $2.f))
-       fb = bool_or(bool_not($1.f), bool_not($2.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# De Morgan, disjunction
-L -> P P   weight 6 {
-       fa = bool_not(bool_or($1.f, $2.f))
-       fb = bool_and(bool_not($1.f), bool_not($2.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# The conditional as a disjunction
-L -> P P   weight 4 {
-       fa = bool_imp($1.f, $2.f)
-       fb = bool_or(bool_not($1.f), $2.f)
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# Contrapositive
-L -> P P   weight 4 {
-       fa = bool_imp($1.f, $2.f)
-       fb = bool_imp(bool_not($2.f), bool_not($1.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# The negated conditional
-L -> P P   weight 3 {
-       fa = bool_not(bool_imp($1.f, $2.f))
-       fb = bool_and($1.f, bool_not($2.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# Distribution of \land over \lor
-L -> P P P   weight 12 {
-       fa = bool_and($1.f, bool_or($2.f, $3.f))
-       fb = bool_or(bool_and($1.f, $2.f), bool_and($1.f, $3.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# Distribution of \lor over \land
-L -> P P P   weight 12 {
-       fa = bool_or($1.f, bool_and($2.f, $3.f))
-       fb = bool_and(bool_or($1.f, $2.f), bool_or($1.f, $3.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# The conditional distributes over \lor in its conclusion
-L -> P P P   weight 12 {
-       fa = bool_imp($1.f, bool_or($2.f, $3.f))
-       fb = bool_or(bool_imp($1.f, $2.f), bool_imp($1.f, $3.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# ... and over \land
-L -> P P P   weight 12 {
-       fa = bool_imp($1.f, bool_and($2.f, $3.f))
-       fb = bool_and(bool_imp($1.f, $2.f), bool_imp($1.f, $3.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# Exportation
-L -> P P P   weight 12 {
-       fa = bool_imp(bool_and($1.f, $2.f), $3.f)
-       fb = bool_imp($1.f, bool_imp($2.f, $3.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# \leftrightarrow is associative
-L -> P P P   weight 8 {
-       fa = bool_iff($1.f, bool_iff($2.f, $3.f))
-       fb = bool_iff(bool_iff($1.f, $2.f), $3.f)
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# \oplus is associative
-L -> P P P   weight 8 {
-       fa = bool_xor($1.f, bool_xor($2.f, $3.f))
-       fb = bool_xor(bool_xor($1.f, $2.f), $3.f)
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# The biconditional as two conditionals
-L -> P P   weight 3 {
-       fa = bool_iff($1.f, $2.f)
-       fb = bool_and(bool_imp($1.f, $2.f), bool_imp($2.f, $1.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# The biconditional by cases
-L -> P P   weight 2 {
-       fa = bool_iff($1.f, $2.f)
-       fb = bool_or(bool_and($1.f, $2.f), bool_and(bool_not($1.f), bool_not($2.f)))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# Double negation: the one place \neg \neg is meant to appear.
-L -> P     weight 1 {
-       fa = bool_not(bool_not($1.f))
-       fb = $1.f
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# Absorption: the one law whose side repeats a part on purpose, stated as
-# the course states it, over a variable.
-L -> P P   weight 1 {
-       require bool_is_atom($1.f)
-       fa = bool_and($1.f, bool_or($1.f, $2.f))
-       fb = $1.f
-       require bool_is_tidy(bool_and($1.f, $2.f))
-       require bool_equivalent(fa, fb)
-       }
-
-# The same proposition with its operands reordered: looks different, holds.
-L -> P P P   weight 6 {
-       fa = bool_or($1.f, bool_and($2.f, $3.f))
-       fb = bool_or(bool_and($3.f, $2.f), $1.f)
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require bool_equivalent(fa, fb)
-       }
-
-# ---- Laws with one classic mistake --------------------------------------
-#
-# Whether the mistake shows depends on the parts; a pair where it happens
-# not to is drawn again, so every one of these is asked only when it fails.
-
-# De Morgan with the connective left unchanged
-L -> P P   weight 4 {
-       fa = bool_not(bool_and($1.f, $2.f))
-       fb = bool_and(bool_not($1.f), bool_not($2.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-L -> P P   weight 4 {
-       fa = bool_not(bool_or($1.f, $2.f))
-       fb = bool_or(bool_not($1.f), bool_not($2.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-# De Morgan with a negation dropped
-L -> P P   weight 4 {
-       fa = bool_not(bool_and($1.f, $2.f))
-       fb = bool_or(bool_not($1.f), $2.f)
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-# Converse
-L -> P P   weight 3 {
-       fa = bool_imp($1.f, $2.f)
-       fb = bool_imp($2.f, $1.f)
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-# Inverse
-L -> P P   weight 4 {
-       fa = bool_imp($1.f, $2.f)
-       fb = bool_imp(bool_not($1.f), bool_not($2.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-# The conditional with the negation on the wrong side
-L -> P P   weight 3 {
-       fa = bool_imp($1.f, $2.f)
-       fb = bool_or($1.f, bool_not($2.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-# The negated conditional done as a conditional of negations
-L -> P P   weight 3 {
-       fa = bool_not(bool_imp($1.f, $2.f))
-       fb = bool_imp(bool_not($1.f), bool_not($2.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-# \to is not associative
-L -> P P P   weight 12 {
-       fa = bool_imp($1.f, bool_imp($2.f, $3.f))
-       fb = bool_imp(bool_imp($1.f, $2.f), $3.f)
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-# Distribution that forgets to distribute over the second operand
-L -> P P P   weight 10 {
-       fa = bool_and($1.f, bool_or($2.f, $3.f))
-       fb = bool_or(bool_and($1.f, $2.f), $3.f)
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-# The conditional over \lor with the wrong connective between the halves
-L -> P P P   weight 10 {
-       fa = bool_imp($1.f, bool_or($2.f, $3.f))
-       fb = bool_and(bool_imp($1.f, $2.f), bool_imp($1.f, $3.f))
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-# Exportation with the brackets the wrong way
-L -> P P P   weight 8 {
-       fa = bool_imp(bool_and($1.f, $2.f), $3.f)
-       fb = bool_imp(bool_imp($1.f, $2.f), $3.f)
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-# The biconditional reduced to one conditional
-L -> P P   weight 2 {
-       fa = bool_iff($1.f, $2.f)
-       fb = bool_imp($1.f, $2.f)
-       require bool_is_tidy(fa)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-# Absorption with the connectives the wrong way round
-L -> P P   weight 1 {
-       require bool_is_atom($1.f)
-       fa = bool_or($1.f, bool_and($1.f, $2.f))
-       fb = bool_and($1.f, $2.f)
-       require bool_is_tidy(fb)
-       require not bool_equivalent(fa, fb)
-       }
-
-
-# ==========================================================================
-#  Parts
-#
-#  P is a small expression over \neg, \land and \lor; the laws above are
-#  stated over whatever P produces, so the same law reads differently every
-#  time.
-# ==========================================================================
-
-P -> P "\land" P   when len > 0  weight 2 {
-       len = -1
-       f = bool_and($1.f, $3.f)
-       require bool_is_tidy(f)
-       }
-
-P -> P "\lor" P    when len > 0  weight 2 {
-       len = -1
-       f = bool_or($1.f, $3.f)
-       require bool_is_tidy(f)
-       }
-
-P -> "\neg" P      when len > 1  weight 1 {
-       len = -1
-       f = bool_not($2.f)
-       require bool_is_tidy(f)
-       }
-
-P -> V             when len = 0  weight 3 { f = $1.f }
-P -> "\neg" V      when len = 0  weight 1 { f = bool_not($2.f) }
+E -> V         when len = 0  weight 3 { f = $1.f }
+E -> "\neg" V  when len = 0  weight 1 { f = bool_not($2.f) }
 
 V -> "p" { f = bool_var("p") }
 V -> "q" { f = bool_var("q") }
 V -> "r" { f = bool_var("r") }
 
 
-# ---- Question wording ----
-
-prompt "{Q.text}
-Enter 1 if they are equivalent and 0 if they are not."
-
-answer Q.holds
+prompt "{Q.claim}"
+answer Q.answer_value
