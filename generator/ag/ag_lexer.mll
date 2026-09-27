@@ -29,6 +29,7 @@ let keywords = [
   "prompt",     PROMPT;
   "answer",     ANSWER;
   "width",      WIDTH;
+  "stem",       STEM;
   "and",        AND;
   "or",         OR;
   "not",        NOT;

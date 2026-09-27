@@ -26,10 +26,12 @@ let tokenize text =
   while !index < length do
     match text.[!index] with
     | ' ' | '\t' -> incr index
-    | '(' ->
+    (* Square brackets are the course's outer brackets; they group exactly
+       as round ones do. *)
+    | '(' | '[' ->
         tokens := Open :: !tokens;
         incr index
-    | ')' ->
+    | ')' | ']' ->
         tokens := Close :: !tokens;
         incr index
     | 'A' .. 'Z' | 'a' .. 'z' ->
@@ -214,17 +216,22 @@ let is_chain_operator operator = operator = "\\land" || operator = "\\lor"
 
 (* The bracketing the grammars promise: an operand is bracketed unless it is
    a variable, a negation, or the same \land / \lor as its parent, which is
-   written as one flat chain. A negation brackets a compound operand only. *)
+   written as one flat chain. A negation brackets a compound operand only.
+   A bracket around text that already has round brackets is square. *)
+let wrap inner =
+  if String.contains inner '(' && not (String.contains inner '[') then "[" ^ inner ^ "]"
+  else "(" ^ inner ^ ")"
+
 let rec render = function
   | Var name -> name
-  | Not (Bin _ as body) -> "\\neg (" ^ render body ^ ")"
+  | Not (Bin _ as body) -> "\\neg " ^ wrap (render body)
   | Not body -> "\\neg " ^ render body
   | Bin (operator, left, right) ->
       let operand = function
         | (Var _ | Not _) as e -> render e
         | Bin (child, _, _) as e when child = operator && is_chain_operator operator ->
             render e
-        | e -> "(" ^ render e ^ ")"
+        | e -> wrap (render e)
       in
       operand left ^ " " ^ operator ^ " " ^ operand right
 

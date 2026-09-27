@@ -15,7 +15,7 @@ let position (start : Lexing.position) =
 
 %token ATTRIBUTE SYNTH START CONTEXT PRECEDENCE LEFT RIGHT NONASSOC
 %token RANDOM LET BOOLEAN ON
-%token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH
+%token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH STEM
 %token AND OR NOT
 %token ARROW CONCAT NEQ LE GE EQ LT GT
 %token PLUS MINUS STAR SLASH PERCENT CARET
@@ -82,6 +82,11 @@ declaration:
 
   | WIDTH; columns = INT
       { Width_decl (columns, position $startpos) }
+
+  (* The instruction a set of these questions shares, printed once above
+     parts a), b), c) rather than repeated in every one. *)
+  | STEM; text = STRING
+      { Stem_decl (text, position $startpos) }
 
   | rule = rule
       { Rule_decl rule }

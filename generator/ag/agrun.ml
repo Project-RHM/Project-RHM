@@ -29,12 +29,13 @@ type options = {
   output : string option;
   ast_output : string option;
   visualization_output : string option;
+  pick : int list;
 }
 
 let usage () =
   prerr_endline
     "usage: agrun [--pg] [--count N] [--seed N] [--set NAME=VALUE]... \
-     [--out FILE] [--ast-out FILE] [--visualization-out FILE] FILE.ag";
+     [--out FILE] [--ast-out FILE] [--visualization-out FILE] [--pick I,J,...] FILE.ag";
   exit 2
 
 (* The same derivation the existing generator uses, so a student id maps to the
@@ -74,6 +75,19 @@ let parse_arguments () =
         walk rest { accumulated with ast_output = Some value }
     | "--visualization-out" :: value :: rest ->
         walk rest { accumulated with visualization_output = Some value }
+    (* Keep only these questions (1-based) of the --count generated, so a
+       caller that chose them from a pool can ask for exactly those again. *)
+    | "--pick" :: value :: rest ->
+        let picks =
+          String.split_on_char ',' value |> List.filter (( <> ) "")
+          |> List.map (fun text ->
+                 match int_of_string_opt (String.trim text) with
+                 | Some index when index >= 1 -> index
+                 | _ ->
+                     prerr_endline ("--pick expects 1-based indices, but received: " ^ value);
+                     exit 2)
+        in
+        walk rest { accumulated with pick = picks }
     | option :: _ when String.length option > 1 && option.[0] = '-' ->
         prerr_endline ("unknown option: " ^ option);
         usage ()
@@ -93,6 +107,7 @@ let parse_arguments () =
         output = None;
         ast_output = None;
         visualization_output = None;
+        pick = [];
       }
   in
   if options.filename = "" then usage ();
@@ -123,16 +138,32 @@ let () =
           prerr_endline ("generation failed: " ^ message);
           exit 1
       in
+      let questions =
+        match options.pick with
+        | [] -> questions
+        | picks ->
+            List.map
+              (fun index ->
+                match List.nth_opt questions (index - 1) with
+                | Some question -> question
+                | None ->
+                    prerr_endline
+                      (Printf.sprintf "--pick %d is beyond the %d questions generated" index
+                         options.count);
+                    exit 2)
+              picks
+      in
       let text =
         if options.as_pg then
           Ag_pgml.document ?width:spec.Ag_check.width ~context:spec.Ag_check.context
-            questions
+            ?stem:spec.Ag_check.stem questions
         else
-          questions
-          |> List.mapi (fun index question ->
-                 Printf.sprintf "%2d. %s\n    answer: %s\n" (index + 1)
-                   question.Ag_engine.prompt question.Ag_engine.answer_text)
-          |> String.concat ""
+          (match spec.Ag_check.stem with Some stem -> "Stem: " ^ stem ^ "\n\n" | None -> "")
+          ^ (questions
+            |> List.mapi (fun index question ->
+                   Printf.sprintf "%2d. %s\n    answer: %s\n" (index + 1)
+                     question.Ag_engine.prompt question.Ag_engine.answer_text)
+            |> String.concat "")
       in
       (match options.output with
       | None -> print_string text

@@ -112,6 +112,7 @@ type declaration =
   | Prompt_decl of string * position
   | Answer_decl of expr * position
   | Width_decl of int * position
+  | Stem_decl of string * position
   | Rule_decl of rule
 
 let declaration_position = function
@@ -125,6 +126,7 @@ let declaration_position = function
   | Prompt_decl (_, position)
   | Answer_decl (_, position)
   | Width_decl (_, position) -> position
+  | Stem_decl (_, position) -> position
   | Rule_decl rule -> rule.rule_position
 
 type file = declaration list

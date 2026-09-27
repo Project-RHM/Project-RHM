@@ -29,6 +29,10 @@ type value =
   | Complex of Ag_number.t * Ag_number.t
   | Formula of Ag_formula.t
   | Boolean of Ag_boolean.t
+  | Choice of string list * string
+      (* the options a student picks from, and the correct one *)
+  | TruthTable of Ag_boolean.t list
+      (* the formulas whose truth table the student fills in *)
   | Set of Ag_set.t
   | Vector of Ag_vector.t
   | VectorNormAnswer of Ag_vector.t
@@ -45,6 +49,19 @@ let describe_value = function
         (Ag_number.to_string imaginary)
   | Formula expression -> "Formula(" ^ Ag_formula.to_pg expression ^ ")"
   | Boolean formula -> "Boolean(" ^ Ag_boolean.to_latex formula ^ ")"
+  | Choice (_, correct) -> correct
+  | TruthTable formulas ->
+      (* Every computed column, one letter per row, in the course's row order. *)
+      let rows = Ag_boolean.table_rows formulas in
+      Ag_boolean.table_columns formulas
+      |> List.filter (fun column -> match column with Ag_boolean.Var _ -> false | _ -> true)
+      |> List.map (fun column ->
+             Ag_boolean.to_latex column ^ ": "
+             ^ String.concat ""
+                 (List.map
+                    (fun row -> if Ag_boolean.evaluate row column then "T" else "F")
+                    rows))
+      |> String.concat "; "
   | Set set -> "Set(" ^ Ag_set.to_pg set ^ ")"
   | Vector vector -> "Vector(" ^ Ag_vector.component_text vector ^ ")"
   | VectorNormAnswer vector -> "VectorNorm(" ^ Ag_vector.component_text vector ^ ")"
@@ -63,7 +80,8 @@ let as_number context = function
 let as_text context = function
   | Text text -> text
   | Num number -> Ag_number.to_string number
-  | Truth _ | Complex _ | Formula _ | Boolean _ | Set _ | Vector _ | VectorNormAnswer _
+  | Truth _ | Complex _ | Formula _ | Boolean _ | Choice _ | TruthTable _ | Set _ | Vector _
+  | VectorNormAnswer _
   | VectorUnitAnswer _ | VectorDirectionAnswer _ ->
       error
         (Printf.sprintf "%s expected text but received a non-text value" context)
@@ -604,6 +622,33 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
            (List.length (Ag_boolean.variable_set (as_boolean "bool_variable_count" (recurse body)))))
   | Call ("bool_model_count", [ body ]) ->
       Num (Ag_number.of_int (Ag_boolean.model_count (as_boolean "bool_model_count" (recurse body))))
+  | Call ("bool_neg", [ body ]) ->
+      Boolean (Ag_boolean.negate_simply (as_boolean "bool_neg" (recurse body)))
+  | Call ("bool_without_conditionals", [ body ]) ->
+      Boolean
+        (Ag_boolean.without_conditionals (as_boolean "bool_without_conditionals" (recurse body)))
+  | Call ("bool_has_trivial_part", [ body ]) ->
+      Truth (Ag_boolean.has_trivial_part (as_boolean "bool_has_trivial_part" (recurse body)))
+  | Call ("bool_in_order", [ body ]) ->
+      Truth (Ag_boolean.in_reading_order (as_boolean "bool_in_order" (recurse body)))
+  | Call ("bool_is_plain", [ body ]) ->
+      Truth (Ag_boolean.is_plain (as_boolean "bool_is_plain" (recurse body)))
+  | Call ("truth_table", [ body ]) -> TruthTable [ as_boolean "truth_table" (recurse body) ]
+  | Call ("truth_table2", [ left; right ]) ->
+      TruthTable
+        [ as_boolean "truth_table2" (recurse left); as_boolean "truth_table2" (recurse right) ]
+  | Call ("choice", [ options; correct ]) ->
+      (* Options are written "a|b|c", the order a student sees them in. *)
+      let options =
+        as_text "choice" (recurse options)
+        |> String.split_on_char '|' |> List.map String.trim |> List.filter (( <> ) "")
+      and correct = String.trim (as_text "choice" (recurse correct)) in
+      if List.length options < 2 then error "choice needs at least two options, written \"a|b\"";
+      if not (List.mem correct options) then
+        error
+          (Printf.sprintf "choice: the answer %S is not one of the options %s" correct
+             (String.concat " | " options));
+      Choice (options, correct)
   | Call ("set_empty", []) -> Set Ag_set.empty
   | Call ("set_insert", [ set; element ]) ->
       let set = as_set "set_insert" (recurse set) in

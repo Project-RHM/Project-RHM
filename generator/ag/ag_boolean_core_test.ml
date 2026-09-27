@@ -94,6 +94,60 @@ let () =
   check "negations counts every \\neg" (negations (negate (conjunction (negate p) q)) = 2);
   check "top" (top (implication p q) = "imp")
 
+(* ---- the course's conventions, added for the MATH2003 question types ---- *)
+let () =
+  let expect formula text =
+    let got = to_latex formula in
+    if got <> text then fail (Printf.sprintf "rendered %S, expected %S" got text)
+  in
+  (* a bracket around round brackets is square, as the assignments write it *)
+  expect (implication (conjunction p (implication p q)) q) "[p \\land (p \\to q)] \\to q";
+  expect (implication (conjunction (conjunction (disjunction p q) (implication p r)) (implication q r)) r)
+    "[(p \\lor q) \\land (p \\to r) \\land (q \\to r)] \\to r";
+  expect (negate (disjunction p (conjunction q r))) "\\neg [p \\lor (q \\land r)]";
+  (* removing conditionals *)
+  let no_arrows f = not (List.mem (top f) [ "imp"; "iff" ]) && count_top "imp" f = 0 && count_top "iff" f = 0 in
+  List.iter
+    (fun f ->
+      let g = without_conditionals f in
+      check ("equivalent without conditionals: " ^ to_latex f) (equivalent f g);
+      check ("no conditional left: " ^ to_latex g) (no_arrows g))
+    [ implication (disjunction p q) (negate p);
+      implication (implication p (negate q)) (implication (negate p) q);
+      biconditional p (conjunction q r) ];
+  check "a negation meeting a negation cancels"
+    (without_conditionals (implication (negate p) q) = disjunction p q);
+  (* truth tables: columns in build order, rows T..T first *)
+  check "columns"
+    (List.map to_latex (table_columns [ exclusive p (negate q) ]) = [ "\\neg q"; "p \\oplus \\neg q" ]);
+  check "columns of two sides: p \\to q, \\neg p, \\neg p \\lor q"
+    (List.length (table_columns [ implication p q; disjunction (negate p) q ]) = 3);
+  (match table_rows [ conjunction p q ] with
+  | [ first; second; third; last ] ->
+      check "row 1 is T T" (first = [ ("p", true); ("q", true) ]);
+      check "row 2 is T F" (second = [ ("p", true); ("q", false) ]);
+      check "row 3 is F T" (third = [ ("p", false); ("q", true) ]);
+      check "row 4 is F F" (last = [ ("p", false); ("q", false) ])
+  | _ -> fail "a two-variable table has four rows");
+  (* the looser tidiness of the course's exercises *)
+  let plain f = check ("plain: " ^ to_latex f) (is_plain f) in
+  let not_plain f = check ("not plain: " ^ to_latex f) (not (is_plain f)) in
+  plain (implication (disjunction p q) (negate p));
+  plain (implication (implication p (negate q)) (implication (negate p) q));
+  plain (implication (conjunction p q) r);
+  not_plain (implication p (negate p));
+  not_plain (conjunction r (disjunction (disjunction q r) p));
+  not_plain (conjunction (implication p q) p);
+  not_plain (exclusive (negate q) (exclusive r (negate q)));
+  not_plain (implication (implication p q) q);
+  not_plain (negate (negate p));
+  (* reading order and trivial parts *)
+  check "in order" (in_reading_order (implication (implication p q) r));
+  check "out of order" (not (in_reading_order (biconditional r (implication q p))));
+  check "trivial part"
+    (has_trivial_part (implication (implication q (implication (negate q) (negate p))) p));
+  check "no trivial part" (not (has_trivial_part (implication (disjunction p q) (negate p))))
+
 let () =
   if !failures = 0 then print_endline "Ag boolean core tests passed."
   else (

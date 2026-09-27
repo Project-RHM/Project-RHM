@@ -43,6 +43,8 @@ type spec = {
   precedences : (string * int * associativity) list;
   rules : rule list;
   prompt : template_piece list;
+  (* The instruction shared by every question of a set, printed once. *)
+  stem : string option;
   answer : expr;
   width : int option;
 }
@@ -122,6 +124,14 @@ let expression_builtins =
     ("bool_count", 2);
     ("bool_variable_count", 1);
     ("bool_model_count", 1);
+    ("bool_neg", 1);
+    ("bool_without_conditionals", 1);
+    ("bool_is_plain", 1);
+    ("bool_in_order", 1);
+    ("bool_has_trivial_part", 1);
+    ("truth_table", 1);
+    ("truth_table2", 2);
+    ("choice", 2);
     ("set_empty", 0);
     ("set_insert", 2);
     ("set_interval", 4);
@@ -291,6 +301,7 @@ let check (declarations : file) : (spec, error list) result =
   let prompt = ref None in
   let answer = ref None in
   let width = ref None in
+  let stem = ref None in
   let rules = ref [] in
 
   let declared_once what current position set =
@@ -407,6 +418,9 @@ let check (declarations : file) : (spec, error list) result =
       | Width_decl (columns, position) ->
           if columns <= 0 then report position "width must be positive";
           declared_once "width" width position columns
+      | Stem_decl (text, position) ->
+          if String.trim text = "" then report position "a stem cannot be empty";
+          declared_once "stem" stem position text
       | Rule_decl rule -> rules := !rules @ [ rule ])
     declarations;
 
@@ -864,5 +878,6 @@ let check (declarations : file) : (spec, error list) result =
           prompt = prompt_pieces;
           answer = answer_expr;
           width = !width;
+          stem = !stem;
         }
   | errors -> Error errors
