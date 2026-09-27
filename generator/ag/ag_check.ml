@@ -134,6 +134,7 @@ let expression_builtins =
     ("choice", 2);
     ("parts", 2);
     ("labelled", 2);
+    ("weighted", 2);
     ("bool_derive", 3);
     ("bool_derive_wrong", 3);
     ("bool_derivation", 4);

@@ -50,7 +50,7 @@ let footer = "END_PGML\nENDDOCUMENT();\n"
    see [document]. Every other kind is written inline, as before. *)
 let answer_of_value = function
   | Ag_engine.Boolean _ | Ag_engine.Choice _ | Ag_engine.TruthTable _ | Ag_engine.Parts _
-  | Ag_engine.Labelled _ ->
+  | Ag_engine.Labelled _ | Ag_engine.Weighted _ ->
       invalid_arg "answer_of_value: this answer is built as a named object"
   | Ag_engine.Num number when Ag_number.is_integer number -> Ag_number.to_string number
   | Ag_engine.Num number -> Printf.sprintf "Formula('%s')" (Ag_number.to_string number)
@@ -85,16 +85,45 @@ let blank ?width answer =
    answer objects. Boolean objects are built inside Context("Boolean") and
    keep that context when the document switches back, so one document can
    mix them with numeric answers. *)
+(* An answer blank is written as a placeholder first and finished once its
+   whole question is known, because its weight depends on the question's
+   other blanks. *)
+type pending = {
+  underscores : string;
+  answer : string;
+  columns : int option;  (* the old width option of inline answers *)
+  group : int option;  (* the weighted answer this blank belongs to *)
+}
+
 type setup = {
   mutable macros : string list;
   mutable boolean_variables : string list;
   mutable boolean_lines : string list;
   mutable other_lines : string list;
   mutable next : int;
+  mutable blanks : (int * pending) list;
+  mutable groups : (int * float) list;  (* group -> percentage of its question *)
+  mutable current_group : int option;
 }
 
 let new_setup () =
-  { macros = []; boolean_variables = []; boolean_lines = []; other_lines = []; next = 1 }
+  {
+    macros = [];
+    boolean_variables = [];
+    boolean_lines = [];
+    other_lines = [];
+    next = 1;
+    blanks = [];
+    groups = [];
+    current_group = None;
+  }
+
+let placeholder id = Printf.sprintf "\001%d\002" id
+
+let place setup ?columns ~underscores answer =
+  let id = List.length setup.blanks in
+  setup.blanks <- setup.blanks @ [ (id, { underscores; answer; columns; group = setup.current_group }) ];
+  placeholder id
 
 let need setup macro = if not (List.mem macro setup.macros) then setup.macros <- setup.macros @ [ macro ]
 
@@ -124,8 +153,8 @@ let truth_table_block setup formulas =
     List.map (fun name -> Printf.sprintf "[. %s .]" (letter (List.assoc name assignment))) variables
     @ List.map
         (fun c ->
-          Printf.sprintf "[. [___]{%s} .]"
-            (if Ag_boolean.evaluate assignment c then "$T" else "$F"))
+          Printf.sprintf "[. %s .]"
+            (place setup ~underscores:"___" (if Ag_boolean.evaluate assignment c then "$T" else "$F")))
         computed
   in
   let line cells = "  " ^ String.concat " " cells ^ "*" in
@@ -143,7 +172,7 @@ let rec answer_block setup ?width value =
       setup.boolean_lines <-
         setup.boolean_lines
         @ [ Printf.sprintf "%s = Compute(\"%s\");" name (perl_string (Ag_boolean.to_pg formula)) ];
-      Printf.sprintf " [______________________________]{%s}" name
+      " " ^ place setup ~underscores:"______________________________" name
   | Ag_engine.Choice (options, correct) ->
       need setup "parserPopUp.pl";
       let name = fresh setup in
@@ -155,7 +184,7 @@ let rec answer_block setup ?width value =
               (String.concat ", " (List.map quoted ("?" :: options)))
               (quoted correct);
           ];
-      Printf.sprintf " [_]{%s}" name
+      " " ^ place setup ~underscores:"_" name
   | Ag_engine.TruthTable formulas -> "\n\n" ^ truth_table_block setup formulas
   | Ag_engine.Parts values ->
       (* Each part on its own paragraph after the first. *)
@@ -171,7 +200,15 @@ let rec answer_block setup ?width value =
         trim_right words
       in
       "\n\n" ^ words ^ answer_block setup ?width inner
-  | other -> " " ^ blank ?width (answer_of_value other)
+  | Ag_engine.Weighted (percent, inner) ->
+      let group = List.length setup.groups in
+      setup.groups <- setup.groups @ [ (group, percent) ];
+      let outer = setup.current_group in
+      setup.current_group <- Some group;
+      let text = answer_block setup ?width inner in
+      setup.current_group <- outer;
+      text
+  | other -> " " ^ place setup ?columns:width ~underscores:"_____" (answer_of_value other)
 
 let setup_text context setup =
   let boolean =
@@ -203,12 +240,77 @@ let question_block ?width (question : Ag_engine.question) =
 
 let letters = "abcdefghijklmnopqrstuvwxyz"
 
+let replace_all ~pattern ~by text =
+  let plen = String.length pattern in
+  let buffer = Buffer.create (String.length text) in
+  let rec go i =
+    if i > String.length text - plen then Buffer.add_string buffer (String.sub text i (String.length text - i))
+    else if String.sub text i plen = pattern then (
+      Buffer.add_string buffer by;
+      go (i + plen))
+    else (
+      Buffer.add_char buffer text.[i];
+      go (i + 1))
+  in
+  go 0;
+  Buffer.contents buffer
+
+(* A blank as PGML writes it. Without a weight it is exactly what this
+   module has always written; with one, the width and the grader's weight
+   follow the answer: [_]{$ans}{5}{ cmp_options => { weight => 30 } }. *)
+let blank_markup pending weight =
+  match weight with
+  | None -> (
+      match pending.columns with
+      | None -> Printf.sprintf "[%s]{%s}" pending.underscores pending.answer
+      | Some columns -> Printf.sprintf "[%s]{answer=>%s,width=>%d}" pending.underscores pending.answer columns)
+  | Some weight ->
+      let columns = match pending.columns with Some c -> c | None -> String.length pending.underscores in
+      let text = Printf.sprintf "%.4f" weight in
+      let rec trim text =
+        let last = text.[String.length text - 1] in
+        if last = '0' then trim (String.sub text 0 (String.length text - 1))
+        else if last = '.' then String.sub text 0 (String.length text - 1)
+        else text
+      in
+      Printf.sprintf "[%s]{%s}{%d}{ cmp_options => { weight => %s } }" pending.underscores pending.answer columns
+        (trim text)
+
+(* Weights, when any answer in the document asks for one: every question
+   is worth the same, 100 / n; a weighted answer takes its percentage of
+   its question, split over its blanks; the question's other blanks share
+   what is left equally. WeBWorK's average grader reads the weights as
+   relative, so they need not be whole numbers. *)
+let finish setup ~weighted ~share ids text =
+  let entries = List.filter (fun (id, _) -> List.mem id ids) setup.blanks in
+  let in_group group = List.filter (fun (_, pending) -> pending.group = Some group) entries in
+  let groups_here =
+    List.sort_uniq compare (List.filter_map (fun (_, pending) -> pending.group) entries)
+  in
+  let taken =
+    List.fold_left (fun sum group -> sum +. List.assoc group setup.groups) 0. groups_here
+  in
+  let ungrouped = List.filter (fun (_, pending) -> pending.group = None) entries in
+  let weight_of pending =
+    if not weighted then None
+    else
+      match pending.group with
+      | Some group ->
+          Some (share *. List.assoc group setup.groups /. 100. /. float_of_int (List.length (in_group group)))
+      | None -> Some (share *. (1. -. (taken /. 100.)) /. float_of_int (max 1 (List.length ungrouped)))
+  in
+  List.fold_left
+    (fun text (id, pending) -> replace_all ~pattern:(placeholder id) ~by:(blank_markup pending (weight_of pending)) text)
+    text entries
+
 (* A set with a stem reads like the course's assignments: the instruction
    once, then parts a), b), c). Without one, questions are separated by a
    blank line, which the project's own PG grammar accepts. *)
-let document ?width ?(context = "Numeric") ?stem questions =
+(* [weigh_all] writes weights even when no answer asks for one, so that a
+   document merged with others counts each of its questions equally. *)
+let document ?width ?(context = "Numeric") ?stem ?(weigh_all = false) questions =
   let setup = new_setup () in
-  let parts =
+  let drafts =
     List.mapi
       (fun index (question : Ag_engine.question) ->
         let label =
@@ -217,9 +319,14 @@ let document ?width ?(context = "Numeric") ?stem questions =
               Printf.sprintf "%c) " letters.[index]
           | _ -> ""
         in
-        label ^ question.Ag_engine.prompt ^ answer_block setup ?width question.Ag_engine.answer)
+        let first = List.length setup.blanks in
+        let text = label ^ question.Ag_engine.prompt ^ answer_block setup ?width question.Ag_engine.answer in
+        (text, List.init (List.length setup.blanks - first) (fun i -> first + i)))
       questions
   in
+  let weighted = weigh_all || setup.groups <> [] in
+  let share = 100. /. float_of_int (max 1 (List.length questions)) in
+  let parts = List.map (fun (text, ids) -> finish setup ~weighted ~share ids text) drafts in
   let body =
     (match stem with Some text -> [ text ] | None -> []) @ parts |> String.concat "\n\n"
   in

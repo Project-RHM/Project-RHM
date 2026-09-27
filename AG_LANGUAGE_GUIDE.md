@@ -551,6 +551,7 @@ latex = prefix("\neg", $2)
 | `choice(options, correct)` | 2 | 下拉选择答案。`options` 写成 `"a|b|c"`，`correct` 必须是其中之一 |
 | `parts(a, b)` | 2 | 一题两个答案，按顺序出现，如先填真值表再选结论 |
 | `labelled(words, answer)` | 2 | 答案框前的引导语，如 `labelled("Therefore the two sides are", choice(...))` |
+| `weighted(answer, percent)` | 2 | 该答案占本小题的百分比，如 `weighted(choice(...), 30)`；本小题其余答案框平分剩下的分值，每道小题分值相等 |
 | `bool_derive(f, steps, seed)` | 3 | 从 `f` 出发连续施加 `steps` 条等价律，由 `seed` 决定选哪条、用在哪；每步结果都须公平、至多两个否定、至多五个连接词、不回到走过的式子 |
 | `bool_derive_wrong(f, steps, seed)` | 3 | 同上，但其中一步换成典型错误：逆命题、否命题、德摩根不换连接词等 |
 | `bool_derivation(f, steps, seed, wrong)` | 4 | 上述推导的文字记录「定律: 式子; ...」，用于 AST 和解答 |
@@ -706,6 +707,18 @@ stem "Construct a truth table for each of the following compound statements."
   答案是布尔上下文里的常量 `$T`、`$F`。
 
 `contextBoolean.pl` 和 PGML 表格语法都是 WeBWorK 2.19 加入的。旧题型的输出不变。
+
+### 16.6 答案权重
+
+只要文档里有答案用了 `weighted`，所有答案框都会带上权重，写法是
+`[_]{$ans1}{5}{ cmp_options => { weight => 15 } }`，由 WeBWorK 默认的
+`avg_problem_grader` 按相对权重计分。分配规则：文档里每道小题分值相等；
+加了权重的答案占本小题的指定比例，本小题其余答案框平分剩下的部分。没有答案用
+`weighted` 时，输出与以前完全相同。
+
+`agrun --weights` 强制按上述规则给所有答案框加权重。`tools/ag_set.py --pg` 合并
+多个文法时总是带上它，这样每道大题都算 100、大题内每道小题等分，不会因为某一组
+带权重而让没带权重的组几乎不占分。
 
 ## 17. 一道题的执行顺序（Execution order）
 

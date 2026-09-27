@@ -37,6 +37,9 @@ type value =
       (* several answers in one question, in the order they are asked *)
   | Labelled of string * value
       (* an answer with the words that introduce its blank *)
+  | Weighted of float * value
+      (* an answer worth this percentage of its question; the question's
+         other blanks share the rest *)
   | Set of Ag_set.t
   | Vector of Ag_vector.t
   | VectorNormAnswer of Ag_vector.t
@@ -56,6 +59,7 @@ let rec describe_value = function
   | Choice (_, correct) -> correct
   | Parts values -> String.concat " | " (List.map describe_value values)
   | Labelled (_, value) -> describe_value value
+  | Weighted (_, value) -> describe_value value
   | TruthTable formulas ->
       (* Every computed column, one letter per row, in the course's row order. *)
       let rows = Ag_boolean.table_rows formulas in
@@ -87,7 +91,7 @@ let as_text context = function
   | Text text -> text
   | Num number -> Ag_number.to_string number
   | Truth _ | Complex _ | Formula _ | Boolean _ | Choice _ | TruthTable _ | Parts _
-  | Labelled _ | Set _ | Vector _
+  | Labelled _ | Weighted _ | Set _ | Vector _
   | VectorNormAnswer _
   | VectorUnitAnswer _ | VectorDirectionAnswer _ ->
       error
@@ -657,6 +661,11 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
              (String.concat " | " options));
       Choice (options, correct)
   | Call ("parts", [ first; second ]) -> Parts [ recurse first; recurse second ]
+  | Call ("weighted", [ answer; percent ]) ->
+      let percent = Ag_number.to_float (as_number "weighted" (recurse percent)) in
+      if percent <= 0. || percent >= 100. then
+        error (Printf.sprintf "weighted: %g is not a percentage between 0 and 100" percent);
+      Weighted (percent, recurse answer)
   | Call ("labelled", [ words; answer ]) ->
       Labelled (as_text "labelled" (recurse words), recurse answer)
   | Call ("bool_derive", [ body; steps; seed ]) ->

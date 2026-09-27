@@ -184,7 +184,10 @@ def pg_document(parts: list[tuple[Path, int, int, list[Question], list[str]]]) -
     setups: list[str] = []
     bodies: list[str] = []
     for number, (grammar, pool, seed, group, settings) in enumerate(parts, 1):
-        command = [str(AGRUN), "--pg", "--count", str(pool), "--seed", str(seed),
+        # --weights: every numbered question is then worth 100, and every
+        # part of one worth the same, whether or not its grammar asks for
+        # weights, so a weighted group cannot drown an unweighted one.
+        command = [str(AGRUN), "--pg", "--weights", "--count", str(pool), "--seed", str(seed),
                    "--pick", ",".join(str(q.index) for q in group)]
         for setting in settings:
             command += ["--set", setting]

@@ -96,10 +96,16 @@ Q -> C {
        claim = "[`" ++ bool_latex(lhs) ++ " \equiv " ++ bool_latex(rhs) ++ "`]"
        solution = "core " ++ bool_latex($1.f) ++ "; first side: " ++ bool_derivation($1.f, first_steps, k1, wrong)
                   ++ cond(second_steps = 0, "", "; second side: " ++ bool_derivation($1.f, second_steps, k2, 1 = 0))
+       # The conclusion is worth 30% of the question and the table's cells
+       # share the other 70%, so a student who only guesses the conclusion
+       # cannot pass, and one who fills the table but draws the wrong
+       # conclusion still loses a real part of the mark. Every question in a
+       # set is worth the same. Change the 30 to reweight.
        answer_value = parts(truth_table2(lhs, rhs),
                             labelled("Therefore the two sides are ",
-                                     choice("logically equivalent|not logically equivalent",
-                                            cond(wrong, "not logically equivalent", "logically equivalent"))))
+                                     weighted(choice("logically equivalent|not logically equivalent",
+                                                     cond(wrong, "not logically equivalent", "logically equivalent")),
+                                              30)))
      }
 
 

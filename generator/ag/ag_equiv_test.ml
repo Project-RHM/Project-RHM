@@ -64,8 +64,10 @@ let sides_of_prompt prompt =
 (* The answer: the table of both sides, then the labelled conclusion. *)
 let answer_parts seed question =
   match question.Ag_engine.answer with
-  | Ag_engine.Parts [ Ag_engine.TruthTable formulas; Ag_engine.Labelled (_, Ag_engine.Choice (offered, chosen)) ] ->
+  | Ag_engine.Parts
+      [ Ag_engine.TruthTable formulas; Ag_engine.Labelled (_, Ag_engine.Weighted (percent, Ag_engine.Choice (offered, chosen))) ] ->
       if offered <> options then fail (Printf.sprintf "seed %d: the conclusion offers other options" seed);
+      if percent <> 30. then fail (Printf.sprintf "seed %d: the conclusion is worth %g%%, not 30%%" seed percent);
       Some (formulas, chosen)
   | other ->
       fail (Printf.sprintf "seed %d: unexpected answer %s" seed (Ag_engine.describe_value other));
@@ -202,6 +204,50 @@ let () =
       "Therefore the two sides are [_]{$ans"; "\"logically equivalent\", \"not logically equivalent\"";
       "Determine whether each of the following logical equivalences holds"; "a) "; "c) " ];
   if count_occurrences document "[#" <> 3 then fail "expected one table per question";
+  (* Weights: each of the three questions is worth a third, and within
+     one the conclusion is worth 30% and the cells share the rest. *)
+  let body = List.nth (String.split_on_char '\n' document |> String.concat "\n" |> fun d -> [ d ]) 0 in
+  let weights_in text =
+    let marker = "weight => " in
+    let rec go i found =
+      match String.index_from_opt text i 'w' with
+      | None -> List.rev found
+      | Some j ->
+          if j + String.length marker <= String.length text && String.sub text j (String.length marker) = marker then (
+            let k = ref (j + String.length marker) in
+            while !k < String.length text && (text.[!k] = '.' || (text.[!k] >= '0' && text.[!k] <= '9')) do incr k done;
+            go !k (float_of_string (String.sub text (j + String.length marker) (!k - j - String.length marker)) :: found))
+          else go (j + 1) found
+    in
+    go 0 []
+  in
+  let part_texts =
+    List.map
+      (fun (start, stop) ->
+        let a = (try Some (Str.search_forward (Str.regexp_string start) body 0) with Not_found -> None) in
+        let b = match stop with None -> Some (String.length body) | Some s -> (try Some (Str.search_forward (Str.regexp_string s) body 0) with Not_found -> None) in
+        match (a, b) with Some a, Some b when b > a -> String.sub body a (b - a) | _ -> "")
+      [ ("a) ", Some "b) "); ("b) ", Some "c) "); ("c) ", None) ]
+  in
+  List.iteri
+    (fun index text ->
+      let weights = weights_in text in
+      let total = List.fold_left ( +. ) 0. weights in
+      if abs_float (total -. (100. /. 3.)) > 0.01 then
+        fail (Printf.sprintf "question %d is worth %.3f, not a third" (index + 1) total);
+      let conclusion_marker = "Therefore the two sides are [_]" in
+      match Str.search_forward (Str.regexp_string conclusion_marker) text 0 with
+      | exception Not_found -> fail (Printf.sprintf "question %d has no conclusion" (index + 1))
+      | at -> (
+          match weights_in (String.sub text at (String.length text - at)) with
+          | conclusion :: _ ->
+              if abs_float (conclusion -. (0.3 *. total)) > 0.01 then
+                fail (Printf.sprintf "question %d: the conclusion is worth %.3f of %.3f" (index + 1) conclusion total)
+          | [] -> fail (Printf.sprintf "question %d: the conclusion has no weight" (index + 1))))
+    part_texts;
+  (* A table cell keeps its width of three. *)
+  if not (contains document "[___]{$T}{3}{ cmp_options => { weight => ") then
+    fail "a table cell lost its width or its weight";
   if count_occurrences document "= PopUp([\"?\"" <> 3 then fail "expected one conclusion per question"
 
 let () =

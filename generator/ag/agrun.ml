@@ -30,12 +30,13 @@ type options = {
   ast_output : string option;
   visualization_output : string option;
   pick : int list;
+  weights : bool;
 }
 
 let usage () =
   prerr_endline
     "usage: agrun [--pg] [--count N] [--seed N] [--set NAME=VALUE]... \
-     [--out FILE] [--ast-out FILE] [--visualization-out FILE] [--pick I,J,...] FILE.ag";
+     [--out FILE] [--ast-out FILE] [--visualization-out FILE] [--pick I,J,...] [--weights] FILE.ag";
   exit 2
 
 (* The same derivation the existing generator uses, so a student id maps to the
@@ -77,6 +78,9 @@ let parse_arguments () =
         walk rest { accumulated with visualization_output = Some value }
     (* Keep only these questions (1-based) of the --count generated, so a
        caller that chose them from a pool can ask for exactly those again. *)
+    (* Weight every blank so each question counts the same, as a document
+       that will be merged with others needs. *)
+    | "--weights" :: rest -> walk rest { accumulated with weights = true }
     | "--pick" :: value :: rest ->
         let picks =
           String.split_on_char ',' value |> List.filter (( <> ) "")
@@ -108,6 +112,7 @@ let parse_arguments () =
         ast_output = None;
         visualization_output = None;
         pick = [];
+        weights = false;
       }
   in
   if options.filename = "" then usage ();
@@ -156,7 +161,7 @@ let () =
       let text =
         if options.as_pg then
           Ag_pgml.document ?width:spec.Ag_check.width ~context:spec.Ag_check.context
-            ?stem:spec.Ag_check.stem questions
+            ?stem:spec.Ag_check.stem ~weigh_all:options.weights questions
         else
           (match spec.Ag_check.stem with Some stem -> "Stem: " ^ stem ^ "\n\n" | None -> "")
           ^ (questions

@@ -26,7 +26,7 @@
  (names ag_boolean_test ag_equiv_test)
  (modules ag_boolean_test ag_equiv_test ag_boolean_reader)
  (deps boolean.ag boolean_equiv.ag)
- (libraries ag))
+ (libraries ag str))
 
 (test
  (name ag_sequence_test)
