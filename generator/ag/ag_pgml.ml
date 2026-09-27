@@ -49,7 +49,8 @@ let footer = "END_PGML\nENDDOCUMENT();\n"
    a drop-down, a truth table -- are built before BEGIN_PGML as named objects;
    see [document]. Every other kind is written inline, as before. *)
 let answer_of_value = function
-  | Ag_engine.Boolean _ | Ag_engine.Choice _ | Ag_engine.TruthTable _ ->
+  | Ag_engine.Boolean _ | Ag_engine.Choice _ | Ag_engine.TruthTable _ | Ag_engine.Parts _
+  | Ag_engine.Labelled _ ->
       invalid_arg "answer_of_value: this answer is built as a named object"
   | Ag_engine.Num number when Ag_number.is_integer number -> Ag_number.to_string number
   | Ag_engine.Num number -> Printf.sprintf "Formula('%s')" (Ag_number.to_string number)
@@ -134,7 +135,7 @@ let truth_table_block setup formulas =
     @ List.map (fun assignment -> line (row assignment)) (Ag_boolean.table_rows formulas)
     @ [ Printf.sprintf "#]{align => '%s', horizontalrules => 1}" align ])
 
-let answer_block setup ?width value =
+let rec answer_block setup ?width value =
   match value with
   | Ag_engine.Boolean formula ->
       use_boolean setup [ formula ];
@@ -156,6 +157,20 @@ let answer_block setup ?width value =
           ];
       Printf.sprintf " [_]{%s}" name
   | Ag_engine.TruthTable formulas -> "\n\n" ^ truth_table_block setup formulas
+  | Ag_engine.Parts values ->
+      (* Each part on its own paragraph after the first. *)
+      String.concat "" (List.map (answer_block setup ?width) values)
+  | Ag_engine.Labelled (words, inner) ->
+      (* The blank follows the words after one space, however they end. *)
+      let words =
+        let rec trim_right text =
+          if text <> "" && text.[String.length text - 1] = ' ' then
+            trim_right (String.sub text 0 (String.length text - 1))
+          else text
+        in
+        trim_right words
+      in
+      "\n\n" ^ words ^ answer_block setup ?width inner
   | other -> " " ^ blank ?width (answer_of_value other)
 
 let setup_text context setup =

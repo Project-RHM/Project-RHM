@@ -148,6 +148,62 @@ let () =
     (has_trivial_part (implication (implication q (implication (negate q) (negate p))) p));
   check "no trivial part" (not (has_trivial_part (implication (disjunction p q) (negate p))))
 
+(* ---- laws as rewrites, and derivations ---- *)
+let () =
+  (* Every law, in both directions, preserves meaning wherever it applies. *)
+  let samples =
+    [ implication p (disjunction q r); negate (conjunction p q); conjunction p (disjunction q r);
+      implication (conjunction p q) r; biconditional p q; disjunction p (conjunction (negate p) q);
+      negate (implication p q); implication (disjunction p q) r; exclusive p q;
+      disjunction (negate p) (disjunction q r); conjunction (implication p q) (implication q p) ]
+  in
+  List.iter
+    (fun rule ->
+      List.iter
+        (fun formula ->
+          List.iter
+            (fun result ->
+              if not (equivalent formula result) then
+                fail (Printf.sprintf "%s turns %s into %s" rule.law (to_latex formula) (to_latex result)))
+            (apply_anywhere rule formula))
+        samples)
+    correct_rules;
+  (* Every mistake changes the meaning of some sample it applies to. *)
+  List.iter
+    (fun rule ->
+      let changes =
+        List.exists
+          (fun formula -> List.exists (fun result -> not (equivalent formula result)) (apply_anywhere rule formula))
+          (samples @ [ implication p (implication q r); negate (disjunction p q) ])
+      in
+      if not changes then fail ("the mistake never changes a meaning: " ^ rule.law))
+    mistake_rules;
+  (* Derivations: each correct step keeps the meaning; a wrong one loses it
+     somewhere; no chain revisits a formula. *)
+  let lost = ref 0 in
+  for seed = 0 to 199 do
+    let start = List.nth samples (seed mod List.length samples) in
+    let chain = derivation start 3 seed in
+    let formulas = start :: List.map snd chain in
+    List.iter (fun f -> if not (equivalent start f) then fail ("a correct derivation changed the meaning: " ^ to_latex f)) formulas;
+    if List.length (List.sort_uniq compare formulas) <> List.length formulas then fail "a derivation revisited a formula";
+    List.iter (fun f -> if not (is_fair f) then fail ("a derivation step is not fair: " ^ to_latex f)) (List.tl formulas);
+    let wrong = derive ~mistake_at:(seed mod 3) start 3 seed in
+    if not (equivalent start wrong) then incr lost
+  done;
+  if !lost < 100 then fail (Printf.sprintf "only %d of 200 wrong derivations changed the meaning" !lost);
+  (* the course's examples *)
+  check "definition of conditional read backwards"
+    (List.mem (implication (negate p) q) (apply_anywhere (reversed (List.hd equivalence_laws)) (disjunction p q)));
+  check "one law apart" (one_step_apart (implication p q) (disjunction (negate p) q));
+  check "one mistake apart" (one_step_apart (implication p q) (implication q p));
+  check "two laws apart" (not (one_step_apart (implication p q) (negate (conjunction p (negate q)))));
+  check "same up to order" (same_shape (conjunction p (disjunction q r)) (conjunction (disjunction r q) p));
+  check "fair" (is_fair (disjunction p (conjunction (negate p) q)));
+  check "not fair: negation over two negated literals" (not (is_fair (negate (implication (negate r) (negate q)))));
+  check "not fair: a literal against itself" (not (is_fair (implication q (negate q))));
+  check "table width" (table_width [ implication p q; disjunction (negate p) q ] = 3)
+
 let () =
   if !failures = 0 then print_endline "Ag boolean core tests passed."
   else (

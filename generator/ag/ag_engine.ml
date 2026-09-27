@@ -33,13 +33,17 @@ type value =
       (* the options a student picks from, and the correct one *)
   | TruthTable of Ag_boolean.t list
       (* the formulas whose truth table the student fills in *)
+  | Parts of value list
+      (* several answers in one question, in the order they are asked *)
+  | Labelled of string * value
+      (* an answer with the words that introduce its blank *)
   | Set of Ag_set.t
   | Vector of Ag_vector.t
   | VectorNormAnswer of Ag_vector.t
   | VectorUnitAnswer of Ag_vector.t
   | VectorDirectionAnswer of Ag_vector.t * bool
 
-let describe_value = function
+let rec describe_value = function
   | Num number -> Ag_number.to_string number
   | Text text -> text
   | Truth true -> "true"
@@ -50,6 +54,8 @@ let describe_value = function
   | Formula expression -> "Formula(" ^ Ag_formula.to_pg expression ^ ")"
   | Boolean formula -> "Boolean(" ^ Ag_boolean.to_latex formula ^ ")"
   | Choice (_, correct) -> correct
+  | Parts values -> String.concat " | " (List.map describe_value values)
+  | Labelled (_, value) -> describe_value value
   | TruthTable formulas ->
       (* Every computed column, one letter per row, in the course's row order. *)
       let rows = Ag_boolean.table_rows formulas in
@@ -80,7 +86,8 @@ let as_number context = function
 let as_text context = function
   | Text text -> text
   | Num number -> Ag_number.to_string number
-  | Truth _ | Complex _ | Formula _ | Boolean _ | Choice _ | TruthTable _ | Set _ | Vector _
+  | Truth _ | Complex _ | Formula _ | Boolean _ | Choice _ | TruthTable _ | Parts _
+  | Labelled _ | Set _ | Vector _
   | VectorNormAnswer _
   | VectorUnitAnswer _ | VectorDirectionAnswer _ ->
       error
@@ -649,6 +656,57 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
           (Printf.sprintf "choice: the answer %S is not one of the options %s" correct
              (String.concat " | " options));
       Choice (options, correct)
+  | Call ("parts", [ first; second ]) -> Parts [ recurse first; recurse second ]
+  | Call ("labelled", [ words; answer ]) ->
+      Labelled (as_text "labelled" (recurse words), recurse answer)
+  | Call ("bool_derive", [ body; steps; seed ]) ->
+      Boolean
+        (Ag_boolean.derive
+           (as_boolean "bool_derive" (recurse body))
+           (Ag_number.require_integer "bool_derive" (as_number "bool_derive" (recurse steps)))
+           (Ag_number.require_integer "bool_derive" (as_number "bool_derive" (recurse seed))))
+  | Call ("bool_derive_wrong", [ body; steps; seed ]) ->
+      let steps = Ag_number.require_integer "bool_derive_wrong" (as_number "bool_derive_wrong" (recurse steps))
+      and seed = Ag_number.require_integer "bool_derive_wrong" (as_number "bool_derive_wrong" (recurse seed)) in
+      Boolean
+        (Ag_boolean.derive ~mistake_at:(seed mod max 1 steps)
+           (as_boolean "bool_derive_wrong" (recurse body)) steps seed)
+  | Call ("bool_derivation", [ body; steps; seed; wrong ]) ->
+      (* The derivation as text, for the AST and a worked solution:
+         "law: formula; law: formula". *)
+      let steps = Ag_number.require_integer "bool_derivation" (as_number "bool_derivation" (recurse steps))
+      and seed = Ag_number.require_integer "bool_derivation" (as_number "bool_derivation" (recurse seed)) in
+      let mistake_at = if as_truth "bool_derivation" (recurse wrong) then seed mod max 1 steps else -1 in
+      Text
+        (Ag_boolean.derivation ~mistake_at (as_boolean "bool_derivation" (recurse body)) steps seed
+        |> List.map (fun (law, formula) -> law ^ ": " ^ Ag_boolean.to_latex formula)
+        |> String.concat "; ")
+  | Call ("bool_steps", [ body; steps; seed; wrong ]) ->
+      (* How many steps the derivation actually took; fewer than asked when
+         no law could be applied fairly. *)
+      let steps = Ag_number.require_integer "bool_steps" (as_number "bool_steps" (recurse steps))
+      and seed = Ag_number.require_integer "bool_steps" (as_number "bool_steps" (recurse seed)) in
+      let mistake_at = if as_truth "bool_steps" (recurse wrong) then seed mod max 1 steps else -1 in
+      Num
+        (Ag_number.of_int
+           (List.length (Ag_boolean.derivation ~mistake_at (as_boolean "bool_steps" (recurse body)) steps seed)))
+  | Call ("bool_one_step_apart", [ left; right ]) ->
+      Truth
+        (Ag_boolean.one_step_apart
+           (as_boolean "bool_one_step_apart" (recurse left))
+           (as_boolean "bool_one_step_apart" (recurse right)))
+  | Call ("bool_same_shape", [ left; right ]) ->
+      Truth
+        (Ag_boolean.same_shape
+           (as_boolean "bool_same_shape" (recurse left))
+           (as_boolean "bool_same_shape" (recurse right)))
+  | Call ("bool_is_fair", [ body ]) ->
+      Truth (Ag_boolean.is_fair (as_boolean "bool_is_fair" (recurse body)))
+  | Call ("bool_table_width", [ left; right ]) ->
+      Num
+        (Ag_number.of_int
+           (Ag_boolean.table_width
+              [ as_boolean "bool_table_width" (recurse left); as_boolean "bool_table_width" (recurse right) ]))
   | Call ("set_empty", []) -> Set Ag_set.empty
   | Call ("set_insert", [ set; element ]) ->
       let set = as_set "set_insert" (recurse set) in

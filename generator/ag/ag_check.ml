@@ -132,6 +132,16 @@ let expression_builtins =
     ("truth_table", 1);
     ("truth_table2", 2);
     ("choice", 2);
+    ("parts", 2);
+    ("labelled", 2);
+    ("bool_derive", 3);
+    ("bool_derive_wrong", 3);
+    ("bool_derivation", 4);
+    ("bool_steps", 4);
+    ("bool_one_step_apart", 2);
+    ("bool_same_shape", 2);
+    ("bool_is_fair", 1);
+    ("bool_table_width", 2);
     ("set_empty", 0);
     ("set_insert", 2);
     ("set_interval", 4);
