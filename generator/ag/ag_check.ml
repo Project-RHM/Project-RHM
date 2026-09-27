@@ -140,6 +140,7 @@ let expression_builtins =
     ("bool_steps", 4);
     ("bool_one_step_apart", 2);
     ("bool_same_shape", 2);
+    ("bool_slight_difference", 2);
     ("bool_is_fair", 1);
     ("bool_table_width", 2);
     ("set_empty", 0);

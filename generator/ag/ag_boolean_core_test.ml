@@ -204,6 +204,36 @@ let () =
   check "not fair: a literal against itself" (not (is_fair (implication q (negate q))));
   check "table width" (table_width [ implication p q; disjunction (negate p) q ] = 3)
 
+(* ---- the three weak questions of 2026-09-27, as regression cases ---- *)
+let () =
+  (* (p \land q) \lor r against (r \lor q) \land p: one mistake apart once the
+     order of q and r is ignored. *)
+  check "one step apart, in any order of operands"
+    (one_step_apart (disjunction (conjunction p q) r) (conjunction (disjunction r q) p));
+  (* (p \to q) \land \neg r against (p \to q) \lor \neg r: one connective. *)
+  check "slight: one connective"
+    (slight_difference (conjunction (implication p q) (negate r)) (disjunction (implication p q) (negate r)));
+  check "slight: one variable negated" (slight_difference (implication p q) (implication (negate p) q));
+  check "not slight: the inverse negates two" (not (slight_difference (implication p q) (implication (negate p) (negate q))));
+  check "not slight: a real derivation" (not (slight_difference (implication p q) (negate (conjunction p (negate q)))));
+  (* The definition of the conditional read backwards negates a variable to
+     fit, never a compound: no \neg (p \to q) \to r from (p \to q) \lor r. *)
+  let backwards = reversed (List.hd equivalence_laws) in
+  check "loose on a variable" (List.mem (implication (negate p) q) (apply_anywhere backwards (disjunction p q)));
+  check "not loose on a compound"
+    (not (List.mem (implication (negate (implication p q)) r) (apply_anywhere backwards (disjunction (implication p q) r))));
+  (* (\neg q \lor r) \land (q \to r) says q \to r twice. *)
+  check "not fair: the same proposition twice in a chain"
+    (not (is_fair (conjunction (disjunction (negate q) r) (implication q r))));
+  (* A derivation does not come back to a commuted copy of where it began. *)
+  for seed = 0 to 199 do
+    let start = conjunction (disjunction r q) p in
+    let chain = derivation start 3 seed in
+    let seen = List.map canonical (start :: List.map snd chain) in
+    if List.length seen <> List.length (List.sort_uniq compare seen) then
+      fail (Printf.sprintf "seed %d: a derivation returned to a commuted formula" seed)
+  done
+
 let () =
   if !failures = 0 then print_endline "Ag boolean core tests passed."
   else (

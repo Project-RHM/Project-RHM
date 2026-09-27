@@ -531,7 +531,10 @@ let rec pattern_match ~loose bindings pattern term =
   | Not (Var name), _ when loose && is_meta name -> (
       match term with
       | Not inner -> pattern_match ~loose bindings (Var name) inner
-      | _ -> pattern_match ~loose bindings (Var name) (Not term))
+      (* Only a variable is negated to fit: p \lor q may become \neg p \to q,
+         but (p \to q) \lor r never becomes \neg (p \to q) \to r. *)
+      | Var _ -> pattern_match ~loose bindings (Var name) (Not term)
+      | _ -> None)
   | Not p, Not t -> pattern_match ~loose bindings p t
   | And (p1, p2), And (t1, t2)
   | Or (p1, p2), Or (t1, t2)
@@ -736,16 +739,20 @@ let rec literal_against_itself = function
   | Not body -> literal_against_itself body
   | Var _ | Const _ -> false
 
-(* (p \to q) \land (p \to q): the same part twice in one chain, or on both
-   sides of one connective, up to the order of operands. *)
+(* (p \to q) \land (p \to q), or (\neg q \lor r) \land (q \to r): the same
+   proposition twice in one chain -- written the same or not, since
+   \neg q \lor r is q \to r -- or on both sides of one connective. *)
 let rec repeated_part formula =
   match formula with
   | Var _ | Const _ -> false
   | Not body -> repeated_part body
   | And _ | Or _ ->
-      let chain = List.map canonical (members formula formula) in
-      List.length chain <> List.length (List.sort_uniq compare chain)
-      || List.exists repeated_part (members formula formula)
+      let chain = members formula formula in
+      let rec any_pair = function
+        | [] -> false
+        | first :: rest -> List.exists (equivalent first) rest || any_pair rest
+      in
+      any_pair chain || List.exists repeated_part chain
   | Xor (l, r) | Imp (l, r) | Iff (l, r) -> canonical l = canonical r || repeated_part l || repeated_part r
 
 let is_fair formula =
@@ -776,8 +783,9 @@ let pick_weighted state rules_with_results =
 (* [steps] laws applied in turn from [formula], chosen with [seed]; with
    [mistake_at = k], the k-th step (0-based) is a mistake instead. A step is
    only taken if its result is fair, has at most two negations and five
-   connectives, and has not been seen before in the chain, so a derivation
-   never walks back on itself. The chain may be shorter than asked if no
+   connectives, and has not been seen before in the chain in any order of
+   operands, so a derivation never walks back on itself -- not even to
+   q \lor r from r \lor q. The chain may be shorter than asked if no
    step fits; callers check the result. *)
 let derivation ?(mistake_at = -1) formula steps seed =
   let state = Random.State.make [| seed |] in
@@ -792,32 +800,75 @@ let derivation ?(mistake_at = -1) formula steps seed =
               apply_anywhere rule current
               |> List.filter (fun result ->
                      is_fair result && negations result <= 2 && size result <= 5
-                     && not (List.mem result visited))
+                     && not (List.mem (canonical result) visited))
             in
             if results = [] then None else Some (rule, results))
           rules
       in
       match pick_weighted state options with
       | None -> List.rev chain
-      | Some (rule, result) -> go result (taken + 1) (result :: visited) ((rule.law, result) :: chain)
+      | Some (rule, result) ->
+          go result (taken + 1) (canonical result :: visited) ((rule.law, result) :: chain)
   in
-  go formula 0 [ formula ] []
+  go formula 0 [ canonical formula ] []
 
 let derive ?mistake_at formula steps seed =
   match List.rev (derivation ?mistake_at formula steps seed) with
   | (_, last) :: _ -> last
   | [] -> formula
 
+(* Every way of writing [formula] with the operands of \land, \lor,
+   \leftrightarrow and \oplus in either order: a law is matched against
+   each, so r \lor q is found where the law is written q \lor r. *)
+let rec orderings formula =
+  let both make l r =
+    List.concat_map (fun l -> List.concat_map (fun r -> [ make l r; make r l ]) (orderings r)) (orderings l)
+  in
+  match formula with
+  | Var _ | Const _ -> [ formula ]
+  | Not body -> List.map (fun b -> Not b) (orderings body)
+  | And (l, r) -> both (fun a b -> And (a, b)) l r
+  | Or (l, r) -> both (fun a b -> Or (a, b)) l r
+  | Xor (l, r) -> both (fun a b -> Xor (a, b)) l r
+  | Iff (l, r) -> both (fun a b -> Iff (a, b)) l r
+  | Imp (l, r) ->
+      List.concat_map (fun l -> List.map (fun r -> Imp (l, r)) (orderings r)) (orderings l)
+
 (* One law or one classic mistake, applied once anywhere, turns one side
-   into the other. Such a pair is a recognition exercise -- spot the
-   converse -- not a derivation. *)
+   into the other, whatever the order of operands. Such a pair is a
+   recognition exercise -- spot the converse -- not a derivation. *)
 let one_step_apart a b =
-  let target_b = canonical b and target_a = canonical a in
-  List.exists
-    (fun rule ->
-      List.exists (fun result -> canonical result = target_b) (apply_anywhere ~collapse:false rule a)
-      || List.exists (fun result -> canonical result = target_a) (apply_anywhere ~collapse:false rule b))
-    (correct_rules @ mistake_rules)
+  let reaches source target =
+    let goal = canonical target in
+    List.exists
+      (fun variant ->
+        List.exists
+          (fun rule ->
+            List.exists (fun result -> canonical result = goal) (apply_anywhere ~collapse:false rule variant))
+          (correct_rules @ mistake_rules))
+      (List.sort_uniq compare (orderings source))
+  in
+  reaches a b || reaches b a
+
+(* The two sides are the same but for one connective, or one variable
+   negated: (p \to q) \land \neg r against (p \to q) \lor \neg r. The
+   difference is seen before any reasoning, so the question is too slight. *)
+let slight_difference a b =
+  let rec differences x y =
+    match (x, y) with
+    | Var m, Var n -> if m = n then 0 else 99
+    | Const m, Const n -> if m = n then 0 else 99
+    | Not (Var m), Var n | Var n, Not (Var m) -> if m = n then 1 else 99
+    | Not x, Not y -> differences x y
+    | (And (l1, r1) | Or (l1, r1) | Xor (l1, r1) | Imp (l1, r1) | Iff (l1, r1)),
+      (And (l2, r2) | Or (l2, r2) | Xor (l2, r2) | Imp (l2, r2) | Iff (l2, r2)) ->
+        let here = if top x = top y then 0 else 1 in
+        here + differences l1 l2 + differences r1 r2
+    | _ -> 99
+  in
+  let ca = canonical a in
+  List.exists (fun variant -> differences ca (canonical variant) <= 1 || differences a variant <= 1)
+    (List.sort_uniq compare (orderings b))
 
 let table_width formulas =
   List.length (List.filter (function Var _ -> false | _ -> true) (table_columns formulas))

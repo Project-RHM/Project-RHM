@@ -695,6 +695,11 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
         (Ag_boolean.one_step_apart
            (as_boolean "bool_one_step_apart" (recurse left))
            (as_boolean "bool_one_step_apart" (recurse right)))
+  | Call ("bool_slight_difference", [ left; right ]) ->
+      Truth
+        (Ag_boolean.slight_difference
+           (as_boolean "bool_slight_difference" (recurse left))
+           (as_boolean "bool_slight_difference" (recurse right)))
   | Call ("bool_same_shape", [ left; right ]) ->
       Truth
         (Ag_boolean.same_shape

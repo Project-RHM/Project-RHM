@@ -146,6 +146,22 @@ let () =
                         else repeated l || repeated r)
               in
               if repeated e then fail (Printf.sprintf "seed %d: a part is written twice in %S" seed text);
+              (* Nor the same proposition twice in one chain under two
+                 spellings, as \neg q \lor r beside q \to r. *)
+              let rec same_twice = function
+                | Var _ -> false
+                | Not body -> same_twice body
+                | Bin (op, l, r) as node ->
+                    if op = "\\land" || op = "\\lor" then
+                      let parts = members op node in
+                      let rec pairs = function
+                        | [] -> false
+                        | x :: rest -> List.exists (equivalent x) rest || pairs rest
+                      in
+                      pairs parts || List.exists same_twice parts
+                    else same_twice l || same_twice r
+              in
+              if same_twice e then fail (Printf.sprintf "seed %d: one proposition twice in %S" seed text);
               let values = truth_values e in
               if List.for_all Fun.id values || not (List.exists Fun.id values) then
                 fail (Printf.sprintf "seed %d: %S is always true or always false" seed text))
@@ -165,7 +181,9 @@ let () =
           | [ fl; fr ] ->
               if Ag_boolean.same_shape fl fr then fail (Printf.sprintf "seed %d: the sides differ only in order" seed);
               if Ag_boolean.one_step_apart fl fr then
-                fail (Printf.sprintf "seed %d: %S and %S are one step apart" seed left right)
+                fail (Printf.sprintf "seed %d: %S and %S are one step apart" seed left right);
+              if Ag_boolean.slight_difference fl fr then
+                fail (Printf.sprintf "seed %d: %S and %S differ in one symbol" seed left right)
           | _ -> ()));
   if Hashtbl.length widths < 3 then fail "the tables are all of one or two sizes"
 

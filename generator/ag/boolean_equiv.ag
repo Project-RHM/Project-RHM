@@ -43,6 +43,7 @@ random k1 = integer_between(0, 999999)    # the choices of the first derivation
 random k2 = integer_between(0, 999999)    # and of the second
 random loose = integer_between(1, 5)      # 1: the core may read its variables out of order
 random roomy = integer_between(1, 10)     # 1-3: the table may have a sixth column
+random small = integer_between(1, 4)      # 1: a core of one connective is allowed
 
 let first_steps  = cond(style <= 3, total, 1)
 let second_steps = cond(style <= 3, 0, total - 1)
@@ -67,6 +68,9 @@ Q -> C {
        # Two or three steps apart, not a relabelling and not one law apart.
        require not bool_same_shape(fa, fb)
        require not bool_one_step_apart(fa, fb)
+       # Nor the same but for one connective or one negated variable, a
+       # difference seen before any reasoning.
+       require not bool_slight_difference(fa, fb)
 
        # Each side is something a person would write.
        require bool_is_fair(fa)
@@ -111,6 +115,11 @@ C -> S {
        # law copies a part (distribution, the biconditional), as a person's
        # derivation does.
        require bool_variable_count($1.f) = bool_size($1.f) + 1
+       # A core of one connective, p \to q, has few two-step derivations, and
+       # left alone they crowd the set: \neg (p \land \neg q) \equiv p \to q
+       # and its relabellings were a fifth of all questions. One in four such
+       # cores is kept.
+       require bool_size($1.f) >= 2 or small = 1
        require bool_is_plain($1.f)
        require not bool_has_trivial_part($1.f)
        require loose = 1 or bool_in_order($1.f)
