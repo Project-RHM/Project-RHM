@@ -31,6 +31,7 @@ type value =
   | Polynomial of Ag_polynomial.t
   | Equation of Ag_equation.t
   | Boolean of Ag_boolean.t
+  | Matrix of Ag_matrix.t
   | Set of Ag_set.t
   | Vector of Ag_vector.t
   | VectorNormAnswer of Ag_vector.t
@@ -46,6 +47,7 @@ let describe_value = function
       Printf.sprintf "Complex(%s,%s)" (Ag_number.to_string real)
         (Ag_number.to_string imaginary)
   | Formula expression -> "Formula(" ^ Ag_formula.to_pg expression ^ ")"
+  | Matrix matrix -> Ag_matrix.to_pg matrix
   | Polynomial polynomial -> "Polynomial(" ^ Ag_polynomial.to_pg polynomial ^ ")"
   | Equation equation -> "Equation(" ^ Ag_equation.to_pg equation ^ ")"
   | Boolean formula -> "Boolean(" ^ Ag_boolean.to_latex formula ^ ")"
@@ -67,7 +69,7 @@ let as_number context = function
 let as_text context = function
   | Text text -> text
   | Num number -> Ag_number.to_string number
-  | Truth _ | Complex _ | Formula _ | Polynomial _ | Equation _ | Boolean _ | Set _
+  | Truth _ | Complex _ | Formula _ | Polynomial _ | Equation _ | Boolean _ | Matrix _ | Set _
   | Vector _ | VectorNormAnswer _
   | VectorUnitAnswer _ | VectorDirectionAnswer _ ->
       error
@@ -99,6 +101,13 @@ let as_equation context = function
   | other ->
       error
         (Printf.sprintf "%s expected an equation but received \"%s\"" context
+           (describe_value other))
+
+let as_matrix context = function
+  | Matrix matrix -> matrix
+  | other ->
+      error
+        (Printf.sprintf "%s expected a matrix but received \"%s\"" context
            (describe_value other))
 
 let as_boolean context = function
@@ -429,6 +438,10 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
             if operator = "=" then Truth (Ag_equation.equal left right)
             else if operator = "!=" then Truth (not (Ag_equation.equal left right))
             else error (Printf.sprintf "'%s' cannot order equations" operator)
+        | Matrix left, Matrix right ->
+            if operator = "=" then Truth (Ag_matrix.equal left right)
+            else if operator = "!=" then Truth (not (Ag_matrix.equal left right))
+            else error (Printf.sprintf "'%s' cannot order matrices" operator)
         | Boolean left, Boolean right ->
             (* Two formulas are equal when they are logically equivalent. *)
             if operator = "=" then Truth (Ag_boolean.equivalent left right)
@@ -802,6 +815,61 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
       Num
         (Ag_number.of_int
            (List.length (Ag_boolean.variable_set (as_boolean "bool_variable_count" (recurse body)))))
+  | Call ("matrix2", [ a; b; c; d ]) ->
+      let n label e = as_number label (recurse e) in
+      Matrix (Ag_matrix.make [ [ n "matrix2" a; n "matrix2" b ]; [ n "matrix2" c; n "matrix2" d ] ])
+  | Call ("matrix3", [ a; b; c; d; e; f; g; h; i ]) ->
+      let n x = as_number "matrix3" (recurse x) in
+      Matrix (Ag_matrix.make [ [ n a; n b; n c ]; [ n d; n e; n f ]; [ n g; n h; n i ] ])
+  | Call ("matrix_identity", [ size ]) ->
+      Matrix (Ag_matrix.identity (Ag_number.require_integer "matrix_identity" (as_number "matrix_identity" (recurse size))))
+  | Call (("matrix_add" | "matrix_subtract" | "matrix_multiply") as name, [ left; right ]) -> (
+      let operation =
+        match name with
+        | "matrix_add" -> Ag_matrix.add
+        | "matrix_subtract" -> Ag_matrix.subtract
+        | _ -> Ag_matrix.multiply
+      in
+      try Matrix (operation (as_matrix name (recurse left)) (as_matrix name (recurse right)))
+      with Invalid_argument message -> error (name ^ ": " ^ message))
+  | Call ("matrix_scale", [ scalar; matrix ]) ->
+      Matrix (Ag_matrix.scale (as_number "matrix_scale" (recurse scalar)) (as_matrix "matrix_scale" (recurse matrix)))
+  | Call ("matrix_transpose", [ matrix ]) ->
+      Matrix (Ag_matrix.transpose (as_matrix "matrix_transpose" (recurse matrix)))
+  | Call ("matrix_determinant", [ matrix ]) -> (
+      try Num (Ag_matrix.determinant (as_matrix "matrix_determinant" (recurse matrix)))
+      with Invalid_argument message -> error ("matrix_determinant: " ^ message))
+  | Call ("matrix_inverse", [ matrix ]) -> (
+      try Matrix (Ag_matrix.inverse (as_matrix "matrix_inverse" (recurse matrix)))
+      with Invalid_argument message -> error ("matrix_inverse: " ^ message))
+  | Call ("matrix_is_invertible", [ matrix ]) ->
+      Truth (Ag_matrix.is_invertible (as_matrix "matrix_is_invertible" (recurse matrix)))
+  | Call ("matrix_entry", [ matrix; row; column ]) -> (
+      let index label e = Ag_number.require_integer label (as_number label (recurse e)) in
+      try Num (Ag_matrix.entry (as_matrix "matrix_entry" (recurse matrix)) (index "matrix_entry" row) (index "matrix_entry" column))
+      with Invalid_argument message -> error ("matrix_entry: " ^ message))
+  | Call ("matrix_vector", [ matrix; vector ]) -> (
+      try
+        Vector
+          (Ag_vector.make
+             (Ag_matrix.apply (as_matrix "matrix_vector" (recurse matrix))
+                (Ag_vector.components (as_vector "matrix_vector" (recurse vector)))))
+      with Invalid_argument message -> error ("matrix_vector: " ^ message))
+  | Call ("matrix_latex", [ matrix ]) -> Text (Ag_matrix.to_latex (as_matrix "matrix_latex" (recurse matrix)))
+  | Call ("matrix_row_latex", [ matrix; row ]) -> (
+      try
+        Text
+          (Ag_matrix.row_latex (as_matrix "matrix_row_latex" (recurse matrix))
+             (Ag_number.require_integer "matrix_row_latex" (as_number "matrix_row_latex" (recurse row))))
+      with Invalid_argument message -> error ("matrix_row_latex: " ^ message))
+  | Call ("vector_entry", [ vector; index ]) ->
+      let components = Ag_vector.components (as_vector "vector_entry" (recurse vector)) in
+      let i = Ag_number.require_integer "vector_entry" (as_number "vector_entry" (recurse index)) in
+      if i < 1 || i > List.length components then
+        error (Printf.sprintf "vector_entry: there is no component %d" i);
+      Num (List.nth components (i - 1))
+  | Call ("bool_without_conditionals", [ body ]) ->
+      Boolean (Ag_boolean.without_conditionals (as_boolean "bool_without_conditionals" (recurse body)))
   | Call ("bool_model_count", [ body ]) ->
       Num (Ag_number.of_int (Ag_boolean.model_count (as_boolean "bool_model_count" (recurse body))))
   | Call ("set_empty", []) -> Set Ag_set.empty

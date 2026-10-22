@@ -40,6 +40,9 @@ attributes, constraints, wording, and answers. The shipped specifications are:
 - `factoring.ag`, `polynomial_expand.ag`, `vector_expr.ag`, `linear_equation.ag`
 - `polynomial_forms.ag`, `sequence_parts.ag`, on the library `polynomial_core.ag`
 - `derivative_or_boolean.ag`, which includes `calculus.ag` and `boolean.ag` whole
+- `logic_forms.ag`, three more questions on the Boolean grammars
+- `matrix_expr.ag`, `determinant.ag`, `matrix_inverse.ag`, `linear_system.ag`, on the
+  library `matrix_core.ag` and the Matrix value type (`ag_matrix.ml`)
   (see `QUESTION_TYPES.md` for every grammar, its prices and its context)
 
 Propositions are a value type of their own (`ag_boolean.ml`, the `bool_*`

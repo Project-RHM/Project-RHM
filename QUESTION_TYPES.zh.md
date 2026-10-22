@@ -8,11 +8,11 @@
 
 | 文法 | 问什么 | 预算买什么 | 默认 | 上下文 |
 | --- | --- | --- | --- | --- |
-| `arithmetic.ag` | 四则运算表达式的值 | `+` 1，`-` 2，`*` 3，`/` 4；数字首位以外每位 1 | 12 | Numeric |
+| `arithmetic.ag` | 四则运算表达式的值 | `+` 1，`-` 2，`*` 3，`/` 4；数字首位以外每位 1，最简分数 2 | 12 | Numeric |
 | `boolean.ag` | p、q、r 上的命题在赋值下的真值；命题是引擎的 Boolean 值类型 | 与、或 2，条件 4，双条件和异或 6，否定变量 1，否定复合式 3 | 10 | Numeric |
 | `boolean_equiv.ag` | 三十条定律之一（写对或带经典错误）是否成立，由枚举判定 | 定律 1–3，各部分按 `boolean.ag` | 6 | Numeric |
 | `calculus.ag` | 导数，或由求导反向构造的原函数 | 和 1，积 3，商 4；叶子的幂或函数 1，复合式的 3（链式法则）；积分先付 2 | 7 | Numeric |
-| `complex.ag` | 复数表达式、共轭、模、`i` 的幂 | 和 1，积 3；求模和 `i` 的幂固定为 2 和 1 | 4 | Complex |
+| `complex.ag` | 复数表达式、共轭、勾股三元组数的乘积 / 共轭 / 整数倍的模、`i^n` 乘一个表达式 | 和 1，积 3；求模 2 加其表达式（乘积 2、共轭 1、倍数 1）；`i` 的幂 1 加其表达式 | 4 | Complex |
 | `set.ag` | 三个给定集合上的集合表达式 | 并 1，交和差 2，区间叶子 1 | 7 | Interval |
 | `polynomial_expand.ag` | 因式乘积的展开式 | 乘积 2，平方 1，立方 2，因式 `x + b` 0，`ax + b` 1，二次 2 | 5 | Numeric |
 | `factoring.ag` | 由因式构造的多项式的因式分解 | 与展开同价；因式互不相同且本原 | 5 | PolynomialFactors |
@@ -21,6 +21,9 @@
 | `polynomial_forms.ag` | 同一棵因式树，展开或分解，两种题型各在自己的上下文 | 同 `factoring.ag` | 5 | Numeric / PolynomialFactors |
 | `sequence_parts.ag` | 一个数列，两个空：第 n 项和前 n 项和 | 等差 2，等比 3（固定） | 2 | Numeric |
 | `derivative_or_boolean.ag` | 求导或布尔求值，整个包含两个文法 | 各文法自己的价格 | 8 | Numeric |
+| `logic_forms.ag` | 命题分类（重言式 / 矛盾式 / 两者皆非）、模型计数、消去条件联结词；建立在 `boolean.ag` 和 `boolean_equiv.ag` 之上 | 定律或表达式自己的价格 | 6 | Numeric / Boolean |
+| `matrix_expr.ag` | 计算 `matrix_core.ag` 中矩阵 A、B、C 的表达式 | 和 1，倍数 1，转置 1，乘积 3；3 阶矩阵 2 | 4 | Matrix |
+| `determinant.ag` | 矩阵或其乘积、转置、倍数的行列式 | 2 阶 1，3 阶 3；乘积 2，转置 1，倍数 1 | 3 | Numeric |
 
 ## 固定形式类：每种形式是一个价格
 
@@ -32,6 +35,8 @@
 | `library_quadratic.ag` | 2 两整数根；3 重根、无实根；4 两有理根 | 3 | Interval |
 | `library_polynomial.ag` | 1 求值；2 次数；3 展开、系数；4 求导 | 3 | Numeric |
 | `library_formula.ag` | 2 复合；3 对数、根式、正切；4 商、组合 | 3 | Numeric |
+| `matrix_inverse.ag` | 2 逆为整数矩阵的 2 阶；3 同样但乘了倍数（出分数）；5 3 阶；6 乘了倍数 | 2 | Matrix |
+| `linear_system.ag` | 3 三元三角形方程组；5 完整方程组；三个答案空 | 5 | Numeric |
 
 ## 本分支新增的五种通用题型
 
@@ -59,6 +64,14 @@ cost 7   5(u + 3(w - u)) . (w + v)
 cost 2   4(x + 3x) = 17x - 2                              x = 2
 cost 8   (5(8 + x) - 5*5(3 + 2x)) / 2 = -(39/2 + 43/2 x)  x = 2
 ```
+
+## 第二批：逻辑、线性代数，以及两个文法的可伸缩化
+
+**逻辑**（`logic_forms.ag`）整个包含两个布尔文法，对它们的定律和表达式再问三种问题：分类（像求值题用 1、0 一样，用 1、2、0 编码）、模型计数，以及消去条件联结词——答案是一个命题，在 WeBWorK 的 Boolean 上下文中判分（为此加载 `contextBoolean.pl`；WeBWorK 接受任何等价命题，所以形式本身不被强制）。
+
+**线性代数**建立在新的值类型 `Matrix` 上（`ag_matrix.ml`：精确有理数元素、和、倍数、转置、乘积、余子式行列式、伴随矩阵求逆、作用于向量、LaTeX 和 PG 渲染，以及把一行写成方程的 `matrix_row_latex`）。`matrix_core.ag` 每题抽一次 A、B、C，各有 2 阶和 3 阶版本，继承属性 `dim` 决定题目用哪个。求逆和方程组由单位三角矩阵的乘积构造，所以逆矩阵元素是整数、选定的解是唯一解；方程组在题干里放三个答案空。
+
+**复数**的求模和幂变得可伸缩，**算术**加了最简分数叶子。
 
 ## 用户能在一个文件里写什么
 

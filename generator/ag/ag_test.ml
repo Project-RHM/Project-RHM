@@ -41,7 +41,7 @@ let () =
         errors
   | Ok spec ->
       check_string "start symbol" "E" spec.Ag_check.start;
-      check_int "rule count" 9 (List.length spec.Ag_check.rules);
+      check_int "rule count" 10 (List.length spec.Ag_check.rules);
       check_int "inherited attributes" 2
         (List.length spec.Ag_check.inherited);
       check_int "synthesized attributes" 4

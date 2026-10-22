@@ -1,0 +1,65 @@
+# ==========================================================================
+#  Three small matrices, shared by the linear-algebra grammars
+#
+#  This file is a library: it draws the entries of A, B and C once per
+#  question, builds both a 2 by 2 and a 3 by 3 version of each (the 2 by 2
+#  is the top-left corner of the 3 by 3), and offers the leaf rules that
+#  name them. The inherited attribute `dim` says which version a question
+#  uses: it starts at 3, and a question form that wants 2 by 2 matrices
+#  takes one off before the expression is built.
+#
+#  Entries run from -5 to 5, small enough to work by hand.
+# ==========================================================================
+
+attribute dim = 3 copy         # 3 by 3 unless the question form takes one off
+
+random a11 = integer_between(-5, 5)
+random a12 = integer_between(-5, 5)
+random a13 = integer_between(-5, 5)
+random a21 = integer_between(-5, 5)
+random a22 = integer_between(-5, 5)
+random a23 = integer_between(-5, 5)
+random a31 = integer_between(-5, 5)
+random a32 = integer_between(-5, 5)
+random a33 = integer_between(-5, 5)
+random b11 = integer_between(-5, 5)
+random b12 = integer_between(-5, 5)
+random b13 = integer_between(-5, 5)
+random b21 = integer_between(-5, 5)
+random b22 = integer_between(-5, 5)
+random b23 = integer_between(-5, 5)
+random b31 = integer_between(-5, 5)
+random b32 = integer_between(-5, 5)
+random b33 = integer_between(-5, 5)
+random c11 = integer_between(-5, 5)
+random c12 = integer_between(-5, 5)
+random c13 = integer_between(-5, 5)
+random c21 = integer_between(-5, 5)
+random c22 = integer_between(-5, 5)
+random c23 = integer_between(-5, 5)
+random c31 = integer_between(-5, 5)
+random c32 = integer_between(-5, 5)
+random c33 = integer_between(-5, 5)
+
+let a2 = matrix2(a11, a12, a21, a22)
+let b2 = matrix2(b11, b12, b21, b22)
+let c2 = matrix2(c11, c12, c21, c22)
+let a3 = matrix3(a11, a12, a13, a21, a22, a23, a31, a32, a33)
+let b3 = matrix3(b11, b12, b13, b21, b22, b23, b31, b32, b33)
+let c3 = matrix3(c11, c12, c13, c21, c22, c23, c31, c32, c33)
+
+let given2 = "Let [`A = " ++ matrix_latex(a2) ++ "`], [`B = " ++ matrix_latex(b2)
+             ++ "`] and [`C = " ++ matrix_latex(c2) ++ "`]."
+let given3 = "Let [`A = " ++ matrix_latex(a3) ++ "`], [`B = " ++ matrix_latex(b3)
+             ++ "`] and [`C = " ++ matrix_latex(c3) ++ "`]."
+
+synth value on V
+synth latex on V
+synth mask on V               # A 1, B 2, C 4, so a sum can refuse a repeat
+
+V -> "A" when dim = 2 weight 1 { value = a2  latex = "A"  mask = 1 }
+V -> "B" when dim = 2 weight 1 { value = b2  latex = "B"  mask = 2 }
+V -> "C" when dim = 2 weight 1 { value = c2  latex = "C"  mask = 4 }
+V -> "A" when dim = 3 weight 1 { value = a3  latex = "A"  mask = 1 }
+V -> "B" when dim = 3 weight 1 { value = b3  latex = "B"  mask = 2 }
+V -> "C" when dim = 3 weight 1 { value = c3  latex = "C"  mask = 4 }

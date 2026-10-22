@@ -17,6 +17,9 @@
 | `factoring.ag`、`polynomial_expand.ag` | 乘积、幂和每个因式的种类 | 5 | QUESTION_TYPES.md |
 | `vector_expr.ag` | 向量的和与倍数，加上顶层的题型 | 4 | QUESTION_TYPES.md |
 | `linear_equation.ag` | 左边的和、括号倍数和分式 | 5 | QUESTION_TYPES.md |
+| `logic_forms.ag` | 所包含的定律或表达式 | 6 | QUESTION_TYPES.md |
+| `matrix_expr.ag`、`determinant.ag` | 运算和矩阵的阶 | 4、3 | QUESTION_TYPES.md |
+| `matrix_inverse.ag`、`linear_system.ag` | 固定形式，各按其价 | 2、5 | QUESTION_TYPES.md |
 
 ## 1. 长度预算的问题
 

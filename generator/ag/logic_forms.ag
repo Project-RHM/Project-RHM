@@ -1,0 +1,107 @@
+# ==========================================================================
+#  Three questions about propositions: classify, count, rewrite
+#
+#  This file includes boolean.ag (for its expression language E) and
+#  boolean_equiv.ag (for its laws L) and asks three further questions of
+#  them, each in the WeBWorK context its answer needs:
+#
+#    classify   is the proposition a tautology, a contradiction or neither?
+#               Built from a law: the biconditional of a law that holds is
+#               a tautology, one side with the other's negation a
+#               contradiction, the biconditional of a broken law neither.
+#    count      how many of the eight assignments make it true?
+#    rewrite    write it with not, and, or alone (a Boolean answer, graded
+#               by contextBoolean.pl as a proposition; WeBWorK accepts any
+#               equivalent proposition, so the form itself is not enforced)
+#
+#  Difficulty is the budget `cost`, spent exactly by the law or the
+#  expression as boolean.ag and boolean_equiv.ag price them; the forms add
+#  nothing on top.
+#
+#    agrun --set cost=6 logic_forms.ag
+# ==========================================================================
+
+include "boolean.ag"
+include "boolean_equiv.ag"
+
+attribute cost = 6 split
+
+synth kind on K
+synth pg_context on K
+synth f on K
+synth text on K
+synth answer_value on K
+
+start K
+
+# ---- Classification --------------------------------------------------------
+#
+# Answers are coded as in the evaluation questions: 1 for a tautology, 2 for
+# a contradiction, 0 for neither.
+
+K -> L "tautology" when cost >= 1 weight 2 {
+  kind = "tautology"
+  pg_context = "Numeric"
+  f = bool_iff($1.fa, $1.fb)
+  require bool_is_tautology(f)
+  require bool_negations($1.fa) <= 2 and bool_negations($1.fb) <= 2
+  text = "Is the proposition [`" ++ bool_latex(f) ++ "`] a tautology, a contradiction, or neither?
+Enter 1 for a tautology, 2 for a contradiction and 0 for neither."
+  answer_value = 1
+}
+
+K -> L "contradiction" when cost >= 1 weight 2 {
+  kind = "contradiction"
+  pg_context = "Numeric"
+  f = bool_and($1.fa, bool_not($1.fb))
+  require bool_is_contradiction(f)
+  require bool_negations($1.fa) <= 2 and bool_negations($1.fb) <= 1
+  text = "Is the proposition [`" ++ bool_latex(f) ++ "`] a tautology, a contradiction, or neither?
+Enter 1 for a tautology, 2 for a contradiction and 0 for neither."
+  answer_value = 2
+}
+
+K -> L "neither" when cost >= 1 weight 2 {
+  kind = "neither"
+  pg_context = "Numeric"
+  f = bool_iff($1.fa, $1.fb)
+  require not bool_is_tautology(f)
+  require not bool_is_contradiction(f)
+  require bool_negations($1.fa) <= 2 and bool_negations($1.fb) <= 2
+  text = "Is the proposition [`" ++ bool_latex(f) ++ "`] a tautology, a contradiction, or neither?
+Enter 1 for a tautology, 2 for a contradiction and 0 for neither."
+  answer_value = 0
+}
+
+# ---- Counting models ---------------------------------------------------------
+#
+# Every variable takes part, so the count is out of eight.
+
+K -> E "count" when cost >= 4 weight 3 {
+  kind = "count"
+  pg_context = "Numeric"
+  f = $1.f
+  require bool_variable_count(f) = 3
+  require bool_top(f) != "not"
+  require bool_negations(f) <= 2
+  text = "How many of the eight truth assignments to [`p`], [`q`] and [`r`] make
+[`" ++ bool_latex(f) ++ "`] true?"
+  answer_value = bool_model_count(f)
+}
+
+# ---- Rewriting without the conditional family -----------------------------
+
+K -> E "rewrite" when cost >= 4 weight 3 {
+  kind = "rewrite"
+  pg_context = "Boolean"
+  f = $1.f
+  require bool_count(f, "imp") + bool_count(f, "iff") + bool_count(f, "xor") >= 1
+  require bool_top(f) != "not"
+  require bool_negations(f) <= 2
+  text = "Write a proposition logically equivalent to [`" ++ bool_latex(f) ++ "`] using only [`\neg`], [`\land`] and [`\lor`]."
+  answer_value = bool_without_conditionals(f)
+}
+
+prompt "{K.text}"
+answer K.answer_value
+width 30

@@ -1012,3 +1012,7 @@ E -> V           when cost = 0             { ... }
 - 题干里的 `{answer Q.nth}` 在该位置放一个答案空，按 `Q.nth` 判分，`{answer total}` 按 random 或 let 判分；放了内联空的文件不再写 `answer` 声明。
 
 详细说明和示例见 `AG_LANGUAGE_EXTENSIONS.md`（英文）和 `AG_LANGUAGE_EXTENSIONS.zh.md`（中文）；示例文件 `polynomial_core.ag`、`polynomial_forms.ag`、`sequence_parts.ag`，以及把 calculus.ag 和 boolean.ag 整个包含进来的 `derivative_or_boolean.ag`。被包含的文法要按非终结符声明 synth（`synth value on E`），随库发布的文法已经如此。
+
+## 26. 矩阵（Matrix）
+
+值类型 `Matrix`（`ag_matrix.ml`）：元素是精确有理数。内置函数：`matrix2(a, b, c, d)`、`matrix3(…9 个元素…)`、`matrix_identity(n)`、`matrix_add`、`matrix_subtract`、`matrix_multiply`、`matrix_scale(k, m)`、`matrix_transpose`、`matrix_determinant`（返回数）、`matrix_inverse`（奇异矩阵报错）、`matrix_is_invertible`、`matrix_entry(m, i, j)`、`matrix_vector(m, v)`（返回向量）、`matrix_latex`（pmatrix）、`matrix_row_latex(m, i)`（把第 i 行写成 x、y、z 的线性式）、`vector_entry(v, i)`。矩阵答案用 `context "Matrix"`，PG 中写作 `Matrix([[1,2],[3,4]])`。示例见 `matrix_core.ag` 及建立在它上面的四个文法。

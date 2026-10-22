@@ -132,6 +132,46 @@ let check_rendering () =
                 imaginary actual expected))
     cases
 
+(* A modulus expression, evaluated from the shapes of its rules: a product,
+   a conjugate, a whole-number multiple, or a Pythagorean-triple leaf built
+   from its four drawn numbers (m, swap, two signs). *)
+let number_of node name =
+  match Ag_engine.attribute node name with
+  | Ag_engine.Num n -> n
+  | other -> fail (name ^ " expected a number, got " ^ Ag_engine.describe_value other); Ag_number.zero
+
+let rec evaluate_modulus (node : Ag_engine.node) =
+  match (node.symbol, node.applied_rule, node.children) with
+  | "M", Some rule, children -> (
+      match (rule.Ag_ast.rhs, children) with
+      | [ Ag_ast.Symbol "M"; Ag_ast.Literal "\\cdot"; Ag_ast.Symbol "M" ], [ left; _; right ] ->
+          let a, b, m = evaluate_modulus left and c, d, n = evaluate_modulus right in
+          ( Ag_number.subtract (Ag_number.multiply a c) (Ag_number.multiply b d),
+            Ag_number.add (Ag_number.multiply a d) (Ag_number.multiply b c),
+            Ag_number.multiply m n )
+      | [ Ag_ast.Literal "\\overline"; Ag_ast.Symbol "M" ], [ _; inner ] ->
+          let a, b, m = evaluate_modulus inner in
+          (a, Ag_number.negate b, m)
+      | [ _; Ag_ast.Literal "\\cdot"; Ag_ast.Symbol "M" ], [ scalar; _; inner ] ->
+          let k = number_of scalar "value" in
+          let a, b, m = evaluate_modulus inner in
+          (Ag_number.multiply k a, Ag_number.multiply k b, Ag_number.multiply k m)
+      | [ Ag_ast.Symbol "T" ], [ leaf ] -> evaluate_modulus leaf
+      | _ -> fail "unexpected M production"; (Ag_number.zero, Ag_number.zero, Ag_number.zero))
+  | "T", Some _, m_node :: swap :: sign_re :: sign_im :: _ ->
+      let m = integer "m" (number_of m_node "value") in
+      let flag node = integer "flag" (number_of node "value") = 1 in
+      let a = (m * m) - 1 and b = 2 * m in
+      let real = (if flag sign_re then 1 else -1) * (if flag swap then b else a)
+      and imaginary = (if flag sign_im then 1 else -1) * (if flag swap then a else b) in
+      (Ag_number.of_int real, Ag_number.of_int imaginary, Ag_number.of_int ((m * m) + 1))
+  | _ -> fail ("unexpected node in a modulus expression: " ^ node.symbol); (Ag_number.zero, Ag_number.zero, Ag_number.zero)
+
+let modulus_child (root : Ag_engine.node) =
+  match List.find_opt (fun (node : Ag_engine.node) -> node.symbol = "M") root.children with
+  | Some node -> node
+  | None -> fail "modulus question has no M child"; root
+
 (* Every check on one generated question, whatever budget it was built at:
    the answer against an independent oracle, the signs in the prompt, and the
    bookkeeping of which kinds and operators were seen. *)
@@ -149,44 +189,25 @@ let check_question kinds operators seed question =
       let value = evaluate_expression operators (expression_child root) in
       check_answer seed (negate_pair value) question
   | "modulus" ->
-      let m = integer_global question "modulus_m" in
-      let expected = (m * m) + 1 in
+      let real, imaginary, modulus = evaluate_modulus (modulus_child root) in
       (match question.answer with
-      | Ag_engine.Num number when integer "modulus" number = expected -> ()
+      | Ag_engine.Num number when Ag_number.equal number modulus -> ()
       | value ->
           fail
-            (Printf.sprintf "seed %d: modulus expected %d, got %s" seed expected
-               (Ag_engine.describe_value value)));
-      let sign_re = integer_global question "modulus_sign_re" in
-      let sign_im = integer_global question "modulus_sign_im" in
-      let swap =
-        match List.assoc_opt "modulus_swap" question.globals with
-        | Some (Ag_engine.Truth value) -> value
-        | _ ->
-            fail "modulus_swap is missing or not Boolean";
-            false
-      in
-      let a = (m * m) - 1 and b = 2 * m in
-      let real, imaginary =
-        if swap then (sign_re * b, sign_im * a)
-        else (sign_re * a, sign_im * b)
-      in
-      if (real * real) + (imaginary * imaginary) <> expected * expected then
-        fail (Printf.sprintf "seed %d: modulus components are not Pythagorean" seed);
-      let rendered =
-        Ag_engine.format_complex_latex (Ag_number.of_int real)
-          (Ag_number.of_int imaginary)
-      in
-      if not (contains question.prompt rendered) then
-        fail (Printf.sprintf "seed %d: modulus prompt does not show %S" seed rendered)
+            (Printf.sprintf "seed %d: modulus expected %s, got %s" seed
+               (Ag_number.to_string modulus) (Ag_engine.describe_value value)));
+      let square x = Ag_number.multiply x x in
+      if not (Ag_number.equal (Ag_number.add (square real) (square imaginary)) (square modulus)) then
+        fail (Printf.sprintf "seed %d: the modulus expression is not Pythagorean" seed)
   | "power_i" ->
       let exponent = integer_global question "exponent" in
+      let re, im = evaluate_expression operators (expression_child root) in
       let expected =
         match exponent mod 4 with
-        | 0 -> (Ag_number.of_int 1, Ag_number.zero)
-        | 1 -> (Ag_number.zero, Ag_number.of_int 1)
-        | 2 -> (Ag_number.of_int (-1), Ag_number.zero)
-        | _ -> (Ag_number.zero, Ag_number.of_int (-1))
+        | 0 -> (re, im)
+        | 1 -> (Ag_number.negate im, re)
+        | 2 -> (Ag_number.negate re, Ag_number.negate im)
+        | _ -> (im, Ag_number.negate re)
       in
       check_answer seed expected question
   | other -> fail ("unknown complex question kind " ^ other));
@@ -240,23 +261,47 @@ let count_occurrences text fragment =
   in
   count 0 0
 
+let count_digit_runs text =
+  let count = ref 0 and in_digits = ref false in
+  String.iter
+    (fun c ->
+      let digit = c >= '0' && c <= '9' in
+      if digit && not !in_digits then incr count;
+      in_digits := digit)
+    text;
+  !count
+
+(* complex.ag prices a sum or difference 1, a product 3, a leaf 0; the
+   modulus form 2 plus its expression (product 2, conjugate 1, multiple 1);
+   the power form 1 plus its expression. Leaves are innermost bracketed
+   groups, so once they are removed every operator left is a real one. *)
 let price_of_question question =
+  let prompt = question.Ag_engine.prompt in
+  let expression =
+    match (String.index_opt prompt '`', String.rindex_opt prompt '`') with
+    | Some first, Some last when last > first -> String.sub prompt (first + 1) (last - first - 1)
+    | _ -> fail ("no [`...`] found in: " ^ prompt); ""
+  in
+  let arithmetic text =
+    let operators = strip_leaves text in
+    count_occurrences operators "+" + count_occurrences operators "-"
+    + (3 * count_occurrences operators "\\cdot")
+  in
   match text_attribute question.Ag_engine.tree "kind" with
-  | "modulus" -> 2
-  | "power_i" -> 1
-  | _ ->
-      let prompt = question.Ag_engine.prompt in
-      let expression =
-        match (String.index_opt prompt '`', String.rindex_opt prompt '`') with
-        | Some first, Some last when last > first ->
-            String.sub prompt (first + 1) (last - first - 1)
-        | _ ->
-            fail ("no [`...`] found in: " ^ prompt);
-            ""
-      in
+  | "modulus" ->
       let operators = strip_leaves expression in
-      count_occurrences operators "+" + count_occurrences operators "-"
-      + (3 * count_occurrences operators "\\cdot")
+      2 + (2 * count_occurrences operators "\\cdot") + count_occurrences operators "\\overline"
+      + count_digit_runs operators
+  | "power_i" ->
+      let marker = "\\cdot " in
+      let rec after index =
+        if index + String.length marker > String.length expression then expression
+        else if String.sub expression index (String.length marker) = marker then
+          String.sub expression (index + String.length marker) (String.length expression - index - String.length marker)
+        else after (index + 1)
+      in
+      1 + arithmetic (after 0)
+  | _ -> arithmetic expression
 
 let () =
   check_rendering ();

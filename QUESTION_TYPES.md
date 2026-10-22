@@ -16,11 +16,11 @@ attribute, or by the budget.
 
 | grammar | asks for | the budget buys | default | context |
 | --- | --- | --- | --- | --- |
-| `arithmetic.ag` | the value of a four-operation expression | `+` 1, `-` 2, `*` 3, `/` 4; a number pays one per digit beyond its first | 12 | Numeric |
+| `arithmetic.ag` | the value of a four-operation expression | `+` 1, `-` 2, `*` 3, `/` 4; a number pays one per digit beyond its first, a fraction in lowest terms 2 | 12 | Numeric |
 | `boolean.ag` | the truth value of a proposition in p, q, r under an assignment; propositions are the engine's Boolean type | and/or 2, conditional 4, biconditional and xor 6, a negated variable 1, a negated compound 3 | 10 | Numeric |
 | `boolean_equiv.ag` | whether one of thirty laws, stated correctly or with a classic mistake, holds; decided by enumeration | the law 1–3, the parts as in `boolean.ag` | 6 | Numeric |
 | `calculus.ag` | a derivative, or an antiderivative built by differentiating | sum 1, product 3, quotient 4; a power or function of a leaf 1, of a compound 3 (chain rule); an integral pays 2 up front | 7 | Numeric |
-| `complex.ag` | a complex expression, its conjugate, a modulus, a power of `i` | sum 1, product 3; modulus and power of `i` are fixed at 2 and 1 | 4 | Complex |
+| `complex.ag` | a complex expression, its conjugate, the modulus of a product / conjugate / multiple of Pythagorean-triple numbers, or `i^n` times an expression | sum 1, product 3; modulus 2 plus its expression (product 2, conjugate 1, multiple 1); power of `i` 1 plus its expression | 4 | Complex |
 | `set.ag` | a set expression over three given sets | union 1, intersection and difference 2, an interval leaf 1 | 7 | Interval |
 | `polynomial_expand.ag` | the expansion of a product of factors | product 2, square 1, cube 2, factor `x + b` 0, `ax + b` 1, quadratic 2 | 5 | Numeric |
 | `factoring.ag` | the factored form of a polynomial built from its factors | the same prices as the expansion; the factors are distinct and primitive | 5 | PolynomialFactors |
@@ -29,6 +29,9 @@ attribute, or by the budget.
 | `polynomial_forms.ag` | the same tree of factors, expanded or factored, each form in its own context | as `factoring.ag` | 5 | Numeric / PolynomialFactors |
 | `sequence_parts.ag` | one sequence, two blanks: its nth term and the sum of its first n terms | arithmetic 2, geometric 3 (fixed) | 2 | Numeric |
 | `derivative_or_boolean.ag` | a derivative or a Boolean evaluation, from the two grammars included whole | each grammar's own prices | 8 | Numeric |
+| `logic_forms.ag` | classify a proposition (tautology / contradiction / neither), count its models, or rewrite it without the conditional family; built on `boolean.ag` and `boolean_equiv.ag` | the law's or expression's own price | 6 | Numeric / Boolean |
+| `matrix_expr.ag` | compute an expression in the matrices A, B, C of `matrix_core.ag` | sum 1, multiple 1, transpose 1, product 3; 3 by 3 matrices 2 | 4 | Matrix |
+| `determinant.ag` | the determinant of a matrix or of a product, transpose or multiple | 2 by 2 1, 3 by 3 3; product 2, transpose 1, multiple 1 | 3 | Numeric |
 
 ## Fixed forms: each form is a price
 
@@ -40,6 +43,8 @@ attribute, or by the budget.
 | `library_quadratic.ag` | 2 two integer roots; 3 repeated root, no real root; 4 two rational roots | 3 | Interval |
 | `library_polynomial.ag` | 1 evaluation; 2 degree; 3 expansion, coefficient; 4 derivative | 3 | Numeric |
 | `library_formula.ag` | 2 composition; 3 logarithm, radical, tangent; 4 quotient, combined | 3 | Numeric |
+| `matrix_inverse.ag` | 2 a 2 by 2 with whole inverse; 3 the same scaled (fractions); 5 a 3 by 3; 6 scaled | 2 | Matrix |
+| `linear_system.ag` | 3 a triangular system in three unknowns; 5 a full one; three answer blanks | 5 | Numeric |
 
 ## The five general types added on this branch
 
@@ -93,6 +98,29 @@ a fraction.
 cost 2   4(x + 3x) = 17x - 2                              x = 2
 cost 8   (5(8 + x) - 5*5(3 + 2x)) / 2 = -(39/2 + 43/2 x)  x = 2
 ```
+
+## The second batch: logic, linear algebra, and two grammars made scalable
+
+**Logic** (`logic_forms.ag`) includes both Boolean grammars whole and asks
+three further questions of their laws and expressions: classification
+(coded 1, 2, 0 as the evaluation questions code true and false), model
+counting, and rewriting without the conditional family, whose answer is a
+proposition graded in WeBWorK's Boolean context (`contextBoolean.pl` is
+loaded for it; WeBWorK accepts any equivalent proposition, so the form
+itself is not enforced).
+
+**Linear algebra** rests on a new value type, `Matrix` (`ag_matrix.ml`:
+exact rational entries, sum, multiple, transpose, product, cofactor
+determinant, adjugate inverse, application to a vector, LaTeX and PG
+rendering, and `matrix_row_latex` for writing a row as an equation).
+`matrix_core.ag` draws A, B and C once, in a 2 by 2 and a 3 by 3 version,
+and the inherited attribute `dim` says which a question uses. The inverse
+and the system are built from products of unit triangular matrices, so the
+inverse has whole entries and the chosen solution is the only one; the
+system places three answer blanks in its prompt.
+
+**Complex numbers** gained scalable modulus and power forms, and
+**arithmetic** a fraction leaf in lowest terms.
 
 ## What a user can write in one file
 

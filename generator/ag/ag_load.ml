@@ -53,7 +53,9 @@ let singleton_kind = function
   | Ag_ast.Width_decl _ -> Some "width"
   | _ -> None
 
-(* Two files may both declare the same attribute; one copy is kept. For an
+(* Two files may both declare the same attribute, random or let; one copy is
+   kept when they agree (a random with the same draw, a let with the same
+   body), and the checker reports the clash when they do not. For an
    inherited attribute the first declaration seen wins, so two included
    grammars with different default budgets do not clash, and the including
    file's own declaration, placed first below, wins over both. *)
@@ -62,6 +64,8 @@ let same_declaration left right =
   | Ag_ast.Synthesized_decl (a, scope_a, _), Ag_ast.Synthesized_decl (b, scope_b, _) ->
       a = b && scope_a = scope_b
   | Ag_ast.Inherited_decl (a, _, _, _), Ag_ast.Inherited_decl (b, _, _, _) -> a = b
+  | Ag_ast.Random_decl (a, draw_a, _), Ag_ast.Random_decl (b, draw_b, _) -> a = b && draw_a = draw_b
+  | Ag_ast.Let_decl (a, body_a, _), Ag_ast.Let_decl (b, body_b, _) -> a = b && body_a = body_b
   | _ -> false
 
 let is_inherited_decl = function Ag_ast.Inherited_decl _ -> true | _ -> false

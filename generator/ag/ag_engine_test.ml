@@ -58,10 +58,12 @@ let tokenize text =
    would be wrong, because a + (b - c - d) and a + b - c - d are equal numbers
    built from different trees, and only the first faithfully renders a tree
    whose right child is a subtraction. *)
-type parsed = Literal of int | Applied of string * parsed * parsed
+type parsed = Literal of int | Fraction of int * int | Applied of string * parsed * parsed
 
 let rec evaluate_parsed = function
   | Literal value -> Ag_number.of_int value
+  | Fraction (numerator, denominator) ->
+      Ag_number.divide (Ag_number.of_int numerator) (Ag_number.of_int denominator)
   | Applied (operator, left, right) -> (
       let left = evaluate_parsed left and right = evaluate_parsed right in
       match operator with
@@ -112,6 +114,14 @@ let reread text =
     | Some (Number value) ->
         advance ();
         Literal value
+    | Some (Operator "\\frac{") -> (
+        (* \frac{n}{d} arrives as the tokens \frac{ n }{ d } *)
+        advance ();
+        match !remaining with
+        | Number numerator :: Operator "}{" :: Number denominator :: Operator "}" :: rest ->
+            remaining := rest;
+            Fraction (numerator, denominator)
+        | _ -> raise (Reread_error "malformed \\frac"))
     | Some Open ->
         advance ();
         let inner = expression () in
@@ -260,12 +270,14 @@ let () =
 (* ------------------------------------------------------------------ *)
 
 (* arithmetic.ag prices its questions: + 1, - 2, * 3, / 4, and a number pays
-   one per digit beyond its first. The budget `cost` is spent exactly, which
+   one per digit beyond its first, and a fraction in lowest terms 2. The budget
+   `cost` is spent exactly, which
    the independent reader confirms by re-pricing the printed expression: the
    printed brackets, not the generator's tree, decide what each operation
    applies to. *)
 let rec cost_of_parsed = function
   | Literal value -> String.length (string_of_int value) - 1
+  | Fraction _ -> 2
   | Applied (operator, left, right) ->
       let price =
         match operator with

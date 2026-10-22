@@ -30,6 +30,7 @@ let perl_string text =
    Context() can select it. *)
 let extra_macros = function
   | "PolynomialFactors" | "PolynomialFactors-Strict" -> [ "contextPolynomialFactors.pl" ]
+  | "Boolean" -> [ "contextBoolean.pl" ]
   | _ -> []
 
 let header contexts =
@@ -63,6 +64,7 @@ let answer_of_value = function
   | Ag_engine.Equation _ ->
       invalid_arg
         "an Equation is not a direct answer; use equation_solution_set or equation_unique_solution"
+  | Ag_engine.Matrix matrix -> Ag_matrix.to_pg matrix
   | Ag_engine.Boolean formula ->
       (* Needs `context "Boolean"` in the grammar so contextBoolean.pl grades it. *)
       Printf.sprintf "Compute(\"%s\")" (perl_string (Ag_boolean.to_pg formula))

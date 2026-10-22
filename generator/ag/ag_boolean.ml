@@ -159,6 +159,25 @@ let rec depth = function
   | Not body -> 1 + depth body
   | And (l, r) | Or (l, r) | Xor (l, r) | Imp (l, r) | Iff (l, r) -> 1 + max (depth l) (depth r)
 
+(* The same proposition written with not, and, or alone: a conditional
+   becomes a disjunction, a biconditional a disjunction of two conjunctions,
+   an exclusive or likewise. No simplification is attempted. *)
+let rec without_conditionals = function
+  | (Var _ | Const _) as leaf -> leaf
+  | Not body -> Not (without_conditionals body)
+  | And (l, r) -> And (without_conditionals l, without_conditionals r)
+  | Or (l, r) -> Or (without_conditionals l, without_conditionals r)
+  | Imp (l, r) -> Or (negated (without_conditionals l), without_conditionals r)
+  | Iff (l, r) ->
+      let l = without_conditionals l and r = without_conditionals r in
+      Or (And (l, r), And (negated l, negated r))
+  | Xor (l, r) ->
+      let l = without_conditionals l and r = without_conditionals r in
+      Or (And (l, negated r), And (negated l, r))
+
+(* Negate without stacking: the negation of a negation is its body. *)
+and negated = function Not body -> body | formula -> Not formula
+
 let rec count_top name formula =
   (if top formula = name then 1 else 0)
   +

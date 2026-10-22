@@ -1,0 +1,119 @@
+# ==========================================================================
+#  Matrix expressions
+#
+#  Compute an expression in the matrices A, B and C of matrix_core.ag:
+#  sums, differences, whole-number multiples, transposes and products.
+#
+#  Difficulty is the budget `cost`, spent exactly:
+#
+#    2 by 2 matrices        0        3 by 3 matrices          2
+#    sum or difference      1        multiple of a bracket    1
+#    transpose              1        product                  3
+#
+#  The least budget is 1: a matrix on its own is nothing to compute.
+#
+#    agrun --set cost=2 matrix_expr.ag     easy      A - B, 2 by 2
+#    agrun --set cost=4 matrix_expr.ag     medium (the default)
+#    agrun --set cost=7 matrix_expr.ag     hard
+# ==========================================================================
+
+include "matrix_core.ag"
+
+context "Matrix"
+
+attribute cost = 4 split
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+synth value on E
+synth latex on E
+synth top on E                 # "leaf", "sum", "scale", "transpose" or "product"
+synth mask on E                # one bit per matrix used in this sum
+
+start Q
+
+precedence 1 left "+" "-"
+
+# ---- Question forms: which size of matrix -----------------------------------
+
+Q -> E "small" when cost >= 1 weight 2 {
+  dim = -1
+  kind = "small"
+  text = given2 ++ "
+Compute [`" ++ $1.latex ++ "`]."
+  answer_value = $1.value
+}
+
+Q -> E "large" when cost >= 3 weight 2 {
+  cost = -2
+  kind = "large"
+  text = given3 ++ "
+Compute [`" ++ $1.latex ++ "`]."
+  answer_value = $1.value
+}
+
+# ---- Expressions ---------------------------------------------------------------
+#
+# Each rule's guard is the least it can spend. Within one sum each matrix
+# appears once (the masks are disjoint); a multiple, a transpose or a product
+# starts a new sum. A transpose is never taken of a transpose, nor a multiple
+# of a multiple.
+
+E -> E "+" E when cost >= 1 weight 3 {
+  cost = -1
+  require bit_and($1.mask, $3.mask) = 0
+  value = matrix_add($1.value, $3.value)
+  latex = infix($1, "+", $3)
+  top = "sum"
+  mask = bit_or($1.mask, $3.mask)
+}
+
+E -> E "-" E when cost >= 1 weight 3 {
+  cost = -1
+  require bit_and($1.mask, $3.mask) = 0
+  value = matrix_subtract($1.value, $3.value)
+  latex = infix($1, "-", $3)
+  top = "sum"
+  mask = bit_or($1.mask, $3.mask)
+}
+
+E -> integer_between(2, 4) "\cdot" E when cost >= 2 weight 2 {
+  cost = -1
+  require $3.top != "scale"
+  value = matrix_scale($1.value, $3.value)
+  latex = str($1.value) ++ cond($3.top = "sum", "(" ++ $3.latex ++ ")", $3.latex)
+  top = "scale"
+  mask = 0
+}
+
+E -> E "^T" when cost >= 1 weight 2 {
+  cost = -1
+  require $1.top != "transpose"
+  value = matrix_transpose($1.value)
+  latex = cond($1.top = "leaf", $1.latex, "(" ++ $1.latex ++ ")") ++ "^{T}"
+  top = "transpose"
+  mask = 0
+}
+
+E -> E "\times" E when cost >= 3 weight 2 {
+  cost = -3
+  require $1.latex != $3.latex
+  value = matrix_multiply($1.value, $3.value)
+  latex = cond($1.top = "sum", "(" ++ $1.latex ++ ")", $1.latex)
+          ++ cond($3.top = "sum" or $3.top = "scale", "(" ++ $3.latex ++ ")", $3.latex)
+  top = "product"
+  mask = 0
+}
+
+E -> V when cost = 0 {
+  value = $1.value
+  latex = $1.latex
+  top = "leaf"
+  mask = $1.mask
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
+width 30
