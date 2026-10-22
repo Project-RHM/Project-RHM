@@ -1,4 +1,4 @@
-(* ag_equiv_test.ml — checks for boolean equivalence questions.
+(* ag_equiv_test.ml — Boolean equivalence questions.
 
    These questions state a claim about *every* assignment, so the grammar
    carries a truth table rather than a truth value, and `holds` is a hand
@@ -7,9 +7,14 @@
    comparing them for equality, and every De Morgan question came out labelled
    "not equivalent".
 
-   Nothing here trusts that formula. Both sides are parsed back out of the
+   Nothing here trusts that formula. Both sides are read back out of the
    question text the student sees, each is evaluated under all eight
-   assignments independently, and the two tables are compared. *)
+   assignments independently, and the two tables are compared. The later
+   checks hold the questions to the same hand-written standard as the
+   evaluation questions: no redundant shapes, the promised brackets, both
+   wordings, and an even split of answers. *)
+
+open Ag_boolean_reader
 
 let failures = ref 0
 
@@ -17,179 +22,45 @@ let fail message =
   incr failures;
   prerr_endline ("FAIL: " ^ message)
 
-(* ------------------------------------------------------------------ *)
-(* Reading an expression back                                          *)
-(* ------------------------------------------------------------------ *)
-
-exception Reread_error of string
-
-type token = Variable of string | Operator of string | Open | Close
-
-let tokenize text =
-  let length = String.length text in
-  let tokens = ref [] in
-  let index = ref 0 in
-  while !index < length do
-    match text.[!index] with
-    | ' ' | '\t' -> incr index
-    | '(' ->
-        tokens := Open :: !tokens;
-        incr index
-    | ')' ->
-        tokens := Close :: !tokens;
-        incr index
-    | 'A' .. 'Z' ->
-        tokens := Variable (String.make 1 text.[!index]) :: !tokens;
-        incr index
-    | '\\' ->
-        let start = !index in
-        incr index;
-        while
-          !index < length
-          && match text.[!index] with 'a' .. 'z' | 'A' .. 'Z' -> true | _ -> false
-        do
-          incr index
-        done;
-        tokens := Operator (String.sub text start (!index - start)) :: !tokens
-    | character -> raise (Reread_error (Printf.sprintf "unexpected %C" character))
-  done;
-  List.rev !tokens
-
-(* Operands are read into variables before being combined: OCaml's && and ||
-   short-circuit, and a parser that consumes tokens as a side effect must not
-   be skipped. *)
-let evaluate_text text assignment =
-  let remaining = ref (tokenize text) in
-  let peek () = match !remaining with [] -> None | token :: _ -> Some token in
-  let advance () =
-    match !remaining with
-    | [] -> raise (Reread_error "unexpected end of expression")
-    | _ :: rest -> remaining := rest
-  in
-  let value_of name =
-    match List.assoc_opt name assignment with
-    | Some value -> value
-    | None -> raise (Reread_error ("unknown variable " ^ name))
-  in
-  let rec biconditional () =
-    let left = ref (implication ()) in
-    let rec loop () =
-      match peek () with
-      | Some (Operator "\\leftrightarrow") ->
-          advance ();
-          let right = implication () in
-          left := !left = right;
-          loop ()
-      | _ -> ()
-    in
-    loop ();
-    !left
-  and implication () =
-    let left = disjunction () in
-    match peek () with
-    | Some (Operator "\\to") ->
-        advance ();
-        let right = implication () in
-        (not left) || right
-    | _ -> left
-  and disjunction () =
-    let left = ref (conjunction ()) in
-    let rec loop () =
-      match peek () with
-      | Some (Operator "\\lor") ->
-          advance ();
-          let right = conjunction () in
-          left := !left || right;
-          loop ()
-      | _ -> ()
-    in
-    loop ();
-    !left
-  and conjunction () =
-    let left = ref (unary ()) in
-    let rec loop () =
-      match peek () with
-      | Some (Operator "\\land") ->
-          advance ();
-          let right = unary () in
-          left := !left && right;
-          loop ()
-      | _ -> ()
-    in
-    loop ();
-    !left
-  and unary () =
-    match peek () with
-    | Some (Operator "\\neg") ->
-        advance ();
-        not (unary ())
-    | Some (Variable name) ->
-        advance ();
-        value_of name
-    | Some Open ->
-        advance ();
-        let inner = biconditional () in
-        (match peek () with
-        | Some Close -> advance ()
-        | _ -> raise (Reread_error "missing ')'"));
-        inner
-    | Some (Operator other) -> raise (Reread_error ("unexpected " ^ other))
-    | Some Close -> raise (Reread_error "unexpected ')'")
-    | None -> raise (Reread_error "unexpected end of expression")
-  in
-  let result = biconditional () in
-  if !remaining <> [] then raise (Reread_error "trailing tokens");
-  result
-
-(* All eight assignments over A, B, C, evaluated one at a time. This is the
-   independent answer to "are these equivalent": no bit tricks, just eight
-   evaluations of each side. *)
-let all_assignments =
-  List.init 8 (fun row ->
-      [
-        ("A", row land 4 <> 0); ("B", row land 2 <> 0); ("C", row land 1 <> 0);
-      ])
-
-let equivalent left right =
-  List.for_all
-    (fun assignment -> evaluate_text left assignment = evaluate_text right assignment)
-    all_assignments
-
-(* ------------------------------------------------------------------ *)
-(* Pulling the two sides out of the question                           *)
-(* ------------------------------------------------------------------ *)
-
-(* The question reads "...[`LEFT, RIGHT`]...". The comma that separates them is
-   the only one at bracket depth zero. *)
-let sides_of_prompt prompt =
-  let inner =
-    match (String.index_opt prompt '`', String.rindex_opt prompt '`') with
-    | Some first, Some last when last > first ->
-        String.sub prompt (first + 1) (last - first - 1)
-    | _ -> raise (Reread_error ("no [`...`] found in: " ^ prompt))
-  in
-  let depth = ref 0 in
-  let split = ref None in
-  String.iteri
-    (fun index character ->
-      match character with
-      | '(' -> incr depth
-      | ')' -> decr depth
-      | ',' when !depth = 0 && !split = None -> split := Some index
-      | _ -> ())
-    inner;
-  match !split with
-  | None -> raise (Reread_error ("no separating comma in: " ^ inner))
-  | Some index ->
-      ( String.sub inner 0 index |> String.trim,
-        String.sub inner (index + 1) (String.length inner - index - 1) |> String.trim )
-
 let load_file filename =
   match Ag_load.parse_file filename with
   | Ok spec -> spec
   | Error errors ->
       List.iter (fun error -> fail (Ag_load.string_of_failure error)) errors;
       exit 1
+
+let generate spec seed =
+  Random.init seed;
+  match Ag_engine.generate spec with
+  | question -> Some question
+  | exception Ag_engine.Generation_error message ->
+      fail (Printf.sprintf "seed %d: generation failed: %s" seed message);
+      None
+
+let for_seeds spec seeds check =
+  for seed = 0 to seeds - 1 do
+    match generate spec seed with Some question -> check seed question | None -> ()
+  done
+
+(* The two sides: either two math blocks, or one block joined by \equiv. *)
+let sides_of_prompt prompt =
+  match expression_blocks (math_blocks prompt) with
+  | [ left; right ] -> (String.trim left, String.trim right)
+  | [ single ] -> (
+      match split_on " \\equiv " single with
+      | [ left; right ] -> (String.trim left, String.trim right)
+      | _ -> raise (Reread_error ("no \\equiv between the sides of: " ^ single)))
+  | blocks ->
+      raise (Reread_error (Printf.sprintf "%d math blocks in the prompt" (List.length blocks)))
+
+let stated_truth seed question =
+  match question.Ag_engine.answer with
+  | Ag_engine.Truth truth -> truth
+  | other ->
+      fail
+        (Printf.sprintf "seed %d: answer was not true/false: %s" seed
+           (Ag_engine.describe_value other));
+      false
 
 (* ------------------------------------------------------------------ *)
 (* 1. The stated answer matches what the two displayed sides do        *)
@@ -199,68 +70,43 @@ let () =
   let spec = load_file "boolean_equiv.ag" in
   let saw_equivalent = ref false in
   let saw_different = ref false in
-  for seed = 0 to 299 do
-    Random.init seed;
-    match Ag_engine.generate spec with
-    | exception Ag_engine.Generation_error message ->
-        fail (Printf.sprintf "seed %d: generation failed: %s" seed message)
-    | question -> (
-        let prompt = question.Ag_engine.prompt in
-        match sides_of_prompt prompt with
-        | exception Reread_error message ->
-            fail (Printf.sprintf "seed %d: %s" seed message)
-        | left, right -> (
-            match equivalent left right with
-            | exception Reread_error message ->
+  for_seeds spec 300 (fun seed question ->
+      match sides_of_prompt question.Ag_engine.prompt with
+      | exception Reread_error message -> fail (Printf.sprintf "seed %d: %s" seed message)
+      | left, right -> (
+          match equivalent (parse left) (parse right) with
+          | exception Reread_error message ->
+              fail
+                (Printf.sprintf "seed %d: could not re-read %S / %S: %s" seed left right
+                   message)
+          | truly ->
+              if truly then saw_equivalent := true else saw_different := true;
+              let stated = stated_truth seed question in
+              if truly <> stated then
                 fail
-                  (Printf.sprintf "seed %d: could not re-read %S / %S: %s" seed left
-                     right message)
-            | truly ->
-                if truly then saw_equivalent := true else saw_different := true;
-                let stated =
-                  match question.Ag_engine.answer with
-                  | Ag_engine.Truth truth -> truth
-                  | other ->
-                      fail
-                        (Printf.sprintf "seed %d: answer was not true/false: %s" seed
-                           (Ag_engine.describe_value other));
-                      truly
-                in
-                if truly <> stated then
-                  fail
-                    (Printf.sprintf
-                       "seed %d: %S vs %S is actually %s, but the answer says %s" seed
-                       left right
-                       (if truly then "equivalent" else "not equivalent")
-                       (if stated then "equivalent" else "not equivalent"))))
-  done;
+                  (Printf.sprintf "seed %d: %S vs %S is actually %s, but the answer says %s"
+                     seed left right
+                     (if truly then "equivalent" else "not equivalent")
+                     (if stated then "equivalent" else "not equivalent"))));
   (* A question set that is all one answer would be useless, and would also
      hide a formula that always returns the same thing. *)
   if not !saw_equivalent then fail "no equivalent pair was ever produced";
   if not !saw_different then fail "no inequivalent pair was ever produced"
 
 (* ------------------------------------------------------------------ *)
-(* 2. Both answers appear often enough to be worth asking              *)
+(* 2. Neither answer dominates                                         *)
 (* ------------------------------------------------------------------ *)
 
 let () =
   let spec = load_file "boolean_equiv.ag" in
-  let equivalent_count = ref 0 in
-  let total = 400 in
-  for seed = 0 to total - 1 do
-    Random.init seed;
-    match Ag_engine.generate spec with
-    | exception Ag_engine.Generation_error _ -> ()
-    | question -> (
-        match question.Ag_engine.answer with
-        | Ag_engine.Truth true -> incr equivalent_count
-        | _ -> ())
-  done;
+  let total = 1000 and equivalent_count = ref 0 in
+  for_seeds spec total (fun seed question ->
+      if stated_truth seed question then incr equivalent_count);
   let share = float_of_int !equivalent_count /. float_of_int total in
-  if share < 0.2 || share > 0.8 then
+  if share < 0.4 || share > 0.6 then
     fail
       (Printf.sprintf
-         "%.0f%% of questions answer 'equivalent'; a student could pass by always \
+         "%.0f%% of questions answer 'equivalent'; a student could do well by always \
           guessing the same way"
          (share *. 100.))
 
@@ -270,20 +116,71 @@ let () =
 
 let () =
   let spec = load_file "boolean_equiv.ag" in
-  for seed = 0 to 199 do
-    Random.init seed;
-    match Ag_engine.generate spec with
-    | exception Ag_engine.Generation_error _ -> ()
-    | question -> (
-        match sides_of_prompt question.Ag_engine.prompt with
-        | exception Reread_error _ -> ()
-        | left, right ->
-            if left = right then
-              fail (Printf.sprintf "seed %d: both sides read %S" seed left))
-  done
+  for_seeds spec 300 (fun seed question ->
+      match sides_of_prompt question.Ag_engine.prompt with
+      | exception Reread_error _ -> ()
+      | left, right ->
+          if left = right then fail (Printf.sprintf "seed %d: both sides read %S" seed left))
 
 (* ------------------------------------------------------------------ *)
-(* 4. Answers reach the .pg file as 1 or 0                             *)
+(* 4. Each side looks set by hand                                      *)
+(* ------------------------------------------------------------------ *)
+
+let () =
+  let spec = load_file "boolean_equiv.ag" in
+  for_seeds spec 500 (fun seed question ->
+      match sides_of_prompt question.Ag_engine.prompt with
+      | exception Reread_error _ -> ()
+      | left, right ->
+          List.iter
+            (fun text ->
+              let expression = parse text in
+              (* Absorption repeats an operand on purpose; every other law
+                 follows the same rules as the evaluation questions. *)
+              if not (absorption_shaped expression) then
+                List.iter
+                  (fun smell -> fail (Printf.sprintf "seed %d: %s" seed smell))
+                  (smells expression);
+              (* \neg \neg appears only as the whole of one side, in the
+                 double negation law, and never deeper. *)
+              let allowed =
+                match expression with
+                | Not (Not (Not _)) -> -1
+                | Not (Not _) -> 1
+                | _ -> 0
+              in
+              if stacked_negations expression <> allowed then
+                fail (Printf.sprintf "seed %d: stacked negation in %S" seed text);
+              let again = render expression in
+              if again <> text then
+                fail (Printf.sprintf "seed %d: %S re-renders as %S" seed text again);
+              (* The course rarely writes more than two negations on a side. *)
+              let rec count = function
+                | Var _ -> 0
+                | Not body -> 1 + count body
+                | Bin (_, l, r) -> count l + count r
+              in
+              if count expression > 2 then
+                fail (Printf.sprintf "seed %d: %d negations in %S" seed (count expression) text))
+            [ left; right ])
+
+(* ------------------------------------------------------------------ *)
+(* 5. Both wordings appear                                             *)
+(* ------------------------------------------------------------------ *)
+
+let () =
+  let spec = load_file "boolean_equiv.ag" in
+  let two_blocks = ref false and one_block = ref false in
+  for_seeds spec 100 (fun _ question ->
+      match expression_blocks (math_blocks question.Ag_engine.prompt) with
+      | [ _; _ ] -> two_blocks := true
+      | [ _ ] -> one_block := true
+      | _ -> ());
+  if not !two_blocks then fail "the two-line wording never appeared in 100 seeds";
+  if not !one_block then fail "the \\equiv wording never appeared in 100 seeds"
+
+(* ------------------------------------------------------------------ *)
+(* 6. Answers reach the .pg file as 1 or 0                             *)
 (* ------------------------------------------------------------------ *)
 
 let () =
@@ -313,115 +210,53 @@ let () =
   if blanks = [] then fail "no answer blanks were produced"
 
 (* ------------------------------------------------------------------ *)
-(* 5. The cost budget is spent exactly and prices what the student sees *)
+(* 7. The cost budget: the law's price plus its parts                   *)
 (* ------------------------------------------------------------------ *)
 
-(* boolean_equiv.ag prices the law (double negation 1, biconditional 3, any
-   other law 2) and the subexpressions it is stated over as boolean.ag does:
-   and/or 2, a negated variable 1, a negated compound 3 plus the compound.
-   The law is read off the left-hand side of the claim and each
-   subexpression is re-priced from its printed form. The least budget is 1. *)
-let price_of_subexpression text =
-  let remaining = ref (tokenize text) in
-  let peek () = match !remaining with [] -> None | token :: _ -> Some token in
-  let advance () =
-    match !remaining with
-    | [] -> raise (Reread_error "unexpected end of expression")
-    | _ :: rest -> remaining := rest
-  in
-  (* each level returns (cost, is_variable) *)
-  let rec chain operand operator () =
-    let left = ref (operand ()) in
-    let rec loop () =
-      match peek () with
-      | Some (Operator found) when found = operator ->
-          advance ();
-          let right = operand () in
-          left := (2 + fst !left + fst right, false);
-          loop ()
-      | _ -> ()
-    in
-    loop ();
-    !left
-  and disjunction () = chain conjunction "\\lor" ()
-  and conjunction () = chain unary "\\land" ()
-  and unary () =
-    match peek () with
-    | Some (Operator "\\neg") ->
-        advance ();
-        let inner, is_variable = unary () in
-        ((if is_variable then 1 else 3 + inner), false)
-    | Some (Variable _) ->
-        advance ();
-        (0, true)
-    | Some Open ->
-        advance ();
-        let inner = disjunction () in
-        (match peek () with
-        | Some Close -> advance ()
-        | _ -> raise (Reread_error "missing ')'"));
-        (fst inner, false)
-    | Some (Operator other) -> raise (Reread_error ("unexpected " ^ other))
-    | Some Close -> raise (Reread_error "unexpected ')'")
-    | None -> raise (Reread_error "unexpected end of expression")
-  in
-  let result = disjunction () in
-  if !remaining <> [] then raise (Reread_error "trailing tokens");
-  fst result
-
-(* Double negation is the only law stated over one subexpression; the
-   biconditional is the only one whose left-hand side contains it. *)
-let law_price ~subexpressions lhs =
-  let rec contains index fragment =
-    index + String.length fragment <= String.length lhs
-    && (String.sub lhs index (String.length fragment) = fragment
-       || contains (index + 1) fragment)
-  in
-  if subexpressions = 1 then 1 else if contains 0 "\\leftrightarrow" then 3 else 2
+(* Each law declares its price and pays it; the parts are priced as in
+   boolean.ag. The parts are re-priced here from their formula trees. *)
+let rec part_price = function
+  | Ag_boolean.Var _ | Ag_boolean.Const _ -> 0
+  | Ag_boolean.Not (Ag_boolean.Var _) -> 1
+  | Ag_boolean.Not body -> 3 + part_price body
+  | Ag_boolean.And (l, r) | Ag_boolean.Or (l, r) -> 2 + part_price l + part_price r
+  | Ag_boolean.Imp (l, r) -> 4 + part_price l + part_price r
+  | Ag_boolean.Iff (l, r) | Ag_boolean.Xor (l, r) -> 6 + part_price l + part_price r
 
 let () =
   let base = load_file "boolean_equiv.ag" in
+  let prices_seen = Hashtbl.create 3 in
   for cost = 1 to 12 do
     match Ag_check.with_initial base "cost" cost with
     | Error message -> fail message
     | Ok spec ->
-        for seed = 0 to 29 do
-          Random.init (seed + (cost * 1000));
-          match Ag_engine.generate spec with
-          | exception Ag_engine.Generation_error message ->
-              fail (Printf.sprintf "cost %d seed %d: %s" cost seed message)
-          | question -> (
-              let root = question.Ag_engine.tree in
-              let spent = Ag_engine.consumption root "cost" in
-              if spent <> cost then
-                fail (Printf.sprintf "cost %d: the tree spent %d" cost spent);
-              let lhs =
-                match Ag_engine.attribute root "lhs" with
-                | Ag_engine.Text text -> text
-                | _ -> ""
-              in
-              let subexpressions =
-                root.Ag_engine.children
-                |> List.filter (fun (node : Ag_engine.node) -> node.symbol = "P")
-                |> List.map (fun node ->
-                       match Ag_engine.attribute node "latex" with
-                       | Ag_engine.Text text -> text
-                       | _ -> "")
-              in
-              match List.map price_of_subexpression subexpressions with
-              | exception Reread_error message ->
-                  fail (Printf.sprintf "cost %d: could not price a subexpression: %s" cost message)
-              | prices ->
-                  let priced =
-                    law_price ~subexpressions:(List.length prices) lhs
-                    + List.fold_left ( + ) 0 prices
-                  in
-                  if priced <> cost then
-                    fail
-                      (Printf.sprintf "cost %d: %S re-prices as %d" cost
-                         question.Ag_engine.prompt priced))
-        done
-  done
+        for_seeds spec 30 (fun seed question ->
+            let root = question.Ag_engine.tree in
+            let spent = Ag_engine.consumption root "cost" in
+            if spent <> cost then fail (Printf.sprintf "cost %d seed %d: the tree spent %d" cost seed spent);
+            match List.find_opt (fun (node : Ag_engine.node) -> node.symbol = "L") root.Ag_engine.children with
+            | None -> fail (Printf.sprintf "cost %d seed %d: no law node" cost seed)
+            | Some law ->
+                let declared =
+                  match Ag_engine.attribute law "price" with
+                  | Ag_engine.Num n -> Ag_number.require_integer "price" n
+                  | other -> fail ("price is not a number: " ^ Ag_engine.describe_value other); 0
+                in
+                Hashtbl.replace prices_seen declared true;
+                let parts =
+                  law.Ag_engine.children
+                  |> List.filter (fun (node : Ag_engine.node) -> node.symbol = "P")
+                  |> List.map (fun node ->
+                         match Ag_engine.attribute node "f" with
+                         | Ag_engine.Boolean f -> part_price f
+                         | other -> fail ("a part is not a formula: " ^ Ag_engine.describe_value other); 0)
+                in
+                let priced = declared + List.fold_left ( + ) 0 parts in
+                if priced <> cost then
+                  fail (Printf.sprintf "cost %d seed %d: law %d plus parts re-prices as %d" cost seed declared priced))
+  done;
+  List.iter (fun price -> if not (Hashtbl.mem prices_seen price) then fail (Printf.sprintf "no law of price %d was asked" price))
+    [ 1; 2; 3 ]
 
 let () =
   if !failures = 0 then print_endline "Ag equivalence tests passed."

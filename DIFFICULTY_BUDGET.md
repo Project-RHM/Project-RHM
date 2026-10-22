@@ -8,7 +8,7 @@ this document is in `DIFFICULTY_BUDGET.zh.md`.
 
 | grammar | budget spent on | default | section |
 | --- | --- | --- | --- |
-| `boolean.ag` | connectives, priced by kind and by what they negate | 10 | 2–4 |
+| `boolean.ag` | connectives, priced by kind and by what they negate; propositions are a value the engine evaluates | 10 | 2–4 |
 | `arithmetic.ag` | operations and the digits of the numbers | 12 | 6 |
 | `calculus.ag` | the differentiation rules a function calls for, plus 2 for an integral | 7 | 7 |
 | `complex.ag` | operations; modulus and power of `i` are fixed forms | 4 | 8 |
@@ -43,9 +43,11 @@ difficulty of its operands to the difficulty of the compound it builds. In
 | conditional | 4 plus the operands |
 | biconditional, exclusive or | 6 plus the operands |
 
-So `A \land B` costs 2, `\neg \neg C` costs 4 (a negated compound whose
-compound is a negated variable), and `(A \leftrightarrow B) \lor (A \to B)`
-costs 2 + 6 + 4 = 12. The prices are starting values chosen by judgement; they
+So `p \land q` costs 2, `\neg (p \lor q)` costs 3 + 2 = 5, and
+`(p \leftrightarrow q) \lor (p \to q)` costs 2 + 6 + 4 = 12. A proposition is a
+value of the engine's Boolean type (`bool_and`, `bool_imp`, ...): the engine
+renders it, evaluates it under the assignment and judges its shape
+(`bool_is_tidy`, `bool_sensitivity`), so the grammar only prices and chooses. The prices are starting values chosen by judgement; they
 have not been fitted to student results. They live in the productions of the
 grammar, so revising them is an edit to one file.
 
@@ -62,10 +64,10 @@ and every production pays its price and splits what is left between its
 operands:
 
 ```
-E -> E "\to" E   when cost >= 4  weight 2 { cost = -4  ... }
-E -> "\neg" V    when cost = 1   weight 2 { cost = -1  ... }
-E -> "\neg" E    when cost >= 4  weight 2 { cost = -3  ... }
-E -> V           when cost = 0             { ... }
+E -> E "\to" E   when cost >= 4  weight 4 { cost = -4  f = bool_imp($1.f, $3.f) ... }
+E -> "\neg" V    when cost = 1   weight 1 { cost = -1  f = bool_not($2.f) }
+E -> "\neg" E    when cost >= 4  weight 1 { cost = -3  f = bool_not($2.f) ... }
+E -> V           when cost = 0   weight 3 { f = $1.f }
 ```
 
 Three rules make this work:
@@ -94,20 +96,24 @@ _build/default/ag/agrun.exe --set cost=10 ag/boolean.ag    # medium, the default
 _build/default/ag/agrun.exe --set cost=14 ag/boolean.ag    # hard
 ```
 
-Measured on 1000 questions per budget (seed 7):
+Measured on 500 questions per budget (seed 7), with the course's shape
+rules in force (every variable used once there are three leaves, at most
+two negations, an assignment that makes at least two variables matter, and
+the answer balanced by a coin):
 
-| budget | distinct questions | operators | questions using →, ↔, ⊕ | answer true |
-| --- | --- | --- | --- | --- |
-| 4 | 16% | 1–3 | 20% | 57% |
-| 6 | 50% | 1–4 | 39% | 58% |
-| 8 | 80% | 2–5 | 58% | 54% |
-| 10 | 95% | 2–7 | 70% | 55% |
-| 12 | 99% | 2–8 | 78% | 56% |
-| 16 | 100% | 3–10 | 86% | 51% |
+| budget | distinct questions | answer true |
+| --- | --- | --- |
+| 4 | 34% | 52% |
+| 6 | 63% | 54% |
+| 8 | 87% | 50% |
+| 10 | 97% | 53% |
+| 14 | 100% | 53% |
 
-Two things to read off this table. Cost is not length: at budget 10 the
-operator count runs from 2 to 7. And small budgets buy few distinct
-questions, so a set should not be built below about 6.
+Cost is not length: one budget buys expressions of several sizes. Small
+budgets buy few distinct questions, so a set should not be built below
+about 6, and a budget of 1 has no question at all, since the only thing it
+buys is a negated variable, which the grammar refuses as a whole
+proposition.
 
 ## 5. The tool: `tools/ag_difficulty.py`
 
@@ -337,19 +343,20 @@ under it.
 
 ## 10. The remaining grammars
 
-**Boolean equivalence** (`boolean_equiv.ag`, default 6). A claim is a law
-stated over one or two subexpressions. The law pays its price, double
-negation 1, biconditional 3, every other law 2 (the deliberately broken
-variants cost the same as the law they break, since the student cannot tell
-them apart in advance), and the rest is split between the subexpressions,
-priced as in `boolean.ag`: and/or 2, a negated variable 1, a negated compound
-3 plus the compound. The least budget is 1, since there is no law for
-nothing. Priced with this table, the old grammar's claims (`len = 2`) had a
-mean of 5.8 and range 4 to 8. The test reads the law off the left-hand side
-and re-prices each subexpression from its printed form. At budget 1 only
-double negation fits and every claim holds; at 2 the share of claims that
-hold is 71%, and from 4 upwards it settles between 60% and 70%, so a set
-should not be built below about 3.
+**Boolean equivalence** (`boolean_equiv.ag`, default 6). A claim is one of
+thirty laws of the course, fifteen stated correctly and fifteen with a
+classic mistake, over parts drawn from a small expression language; the
+engine decides whether the claim holds by enumerating every assignment
+(`bool_equivalent`). The law pays its price: double negation and a mere
+reordering 1; distribution, exportation, associativity and the two
+expansions of the biconditional 3; every other law 2, a broken law costing
+the same as the law it breaks, since the student cannot tell them apart in
+advance. The rest is split between the parts, priced as in `boolean.ag`.
+Each law declares its price as an attribute, and the test checks that the
+declared price plus the re-priced parts is the budget. The least budget is
+1, since there is no law for nothing; at 1 only double negation and
+reordering fit and every claim holds, so a set should not be built below
+about 2. The answer is balanced by a coin, as in `boolean.ag`.
 
 **Grammars of fixed forms.** `vector.ag`, `sequence.ag` and the four
 `library_*.ag` grammars have no recursion: each question form is a fixed

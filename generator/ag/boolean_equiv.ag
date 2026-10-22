@@ -1,228 +1,462 @@
 # ==========================================================================
 #  Boolean equivalence
 #
-#  The student is shown two expressions and answers 1 if they are equivalent
-#  and 0 otherwise. Equivalence is a claim about *every* assignment, not about
-#  one, so a single true/false value cannot express it.
+#  The student is shown two propositions and answers 1 if they are
+#  logically equivalent and 0 otherwise. Each question is one law of
+#  propositional logic, stated correctly or with one classic mistake, over
+#  parts drawn from a small expression language.
 #
-#  Instead each subexpression carries its whole truth table. With three
-#  variables there are eight assignments, so a truth table is an eight-bit
-#  number, and the connectives become bitwise operations on it. Two
-#  expressions are equivalent exactly when their tables are equal -- which is
-#  a comparison the engine already knows how to make, with no idea that logic
-#  is involved.
+#  The propositions are real values (see ag_boolean.ml): a law builds both
+#  sides as formulas, the engine renders them and decides equivalence by
+#  enumerating every assignment, so the text a student sees and the answer
+#  come from one object. A law that should hold asserts it; a mistake that
+#  happens to hold for some parts is drawn again rather than asked, so a
+#  student is never tested on a coincidence.
 #
-#      row     A B C        bit
-#       0      F F F         1
-#       1      F F T         2
-#       2      F T F         4
-#       3      F T T         8
-#       4      T F F        16
-#       5      T F T        32
-#       6      T T F        64
-#       7      T T T       128
-#
-#  so A is true in rows 4..7  -> 16+32+64+128 = 240
-#     B is true in rows 2,3,6,7 ->  4+ 8+64+128 = 204
-#     C is true in rows 1,3,5,7 ->  2+ 8+32+128 = 170
-#  and negation is 255 - table.
-#
-#  Difficulty is the budget `cost`, spent exactly: the law pays its price
-#  (double negation 1, biconditional 3, every other law 2) and what is left
-#  is split between the subexpressions it is stated over, which are priced
-#  as in boolean.ag (and/or 2, a negated variable 1, a negated compound 3
-#  plus the compound). The least budget is 1: there is no law for nothing.
-#
-#    agrun --set cost=3 boolean_equiv.ag     easy
-#    agrun --set cost=6 boolean_equiv.ag     medium (the default)
-#    agrun --set cost=9 boolean_equiv.ag     hard
+#  The laws follow the course's assignments: De Morgan, the conditional's
+#  disguises, contrapositive against converse and inverse, distribution
+#  (including the conditional over \lor and \land), exportation, and
+#  associativity, which holds for \leftrightarrow and \oplus but not \to.
 # ==========================================================================
 
 
-attribute cost = 6 split       # law price plus the subexpressions, spent exactly
+# Difficulty is the budget `cost`, spent exactly. The law pays its price
+# (double negation and a mere reordering 1, distribution, exportation,
+# associativity and the biconditional's expansions 3, every other law 2; a
+# deliberately broken law costs the same as the law it breaks) and the rest
+# is split between the parts it is stated over, which are priced as in
+# boolean.ag: and/or 2, a negated variable 1, a negated compound 3 plus the
+# compound. The least budget is 1: there is no law for nothing.
+#
+#    agrun --set cost=3 boolean_equiv.ag    easy
+#    agrun --set cost=6 boolean_equiv.ag    medium (the default)
+#    agrun --set cost=9 boolean_equiv.ag    hard
 
-# The subexpression language carries these two.
-synth table on P               # the truth table, as an eight-bit number
-synth table on V
-synth latex on P               # how the subexpression is written
-synth latex on V
-# The same rendering, bracketed unless it is a single variable. The laws below
-# splice subexpressions into contexts that bind more tightly than the
-# subexpression itself, so splicing the bare form would silently change what
-# the question says -- the displayed expression would stop matching the truth
-# table the answer was computed from.
-synth safe on P
-synth safe on V
-synth negation on P            # 1 when the subexpression is a negation
+attribute cost = 6 split
 
-# Only a whole question carries these: the two sides of the claim, and whether
-# the claim actually holds. They are not called left/right because those two
-# words are taken by the precedence syntax.
+
+# ---- Synthesized attributes ----
+
+synth f on P                   # a part
+synth f on V
+
+synth fa on L                  # the two sides of the claim
+synth fb on L
+synth price on L               # what the law itself costs
+
+synth holds on Q
 synth lhs on Q
 synth rhs on Q
-synth holds on Q
+synth text on Q
+
+random flip = boolean                  # which side is shown first
+random phrasing = integer_between(1, 2)
+random target = boolean                # the answer this question is to have
 
 
 start Q
 
 
+Q -> L {
+       # The course rarely writes more than two negations on a side.
+       require bool_negations($1.fa) <= 2
+       require bool_negations($1.fb) <= 2
+       holds = bool_equivalent($1.fa, $1.fb)
+       # A person balances a set by deciding the answer first; the coin toss
+       # `target` does the same, so neither answer can dominate.
+       require holds = target
+       lhs   = bool_latex(cond(flip, $1.fa, $1.fb))
+       rhs   = bool_latex(cond(flip, $1.fb, $1.fa))
+       text  = cond(phrasing = 1,
+                 "Are the following two propositions logically equivalent?
+[`" ++ lhs ++ "`]
+[`" ++ rhs ++ "`]",
+                 "Is [`" ++ lhs ++ " \equiv " ++ rhs ++ "`] a valid logical equivalence?")
+     }
+
+
 # ==========================================================================
-#  Questions
+#  Laws
 #
-#  Each rule below states a law, building both sides from the same
-#  subexpressions, so the two sides really are the same claim written twice.
-#  `holds` is not asserted -- it is computed by comparing the two tables, so a
-#  law that has been deliberately broken is still labelled correctly even in
-#  the cases where the break happens to cancel out.
+#  Each law builds its two sides, refuses untidy ones (which also rules out
+#  \neg \neg when a part already starts with \neg), and then either asserts
+#  that it holds or insists that it does not.
 # ==========================================================================
 
-# ---- laws that hold -------------------------------------------------------
+# ---- Laws that hold ------------------------------------------------------
 
-# De Morgan
-Q -> P P   when cost >= 2  weight 6 {
+# De Morgan, conjunction
+L -> P P   when cost >= 2  weight 6 {
        cost = -2
-       lhs = "\neg (" ++ $1.safe ++ " \land " ++ $2.safe ++ ")"
-       rhs = "\neg " ++ $1.safe ++ " \lor \neg " ++ $2.safe
-       holds = 255 - bit_and($1.table, $2.table)
-               = bit_or(255 - $1.table, 255 - $2.table)
+       price = 2
+       fa = bool_not(bool_and($1.f, $2.f))
+       fb = bool_or(bool_not($1.f), bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
        }
 
-# Implication as disjunction
-Q -> P P   when cost >= 2  weight 2 {
+# De Morgan, disjunction
+L -> P P   when cost >= 2  weight 6 {
        cost = -2
-       lhs = $1.safe ++ " \to " ++ $2.safe
-       rhs = "\neg " ++ $1.safe ++ " \lor " ++ $2.safe
-       holds = bit_or(255 - $1.table, $2.table)
-               = bit_or(255 - $1.table, $2.table)
+       price = 2
+       fa = bool_not(bool_or($1.f, $2.f))
+       fb = bool_and(bool_not($1.f), bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
        }
 
-# Double negation
-Q -> P     when cost >= 1  weight 2 {
-       cost = -1
-       lhs = "\neg (\neg " ++ $1.safe ++ ")"
-       rhs = $1.safe
-       holds = 255 - (255 - $1.table) = $1.table
-       }
-
-# Absorption
-Q -> P P   when cost >= 2  weight 1 {
+# The conditional as a disjunction
+L -> P P   when cost >= 2  weight 4 {
        cost = -2
-       lhs = $1.safe ++ " \land (" ++ $1.safe ++ " \lor " ++ $2.safe ++ ")"
-       rhs = $1.safe
-       holds = bit_and($1.table, bit_or($1.table, $2.table)) = $1.table
+       price = 2
+       fa = bool_imp($1.f, $2.f)
+       fb = bool_or(bool_not($1.f), $2.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
        }
 
-# Biconditional as two implications
-Q -> P P   when cost >= 3  weight 1 {
+# Contrapositive
+L -> P P   when cost >= 2  weight 4 {
+       cost = -2
+       price = 2
+       fa = bool_imp($1.f, $2.f)
+       fb = bool_imp(bool_not($2.f), bool_not($1.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# The negated conditional
+L -> P P   when cost >= 2  weight 3 {
+       cost = -2
+       price = 2
+       fa = bool_not(bool_imp($1.f, $2.f))
+       fb = bool_and($1.f, bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# Distribution of \land over \lor
+L -> P P P   when cost >= 3  weight 12 {
        cost = -3
-       lhs = $1.safe ++ " \leftrightarrow " ++ $2.safe
-       rhs = "(" ++ $1.safe ++ " \to " ++ $2.safe ++ ") \land ("
-               ++ $2.safe ++ " \to " ++ $1.safe ++ ")"
-       holds = 255 - bit_xor($1.table, $2.table)
-               = bit_and(bit_or(255 - $1.table, $2.table),
-                         bit_or(255 - $2.table, $1.table))
+       price = 3
+       fa = bool_and($1.f, bool_or($2.f, $3.f))
+       fb = bool_or(bool_and($1.f, $2.f), bool_and($1.f, $3.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
        }
 
-# ---- laws with one connective swapped, so they usually fail ---------------
+# Distribution of \lor over \land
+L -> P P P   when cost >= 3  weight 12 {
+       cost = -3
+       price = 3
+       fa = bool_or($1.f, bool_and($2.f, $3.f))
+       fb = bool_and(bool_or($1.f, $2.f), bool_or($1.f, $3.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# The conditional distributes over \lor in its conclusion
+L -> P P P   when cost >= 3  weight 12 {
+       cost = -3
+       price = 3
+       fa = bool_imp($1.f, bool_or($2.f, $3.f))
+       fb = bool_or(bool_imp($1.f, $2.f), bool_imp($1.f, $3.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# ... and over \land
+L -> P P P   when cost >= 3  weight 12 {
+       cost = -3
+       price = 3
+       fa = bool_imp($1.f, bool_and($2.f, $3.f))
+       fb = bool_and(bool_imp($1.f, $2.f), bool_imp($1.f, $3.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# Exportation
+L -> P P P   when cost >= 3  weight 12 {
+       cost = -3
+       price = 3
+       fa = bool_imp(bool_and($1.f, $2.f), $3.f)
+       fb = bool_imp($1.f, bool_imp($2.f, $3.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# \leftrightarrow is associative
+L -> P P P   when cost >= 3  weight 8 {
+       cost = -3
+       price = 3
+       fa = bool_iff($1.f, bool_iff($2.f, $3.f))
+       fb = bool_iff(bool_iff($1.f, $2.f), $3.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# \oplus is associative
+L -> P P P   when cost >= 3  weight 8 {
+       cost = -3
+       price = 3
+       fa = bool_xor($1.f, bool_xor($2.f, $3.f))
+       fb = bool_xor(bool_xor($1.f, $2.f), $3.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# The biconditional as two conditionals
+L -> P P   when cost >= 3  weight 3 {
+       cost = -3
+       price = 3
+       fa = bool_iff($1.f, $2.f)
+       fb = bool_and(bool_imp($1.f, $2.f), bool_imp($2.f, $1.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# The biconditional by cases
+L -> P P   when cost >= 3  weight 2 {
+       cost = -3
+       price = 3
+       fa = bool_iff($1.f, $2.f)
+       fb = bool_or(bool_and($1.f, $2.f), bool_and(bool_not($1.f), bool_not($2.f)))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# Double negation: the one place \neg \neg is meant to appear.
+L -> P   when cost >= 1  weight 1 {
+       cost = -1
+       price = 1
+       fa = bool_not(bool_not($1.f))
+       fb = $1.f
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# Absorption: the one law whose side repeats a part on purpose, stated as
+# the course states it, over a variable.
+L -> P P   when cost >= 2  weight 1 {
+       cost = -2
+       price = 2
+       require bool_is_atom($1.f)
+       fa = bool_and($1.f, bool_or($1.f, $2.f))
+       fb = $1.f
+       require bool_is_tidy(bool_and($1.f, $2.f))
+       require bool_equivalent(fa, fb)
+       }
+
+# The same proposition with its operands reordered: looks different, holds.
+L -> P P P   when cost >= 1  weight 6 {
+       cost = -1
+       price = 1
+       fa = bool_or($1.f, bool_and($2.f, $3.f))
+       fb = bool_or(bool_and($3.f, $2.f), $1.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require bool_equivalent(fa, fb)
+       }
+
+# ---- Laws with one classic mistake --------------------------------------
 #
-# "Usually" is the point: whether the claim holds is computed, not assumed,
-# so the rare pair where the swap makes no difference is still labelled 1.
+# Whether the mistake shows depends on the parts; a pair where it happens
+# not to is drawn again, so every one of these is asked only when it fails.
 
-# De Morgan with the wrong connective on the right
-Q -> P P   when cost >= 2  weight 3 {
+# De Morgan with the connective left unchanged
+L -> P P   when cost >= 2  weight 4 {
        cost = -2
-       lhs = "\neg (" ++ $1.safe ++ " \land " ++ $2.safe ++ ")"
-       rhs = "\neg " ++ $1.safe ++ " \land \neg " ++ $2.safe
-       holds = 255 - bit_and($1.table, $2.table)
-               = bit_and(255 - $1.table, 255 - $2.table)
+       price = 2
+       fa = bool_not(bool_and($1.f, $2.f))
+       fb = bool_and(bool_not($1.f), bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
        }
 
-# Implication turned around
-Q -> P P   when cost >= 2  weight 3 {
+L -> P P   when cost >= 2  weight 4 {
        cost = -2
-       require $1.latex != $2.latex   # identical sides would read "X -> X, X -> X"
-       lhs = $1.safe ++ " \to " ++ $2.safe
-       rhs = $2.safe ++ " \to " ++ $1.safe
-       holds = bit_or(255 - $1.table, $2.table) = bit_or(255 - $2.table, $1.table)
+       price = 2
+       fa = bool_not(bool_or($1.f, $2.f))
+       fb = bool_or(bool_not($1.f), bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
        }
 
-# Distribution with the connectives the wrong way round
-Q -> P P   when cost >= 2  weight 2 {
+# De Morgan with a negation dropped
+L -> P P   when cost >= 2  weight 4 {
        cost = -2
-       lhs = $1.safe ++ " \lor (" ++ $1.safe ++ " \land " ++ $2.safe ++ ")"
-       rhs = $1.safe ++ " \land " ++ $2.safe
-       holds = bit_or($1.table, bit_and($1.table, $2.table))
-               = bit_and($1.table, $2.table)
+       price = 2
+       fa = bool_not(bool_and($1.f, $2.f))
+       fb = bool_or(bool_not($1.f), $2.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# Converse
+L -> P P   when cost >= 2  weight 3 {
+       cost = -2
+       price = 2
+       fa = bool_imp($1.f, $2.f)
+       fb = bool_imp($2.f, $1.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# Inverse
+L -> P P   when cost >= 2  weight 4 {
+       cost = -2
+       price = 2
+       fa = bool_imp($1.f, $2.f)
+       fb = bool_imp(bool_not($1.f), bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# The conditional with the negation on the wrong side
+L -> P P   when cost >= 2  weight 3 {
+       cost = -2
+       price = 2
+       fa = bool_imp($1.f, $2.f)
+       fb = bool_or($1.f, bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# The negated conditional done as a conditional of negations
+L -> P P   when cost >= 2  weight 3 {
+       cost = -2
+       price = 2
+       fa = bool_not(bool_imp($1.f, $2.f))
+       fb = bool_imp(bool_not($1.f), bool_not($2.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# \to is not associative
+L -> P P P   when cost >= 3  weight 12 {
+       cost = -3
+       price = 3
+       fa = bool_imp($1.f, bool_imp($2.f, $3.f))
+       fb = bool_imp(bool_imp($1.f, $2.f), $3.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# Distribution that forgets to distribute over the second operand
+L -> P P P   when cost >= 3  weight 10 {
+       cost = -3
+       price = 3
+       fa = bool_and($1.f, bool_or($2.f, $3.f))
+       fb = bool_or(bool_and($1.f, $2.f), $3.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# The conditional over \lor with the wrong connective between the halves
+L -> P P P   when cost >= 3  weight 10 {
+       cost = -3
+       price = 3
+       fa = bool_imp($1.f, bool_or($2.f, $3.f))
+       fb = bool_and(bool_imp($1.f, $2.f), bool_imp($1.f, $3.f))
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# Exportation with the brackets the wrong way
+L -> P P P   when cost >= 3  weight 8 {
+       cost = -3
+       price = 3
+       fa = bool_imp(bool_and($1.f, $2.f), $3.f)
+       fb = bool_imp(bool_imp($1.f, $2.f), $3.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# The biconditional reduced to one conditional
+L -> P P   when cost >= 3  weight 2 {
+       cost = -3
+       price = 3
+       fa = bool_iff($1.f, $2.f)
+       fb = bool_imp($1.f, $2.f)
+       require bool_is_tidy(fa)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
+       }
+
+# Absorption with the connectives the wrong way round
+L -> P P   when cost >= 2  weight 1 {
+       cost = -2
+       price = 2
+       require bool_is_atom($1.f)
+       fa = bool_or($1.f, bool_and($1.f, $2.f))
+       fb = bool_and($1.f, $2.f)
+       require bool_is_tidy(fb)
+       require not bool_equivalent(fa, fb)
        }
 
 
 # ==========================================================================
-#  Subexpressions
+#  Parts
 #
-#  P is a small expression; the laws above are stated over whatever P
-#  produces, so the same law reads differently every time.
+#  P is a small expression over \neg, \land and \lor; the laws above are
+#  stated over whatever P produces, so the same law reads differently every
+#  time.
 # ==========================================================================
-
-# Each rule's guard is the least it can spend; a negated variable and a
-# negated compound are separate rules so that each expression has one price.
 
 P -> P "\land" P   when cost >= 2  weight 2 {
-       cost  = -2
-       require $1.latex != $3.latex
-       table = bit_and($1.table, $3.table)
-       latex = infix($1, "\land", $3)
-       safe  = "(" ++ latex ++ ")"
-       negation = 0
+       cost = -2
+       f = bool_and($1.f, $3.f)
+       require bool_is_tidy(f)
        }
 
 P -> P "\lor" P    when cost >= 2  weight 2 {
-       cost  = -2
-       require $1.latex != $3.latex
-       
-       latex = infix($1, "\lor", $3)
-       table = bit_or($1.table, $3.table)
-       safe  = "(" ++ latex ++ ")"
-       negation = 0
-       }
-
-P -> "\neg" V      when cost = 1   weight 1 {
-       cost  = -1
-       table = 255 - $2.table
-       latex = prefix("\neg", $2)
-       safe  = latex                  # \neg binds tightest: no brackets needed
-       negation = 1
+       cost = -2
+       f = bool_or($1.f, $3.f)
+       require bool_is_tidy(f)
        }
 
 P -> "\neg" P      when cost >= 4  weight 1 {
-       cost  = -3
-       require $2.negation = 0          # no \neg \neg inside a subexpression
-       table = 255 - $2.table
-       latex = prefix("\neg", $2)
-       safe  = "(" ++ latex ++ ")"
-       negation = 1
+       cost = -3
+       f = bool_not($2.f)
+       require bool_is_tidy(f)
        }
 
-P -> V             when cost = 0 {
-       table = $1.table
-       latex = $1.latex
-       safe  = $1.safe
-       negation = 0
-       }
+P -> V             when cost = 0  weight 3 { f = $1.f }
+P -> "\neg" V      when cost = 1  weight 1 { cost = -1  f = bool_not($2.f) }
 
-V -> "A" { table = 240  latex = "A"  safe = "A" }
-V -> "B" { table = 204  latex = "B"  safe = "B" }
-V -> "C" { table = 170  latex = "C"  safe = "C" }
-
-
-precedence 1 left  "\lor"
-precedence 2 left  "\land"
-precedence 3 right "\neg"
+V -> "p" { f = bool_var("p") }
+V -> "q" { f = bool_var("q") }
+V -> "r" { f = bool_var("r") }
 
 
 # ---- Question wording ----
 
-prompt "Determine whether the Boolean expressions are equivalent:
-[`{Q.lhs}, {Q.rhs}`]
-Enter 1 if equivalent and 0 otherwise."
+prompt "{Q.text}
+Enter 1 if they are equivalent and 0 if they are not."
 
 answer Q.holds

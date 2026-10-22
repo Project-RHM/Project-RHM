@@ -5,7 +5,8 @@
 #  of either: it is how a user puts the question types of two libraries into
 #  one assignment. Each included grammar keeps its own nonterminals (F and T,
 #  E and V), prices and wording helpers; this file adds only the start
-#  symbol that chooses between them and the budget both spend.
+#  symbol that chooses between them and the budget both spend. boolean.ag
+#  names its question symbol B for this reason: calculus.ag already uses Q.
 #
 #  Difficulty is the budget `cost`, spent exactly by the form chosen. The
 #  two grammars price on their own scales (a derivative of 8 and a Boolean
@@ -36,14 +37,10 @@ M -> F "derivative" weight 1 {
 
 M -> E "boolean" weight 1 {
   kind = "boolean"
-  text = "Evaluate the Boolean expression:
-[`" ++ $1.latex ++ "`]
-When:
-- A = " ++ ta ++ "
-- B = " ++ tb ++ "
-- C = " ++ tc ++ "
-Enter 1 for True and 0 for False."
-  answer_value = $1.value
+  require bool_top($1.f) != "not"
+  text = "Evaluate [`" ++ bool_latex($1.f) ++ "`] when " ++ given ++ ".
+Enter 1 for true and 0 for false."
+  answer_value = bool_evaluate($1.f, names, mask)
 }
 
 prompt "{M.text}"

@@ -1,166 +1,162 @@
 # ==========================================================================
 #  Boolean expression evaluation
 #
-#  The student is shown an expression and a truth assignment, and answers
-#  1 or 0. As with arithmetic, the shape, the answer and the wording are all
-#  defined here; no OCaml is involved.
+#  The student is shown a truth assignment and a proposition, and answers
+#  1 or 0. The proposition is a real value (see ag_boolean.ml): the engine
+#  renders it, evaluates it and judges its shape, so this file only says
+#  what a good question looks like.
+#
+#  "Good" follows the course's own assignments: variables p, q, r;
+#  negation on variables, at most two of them, never around the whole
+#  proposition; and an assignment chosen so that the student has to read the
+#  whole expression.
+#
+#  Difficulty is the budget `cost`, spent exactly. Each connective is priced
+#  as a function of its operands: a production pays its price and splits
+#  what is left between its operands, and a variable stands only where
+#  nothing is left.
+#
+#    and, or                   2        conditional                  4
+#    biconditional, xor        6        negated variable             1
+#    negated compound          3 plus the compound
+#
+#    agrun --set cost=6  boolean.ag    easy
+#    agrun --set cost=10 boolean.ag    medium (the default)
+#    agrun --set cost=14 boolean.ag    hard
+#
+#  Every whole number from 0 upwards can be spent; a set should not go below
+#  about 6, where few distinct questions exist.
 # ==========================================================================
 
 
-# ---- Inherited attribute: the difficulty budget handed down ----
-#
-# The budget is operator cost, not operator count. Each connective is priced
-# as a function of its operands (see the productions): a production pays its
-# own price and splits what is left between its operands, and a variable may
-# stand only where nothing is left. So a question costs exactly `cost`, and
-# the caller chooses the difficulty by setting it:
-#
-#   agrun --set cost=6 boolean.ag     easy
-#   agrun --set cost=10 boolean.ag    medium (the default)
-#   agrun --set cost=14 boolean.ag    hard
-#
-# Prices: negated variable 1, conjunction and disjunction 2, negated compound
-# 3 plus the compound, conditional 4, biconditional and exclusive-or 6. They
-# are starting values chosen by judgement, kept in the productions below so
-# that they can be revised in one place. Every whole number from 0 upwards
-# can be spent exactly, so a budget never leaves a node without a rule.
+# ---- The budget handed down ----
 
-attribute cost = 10 split      # operator cost the expression spends exactly
+attribute cost = 10 split      # operator cost the proposition spends exactly
 
 
-# ---- Synthesized attributes: computed on the way back up ----
+# ---- Synthesized attributes ----
 
-# Declared per nonterminal, so that another grammar can include this one
-# without being asked to compute these for its own symbols.
-synth value on E               # whether this subtree is true
-synth value on V
-synth latex on E               # how this subtree is written
-synth latex on V
-synth negation on E            # 1 when this subtree is a negation, so that
-synth negation on V            # a negation is never negated again
+synth f on E                   # the proposition built so far
+synth f on V
+synth value on B               # its truth under the assignment
+synth text on B                # the question
 
 
 # ---- Drawn once per question ----
 #
-# A truth assignment belongs to the whole question, not to one leaf: every
-# occurrence of A in the expression has to agree. So it cannot be drawn while
-# expanding the tree, and is drawn here instead.
+# A truth assignment belongs to the whole question, not to one leaf, so it
+# is drawn here and every occurrence of a variable sees the same value.
 
-random A = boolean
-random B = boolean
-random C = boolean
+random p = boolean
+random q = boolean
+random r = boolean
+random phrasing = integer_between(1, 3)
+random target = boolean         # the answer this question is to have
 
-# Rendered forms of the same three values, for the assignment list below.
-let ta = cond(A, "\mathsf{T}", "\mathsf{F}")
-let tb = cond(B, "\mathsf{T}", "\mathsf{F}")
-let tc = cond(C, "\mathsf{T}", "\mathsf{F}")
+let names = "p,q,r"
+let mask  = cond(p, 1, 0) + cond(q, 2, 0) + cond(r, 4, 0)
 
+let tp = cond(p, "\mathsf{T}", "\mathsf{F}")
+let tq = cond(q, "\mathsf{T}", "\mathsf{F}")
+let tr = cond(r, "\mathsf{T}", "\mathsf{F}")
 
-# ---- Precedence: brackets are added from this table, never by hand ----
-
-precedence 1 left  "\leftrightarrow"
-precedence 2 right "\to"
-precedence 3 left  "\lor"
-precedence 4 left  "\oplus"
-precedence 5 left  "\land"
-precedence 6 right "\neg"
+let given     = "[`p = " ++ tp ++ "`], [`q = " ++ tq ++ "`] and [`r = " ++ tr ++ "`]"
+let given_one = "[`p = " ++ tp ++ ",\; q = " ++ tq ++ ",\; r = " ++ tr ++ "`]"
 
 
-start E
+# The question symbol is B rather than Q so that this grammar can be
+# included beside calculus.ag, whose question symbol is Q.
+start B
+
+
+# ---- Question ----
+
+B -> E {
+       # An assignment with every variable the same lets a student answer
+       # without reading the proposition.
+       require tp != tq or tq != tr
+       # The course never negates a whole proposition, and rarely writes
+       # more than two negations.
+       require bool_top($1.f) != "not"
+       require bool_negations($1.f) <= 2
+       # With three or more leaves, all three variables take part.
+       require bool_variable_count($1.f) = 3 or bool_size($1.f) < 2
+       # The assignment is chosen with intent: at least two variables have
+       # to be read to get the answer, so no single value settles it.
+       require bool_variable_count($1.f) < 2 or bool_sensitivity($1.f, names, mask) >= 2
+       value = bool_evaluate($1.f, names, mask)
+       # A person balances a set by deciding the answer first; the coin toss
+       # `target` does the same, so neither answer can dominate.
+       require value = target
+       text  = cond(phrasing = 1,
+                 "Suppose " ++ given ++ ". What is the truth value of [`" ++ bool_latex($1.f) ++ "`]?",
+               cond(phrasing = 2,
+                 "Let " ++ given_one ++ ". Is the proposition [`" ++ bool_latex($1.f) ++ "`] true or false?",
+                 "Evaluate [`" ++ bool_latex($1.f) ++ "`] when " ++ given ++ "."))
+     }
 
 
 # ---- Productions ----
 #
-# Each binary rule refuses two identical operands. Without it the generator
-# happily produces B \land B, which is just B, and A \to A, which is always
-# true -- correct questions, but not ones worth asking. (Operands that merely
-# share a variable, such as A \lor C \lor A, are not caught by this: that
-# would need each subtree to report which variables it uses.)
-#
-# The guard of every rule is the least budget it can spend: its own price,
-# with the remainder going to operands that can always spend what they get.
+# Every rule that builds a compound asks the engine whether it is tidy:
+# no operands over the same variables, no variable standing alone in a
+# chain that also contains it, no negation of a negation. Refusing early
+# keeps the retries cheap. The guard of every rule is the least it can
+# spend: its own price.
 
-E -> E "\land" E             when cost >= 2  weight 3 {
-       cost  = -2
-       require $1.latex != $3.latex
-       value = $1.value and $3.value
-       latex = infix($1, "\land", $3)
-       negation = 0
+E -> E "\land" E  when cost >= 2  weight 3 {
+       cost = -2
+       f = bool_and($1.f, $3.f)
+       require bool_is_tidy(f)
      }
 
-E -> E "\lor" E              when cost >= 2  weight 3 {
-       cost  = -2
-       require $1.latex != $3.latex
-       value = $1.value or $3.value
-       latex = infix($1, "\lor", $3)
-       negation = 0
+E -> E "\lor" E  when cost >= 2  weight 3 {
+       cost = -2
+       f = bool_or($1.f, $3.f)
+       require bool_is_tidy(f)
      }
 
-# Exclusive or: true when the two sides disagree.
-E -> E "\oplus" E            when cost >= 6  weight 2 {
-       cost  = -6
-       require $1.latex != $3.latex
-       value = $1.value != $3.value
-       latex = infix($1, "\oplus", $3)
-       negation = 0
+# The conditional is the course's favourite connective; \leftrightarrow
+# and \oplus appear but less often, and cost more.
+
+E -> E "\to" E  when cost >= 4  weight 4 {
+       cost = -4
+       f = bool_imp($1.f, $3.f)
+       require bool_is_tidy(f)
      }
 
-# Implication is false only when a true premise leads to a false conclusion.
-E -> E "\to" E               when cost >= 4  weight 2 {
-       cost  = -4
-       require $1.latex != $3.latex
-       value = (not $1.value) or $3.value
-       latex = infix($1, "\to", $3)
-       negation = 0
+E -> E "\leftrightarrow" E  when cost >= 6  weight 1 {
+       cost = -6
+       f = bool_iff($1.f, $3.f)
+       require bool_is_tidy(f)
      }
 
-E -> E "\leftrightarrow" E   when cost >= 6  weight 2 {
-       cost  = -6
-       require $1.latex != $3.latex
-       value = $1.value = $3.value
-       latex = infix($1, "\leftrightarrow", $3)
-       negation = 0
+E -> E "\oplus" E  when cost >= 6  weight 1 {
+       cost = -6
+       f = bool_xor($1.f, $3.f)
+       require bool_is_tidy(f)
      }
 
-# Negation is priced by what it negates. A negated variable is read at a
-# glance and costs 1; negating a compound costs 3 on top of the compound.
-# The second rule needs at least 4 so that its operand keeps at least 1 and
-# is therefore never a bare variable.
-E -> "\neg" V                when cost = 1   weight 2 {
-       cost  = -1
-       value = not $2.value
-       latex = prefix("\neg", $2)
-       negation = 1
+# Negating a compound, \neg (p \lor q), costs 3 on top of the compound; the
+# guard leaves the operand at least 1, so it is never a bare variable. A
+# negated variable costs 1 and comes from the leaf rule below.
+E -> "\neg" E  when cost >= 4  weight 1 {
+       cost = -3
+       f = bool_not($2.f)
+       require bool_is_tidy(f)
      }
 
-E -> "\neg" E                when cost >= 4  weight 2 {
-       cost  = -3
-       require $2.negation = 0          # no \neg \neg: it reads as a slip
-       value = not $2.value
-       latex = prefix("\neg", $2)
-       negation = 1
-     }
+E -> V         when cost = 0  weight 3 { f = $1.f }
+E -> "\neg" V  when cost = 1  weight 1 { cost = -1  f = bool_not($2.f) }
 
-# The budget is spent, so only a variable is left and generation stops.
-E -> V                       when cost = 0 {
-       value = $1.value
-       latex = $1.latex
-       negation = 0
-     }
-
-V -> "A" { value = A  latex = "A"  negation = 0 }
-V -> "B" { value = B  latex = "B"  negation = 0 }
-V -> "C" { value = C  latex = "C"  negation = 0 }
+V -> "p" { f = bool_var("p") }
+V -> "q" { f = bool_var("q") }
+V -> "r" { f = bool_var("r") }
 
 
 # ---- Question wording ----
 
-prompt "Evaluate the Boolean expression:
-[`{E.latex}`]
-When:
-- A = {ta}
-- B = {tb}
-- C = {tc}
-Enter 1 for True and 0 for False."
+prompt "{B.text}
+Enter 1 for true and 0 for false."
 
-answer E.value
+answer B.value

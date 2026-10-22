@@ -42,6 +42,10 @@ attributes, constraints, wording, and answers. The shipped specifications are:
 - `derivative_or_boolean.ag`, which includes `calculus.ag` and `boolean.ag` whole
   (see `QUESTION_TYPES.md` for every grammar, its prices and its context)
 
+Propositions are a value type of their own (`ag_boolean.ml`, the `bool_*`
+builtins): the engine renders, evaluates and compares them, so a Boolean
+grammar writes formulas, not truth tables.
+
 A grammar may `include` another file, give each question form its own
 WeBWorK context, and place several answer blanks in one prompt; see
 `AG_LANGUAGE_EXTENSIONS.md`.

@@ -17,8 +17,8 @@ attribute, or by the budget.
 | grammar | asks for | the budget buys | default | context |
 | --- | --- | --- | --- | --- |
 | `arithmetic.ag` | the value of a four-operation expression | `+` 1, `-` 2, `*` 3, `/` 4; a number pays one per digit beyond its first | 12 | Numeric |
-| `boolean.ag` | the truth value of a proposition under an assignment | and/or 2, conditional 4, biconditional and xor 6, a negated variable 1, a negated compound 3 | 10 | Numeric |
-| `boolean_equiv.ag` | whether a claimed law holds | the law 1–3, the subexpressions as in `boolean.ag` | 6 | Numeric |
+| `boolean.ag` | the truth value of a proposition in p, q, r under an assignment; propositions are the engine's Boolean type | and/or 2, conditional 4, biconditional and xor 6, a negated variable 1, a negated compound 3 | 10 | Numeric |
+| `boolean_equiv.ag` | whether one of thirty laws, stated correctly or with a classic mistake, holds; decided by enumeration | the law 1–3, the parts as in `boolean.ag` | 6 | Numeric |
 | `calculus.ag` | a derivative, or an antiderivative built by differentiating | sum 1, product 3, quotient 4; a power or function of a leaf 1, of a compound 3 (chain rule); an integral pays 2 up front | 7 | Numeric |
 | `complex.ag` | a complex expression, its conjugate, a modulus, a power of `i` | sum 1, product 3; modulus and power of `i` are fixed at 2 and 1 | 4 | Complex |
 | `set.ag` | a set expression over three given sets | union 1, intersection and difference 2, an interval leaf 1 | 7 | Interval |
