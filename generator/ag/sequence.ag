@@ -10,6 +10,12 @@ random difference = nonzero_integer_between(-8, 8)
 random ratio      = nonzero_integer_between(-5, 5)
 random index      = integer_between(2, 8)
 
+# Difficulty is the budget `cost`, spent exactly. Every form is fixed, so each
+# is offered at its price alone: arithmetic nth term 1, geometric nth term
+# and arithmetic sum 2, geometric sum 3.
+attribute cost = 2 split
+
+
 let first_text      = str(first)
 let difference_text = str(difference)
 let ratio_text      = str(ratio)
@@ -25,7 +31,8 @@ synth value on Q
 start Q
 
 # Arithmetic nth term: a_n = a_1 + (n - 1)d
-Q -> "arithmetic_nth" weight 3 {
+Q -> "arithmetic_nth" when cost = 1 weight 3 {
+  cost = -1
   kind        = "arithmetic_nth"
   first_value = first
   step_value  = difference
@@ -37,7 +44,8 @@ Q -> "arithmetic_nth" weight 3 {
 }
 
 # Geometric nth term: a_n = a_1 r^(n - 1)
-Q -> "geometric_nth" weight 3 {
+Q -> "geometric_nth" when cost = 2 weight 3 {
+  cost = -2
   kind        = "geometric_nth"
   first_value = first
   step_value  = ratio
@@ -49,7 +57,8 @@ Q -> "geometric_nth" weight 3 {
 }
 
 # Arithmetic finite sum: S_n = n(2a_1 + (n - 1)d)/2
-Q -> "arithmetic_sum" weight 2 {
+Q -> "arithmetic_sum" when cost = 2 weight 2 {
+  cost = -2
   kind        = "arithmetic_sum"
   first_value = first
   step_value  = difference
@@ -61,7 +70,8 @@ Q -> "arithmetic_sum" weight 2 {
 }
 
 # Geometric finite sum. cond is lazy, so r = 1 does not evaluate the division.
-Q -> "geometric_sum" weight 2 {
+Q -> "geometric_sum" when cost = 3 weight 2 {
+  cost = -3
   kind        = "geometric_sum"
   first_value = first
   step_value  = ratio

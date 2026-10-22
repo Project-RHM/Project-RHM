@@ -256,6 +256,69 @@ let () =
   done
 
 (* ------------------------------------------------------------------ *)
+(* 2b. The shipped grammar spends a cost budget, not an operator count  *)
+(* ------------------------------------------------------------------ *)
+
+(* arithmetic.ag prices its questions: + 1, - 2, * 3, / 4, and a number pays
+   one per digit beyond its first. The budget `cost` is spent exactly, which
+   the independent reader confirms by re-pricing the printed expression: the
+   printed brackets, not the generator's tree, decide what each operation
+   applies to. *)
+let rec cost_of_parsed = function
+  | Literal value -> String.length (string_of_int value) - 1
+  | Applied (operator, left, right) ->
+      let price =
+        match operator with
+        | "+" -> 1
+        | "-" -> 2
+        | "\\cdot" -> 3
+        | "\\div" -> 4
+        | _ -> raise (Reread_error ("no price for " ^ operator))
+      in
+      price + cost_of_parsed left + cost_of_parsed right
+
+let () =
+  let base = load_file "arithmetic.ag" in
+  for cost = 0 to 24 do
+    match Ag_check.with_initial base "cost" cost with
+    | Error message -> fail message
+    | Ok spec ->
+        for seed = 0 to 29 do
+          Random.init (seed + (cost * 1000));
+          match Ag_engine.generate spec with
+          | exception Ag_engine.Generation_error message ->
+              fail (Printf.sprintf "cost %d seed %d: %s" cost seed message)
+          | question -> (
+              let spent = Ag_engine.consumption question.Ag_engine.tree "cost" in
+              if spent <> cost then
+                fail (Printf.sprintf "cost %d: the tree spent %d" cost spent);
+              let text = expression_of_prompt question.Ag_engine.prompt in
+              match cost_of_parsed (reread text) with
+              | exception Reread_error message ->
+                  fail (Printf.sprintf "cost %d: could not price %S: %s" cost text message)
+              | priced ->
+                  if priced <> cost then
+                    fail (Printf.sprintf "cost %d: %S re-prices as %d" cost text priced);
+                  if longest_number text > 4 then
+                    fail (Printf.sprintf "a number longer than 4 digits in %S" text))
+        done
+  done
+
+(* `digit` still caps the numbers: with digit = 2 a budget is spent on
+   operations and two-digit numbers only. *)
+let () =
+  let base = load_file "arithmetic.ag" in
+  match Ag_check.with_initial base "digit" 2 with
+  | Error message -> fail message
+  | Ok spec ->
+      for seed = 0 to 59 do
+        Random.init seed;
+        let text = expression_of_prompt (Ag_engine.generate spec).Ag_engine.prompt in
+        if longest_number text > 2 then
+          fail (Printf.sprintf "digit 2 was exceeded in %S" text)
+      done
+
+(* ------------------------------------------------------------------ *)
 (* 3. Parentheses are added only where they change the meaning         *)
 (* ------------------------------------------------------------------ *)
 

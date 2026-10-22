@@ -2,6 +2,11 @@
 # 2 repeated root, 3 two rational roots, 4 no real roots.
 context "Interval"
 attribute question_mode = 0 copy
+# Difficulty is the budget `cost`, spent exactly; each form is offered at its
+# price alone: two integer roots 2, a repeated root or no real root 3, two
+# rational roots 4.
+attribute cost = 3 split
+
 random root = nonzero_integer_between(-5, 5)
 random gap = integer_between(1, 4)
 random scale = integer_between(1, 3)
@@ -25,7 +30,8 @@ synth problem on Q
 synth text on Q
 synth value on Q
 start Q
-Q -> "two_integer_roots" when question_mode = 0 or question_mode = 1 {
+Q -> "two_integer_roots" when (question_mode = 0 or question_mode = 1) and cost = 2 {
+  cost = -2
   kind = "two_integer_roots"
   problem = polynomial_equation(integer_poly, zero_poly)
   require equation_solution_count(problem, "x") = 2
@@ -35,7 +41,8 @@ Q -> "two_integer_roots" when question_mode = 0 or question_mode = 1 {
   text = "Find all real solutions of [`" ++ equation_latex(problem)
     ++ "`]. Enter a set such as [`\\{1,2\\}`], or [`\\{\\}`] if there are no real solutions."
 }
-Q -> "repeated_root" when question_mode = 0 or question_mode = 2 {
+Q -> "repeated_root" when (question_mode = 0 or question_mode = 2) and cost = 3 {
+  cost = -3
   kind = "repeated_root"
   problem = polynomial_equation(repeated_poly, zero_poly)
   require equation_solution_count(problem, "x") = 1
@@ -44,7 +51,8 @@ Q -> "repeated_root" when question_mode = 0 or question_mode = 2 {
   text = "Find all real solutions of [`" ++ equation_latex(problem)
     ++ "`]. Enter a set such as [`\\{1,2\\}`], or [`\\{\\}`] if there are no real solutions."
 }
-Q -> "two_rational_roots" when question_mode = 0 or question_mode = 3 {
+Q -> "two_rational_roots" when (question_mode = 0 or question_mode = 3) and cost = 4 {
+  cost = -4
   kind = "two_rational_roots"
   problem = polynomial_equation(rational_poly, zero_poly)
   require equation_solution_count(problem, "x") = 2
@@ -54,7 +62,8 @@ Q -> "two_rational_roots" when question_mode = 0 or question_mode = 3 {
   text = "Find all real solutions of [`" ++ equation_latex(problem)
     ++ "`]. Enter a set such as [`\\{1,2\\}`], or [`\\{\\}`] if there are no real solutions."
 }
-Q -> "no_real_roots" when question_mode = 0 or question_mode = 4 {
+Q -> "no_real_roots" when (question_mode = 0 or question_mode = 4) and cost = 3 {
+  cost = -3
   kind = "no_real_roots"
   problem = polynomial_equation(impossible_poly, zero_poly)
   require equation_solution_count(problem, "x") = 0

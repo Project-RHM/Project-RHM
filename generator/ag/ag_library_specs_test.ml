@@ -82,11 +82,13 @@ let quadratic_oracle q =
         ("incorrect solution set for " ^ kind q)
   | _ -> failwith "quadratic answer is not a finite set"
 
+(* Each form is fixed and offered at its price alone (the `cost` budget), so
+   the kinds and the prices are listed together. *)
 let cases = [
-  ("library_formula", ["quotient"; "logarithm"; "radical"; "tangent"; "composition"; "combined"], formula_oracle);
-  ("library_polynomial", ["evaluation"; "expansion"; "coefficient"; "derivative"; "degree"], polynomial_oracle);
-  ("library_linear", ["one_bracket"; "two_brackets"; "fraction"], linear_oracle);
-  ("library_quadratic", ["two_integer_roots"; "repeated_root"; "two_rational_roots"; "no_real_roots"], quadratic_oracle)
+  ("library_formula", ["quotient", 4; "logarithm", 3; "radical", 3; "tangent", 3; "composition", 2; "combined", 4], formula_oracle);
+  ("library_polynomial", ["evaluation", 1; "expansion", 3; "coefficient", 3; "derivative", 4; "degree", 2], polynomial_oracle);
+  ("library_linear", ["one_bracket", 2; "two_brackets", 3; "fraction", 4], linear_oracle);
+  ("library_quadratic", ["two_integer_roots", 2; "repeated_root", 3; "two_rational_roots", 4; "no_real_roots", 3], quadratic_oracle)
 ]
 
 let load filename = match Ag_load.parse_file filename with
@@ -100,27 +102,38 @@ let contains text fragment =
 
 let () =
   let total = ref 0 in
-  List.iter (fun (name, kinds, oracle) ->
+  List.iter (fun (name, priced_kinds, oracle) ->
+    let kinds = List.map fst priced_kinds in
     let original = load (name ^ ".ag") in
+    let with_setting spec setting value = match Ag_check.with_initial spec setting value with
+      | Ok spec -> spec | Error message -> failwith message in
     for mode = 0 to List.length kinds do
-      let spec = match Ag_check.with_initial original "question_mode" mode with
-        | Ok spec -> spec | Error message -> failwith message in
+      let spec = with_setting original "question_mode" mode in
+      (* Mixed mode visits every price so that every form is seen; a single
+         mode runs at the price of its form. *)
+      let budgets = if mode = 0 then List.sort_uniq compare (List.map snd priced_kinds)
+        else [List.assoc (List.nth kinds (mode - 1)) priced_kinds] in
       let seen = Hashtbl.create 8 in
+      List.iter (fun cost ->
+      let spec = with_setting spec "cost" cost in
       for seed = 0 to 99 do
-        Random.init seed;
+        Random.init (seed + 1000 * cost);
         let q = Ag_engine.generate spec in
         (try oracle q with Failure message -> failwith
-          (Printf.sprintf "%s mode=%d seed=%d: %s" name mode seed message));
+          (Printf.sprintf "%s mode=%d cost=%d seed=%d: %s" name mode cost seed message));
         Hashtbl.replace seen (kind q) ();
+        check (List.assoc (kind q) priced_kinds = cost) "a form appeared at a budget other than its price";
+        check (Ag_engine.consumption q.Ag_engine.tree "cost" = cost) "the cost budget was not spent exactly";
         if mode > 0 then check (kind q = List.nth kinds (mode - 1)) "single-mode selected wrong rule";
         let pg = Ag_pgml.document ~context:spec.context [q] in
         check (contains pg "BEGIN_PGML" && contains pg "END_PGML" && contains pg "[_____]") "missing PGML structure";
-        Random.init seed;
+        Random.init (seed + 1000 * cost);
         let repeat = Ag_engine.generate spec in
         check (q.prompt = repeat.prompt && q.answer_text = repeat.answer_text) "seed is not deterministic";
         incr total
-      done;
+      done) budgets;
       if mode = 0 then List.iter (fun k -> check (Hashtbl.mem seen k) ("mixed mode missed " ^ k)) kinds;
+      let spec = with_setting spec "cost" (List.hd budgets) in
       Random.init 21;
       let q = Ag_engine.generate spec in
       let tree = Ag_visualization.question_json 0 q in

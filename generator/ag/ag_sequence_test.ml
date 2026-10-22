@@ -60,6 +60,43 @@ let expected_answer kind first step index =
       fail ("unknown generated sequence kind: " ^ other);
       0
 
+(* sequence.ag offers each fixed form at its price alone. *)
+let price_of_kind = function
+  | "arithmetic_nth" -> 1
+  | "geometric_nth" | "arithmetic_sum" -> 2
+  | "geometric_sum" -> 3
+  | other -> invalid_arg ("unknown sequence kind " ^ other)
+
+(* Every check on one generated question, at whatever budget it was built. *)
+let check_question kinds saw_negative_first saw_positive_first seed question =
+    let tree = question.Ag_engine.tree in
+    let kind = text_attribute tree "kind" in
+    let first = number_attribute tree "first_value" in
+    let step = number_attribute tree "step_value" in
+    let index = number_attribute tree "index_value" in
+    let actual = number_of_value "answer" question.Ag_engine.answer in
+    let expected = expected_answer kind first step index in
+    Hashtbl.replace kinds kind true;
+    if first < 0 then saw_negative_first := true;
+    if first > 0 then saw_positive_first := true;
+    if first < -10 || first > 10 then
+      fail (Printf.sprintf "seed %d: first term %d is outside [-10,10]" seed first);
+    if step = 0 then fail (Printf.sprintf "seed %d: step/ratio is zero" seed);
+    if index < 2 || index > 8 then
+      fail (Printf.sprintf "seed %d: index %d is outside [2,8]" seed index);
+    if actual <> expected then
+      fail
+        (Printf.sprintf
+           "seed %d: %s(first=%d, step=%d, index=%d) expected %d but got %d"
+           seed kind first step index expected actual);
+    List.iter
+      (fun value ->
+        if not (contains question.Ag_engine.prompt (string_of_int value)) then
+          fail
+            (Printf.sprintf "seed %d: prompt omitted generated value %d: %s" seed
+               value question.Ag_engine.prompt))
+      [ first; step; index ]
+
 let () =
   let spec = load_file "sequence.ag" in
   let kinds = Hashtbl.create 4 in
@@ -71,33 +108,29 @@ let () =
     | exception Ag_engine.Generation_error message ->
         fail (Printf.sprintf "seed %d: generation failed: %s" seed message)
     | question ->
-        let tree = question.Ag_engine.tree in
-        let kind = text_attribute tree "kind" in
-        let first = number_attribute tree "first_value" in
-        let step = number_attribute tree "step_value" in
-        let index = number_attribute tree "index_value" in
-        let actual = number_of_value "answer" question.Ag_engine.answer in
-        let expected = expected_answer kind first step index in
-        Hashtbl.replace kinds kind true;
-        if first < 0 then saw_negative_first := true;
-        if first > 0 then saw_positive_first := true;
-        if first < -10 || first > 10 then
-          fail (Printf.sprintf "seed %d: first term %d is outside [-10,10]" seed first);
-        if step = 0 then fail (Printf.sprintf "seed %d: step/ratio is zero" seed);
-        if index < 2 || index > 8 then
-          fail (Printf.sprintf "seed %d: index %d is outside [2,8]" seed index);
-        if actual <> expected then
-          fail
-            (Printf.sprintf
-               "seed %d: %s(first=%d, step=%d, index=%d) expected %d but got %d"
-               seed kind first step index expected actual);
-        List.iter
-          (fun value ->
-            if not (contains question.Ag_engine.prompt (string_of_int value)) then
-              fail
-                (Printf.sprintf "seed %d: prompt omitted generated value %d: %s" seed
-                   value question.Ag_engine.prompt))
-          [ first; step; index ]
+        check_question kinds saw_negative_first saw_positive_first seed question;
+        if Ag_engine.consumption question.Ag_engine.tree "cost" <> 2 then
+          fail (Printf.sprintf "seed %d: did not spend exactly the default cost of 2" seed)
+  done;
+  (* Every form is fixed and offered at its price alone, so the kinds are
+     collected over the budgets 1 to 3. *)
+  for cost = 1 to 3 do
+    match Ag_check.with_initial spec "cost" cost with
+    | Error message -> fail message
+    | Ok spec ->
+        for seed = 0 to 99 do
+          Random.init (seed + (cost * 1000));
+          match Ag_engine.generate spec with
+          | exception Ag_engine.Generation_error message ->
+              fail (Printf.sprintf "cost %d seed %d: %s" cost seed message)
+          | question ->
+              check_question kinds saw_negative_first saw_positive_first seed question;
+              let kind = text_attribute question.Ag_engine.tree "kind" in
+              if price_of_kind kind <> cost then
+                fail (Printf.sprintf "cost %d produced a %s question" cost kind);
+              if Ag_engine.consumption question.Ag_engine.tree "cost" <> cost then
+                fail (Printf.sprintf "cost %d: the tree spent something else" cost)
+        done
   done;
   List.iter
     (fun kind ->

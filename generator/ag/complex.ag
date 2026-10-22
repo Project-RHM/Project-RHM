@@ -4,12 +4,28 @@
 #  One specification covers recursive arithmetic expressions, conjugates,
 #  integer-valued moduli, and powers of i. Complex values remain semantic
 #  values until PGML rendering; latex is only their displayed representation.
+#
+#  Difficulty is the budget `cost`, spent exactly. In an expression, a sum or
+#  difference costs 1 (each component once) and a product 3 (four products
+#  and i^2 = -1); a leaf a + bi costs nothing. The question forms:
+#
+#    arithmetic   the expression's cost, at least 1
+#    conjugate    the expression's cost, from 0 upwards
+#    modulus      exactly 2 (a fixed form: square, add, root)
+#    power_i      exactly 1 (a fixed form: n mod 4)
+#
+#  The two fixed forms do not scale, so they are offered only when the
+#  budget is exactly their price; a set drawn around a mean brings them in
+#  at its low end. The caller chooses the difficulty:
+#
+#    agrun --set cost=2 complex.ag     easy
+#    agrun --set cost=4 complex.ag     medium (the default)
+#    agrun --set cost=7 complex.ag     hard
 # ==========================================================================
 
 context "Complex"
 
-# Exactly two arithmetic operators are used when a rule expands E.
-attribute len = 2 split
+attribute cost = 4 split
 
 # Values used by the guaranteed-integer modulus rule. For m > 1,
 # (m^2 - 1, 2m, m^2 + 1) is a Pythagorean triple. Independent signs and a
@@ -58,8 +74,10 @@ precedence 1 left "+" "-"
 precedence 2 left "\cdot"
 
 # ---- Question forms ------------------------------------------------------
+#
+# Computing a bare leaf is no question, so arithmetic needs at least 1.
 
-Q -> E "arithmetic" weight 5 {
+Q -> E "arithmetic" when cost >= 1 weight 5 {
   kind = "arithmetic"
   text = "Compute the complex number expression:
 [`" ++ $1.latex ++ "`]."
@@ -73,14 +91,16 @@ Q -> E "conjugate" weight 2 {
   answer_value = complex($1.re, -$1.im)
 }
 
-Q -> "modulus" weight 2 {
+Q -> "modulus" when cost = 2 weight 2 {
+  cost = -2
   kind = "modulus"
   text = "Find the modulus of the complex number:
 [`" ++ modulus_latex ++ "`]."
   answer_value = modulus_value
 }
 
-Q -> "power_i" weight 2 {
+Q -> "power_i" when cost = 1 weight 2 {
+  cost = -1
   kind = "power_i"
   text = "Evaluate the power of the imaginary unit:
 [`i^{" ++ exponent_text ++ "}`]."
@@ -88,32 +108,37 @@ Q -> "power_i" weight 2 {
 }
 
 # ---- Recursive complex expression --------------------------------------
+#
+# Each rule's guard is the least it can spend: its own price. The product
+# carries the heavier weight so that a budget buys products as readily as
+# chains of sums.
 
-E -> E "+" E when len > 0 weight 3 {
-  len = -1
+E -> E "+" E when cost >= 1 weight 2 {
+  cost = -1
   require $1.latex != $3.latex
   re = $1.re + $3.re
   im = $1.im + $3.im
   latex = infix($1, "+", $3)
 }
 
-E -> E "-" E when len > 0 weight 3 {
-  len = -1
+E -> E "-" E when cost >= 1 weight 2 {
+  cost = -1
   require $1.latex != $3.latex
   re = $1.re - $3.re
   im = $1.im - $3.im
   latex = infix($1, "-", $3)
 }
 
-E -> E "\cdot" E when len > 0 weight 2 {
-  len = -1
+E -> E "\cdot" E when cost >= 3 weight 3 {
+  cost = -3
   require $1.latex != $3.latex
   re = $1.re * $3.re - $1.im * $3.im
   im = $1.re * $3.im + $1.im * $3.re
   latex = infix($1, "\cdot", $3)
 }
 
-E -> Z when len = 0 {
+# The budget is spent, so only a leaf is left.
+E -> Z when cost = 0 {
   re = $1.re
   im = $1.im
   latex = $1.latex

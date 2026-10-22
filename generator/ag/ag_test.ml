@@ -41,7 +41,7 @@ let () =
         errors
   | Ok spec ->
       check_string "start symbol" "E" spec.Ag_check.start;
-      check_int "rule count" 6 (List.length spec.Ag_check.rules);
+      check_int "rule count" 9 (List.length spec.Ag_check.rules);
       check_int "inherited attributes" 2
         (List.length spec.Ag_check.inherited);
       check_int "synthesized attributes" 2
@@ -49,16 +49,16 @@ let () =
       check_string "default context" "Numeric" spec.Ag_check.context;
       check_int "precedence entries" 4 (List.length spec.Ag_check.precedences);
       (match spec.Ag_check.inherited with
-      | [ len; digit ] ->
-          check_string "first attribute" "len" len.Ag_check.attribute_name;
-          check_int "len initial" 8 len.Ag_check.initial;
-          if len.Ag_check.distribution <> Ag_ast.Split then
-            fail "len should be a split attribute";
+      | [ cost; digit ] ->
+          check_string "first attribute" "cost" cost.Ag_check.attribute_name;
+          check_int "cost initial" 12 cost.Ag_check.initial;
+          if cost.Ag_check.distribution <> Ag_ast.Split then
+            fail "cost should be a split attribute";
           check_string "second attribute" "digit"
             digit.Ag_check.attribute_name;
           if digit.Ag_check.distribution <> Ag_ast.Copy then
             fail "digit should be a copy attribute"
-      | _ -> fail "expected exactly the attributes len and digit");
+      | _ -> fail "expected exactly the attributes cost and digit");
       (* the prompt must survive as text plus one {E.latex} hole *)
       let holes =
         List.filter

@@ -96,9 +96,18 @@ let expected_kind = function
   | 6 -> "same_direction"
   | _ -> invalid_arg "unknown vector mode"
 
+(* vector.ag offers each fixed form at its price alone. *)
+let price_of_kind = function
+  | "parallel" -> 1
+  | "dot" | "norm" | "same_direction" -> 2
+  | "unit" -> 3
+  | "cross" -> 4
+  | other -> invalid_arg ("unknown vector kind " ^ other)
+
 let check_modes base =
   for mode = 1 to 6 do
     let spec = with_initial base "vector_mode" mode in
+    let spec = with_initial spec "cost" (price_of_kind (expected_kind mode)) in
     for seed = 0 to 59 do
       Random.init (20_000 + (mode * 100) + seed);
       let question = Ag_engine.generate spec in
@@ -110,6 +119,27 @@ let check_modes base =
     done
   done
 
+(* Every check on one generated question, at whatever budget it was built. *)
+let check_question kinds seed question =
+  let root = question.Ag_engine.tree in
+  let kind = text_attribute root "kind" in
+  Hashtbl.replace kinds kind true;
+  let vectors = List.map (fun node -> vector_attribute node "value") (vector_children root) in
+  List.iter
+    (fun vector ->
+      if Ag_vector.dimension vector <> 3 then
+        fail (Printf.sprintf "seed %d: generated vector is not 3D" seed);
+      if Ag_vector.is_zero vector then
+        fail (Printf.sprintf "seed %d: generated the zero vector" seed);
+      if not (contains question.prompt (Ag_vector.to_latex vector)) then
+        fail (Printf.sprintf "seed %d: prompt omits an operand vector" seed))
+    vectors;
+  (match vectors with
+  | first :: second :: _ when Ag_vector.equal first second ->
+      fail (Printf.sprintf "seed %d: binary question selected the same vector twice" seed)
+  | _ -> ());
+  check_answer seed kind vectors question.answer
+
 let () =
   let spec = load_file "vector.ag" in
   if spec.Ag_check.context <> "Vector" then
@@ -118,24 +148,27 @@ let () =
   for seed = 0 to 499 do
     Random.init seed;
     let question = Ag_engine.generate spec in
-    let root = question.Ag_engine.tree in
-    let kind = text_attribute root "kind" in
-    Hashtbl.replace kinds kind true;
-    let vectors = List.map (fun node -> vector_attribute node "value") (vector_children root) in
-    List.iter
-      (fun vector ->
-        if Ag_vector.dimension vector <> 3 then
-          fail (Printf.sprintf "seed %d: generated vector is not 3D" seed);
-        if Ag_vector.is_zero vector then
-          fail (Printf.sprintf "seed %d: generated the zero vector" seed);
-        if not (contains question.prompt (Ag_vector.to_latex vector)) then
-          fail (Printf.sprintf "seed %d: prompt omits an operand vector" seed))
-      vectors;
-    (match vectors with
-    | first :: second :: _ when Ag_vector.equal first second ->
-        fail (Printf.sprintf "seed %d: binary question selected the same vector twice" seed)
-    | _ -> ());
-    check_answer seed kind vectors question.answer
+    check_question kinds seed question;
+    if Ag_engine.consumption question.Ag_engine.tree "cost" <> 2 then
+      fail (Printf.sprintf "seed %d: did not spend exactly the default cost of 2" seed)
+  done;
+  (* Every form is fixed and offered at its price alone, so the kinds are
+     collected over the budgets 1 to 4. *)
+  for cost = 1 to 4 do
+    let spec = with_initial spec "cost" cost in
+    for seed = 0 to 59 do
+      Random.init (seed + (cost * 1000));
+      match Ag_engine.generate spec with
+      | exception Ag_engine.Generation_error message ->
+          fail (Printf.sprintf "cost %d seed %d: %s" cost seed message)
+      | question ->
+          check_question kinds seed question;
+          let kind = text_attribute question.Ag_engine.tree "kind" in
+          if price_of_kind kind <> cost then
+            fail (Printf.sprintf "cost %d produced a %s question, priced %d" cost kind (price_of_kind kind));
+          if Ag_engine.consumption question.Ag_engine.tree "cost" <> cost then
+            fail (Printf.sprintf "cost %d: the tree spent something else" cost)
+    done
   done;
   List.iter
     (fun kind ->
@@ -151,8 +184,16 @@ let () =
   if first.prompt <> second.prompt || first.answer_text <> second.answer_text then
     fail "the same seed did not reproduce the same vector question";
 
-  Random.init 42;
-  let document = Ag_pgml.of_spec ~count:120 spec in
+  (* Each form is offered at its price alone, so a document that shows every
+     answer type is assembled from one batch per budget. *)
+  let document =
+    String.concat "\n"
+      (List.map
+         (fun cost ->
+           Random.init (42 + cost);
+           Ag_pgml.of_spec ~count:30 (with_initial spec "cost" cost))
+         [ 1; 2; 3; 4 ])
+  in
   List.iter
     (fun marker ->
       if not (contains document marker) then

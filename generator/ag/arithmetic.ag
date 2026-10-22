@@ -10,9 +10,27 @@
 #
 #   split = the remaining budget is divided between the child nodes
 #   copy  = the same value is passed unchanged to every child
+#
+# `cost` is the difficulty of the question, spent exactly. It pays for two
+# things: the operations and the size of the numbers. An operation pays its
+# price and splits what is left between its operands; a number pays for its
+# digits beyond the first. Prices:
+#
+#   +  1      -  2      *  3      /  4
+#   1-digit number 0,  2 digits 1,  3 digits 2,  4 digits 3
+#
+# So 98 * 347 costs 3 + 1 + 2 = 6 and (25 + 536) / 7 costs 4 + 1 + 0 + 2 = 7.
+# Every whole number from 0 upwards can be spent, so no node is ever left
+# with a budget no rule can take. The caller chooses the difficulty:
+#
+#   agrun --set cost=6  arithmetic.ag    easy
+#   agrun --set cost=12 arithmetic.ag    medium (the default)
+#   agrun --set cost=18 arithmetic.ag    hard
+#
+# `digit` caps how many digits a number may have (at most 4 are priced).
 
-attribute len   = 8 split      # operator count: len = 3 produces exactly 3 operators
-attribute digit = 4 copy       # digits per number: every integer is 2 digits
+attribute cost  = 12 split     # operator cost plus digit cost, spent exactly
+attribute digit = 4 copy       # the most digits a number may have
 
 
 # ---- Synthesized attributes: results computed on the way back up ----
@@ -36,44 +54,55 @@ start E
 #
 #   $1 $2 $3 refer to the symbols on the right of the arrow, counting from 1.
 #   In E -> E + E, $1 is the left E, $2 is the plus sign, $3 is the right E.
+#
+#   The guard of each rule is the least it can spend: its own price, since
+#   the operands can always spend whatever they are given.
+#
+#   The weights decide the shape a budget buys. Operations are cheap and
+#   numbers are capped, so without a heavy weight on the number rule a large
+#   budget would become a long chain of one-digit additions. With it, a
+#   budget is as likely to be spent on bigger numbers as on more operations.
 
-E -> E + E   when len > 0   weight 10 {
-       len   = -1
+E -> E + E   when cost >= 1   weight 6 {
+       cost  = -1
        value = $1.value + $3.value
        latex = infix($1, "+", $3)
      }
 
-E -> E - E   when len > 0   weight 3 {
-       len   = -1
+E -> E - E   when cost >= 2   weight 4 {
+       cost  = -2
+       require $1.value != $3.value   # a difference of zero is no subtraction
        value = $1.value - $3.value
        latex = infix($1, "-", $3)
      }
 
-E -> E * E   when len > 0   weight 2 {
-       len   = -1
+E -> E * E   when cost >= 3   weight 3 {
+       cost  = -3
        value = $1.value * $3.value
        latex = infix($1, "\\cdot", $3)
      }
 
-E -> E / E   when len > 0   weight 1 {
-       len   = -1
+E -> E / E   when cost >= 4   weight 2 {
+       cost  = -4
        require $3.value != 0          # no zero denominator; retry this subtree
        value = $1.value / $3.value
        latex = infix($1, "\\div", $3)
      }
 
-# The budget is spent, so this is the only rule left -- which is why
-# generation always terminates.
-E -> num     when len = 0 {
+# A number may stand wherever the rest of the budget buys its digits. With
+# nothing left it is a one-digit number, so generation always terminates.
+E -> num     when cost <= 3 and cost < digit   weight 15 {
        value = $1.value
        latex = $1.latex
      }
 
-# integer(digit) is a leaf that rolls a die: it draws a digit-digit integer.
-num -> integer(digit) {
-       value = $1.value
-       latex = str($1.value)
-     }
+# integer(n) is a leaf that rolls a die: it draws an n-digit integer. The
+# number spends what reaches it on its digits; a one-digit number avoids 0
+# and 1, which make an operation trivial.
+num -> integer_between(2, 9)   when cost = 0 { value = $1.value  latex = str($1.value) }
+num -> integer(2)              when cost = 1 { cost = -1  value = $1.value  latex = str($1.value) }
+num -> integer(3)              when cost = 2 { cost = -2  value = $1.value  latex = str($1.value) }
+num -> integer(4)              when cost = 3 { cost = -3  value = $1.value  latex = str($1.value) }
 
 
 # ---- Question wording ----

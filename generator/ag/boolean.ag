@@ -7,15 +7,33 @@
 # ==========================================================================
 
 
-# ---- Inherited attribute: the budget handed down ----
+# ---- Inherited attribute: the difficulty budget handed down ----
+#
+# The budget is operator cost, not operator count. Each connective is priced
+# as a function of its operands (see the productions): a production pays its
+# own price and splits what is left between its operands, and a variable may
+# stand only where nothing is left. So a question costs exactly `cost`, and
+# the caller chooses the difficulty by setting it:
+#
+#   agrun --set cost=6 boolean.ag     easy
+#   agrun --set cost=10 boolean.ag    medium (the default)
+#   agrun --set cost=14 boolean.ag    hard
+#
+# Prices: negated variable 1, conjunction and disjunction 2, negated compound
+# 3 plus the compound, conditional 4, biconditional and exclusive-or 6. They
+# are starting values chosen by judgement, kept in the productions below so
+# that they can be revised in one place. Every whole number from 0 upwards
+# can be spent exactly, so a budget never leaves a node without a rule.
 
-attribute len = 3 split        # number of connectives in the expression
+attribute cost = 10 split      # operator cost the expression spends exactly
 
 
 # ---- Synthesized attributes: computed on the way back up ----
 
 synth value                    # whether this subtree is true
 synth latex                    # how this subtree is written
+synth negation                 # 1 when this subtree is a negation, so that
+                               # a negation is never negated again
 
 
 # ---- Drawn once per question ----
@@ -54,59 +72,81 @@ start E
 # true -- correct questions, but not ones worth asking. (Operands that merely
 # share a variable, such as A \lor C \lor A, are not caught by this: that
 # would need each subtree to report which variables it uses.)
+#
+# The guard of every rule is the least budget it can spend: its own price,
+# with the remainder going to operands that can always spend what they get.
 
-E -> E "\land" E             when len > 0  weight 3 {
-       len   = -1
+E -> E "\land" E             when cost >= 2  weight 3 {
+       cost  = -2
        require $1.latex != $3.latex
        value = $1.value and $3.value
        latex = infix($1, "\land", $3)
+       negation = 0
      }
 
-E -> E "\lor" E              when len > 0  weight 3 {
-       len   = -1
+E -> E "\lor" E              when cost >= 2  weight 3 {
+       cost  = -2
        require $1.latex != $3.latex
        value = $1.value or $3.value
        latex = infix($1, "\lor", $3)
+       negation = 0
      }
 
 # Exclusive or: true when the two sides disagree.
-E -> E "\oplus" E            when len > 0  weight 2 {
-       len   = -1
+E -> E "\oplus" E            when cost >= 6  weight 2 {
+       cost  = -6
        require $1.latex != $3.latex
        value = $1.value != $3.value
        latex = infix($1, "\oplus", $3)
+       negation = 0
      }
 
 # Implication is false only when a true premise leads to a false conclusion.
-E -> E "\to" E               when len > 0  weight 2 {
-       len   = -1
+E -> E "\to" E               when cost >= 4  weight 2 {
+       cost  = -4
        require $1.latex != $3.latex
        value = (not $1.value) or $3.value
        latex = infix($1, "\to", $3)
+       negation = 0
      }
 
-E -> E "\leftrightarrow" E   when len > 0  weight 2 {
-       len   = -1
+E -> E "\leftrightarrow" E   when cost >= 6  weight 2 {
+       cost  = -6
        require $1.latex != $3.latex
        value = $1.value = $3.value
        latex = infix($1, "\leftrightarrow", $3)
+       negation = 0
      }
 
-E -> "\neg" E                when len > 0  weight 2 {
-       len   = -1
+# Negation is priced by what it negates. A negated variable is read at a
+# glance and costs 1; negating a compound costs 3 on top of the compound.
+# The second rule needs at least 4 so that its operand keeps at least 1 and
+# is therefore never a bare variable.
+E -> "\neg" V                when cost = 1   weight 2 {
+       cost  = -1
        value = not $2.value
        latex = prefix("\neg", $2)
+       negation = 1
+     }
+
+E -> "\neg" E                when cost >= 4  weight 2 {
+       cost  = -3
+       require $2.negation = 0          # no \neg \neg: it reads as a slip
+       value = not $2.value
+       latex = prefix("\neg", $2)
+       negation = 1
      }
 
 # The budget is spent, so only a variable is left and generation stops.
-E -> V                       when len = 0 {
+E -> V                       when cost = 0 {
        value = $1.value
        latex = $1.latex
+       negation = 0
      }
 
-V -> "A" { value = A  latex = "A" }
-V -> "B" { value = B  latex = "B" }
-V -> "C" { value = C  latex = "C" }
+V -> "A" { value = A  latex = "A"  negation = 0 }
+V -> "B" { value = B  latex = "B"  negation = 0 }
+V -> "C" { value = C  latex = "C"  negation = 0 }
 
 
 # ---- Question wording ----

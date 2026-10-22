@@ -274,6 +274,10 @@ let rec to_latex_with_context context expression =
         ^ to_latex_with_context 0 right ^ "}"
     | Power (base, exponent) ->
         to_latex_with_context (level + 1) base ^ "^{" ^ string_of_int exponent ^ "}"
+    | Negate ((Multiply _ | Divide _) as body) ->
+        (* -(5 \cdot x) reads as a bracketed product; -5 \cdot x is the same
+           value and is how it is written. Sums still need their brackets. *)
+        "-" ^ to_latex_with_context (precedence body) body
     | Negate body -> "-" ^ to_latex_with_context level body
     | Sin body -> "\\sin\\left(" ^ to_latex_with_context 0 body ^ "\\right)"
     | Cos body -> "\\cos\\left(" ^ to_latex_with_context 0 body ^ "\\right)"

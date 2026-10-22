@@ -893,6 +893,20 @@ dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/complex.ag
 dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/calculus.ag
 ```
 
+按难度生成布尔题（`cost` 是运算符成本预算，见第 24 节）：
+
+```bash
+dune exec ag/agrun.exe -- --count 5 --seed 21 --set cost=6 ag/boolean.ag
+dune exec ag/agrun.exe -- --count 5 --seed 21 --set cost=14 ag/boolean.ag
+```
+
+查看各预算档位的题目特征，或生成平均预算为指定值的一套题（在仓库根目录运行）：
+
+```bash
+python3 tools/ag_difficulty.py report generator/ag/boolean.ag --at 6,10,14
+python3 tools/ag_difficulty.py set generator/ag/boolean.ag --mean 10 --spread 2 --count 10
+```
+
 只生成微分或积分题：
 
 ```bash
@@ -930,7 +944,7 @@ dune exec ag/agrun.exe -- \
 覆盖继承属性初始值：
 
 ```bash
-dune exec ag/agrun.exe -- --set len=4 --set digit=3 ag/arithmetic.ag
+dune exec ag/agrun.exe -- --set cost=9 --set digit=3 ag/arithmetic.ag
 ```
 
 用字符串稳定派生随机种子：
@@ -952,3 +966,24 @@ dune exec ag/agrun.exe -- --seed-from STUDENT_ID ag/arithmetic.ag
 - 尽量让答案由综合属性计算，而不是根据选中的规则名称写死；
 - 给复杂文法固定 seed 测试，便于复现生成错误；
 - 避免只能靠极低概率满足的 `require`，否则生成会频繁重试甚至失败。
+
+## 24. 难度预算（Difficulty budget）
+
+长度预算（`len`）只控制运算符的个数，而题目的难度主要取决于用了哪些运算符。`boolean.ag` 改用**成本预算**：每条产生式付出自己的价格（合取、析取 2，条件句 4，双条件句和异或 6，否定变量 1，否定复合式 3 加上复合式），把剩余预算 `split` 给操作数，只有 `cost = 0` 时才允许出现变量。于是一道题的成本精确等于 `cost`，调用者用 `--set cost=N` 选择难度。
+
+写法上只用到本指南已有的机制：
+
+```ag
+attribute cost = 10 split
+
+E -> E "\to" E   when cost >= 4  weight 2 { cost = -4  ... }
+E -> "\neg" V    when cost = 1   weight 2 { cost = -1  ... }
+E -> "\neg" E    when cost >= 4  weight 2 { cost = -3  ... }
+E -> V           when cost = 0             { ... }
+```
+
+要点：每条规则的 `when` 是它能花掉的最小预算；叶子规则只在预算为零时可用；要保证从 0 起的每个整数都能被花掉，这样节点永远不会拿到一笔没有规则能接的预算。
+
+`arithmetic.ag` 同样改用成本预算：加减乘除各 1、2、3、4，数字按首位以外的位数付费（2 位 1，3 位 2，4 位 3），`digit` 只作为位数上限保留，默认预算 12。`calculus.ag` 按求导法则定价：和差 1，乘积 3，叶子的幂或函数 1，复合式的幂或函数 3 加上内层（链式法则），叶子 `cx` 1；积分题在构造 F 之前先付 2，默认预算 7。`complex.ag` 的和差 1、乘积 3、叶子 0，共轭不加价；求模（固定 2）和 `i` 的幂（固定 1）只在预算恰好等于其价格时出现，默认预算 4。`set.ag` 的并 1、交和差各 2，区间叶子 1、有限集叶子 0，默认预算 7。注意：节点手里的预算若没有规则能接，引擎报错而不重试，所以每种模式下每个预算都要能花完。`boolean_equiv.ag` 由定律付价（双重否定 1，双条件 3，其余 2），剩余给子表达式，默认 6。`vector.ag`、`sequence.ag` 和四个 `library_*.ag` 没有递归，每种题型是一个固定价格，只在预算恰好等于价格时出现。
+
+价格表、实测数据、`tools/ag_difficulty.py` 的用法，以及给其他文法加成本预算的步骤，见 `DIFFICULTY_BUDGET.md`（英文）和 `DIFFICULTY_BUDGET.zh.md`（中文）。

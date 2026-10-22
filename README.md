@@ -51,6 +51,19 @@ finite-set or interval definitions. `vector.ag` covers dot product, cross
 product, norm, unit-vector, parallel-vector, and same-direction questions with
 typed Vector answers and comparators.
 
+Difficulty is a budget the grammar spends. `boolean.ag` prices each
+connective (conjunction 2, conditional 4, biconditional 6, and so on) and
+`arithmetic.ag` prices its operations and the digits of its numbers;
+`calculus.ag` prices the differentiation rules a function calls for;
+`complex.ag` and `set.ag` price their expressions, `boolean_equiv.ag` its
+laws, and the grammars of fixed forms (`vector.ag`, `sequence.ag`, the
+`library_*.ag` files) offer each form at its price. Every grammar spends
+an operator-cost budget exactly, so `--set cost=6` and
+`--set cost=14` ask for an easy and a hard question of the same type.
+`tools/ag_difficulty.py` reports what each budget buys, suggests levels, and
+builds a set whose mean budget is a chosen value. See `DIFFICULTY_BUDGET.md`
+(English) and `DIFFICULTY_BUDGET.zh.md` (Chinese).
+
 Attribute Grammar generation also writes a native visualization. Its applied
 production tree shows which weighted rule was selected at each nonterminal;
 its attributed derivation tree shows question-level values plus inherited and

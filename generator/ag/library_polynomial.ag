@@ -2,6 +2,11 @@
 # 3 coefficient extraction, 4 differentiation, 5 degree after cancellation.
 context "Numeric"
 attribute question_mode = 0 copy
+# Difficulty is the budget `cost`, spent exactly; each form is offered at its
+# price alone: evaluation 1, degree 2, expansion and coefficient 3,
+# derivative 4.
+attribute cost = 3 split
+
 random a = integer_between(2, 4)
 random b = nonzero_integer_between(-4, 4)
 random c = nonzero_integer_between(-4, 4)
@@ -25,31 +30,36 @@ synth kind on Q
 synth text on Q
 synth value on Q
 start Q
-Q -> "evaluation" when question_mode = 0 or question_mode = 1 {
+Q -> "evaluation" when (question_mode = 0 or question_mode = 1) and cost = 1 {
+  cost = -1
   kind = "evaluation"
   value = polynomial_evaluate(quadratic, point)
   text = "Given [`P(x) = " ++ polynomial_latex(quadratic)
     ++ "`], evaluate [`P(" ++ str(point) ++ ")`]."
 }
-Q -> "expansion" when question_mode = 0 or question_mode = 2 {
+Q -> "expansion" when (question_mode = 0 or question_mode = 2) and cost = 3 {
+  cost = -3
   kind = "expansion"
   value = product
   require not polynomial_is_zero(value)
   text = "Expand and collect like terms: [`" ++ product_text ++ "`]."
 }
-Q -> "coefficient" when question_mode = 0 or question_mode = 3 {
+Q -> "coefficient" when (question_mode = 0 or question_mode = 3) and cost = 3 {
+  cost = -3
   kind = "coefficient"
   value = polynomial_coefficient(product, exponent)
   text = "Find the coefficient of [`x^{" ++ str(exponent)
     ++ "}`] in the expansion of [`" ++ product_text ++ "`]."
 }
-Q -> "derivative" when question_mode = 0 or question_mode = 4 {
+Q -> "derivative" when (question_mode = 0 or question_mode = 4) and cost = 4 {
+  cost = -4
   kind = "derivative"
   value = derivative
   require value = converted_derivative
   text = "Differentiate [`P(x) = " ++ product_text ++ "`] with respect to [`x`]."
 }
-Q -> "degree" when question_mode = 0 or question_mode = 5 {
+Q -> "degree" when (question_mode = 0 or question_mode = 5) and cost = 2 {
+  cost = -2
   kind = "degree"
   value = polynomial_degree(reduced)
   require not polynomial_is_zero(reduced)

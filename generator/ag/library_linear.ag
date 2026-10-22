@@ -3,6 +3,10 @@
 # 3 fractional expression. Each equation has a unique integer solution.
 context "Numeric"
 attribute question_mode = 0 copy
+# Difficulty is the budget `cost`, spent exactly; each form is offered at its
+# price alone: one bracket 2, brackets on both sides 3, a fraction 4.
+attribute cost = 3 split
+
 random root = nonzero_integer_between(-8, 8)
 random a = integer_between(2, 5)
 random gap = integer_between(1, 4)
@@ -32,7 +36,8 @@ synth problem on Q
 synth text on Q
 synth value on Q
 start Q
-Q -> "one_bracket" when question_mode = 0 or question_mode = 1 {
+Q -> "one_bracket" when (question_mode = 0 or question_mode = 1) and cost = 2 {
+  cost = -2
   kind = "one_bracket"
   problem = simple_eq
   require equation_has_exact_solutions(problem, "x")
@@ -42,7 +47,8 @@ Q -> "one_bracket" when question_mode = 0 or question_mode = 1 {
   require equation_is_satisfied(problem, "x", value)
   text = "Solve for [`x`]: [`" ++ equation_latex(problem) ++ "`]."
 }
-Q -> "two_brackets" when question_mode = 0 or question_mode = 2 {
+Q -> "two_brackets" when (question_mode = 0 or question_mode = 2) and cost = 3 {
+  cost = -3
   kind = "two_brackets"
   problem = bracket_eq
   require equation_solution_count(problem, "x") = 1
@@ -51,7 +57,8 @@ Q -> "two_brackets" when question_mode = 0 or question_mode = 2 {
   require equation_is_satisfied(problem, "x", value)
   text = "Solve for [`x`]: [`" ++ equation_latex(problem) ++ "`]."
 }
-Q -> "fraction" when question_mode = 0 or question_mode = 3 {
+Q -> "fraction" when (question_mode = 0 or question_mode = 3) and cost = 4 {
+  cost = -4
   kind = "fraction"
   problem = fraction_eq
   require equation_solution_count(problem, "x") = 1

@@ -5,6 +5,8 @@
 
      - a truth assignment belongs to the whole question, not to a leaf, so it
        cannot be an inherited budget (those only ever decrease, and are ints);
+     - the budget is operator cost rather than operator count, so the same
+       budget buys expressions of different lengths;
      - the question text has to contain generated content (the assignment
        list) rather than a single expression;
      - the answer is a truth value, not a number.
@@ -197,6 +199,77 @@ let assignment_of_prompt prompt =
 let count_connectives text =
   tokenize text |> List.filter (function Operator _ -> true | _ -> false) |> List.length
 
+(* The operator cost of the expression as the student sees it, priced the way
+   boolean.ag prices its productions: and/or 2, conditional 4, biconditional
+   and exclusive-or 6, a negated variable 1, a negated compound 3 plus the
+   compound. Read with the same precedence as [evaluate_text], so that the
+   printed brackets, not the generator's tree, decide what each negation
+   applies to. Each level returns the cost so far and whether the operand is
+   a bare variable. *)
+let cost_of_text text =
+  let remaining = ref (tokenize text) in
+  let peek () = match !remaining with [] -> None | token :: _ -> Some token in
+  let advance () =
+    match !remaining with
+    | [] -> raise (Reread_error "unexpected end of expression")
+    | _ :: rest -> remaining := rest
+  in
+  let price = function
+    | "\\land" | "\\lor" -> 2
+    | "\\to" -> 4
+    | "\\leftrightarrow" | "\\oplus" -> 6
+    | operator -> raise (Reread_error ("no price for " ^ operator))
+  in
+  (* A left-associative chain of [operators] over [operand]. *)
+  let rec chain operand operators () =
+    let left = ref (operand ()) in
+    let rec loop () =
+      match peek () with
+      | Some (Operator operator) when List.mem operator operators ->
+          advance ();
+          let right = operand () in
+          left := (price operator + fst !left + fst right, false);
+          loop ()
+      | _ -> ()
+    in
+    loop ();
+    !left
+  and biconditional () = chain implication [ "\\leftrightarrow" ] ()
+  and implication () =
+    let left = disjunction () in
+    match peek () with
+    | Some (Operator "\\to") ->
+        advance ();
+        let right = implication () in
+        (price "\\to" + fst left + fst right, false)
+    | _ -> left
+  and disjunction () = chain exclusive [ "\\lor" ] ()
+  and exclusive () = chain conjunction [ "\\oplus" ] ()
+  and conjunction () = chain unary [ "\\land" ] ()
+  and unary () =
+    match peek () with
+    | Some (Operator "\\neg") ->
+        advance ();
+        let inner, is_variable = unary () in
+        ((if is_variable then 1 else 3 + inner), false)
+    | Some (Variable _) ->
+        advance ();
+        (0, true)
+    | Some Open ->
+        advance ();
+        let inner = biconditional () in
+        (match peek () with
+        | Some Close -> advance ()
+        | _ -> raise (Reread_error "missing ')'"));
+        (fst inner, false)
+    | Some (Operator other) -> raise (Reread_error ("unexpected " ^ other))
+    | Some Close -> raise (Reread_error "unexpected ')'")
+    | None -> raise (Reread_error "unexpected end of expression")
+  in
+  let result = biconditional () in
+  if !remaining <> [] then raise (Reread_error "trailing tokens");
+  fst result
+
 let load_file filename =
   match Ag_load.parse_file filename with
   | Ok spec -> spec
@@ -272,25 +345,49 @@ let () =
 (* 3. The budget still means what it says                              *)
 (* ------------------------------------------------------------------ *)
 
+(* The budget is operator cost. Three things have to hold for every budget a
+   caller might set: generation never gets stuck (every whole number can be
+   spent exactly), the tree spends exactly the budget, and the expression as
+   printed, re-priced by an independent reader, costs the same. The last one
+   is the one that matters: it ties the number a caller asks for to what the
+   student sees, through the brackets rather than through the tree. *)
 let () =
   let base = load_file "boolean.ag" in
-  for len = 0 to 5 do
-    match Ag_check.with_initial base "len" len with
+  for cost = 0 to 20 do
+    match Ag_check.with_initial base "cost" cost with
     | Error message -> fail message
     | Ok spec ->
         for seed = 0 to 29 do
-          Random.init (seed + (len * 1000));
+          Random.init (seed + (cost * 1000));
           match Ag_engine.generate spec with
           | exception Ag_engine.Generation_error message ->
-              fail (Printf.sprintf "len %d seed %d: %s" len seed message)
-          | question ->
+              fail (Printf.sprintf "cost %d seed %d: %s" cost seed message)
+          | question -> (
+              let spent = Ag_engine.consumption question.Ag_engine.tree "cost" in
+              if spent <> cost then
+                fail (Printf.sprintf "cost %d: the tree spent %d" cost spent);
               let text = expression_of_prompt question.Ag_engine.prompt in
-              if count_connectives text <> len then
-                fail
-                  (Printf.sprintf "len %d: %S has %d connectives" len text
-                     (count_connectives text))
+              match cost_of_text text with
+              | exception Reread_error message ->
+                  fail (Printf.sprintf "cost %d: could not price %S: %s" cost text message)
+              | priced ->
+                  if priced <> cost then
+                    fail (Printf.sprintf "cost %d: %S re-prices as %d" cost text priced))
         done
   done
+
+(* Cost is not length: one budget buys expressions of several sizes, which is
+   the point of pricing connectives differently. At the default budget the
+   connective count must vary across seeds. *)
+let () =
+  let spec = load_file "boolean.ag" in
+  let sizes =
+    List.init 60 (fun seed ->
+        Random.init seed;
+        count_connectives (expression_of_prompt (Ag_engine.generate spec).Ag_engine.prompt))
+  in
+  if List.length (List.sort_uniq compare sizes) < 3 then
+    fail "the default budget produced expressions of fewer than three sizes"
 
 (* ------------------------------------------------------------------ *)
 (* 4. A truth value reaches the .pg file as 1 or 0                     *)

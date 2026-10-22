@@ -26,10 +26,20 @@
 #     B is true in rows 2,3,6,7 ->  4+ 8+64+128 = 204
 #     C is true in rows 1,3,5,7 ->  2+ 8+32+128 = 170
 #  and negation is 255 - table.
+#
+#  Difficulty is the budget `cost`, spent exactly: the law pays its price
+#  (double negation 1, biconditional 3, every other law 2) and what is left
+#  is split between the subexpressions it is stated over, which are priced
+#  as in boolean.ag (and/or 2, a negated variable 1, a negated compound 3
+#  plus the compound). The least budget is 1: there is no law for nothing.
+#
+#    agrun --set cost=3 boolean_equiv.ag     easy
+#    agrun --set cost=6 boolean_equiv.ag     medium (the default)
+#    agrun --set cost=9 boolean_equiv.ag     hard
 # ==========================================================================
 
 
-attribute len = 2 split        # size of the subexpressions a law is built from
+attribute cost = 6 split       # law price plus the subexpressions, spent exactly
 
 # The subexpression language carries these two.
 synth table on P               # the truth table, as an eight-bit number
@@ -43,6 +53,7 @@ synth latex on V
 # table the answer was computed from.
 synth safe on P
 synth safe on V
+synth negation on P            # 1 when the subexpression is a negation
 
 # Only a whole question carries these: the two sides of the claim, and whether
 # the claim actually holds. They are not called left/right because those two
@@ -68,7 +79,8 @@ start Q
 # ---- laws that hold -------------------------------------------------------
 
 # De Morgan
-Q -> P P   weight 6 {
+Q -> P P   when cost >= 2  weight 6 {
+       cost = -2
        lhs = "\neg (" ++ $1.safe ++ " \land " ++ $2.safe ++ ")"
        rhs = "\neg " ++ $1.safe ++ " \lor \neg " ++ $2.safe
        holds = 255 - bit_and($1.table, $2.table)
@@ -76,7 +88,8 @@ Q -> P P   weight 6 {
        }
 
 # Implication as disjunction
-Q -> P P   weight 2 {
+Q -> P P   when cost >= 2  weight 2 {
+       cost = -2
        lhs = $1.safe ++ " \to " ++ $2.safe
        rhs = "\neg " ++ $1.safe ++ " \lor " ++ $2.safe
        holds = bit_or(255 - $1.table, $2.table)
@@ -84,21 +97,24 @@ Q -> P P   weight 2 {
        }
 
 # Double negation
-Q -> P     weight 2 {
+Q -> P     when cost >= 1  weight 2 {
+       cost = -1
        lhs = "\neg (\neg " ++ $1.safe ++ ")"
        rhs = $1.safe
        holds = 255 - (255 - $1.table) = $1.table
        }
 
 # Absorption
-Q -> P P   weight 1 {
+Q -> P P   when cost >= 2  weight 1 {
+       cost = -2
        lhs = $1.safe ++ " \land (" ++ $1.safe ++ " \lor " ++ $2.safe ++ ")"
        rhs = $1.safe
        holds = bit_and($1.table, bit_or($1.table, $2.table)) = $1.table
        }
 
 # Biconditional as two implications
-Q -> P P   weight 1 {
+Q -> P P   when cost >= 3  weight 1 {
+       cost = -3
        lhs = $1.safe ++ " \leftrightarrow " ++ $2.safe
        rhs = "(" ++ $1.safe ++ " \to " ++ $2.safe ++ ") \land ("
                ++ $2.safe ++ " \to " ++ $1.safe ++ ")"
@@ -113,7 +129,8 @@ Q -> P P   weight 1 {
 # so the rare pair where the swap makes no difference is still labelled 1.
 
 # De Morgan with the wrong connective on the right
-Q -> P P   weight 3 {
+Q -> P P   when cost >= 2  weight 3 {
+       cost = -2
        lhs = "\neg (" ++ $1.safe ++ " \land " ++ $2.safe ++ ")"
        rhs = "\neg " ++ $1.safe ++ " \land \neg " ++ $2.safe
        holds = 255 - bit_and($1.table, $2.table)
@@ -121,7 +138,8 @@ Q -> P P   weight 3 {
        }
 
 # Implication turned around
-Q -> P P   weight 3 {
+Q -> P P   when cost >= 2  weight 3 {
+       cost = -2
        require $1.latex != $2.latex   # identical sides would read "X -> X, X -> X"
        lhs = $1.safe ++ " \to " ++ $2.safe
        rhs = $2.safe ++ " \to " ++ $1.safe
@@ -129,7 +147,8 @@ Q -> P P   weight 3 {
        }
 
 # Distribution with the connectives the wrong way round
-Q -> P P   weight 2 {
+Q -> P P   when cost >= 2  weight 2 {
+       cost = -2
        lhs = $1.safe ++ " \lor (" ++ $1.safe ++ " \land " ++ $2.safe ++ ")"
        rhs = $1.safe ++ " \land " ++ $2.safe
        holds = bit_or($1.table, bit_and($1.table, $2.table))
@@ -144,34 +163,50 @@ Q -> P P   weight 2 {
 #  produces, so the same law reads differently every time.
 # ==========================================================================
 
-P -> P "\land" P   when len > 0  weight 2 {
-       len   = -1
+# Each rule's guard is the least it can spend; a negated variable and a
+# negated compound are separate rules so that each expression has one price.
+
+P -> P "\land" P   when cost >= 2  weight 2 {
+       cost  = -2
        require $1.latex != $3.latex
        table = bit_and($1.table, $3.table)
        latex = infix($1, "\land", $3)
        safe  = "(" ++ latex ++ ")"
+       negation = 0
        }
 
-P -> P "\lor" P    when len > 0  weight 2 {
-       len   = -1
+P -> P "\lor" P    when cost >= 2  weight 2 {
+       cost  = -2
        require $1.latex != $3.latex
        
        latex = infix($1, "\lor", $3)
        table = bit_or($1.table, $3.table)
        safe  = "(" ++ latex ++ ")"
+       negation = 0
        }
 
-P -> "\neg" P      when len > 0  weight 1 {
-       len   = -1
+P -> "\neg" V      when cost = 1   weight 1 {
+       cost  = -1
+       table = 255 - $2.table
+       latex = prefix("\neg", $2)
+       safe  = latex                  # \neg binds tightest: no brackets needed
+       negation = 1
+       }
+
+P -> "\neg" P      when cost >= 4  weight 1 {
+       cost  = -3
+       require $2.negation = 0          # no \neg \neg inside a subexpression
        table = 255 - $2.table
        latex = prefix("\neg", $2)
        safe  = "(" ++ latex ++ ")"
+       negation = 1
        }
 
-P -> V             when len = 0 {
+P -> V             when cost = 0 {
        table = $1.table
        latex = $1.latex
        safe  = $1.safe
+       negation = 0
        }
 
 V -> "A" { table = 240  latex = "A"  safe = "A" }

@@ -176,9 +176,74 @@ let check_mode spec mode expected_kind =
            expected_kind)
   done
 
+(* ------------------------------------------------------------------ *)
+(* The cost budget is spent exactly and prices what the student sees    *)
+(* ------------------------------------------------------------------ *)
+
+(* calculus.ag prices F by the differentiation rule each construct asks for:
+   sum or difference 1, product 3, a power or sin/cos/exp of a leaf 1, of a
+   compound 3 plus the compound; a leaf c*x costs 1 and x or a constant 0.
+   An integral question pays 2 before F is built. The formula is re-priced
+   here from the finished Ag_formula tree, independently of the derivation:
+   the only way the two can agree at every budget is if each printed
+   expression has exactly one price. Negate is a rendering of a negative
+   coefficient and costs nothing. *)
+let rec is_leaf = function
+  | Ag_formula.Variable _ | Ag_formula.Constant _ -> true
+  | Ag_formula.Negate body -> is_leaf body
+  | Ag_formula.Multiply (Ag_formula.Constant _, Ag_formula.Variable _) -> true
+  | _ -> false
+
+let rec price = function
+  | Ag_formula.Variable _ | Ag_formula.Constant _ -> 0
+  | Ag_formula.Negate body -> price body
+  | Ag_formula.Multiply (Ag_formula.Constant _, Ag_formula.Variable _) -> 1
+  | Ag_formula.Add (left, right) | Ag_formula.Subtract (left, right) ->
+      1 + price left + price right
+  | Ag_formula.Multiply (left, right) -> 3 + price left + price right
+  | Ag_formula.Power (body, _) | Ag_formula.Sin body | Ag_formula.Cos body
+  | Ag_formula.Exp body ->
+      (if is_leaf body then 1 else 3) + price body
+  | Ag_formula.Divide _ | Ag_formula.Tan _ | Ag_formula.Ln _ | Ag_formula.Sqrt _ ->
+      failwith "calculus.ag does not build this construct"
+
+let check_cost_budget base =
+  let kinds_seen = Hashtbl.create 2 in
+  for cost = 0 to 14 do
+    let spec = with_initial base "cost" cost in
+    for seed = 0 to 29 do
+      Random.init (seed + (cost * 1000));
+      match Ag_engine.generate spec with
+      | exception Ag_engine.Generation_error message ->
+          fail (Printf.sprintf "cost %d seed %d: %s" cost seed message)
+      | question ->
+          let root = question.Ag_engine.tree in
+          let spent = Ag_engine.consumption root "cost" in
+          if spent <> cost then
+            fail (Printf.sprintf "cost %d: the tree spent %d" cost spent);
+          let kind = text_attribute root "kind" in
+          Hashtbl.replace kinds_seen kind true;
+          let premium = if kind = "integral" then 2 else 0 in
+          let original = formula_attribute (expression_child root) "formula" in
+          let priced = premium + price original in
+          if priced <> cost then
+            fail
+              (Printf.sprintf "cost %d: %s %s re-prices as %d" cost kind
+                 (Ag_formula.to_pg original) priced);
+          if kind = "integral" && cost < 3 then
+            fail (Printf.sprintf "cost %d produced an integral question" cost)
+    done
+  done;
+  List.iter
+    (fun kind ->
+      if not (Hashtbl.mem kinds_seen kind) then
+        fail ("the cost sweep never generated a " ^ kind ^ " question"))
+    [ "derivative"; "integral" ]
+
 let () =
   check_formula_core ();
   let spec = load_file "calculus.ag" in
+  check_cost_budget spec;
   if spec.Ag_check.context <> "Numeric" then
     fail ("calculus.ag selected context " ^ spec.Ag_check.context);
   check_mode spec 1 "derivative";
@@ -199,8 +264,8 @@ let () =
     record_constructors constructors original;
     if Ag_formula.is_zero derivative then
       fail (Printf.sprintf "seed %d generated a constant calculus question" seed);
-    if Ag_engine.consumption root "len" <> 3 then
-      fail (Printf.sprintf "seed %d did not consume exactly len=3" seed);
+    if Ag_engine.consumption root "cost" <> 7 then
+      fail (Printf.sprintf "seed %d did not spend exactly the default cost of 7" seed);
     if contains question.prompt "+ -" || contains question.prompt "- -" then
       fail (Printf.sprintf "seed %d has ambiguous signs in %S" seed question.prompt);
     check_numeric_derivative seed original derivative;

@@ -8,11 +8,32 @@
 #  For an integral question the grammar first generates an antiderivative
 #  F(x), differentiates it symbolically to obtain f(x), and asks for the
 #  integral of f(x). This construction guarantees that F(x) is correct.
+#
+#  Difficulty is the budget `cost`, spent exactly, and priced by the
+#  differentiation rule each construct asks of the student:
+#
+#    sum or difference        1        product                 3
+#    power of a leaf          1        power of a compound     3 + the compound
+#    sin/cos/exp of a leaf    1        sin/cos/exp of a compound 3 + the compound
+#    leaf x or a constant     0        leaf c*x                1
+#
+#  A compound under a power or a function means the chain rule, which is why
+#  it costs 3 on top of what is inside. An integral question pays 2 before F
+#  is built: the same F makes a harder integral than derivative (a chain
+#  becomes a substitution, a product an integration by parts). The caller
+#  chooses the difficulty:
+#
+#    agrun --set cost=4 calculus.ag     easy
+#    agrun --set cost=7 calculus.ag     medium (the default)
+#    agrun --set cost=10 calculus.ag    hard
+#
+#  Every whole number from 0 upwards can be spent, so no node is ever left
+#  with a budget no rule can take; below 3 only derivative questions fit.
 # ==========================================================================
 
 context "Numeric"
 
-attribute len = 3 split
+attribute cost = 7 split
 attribute calculus_mode = 0 copy
 # Integral questions consume this budget before generating F, preventing an
 # unrelated additive constant from being mistaken for the requested C = 0.
@@ -25,16 +46,27 @@ synth answer_value on Q
 
 synth formula on F
 synth latex on F
+synth constant on F            # 1 when the subtree is a bare constant, else 0
+synth monomial on F            # 1 when the subtree is x, c*x or a power of one
+synth constants_used on F      # how many constant leaves the subtree holds
+synth linear_terms on F        # x or c*x terms added directly in this subtree
 synth formula on T
 synth latex on T
 synth value on T
+synth constant on T
+synth monomial on T
+synth constants_used on T
+synth linear on T              # 1 for x and c*x, 0 for a constant
 
 start Q
 
 # ---- Question forms ------------------------------------------------------
 
+# One additive constant is enough to show that it differentiates away; two
+# would read as an unsimplified sum.
 Q -> F "derivative" when calculus_mode != 2 weight 1 {
   kind = "derivative"
+  require $1.constants_used <= 1
   derivative = differentiate($1.formula, "x")
   require not formula_is_zero(derivative)
   text = "Differentiate the function with respect to x:
@@ -42,7 +74,10 @@ Q -> F "derivative" when calculus_mode != 2 weight 1 {
   answer_value = derivative
 }
 
-Q -> F "integral" when calculus_mode != 1 weight 1 {
+# The integral premium: 2 for the question form, and at least 1 left for F
+# so that the integrand is never the derivative of a bare x.
+Q -> F "integral" when calculus_mode != 1 and cost >= 3 weight 1 {
+  cost = -2
   constants = -1
   kind = "integral"
   derivative = differentiate($1.formula, "x")
@@ -53,66 +88,177 @@ Q -> F "integral" when calculus_mode != 1 weight 1 {
 }
 
 # ---- Recursive symbolic function ---------------------------------------
+#
+# The guard of each rule is the least it can spend. A rule that applies to a
+# leaf (T) is allowed only while the budget buys a leaf, 1 or 2; the same
+# rule on a compound needs 3 for itself and at least 2 inside, which no leaf
+# can spend, so the two never build the same expression and every printed
+# expression has one price.
+#
+# The `constant` flag keeps the pricing honest: a constant times x would
+# print exactly like the leaf c*x, and a sum, power or function of constants
+# would fold into a constant. Such operands are refused. A sum or difference
+# whose derivative is zero, such as x - (7 + x), is refused too: it would
+# differentiate away and leave a question cheaper than its price. A product
+# of two monomials, such as x^5 * x, is refused because it collects into one,
+# and so is a sum with two linear terms, such as x^4 - x + x or 3x + x.
 
-F -> F "+" F when len > 0 weight 3 {
-  len = -1
+F -> F "+" F when cost >= 1 weight 3 {
+  cost = -1
   require $1.latex != $3.latex
+  require $1.constant + $3.constant < 2
+  constant = 0
+  monomial = 0
+  constants_used = $1.constants_used + $3.constants_used
+  linear_terms = $1.linear_terms + $3.linear_terms
+  require linear_terms <= 1
   formula = formula_add($1.formula, $3.formula)
+  require not formula_is_zero(differentiate(formula, "x"))
   latex = formula_latex(formula)
 }
 
-F -> F "-" F when len > 0 weight 3 {
-  len = -1
+F -> F "-" F when cost >= 1 weight 3 {
+  cost = -1
   require $1.latex != $3.latex
+  require $1.constant + $3.constant < 2
+  constant = 0
+  monomial = 0
+  constants_used = $1.constants_used + $3.constants_used
+  linear_terms = $1.linear_terms + $3.linear_terms
+  require linear_terms <= 1
   formula = formula_subtract($1.formula, $3.formula)
+  require not formula_is_zero(differentiate(formula, "x"))
   latex = formula_latex(formula)
 }
 
-F -> F "\\cdot" F when len > 0 weight 2 {
-  len = -1
+F -> F "\\cdot" F when cost >= 4 weight 2 {
+  cost = -3
   require $1.latex != $3.latex
+  require $1.constant = 0
+  require $3.constant = 0
+  require $1.monomial + $3.monomial < 2
+  constant = 0
+  monomial = 0
+  constants_used = $1.constants_used + $3.constants_used
+  linear_terms = 0
   formula = formula_multiply($1.formula, $3.formula)
   latex = formula_latex(formula)
 }
 
-F -> F "power" integer_between(2, 5) when len > 0 weight 3 {
-  len = -1
+F -> T "power" integer_between(2, 5) when cost >= 1 and cost <= 2 weight 3 {
+  cost = -1
+  require $1.constant = 0
+  constant = 0
+  monomial = 1
+  constants_used = 0
+  linear_terms = 0
   formula = formula_power($1.formula, $3.value)
   latex = formula_latex(formula)
 }
 
-F -> "sin" F when len > 0 weight 2 {
-  len = -1
+F -> F "power" integer_between(2, 5) when cost >= 5 weight 3 {
+  cost = -3
+  constant = 0
+  monomial = 0
+  constants_used = $1.constants_used
+  linear_terms = 0
+  formula = formula_power($1.formula, $3.value)
+  latex = formula_latex(formula)
+}
+
+F -> "sin" T when cost >= 1 and cost <= 2 weight 2 {
+  cost = -1
+  require $2.constant = 0
+  constant = 0
+  monomial = 0
+  constants_used = 0
+  linear_terms = 0
   formula = formula_sin($2.formula)
   latex = formula_latex(formula)
 }
 
-F -> "cos" F when len > 0 weight 2 {
-  len = -1
+F -> "sin" F when cost >= 5 weight 2 {
+  cost = -3
+  constant = 0
+  monomial = 0
+  constants_used = $2.constants_used
+  linear_terms = 0
+  formula = formula_sin($2.formula)
+  latex = formula_latex(formula)
+}
+
+F -> "cos" T when cost >= 1 and cost <= 2 weight 2 {
+  cost = -1
+  require $2.constant = 0
+  constant = 0
+  monomial = 0
+  constants_used = 0
+  linear_terms = 0
   formula = formula_cos($2.formula)
   latex = formula_latex(formula)
 }
 
-F -> "exp" F when len > 0 weight 1 {
-  len = -1
+F -> "cos" F when cost >= 5 weight 2 {
+  cost = -3
+  constant = 0
+  monomial = 0
+  constants_used = $2.constants_used
+  linear_terms = 0
+  formula = formula_cos($2.formula)
+  latex = formula_latex(formula)
+}
+
+F -> "exp" T when cost >= 1 and cost <= 2 weight 1 {
+  cost = -1
+  require $2.constant = 0
+  constant = 0
+  monomial = 0
+  constants_used = 0
+  linear_terms = 0
   formula = formula_exp($2.formula)
   latex = formula_latex(formula)
 }
 
-F -> T when len = 0 {
+F -> "exp" F when cost >= 5 weight 1 {
+  cost = -3
+  constant = 0
+  monomial = 0
+  constants_used = $2.constants_used
+  linear_terms = 0
+  formula = formula_exp($2.formula)
+  latex = formula_latex(formula)
+}
+
+F -> T when cost <= 1 {
+  constant = $1.constant
+  monomial = $1.monomial
+  constants_used = $1.constants_used
+  linear_terms = $1.linear
   formula = $1.formula
   latex = $1.latex
 }
 
 # ---- Leaves --------------------------------------------------------------
 
-T -> "x" weight 4 {
+T -> "x" when cost = 0 weight 4 {
+  constant = 0
+  monomial = 1
+  constants_used = 0
+  linear = 1
   formula = formula_variable("x")
   latex = formula_latex(formula)
   value = formula
 }
 
-T -> nonzero_integer_between(-6, 6) "x" weight 4 {
+# A coefficient of 1 or -1 would be simplified away, leaving a leaf that
+# prints as x but was priced as c*x.
+T -> nonzero_integer_between(-6, 6) "x" when cost = 1 weight 4 {
+  cost = -1
+  require $1.value != 1 and $1.value != -1
+  constant = 0
+  monomial = 1
+  constants_used = 0
+  linear = 1
   formula = formula_multiply(
               formula_constant($1.value),
               formula_variable("x"))
@@ -120,7 +266,11 @@ T -> nonzero_integer_between(-6, 6) "x" weight 4 {
   value = formula
 }
 
-T -> nonzero_integer_between(-8, 8) when constants > 0 weight 1 {
+T -> nonzero_integer_between(-8, 8) when cost = 0 and constants > 0 weight 1 {
+  constant = 1
+  monomial = 0
+  constants_used = 1
+  linear = 0
   formula = formula_constant($1.value)
   latex = formula_latex(formula)
   value = formula

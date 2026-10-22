@@ -312,6 +312,117 @@ let () =
     blanks;
   if blanks = [] then fail "no answer blanks were produced"
 
+(* ------------------------------------------------------------------ *)
+(* 5. The cost budget is spent exactly and prices what the student sees *)
+(* ------------------------------------------------------------------ *)
+
+(* boolean_equiv.ag prices the law (double negation 1, biconditional 3, any
+   other law 2) and the subexpressions it is stated over as boolean.ag does:
+   and/or 2, a negated variable 1, a negated compound 3 plus the compound.
+   The law is read off the left-hand side of the claim and each
+   subexpression is re-priced from its printed form. The least budget is 1. *)
+let price_of_subexpression text =
+  let remaining = ref (tokenize text) in
+  let peek () = match !remaining with [] -> None | token :: _ -> Some token in
+  let advance () =
+    match !remaining with
+    | [] -> raise (Reread_error "unexpected end of expression")
+    | _ :: rest -> remaining := rest
+  in
+  (* each level returns (cost, is_variable) *)
+  let rec chain operand operator () =
+    let left = ref (operand ()) in
+    let rec loop () =
+      match peek () with
+      | Some (Operator found) when found = operator ->
+          advance ();
+          let right = operand () in
+          left := (2 + fst !left + fst right, false);
+          loop ()
+      | _ -> ()
+    in
+    loop ();
+    !left
+  and disjunction () = chain conjunction "\\lor" ()
+  and conjunction () = chain unary "\\land" ()
+  and unary () =
+    match peek () with
+    | Some (Operator "\\neg") ->
+        advance ();
+        let inner, is_variable = unary () in
+        ((if is_variable then 1 else 3 + inner), false)
+    | Some (Variable _) ->
+        advance ();
+        (0, true)
+    | Some Open ->
+        advance ();
+        let inner = disjunction () in
+        (match peek () with
+        | Some Close -> advance ()
+        | _ -> raise (Reread_error "missing ')'"));
+        (fst inner, false)
+    | Some (Operator other) -> raise (Reread_error ("unexpected " ^ other))
+    | Some Close -> raise (Reread_error "unexpected ')'")
+    | None -> raise (Reread_error "unexpected end of expression")
+  in
+  let result = disjunction () in
+  if !remaining <> [] then raise (Reread_error "trailing tokens");
+  fst result
+
+(* Double negation is the only law stated over one subexpression; the
+   biconditional is the only one whose left-hand side contains it. *)
+let law_price ~subexpressions lhs =
+  let rec contains index fragment =
+    index + String.length fragment <= String.length lhs
+    && (String.sub lhs index (String.length fragment) = fragment
+       || contains (index + 1) fragment)
+  in
+  if subexpressions = 1 then 1 else if contains 0 "\\leftrightarrow" then 3 else 2
+
+let () =
+  let base = load_file "boolean_equiv.ag" in
+  for cost = 1 to 12 do
+    match Ag_check.with_initial base "cost" cost with
+    | Error message -> fail message
+    | Ok spec ->
+        for seed = 0 to 29 do
+          Random.init (seed + (cost * 1000));
+          match Ag_engine.generate spec with
+          | exception Ag_engine.Generation_error message ->
+              fail (Printf.sprintf "cost %d seed %d: %s" cost seed message)
+          | question -> (
+              let root = question.Ag_engine.tree in
+              let spent = Ag_engine.consumption root "cost" in
+              if spent <> cost then
+                fail (Printf.sprintf "cost %d: the tree spent %d" cost spent);
+              let lhs =
+                match Ag_engine.attribute root "lhs" with
+                | Ag_engine.Text text -> text
+                | _ -> ""
+              in
+              let subexpressions =
+                root.Ag_engine.children
+                |> List.filter (fun (node : Ag_engine.node) -> node.symbol = "P")
+                |> List.map (fun node ->
+                       match Ag_engine.attribute node "latex" with
+                       | Ag_engine.Text text -> text
+                       | _ -> "")
+              in
+              match List.map price_of_subexpression subexpressions with
+              | exception Reread_error message ->
+                  fail (Printf.sprintf "cost %d: could not price a subexpression: %s" cost message)
+              | prices ->
+                  let priced =
+                    law_price ~subexpressions:(List.length prices) lhs
+                    + List.fold_left ( + ) 0 prices
+                  in
+                  if priced <> cost then
+                    fail
+                      (Printf.sprintf "cost %d: %S re-prices as %d" cost
+                         question.Ag_engine.prompt priced))
+        done
+  done
+
 let () =
   if !failures = 0 then print_endline "Ag equivalence tests passed."
   else (

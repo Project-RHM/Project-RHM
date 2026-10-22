@@ -13,6 +13,11 @@
 context "Vector"
 
 attribute vector_mode = 0 copy
+# Difficulty is the budget `cost`, spent exactly. Every form is fixed, so each
+# is offered at its price alone: parallel 1, dot, norm and same direction 2,
+# unit 3, cross 4. A set drawn around a mean mixes them.
+attribute cost = 2 split
+
 
 # The first component is nonzero, so every generated vector has a defined
 # direction and a unit vector.
@@ -45,7 +50,8 @@ synth label on V
 
 start Q
 
-Q -> V V "dot" when vector_mode = 0 or vector_mode = 1 weight 3 {
+Q -> V V "dot" when (vector_mode = 0 or vector_mode = 1) and cost = 2 weight 3 {
+  cost = -2
   require $1.label != $2.label
   kind = "dot"
   text = definitions ++ "
@@ -53,7 +59,8 @@ Compute [`" ++ $1.latex ++ " \cdot " ++ $2.latex ++ "`]."
   answer_value = vector_dot($1.value, $2.value)
 }
 
-Q -> V V "cross" when vector_mode = 0 or vector_mode = 2 weight 3 {
+Q -> V V "cross" when (vector_mode = 0 or vector_mode = 2) and cost = 4 weight 3 {
+  cost = -4
   require $1.label != $2.label
   kind = "cross"
   text = definitions ++ "
@@ -62,28 +69,32 @@ Compute [`" ++ $1.latex ++ " \times " ++ $2.latex ++ "`]."
   require not vector_is_zero(answer_value)
 }
 
-Q -> V "norm" when vector_mode = 0 or vector_mode = 3 weight 2 {
+Q -> V "norm" when (vector_mode = 0 or vector_mode = 3) and cost = 2 weight 2 {
+  cost = -2
   kind = "norm"
   text = definitions ++ "
 Compute [`\left\|" ++ $1.latex ++ "\right\|`]."
   answer_value = vector_norm_answer($1.value)
 }
 
-Q -> V "unit" when vector_mode = 0 or vector_mode = 4 weight 2 {
+Q -> V "unit" when (vector_mode = 0 or vector_mode = 4) and cost = 3 weight 2 {
+  cost = -3
   kind = "unit"
   text = definitions ++ "
 Enter a unit vector in the direction of [`" ++ $1.latex ++ "`]."
   answer_value = vector_unit_answer($1.value)
 }
 
-Q -> V "parallel" when vector_mode = 0 or vector_mode = 5 weight 2 {
+Q -> V "parallel" when (vector_mode = 0 or vector_mode = 5) and cost = 1 weight 2 {
+  cost = -1
   kind = "parallel"
   text = definitions ++ "
 Enter a vector parallel to [`" ++ $1.latex ++ "`]."
   answer_value = vector_parallel_answer($1.value)
 }
 
-Q -> V "same_direction" when vector_mode = 0 or vector_mode = 6 weight 2 {
+Q -> V "same_direction" when (vector_mode = 0 or vector_mode = 6) and cost = 2 weight 2 {
+  cost = -2
   kind = "same_direction"
   text = definitions ++ "
 Enter a vector in the same direction as [`" ++ $1.latex ++ "`]."

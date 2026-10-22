@@ -150,6 +150,72 @@ let check_mode base mode expected =
       operators
   done
 
+(* ------------------------------------------------------------------ *)
+(* The cost budget, in every mode                                      *)
+(* ------------------------------------------------------------------ *)
+
+(* set.ag prices a union at 1, an intersection or difference at 2, and a
+   leaf at 1 when its set is an interval, 0 when it is finite. The printed
+   expression is re-priced here: operators by their symbol, leaves by the
+   kind of the set the question defines under that letter. Every budget must
+   be spendable in every set_mode, because a node holding a budget no rule
+   fits is an error, not a retry. *)
+let count_occurrences text fragment =
+  let text_length = String.length text and fragment_length = String.length fragment in
+  let rec count index found =
+    if index + fragment_length > text_length then found
+    else if String.sub text index fragment_length = fragment then
+      count (index + fragment_length) (found + 1)
+    else count (index + 1) found
+  in
+  count 0 0
+
+let price_of_question question =
+  let prompt = question.Ag_engine.prompt in
+  let expression =
+    (* the last [`...`] of the prompt is the expression; the definitions
+       come first *)
+    match String.rindex_opt prompt '`' with
+    | Some last -> (
+        match String.rindex_from_opt prompt (last - 1) '`' with
+        | Some first -> String.sub prompt (first + 1) (last - first - 1)
+        | None -> "")
+    | None -> ""
+  in
+  let leaf_price name letter =
+    let kind =
+      match global_set question name with Ag_set.Interval _ -> 1 | _ -> 0
+    in
+    kind * count_occurrences expression letter
+  in
+  count_occurrences expression "\\cup"
+  + (2 * count_occurrences expression "\\cap")
+  + (2 * count_occurrences expression "\\setminus")
+  + leaf_price "set_a" "A" + leaf_price "set_b" "B" + leaf_price "set_c" "C"
+
+let check_cost_budget base =
+  for mode = 0 to 3 do
+    let spec = with_initial base "set_mode" mode in
+    for cost = 0 to 12 do
+      let spec = with_initial spec "cost" cost in
+      for seed = 0 to 19 do
+        Random.init (seed + (cost * 100) + (mode * 10_000));
+        match Ag_engine.generate spec with
+        | exception Ag_engine.Generation_error message ->
+            fail (Printf.sprintf "set_mode %d cost %d seed %d: %s" mode cost seed message)
+        | question ->
+            let spent = Ag_engine.consumption question.Ag_engine.tree "cost" in
+            if spent <> cost then
+              fail (Printf.sprintf "set_mode %d cost %d: the tree spent %d" mode cost spent);
+            let priced = price_of_question question in
+            if priced <> cost then
+              fail
+                (Printf.sprintf "set_mode %d cost %d: %S re-prices as %d" mode cost
+                   question.Ag_engine.prompt priced)
+      done
+    done
+  done
+
 let () =
   let spec = load_file "set.ag" in
   if spec.Ag_check.context <> "Interval" then
@@ -184,8 +250,8 @@ let () =
     Hashtbl.iter (fun operator _ -> Hashtbl.replace all_operators operator true) operators;
     let actual = set_value "answer" question.answer in
     check_semantics seed expected actual;
-    if Ag_engine.consumption root "len" <> 3 then
-      fail (Printf.sprintf "seed %d: set expression did not consume len=3" seed)
+    if Ag_engine.consumption root "cost" <> 7 then
+      fail (Printf.sprintf "seed %d: did not spend exactly the default cost of 7" seed)
   done;
   if not !saw_finite then fail "set.ag never generated a finite definition";
   if not !saw_interval then fail "set.ag never generated an interval definition";
@@ -198,6 +264,7 @@ let () =
   check_mode spec 1 "\\cup";
   check_mode spec 2 "\\cap";
   check_mode spec 3 "\\setminus";
+  check_cost_budget spec;
 
   Random.init 8104;
   let first = Ag_engine.generate spec in

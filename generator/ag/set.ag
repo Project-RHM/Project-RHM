@@ -8,11 +8,25 @@
 #
 # Each A/B/C definition is fixed before the expression tree is generated, so
 # every repeated occurrence denotes exactly the same set.
+#
+# Difficulty is the budget `cost`, spent exactly. A union costs 1, an
+# intersection or a difference 2, and a leaf costs 1 when its set is an
+# interval and nothing when it is finite: mixing intervals with finite sets
+# is where the work is. The caller chooses the difficulty:
+#
+#   agrun --set cost=3  set.ag    easy
+#   agrun --set cost=7  set.ag    medium (the default)
+#   agrun --set cost=11 set.ag    hard
+#
+# Every whole number from 0 upwards can be spent in every set_mode. The
+# difference is priced at 2 rather than 3 for that reason: in the
+# difference-only mode a node left with 2 would have no rule to take it,
+# which the engine treats as an error rather than a retry.
 # ==========================================================================
 
 context "Interval"
 
-attribute len = 3 split
+attribute cost = 7 split
 attribute set_mode = 0 copy
 
 # Finite candidates. set_insert canonicalizes order and removes duplicates.
@@ -53,7 +67,11 @@ let c_interval = set_interval(c_lower, c_lower + c_width, c_left_closed, c_right
 
 random a_uses_interval = boolean
 random b_uses_interval = boolean
-random c_uses_interval = boolean
+random c_draw_interval = boolean
+# At least one set is finite and at least one is an interval, so a leaf of
+# either price always exists and no budget is ever left without a rule.
+let c_uses_interval = cond(a_uses_interval and b_uses_interval, 1 = 0,
+                      cond(a_uses_interval or b_uses_interval, c_draw_interval, 1 = 1))
 
 let set_a = cond(a_uses_interval, a_interval, a_finite)
 let set_b = cond(b_uses_interval, b_interval, b_finite)
@@ -88,46 +106,45 @@ Compute the set expression:
   answer_value = $1.value
 }
 
-E -> E "\cup" E when len > 0 and (set_mode = 0 or set_mode = 1) weight 3 {
-  len = -1
+# Each rule's guard is the least it can spend: its own price.
+
+E -> E "\cup" E when cost >= 1 and (set_mode = 0 or set_mode = 1) weight 3 {
+  cost = -1
   require $1.latex != $3.latex
   value = set_union($1.value, $3.value)
   latex = infix($1, "\cup", $3)
 }
 
-E -> E "\cap" E when len > 0 and (set_mode = 0 or set_mode = 2) weight 3 {
-  len = -1
+E -> E "\cap" E when cost >= 2 and (set_mode = 0 or set_mode = 2) weight 3 {
+  cost = -2
   require $1.latex != $3.latex
   value = set_intersection($1.value, $3.value)
   latex = infix($1, "\cap", $3)
 }
 
-E -> E "\setminus" E when len > 0 and (set_mode = 0 or set_mode = 3) weight 2 {
-  len = -1
+E -> E "\setminus" E when cost >= 2 and (set_mode = 0 or set_mode = 3) weight 2 {
+  cost = -2
   require $1.latex != $3.latex
   value = set_difference($1.value, $3.value)
   latex = infix($1, "\setminus", $3)
 }
 
-E -> S when len = 0 {
+# A leaf stands wherever the rest of the budget buys its kind.
+E -> S when cost <= 1 {
   value = $1.value
   latex = $1.latex
 }
 
-S -> "A" weight 1 {
-  value = set_a
-  latex = "A"
-}
+# A finite set costs nothing; an interval spends the 1 that reached it.
 
-S -> "B" weight 1 {
-  value = set_b
-  latex = "B"
-}
+S -> "A" when cost = 0 and not a_uses_interval weight 1 { value = set_a  latex = "A" }
+S -> "A" when cost = 1 and a_uses_interval     weight 1 { cost = -1  value = set_a  latex = "A" }
 
-S -> "C" weight 1 {
-  value = set_c
-  latex = "C"
-}
+S -> "B" when cost = 0 and not b_uses_interval weight 1 { value = set_b  latex = "B" }
+S -> "B" when cost = 1 and b_uses_interval     weight 1 { cost = -1  value = set_b  latex = "B" }
+
+S -> "C" when cost = 0 and not c_uses_interval weight 1 { value = set_c  latex = "C" }
+S -> "C" when cost = 1 and c_uses_interval     weight 1 { cost = -1  value = set_c  latex = "C" }
 
 prompt "{Q.text}"
 answer Q.answer_value
