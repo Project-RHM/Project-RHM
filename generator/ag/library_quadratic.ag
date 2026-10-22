@@ -1,0 +1,69 @@
+# Real solution sets. question_mode: 0 mixed, 1 two integer roots,
+# 2 repeated root, 3 two rational roots, 4 no real roots.
+context "Interval"
+attribute question_mode = 0 copy
+random root = nonzero_integer_between(-5, 5)
+random gap = integer_between(1, 4)
+random scale = integer_between(1, 3)
+random denominator = integer_between(2, 4)
+random positive = integer_between(1, 5)
+let second_root = root + gap
+let rational_root = root + 1 / denominator
+let rational_second = rational_root + gap
+let px = polynomial_variable("x")
+let zero_poly = polynomial_constant(0, "x")
+let integer_poly = polynomial_scale(scale, polynomial_multiply(
+  polynomial_linear(1, -root, "x"), polynomial_linear(1, -second_root, "x")
+))
+let repeated_poly = polynomial_scale(scale, polynomial_power(polynomial_linear(1, -root, "x"), 2))
+let rational_poly = polynomial_scale(denominator ^ 2, polynomial_multiply(
+  polynomial_linear(1, -rational_root, "x"), polynomial_linear(1, -rational_second, "x")
+))
+let impossible_poly = polynomial_add(polynomial_power(px, 2), polynomial_constant(positive, "x"))
+synth kind on Q
+synth problem on Q
+synth text on Q
+synth value on Q
+start Q
+Q -> "two_integer_roots" when question_mode = 0 or question_mode = 1 {
+  kind = "two_integer_roots"
+  problem = polynomial_equation(integer_poly, zero_poly)
+  require equation_solution_count(problem, "x") = 2
+  require equation_is_satisfied(problem, "x", root)
+  require equation_is_satisfied(problem, "x", second_root)
+  value = equation_solution_set(problem, "x")
+  text = "Find all real solutions of [`" ++ equation_latex(problem)
+    ++ "`]. Enter a set such as [`\\{1,2\\}`], or [`\\{\\}`] if there are no real solutions."
+}
+Q -> "repeated_root" when question_mode = 0 or question_mode = 2 {
+  kind = "repeated_root"
+  problem = polynomial_equation(repeated_poly, zero_poly)
+  require equation_solution_count(problem, "x") = 1
+  require equation_unique_solution(problem, "x") = root
+  value = equation_solution_set(problem, "x")
+  text = "Find all real solutions of [`" ++ equation_latex(problem)
+    ++ "`]. Enter a set such as [`\\{1,2\\}`], or [`\\{\\}`] if there are no real solutions."
+}
+Q -> "two_rational_roots" when question_mode = 0 or question_mode = 3 {
+  kind = "two_rational_roots"
+  problem = polynomial_equation(rational_poly, zero_poly)
+  require equation_solution_count(problem, "x") = 2
+  require equation_is_satisfied(problem, "x", rational_root)
+  require equation_is_satisfied(problem, "x", rational_second)
+  value = equation_solution_set(problem, "x")
+  text = "Find all real solutions of [`" ++ equation_latex(problem)
+    ++ "`]. Enter a set such as [`\\{1,2\\}`], or [`\\{\\}`] if there are no real solutions."
+}
+Q -> "no_real_roots" when question_mode = 0 or question_mode = 4 {
+  kind = "no_real_roots"
+  problem = polynomial_equation(impossible_poly, zero_poly)
+  require equation_solution_count(problem, "x") = 0
+  require not equation_has_exact_solutions(problem, "x")
+  require not polynomial_is_zero(formula_to_polynomial(equation_normal_form(problem), "x"))
+  value = equation_solution_set(problem, "x")
+  text = "Find all real solutions of [`" ++ equation_latex(problem)
+    ++ "`]. Enter a set such as [`\\{1,2\\}`], or [`\\{\\}`] if there are no real solutions."
+}
+prompt "{Q.text}"
+answer Q.value
+width 25

@@ -28,6 +28,8 @@ type value =
   | Truth of bool
   | Complex of Ag_number.t * Ag_number.t
   | Formula of Ag_formula.t
+  | Polynomial of Ag_polynomial.t
+  | Equation of Ag_equation.t
   | Set of Ag_set.t
   | Vector of Ag_vector.t
   | VectorNormAnswer of Ag_vector.t
@@ -43,6 +45,8 @@ let describe_value = function
       Printf.sprintf "Complex(%s,%s)" (Ag_number.to_string real)
         (Ag_number.to_string imaginary)
   | Formula expression -> "Formula(" ^ Ag_formula.to_pg expression ^ ")"
+  | Polynomial polynomial -> "Polynomial(" ^ Ag_polynomial.to_pg polynomial ^ ")"
+  | Equation equation -> "Equation(" ^ Ag_equation.to_pg equation ^ ")"
   | Set set -> "Set(" ^ Ag_set.to_pg set ^ ")"
   | Vector vector -> "Vector(" ^ Ag_vector.component_text vector ^ ")"
   | VectorNormAnswer vector -> "VectorNorm(" ^ Ag_vector.component_text vector ^ ")"
@@ -61,7 +65,8 @@ let as_number context = function
 let as_text context = function
   | Text text -> text
   | Num number -> Ag_number.to_string number
-  | Truth _ | Complex _ | Formula _ | Set _ | Vector _ | VectorNormAnswer _
+  | Truth _ | Complex _ | Formula _ | Polynomial _ | Equation _ | Set _ | Vector _
+  | VectorNormAnswer _
   | VectorUnitAnswer _ | VectorDirectionAnswer _ ->
       error
         (Printf.sprintf "%s expected text but received a non-text value" context)
@@ -78,6 +83,20 @@ let as_formula context = function
   | other ->
       error
         (Printf.sprintf "%s expected a formula but received \"%s\"" context
+           (describe_value other))
+
+let as_polynomial context = function
+  | Polynomial polynomial -> polynomial
+  | other ->
+      error
+        (Printf.sprintf "%s expected a polynomial but received \"%s\"" context
+           (describe_value other))
+
+let as_equation context = function
+  | Equation equation -> equation
+  | other ->
+      error
+        (Printf.sprintf "%s expected an equation but received \"%s\"" context
            (describe_value other))
 
 let as_set context = function
@@ -393,6 +412,14 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
             if operator = "=" then Truth (Ag_formula.equal left right)
             else if operator = "!=" then Truth (not (Ag_formula.equal left right))
             else error (Printf.sprintf "'%s' cannot order formulas" operator)
+        | Polynomial left, Polynomial right ->
+            if operator = "=" then Truth (Ag_polynomial.equal left right)
+            else if operator = "!=" then Truth (not (Ag_polynomial.equal left right))
+            else error (Printf.sprintf "'%s' cannot order polynomials" operator)
+        | Equation left, Equation right ->
+            if operator = "=" then Truth (Ag_equation.equal left right)
+            else if operator = "!=" then Truth (not (Ag_equation.equal left right))
+            else error (Printf.sprintf "'%s' cannot order equations" operator)
         | Set left, Set right ->
             if operator = "=" then Truth (Ag_set.equal left right)
             else if operator = "!=" then Truth (not (Ag_set.equal left right))
@@ -494,6 +521,13 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
         (Ag_formula.multiply
            (as_formula "formula_multiply" (recurse left))
            (as_formula "formula_multiply" (recurse right)))
+  | Call ("formula_divide", [ left; right ]) ->
+      (try
+         Formula
+           (Ag_formula.divide
+              (as_formula "formula_divide" (recurse left))
+              (as_formula "formula_divide" (recurse right)))
+       with Invalid_argument message -> error message)
   | Call ("formula_power", [ base; exponent ]) ->
       let exponent =
         Ag_number.require_integer "formula_power"
@@ -501,12 +535,25 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
       in
       Formula
         (Ag_formula.power (as_formula "formula_power" (recurse base)) exponent)
+  | Call ("formula_negate", [ body ]) ->
+      Formula (Ag_formula.negate (as_formula "formula_negate" (recurse body)))
   | Call ("formula_sin", [ body ]) ->
       Formula (Ag_formula.sin (as_formula "formula_sin" (recurse body)))
   | Call ("formula_cos", [ body ]) ->
       Formula (Ag_formula.cos (as_formula "formula_cos" (recurse body)))
+  | Call ("formula_tan", [ body ]) ->
+      Formula (Ag_formula.tan (as_formula "formula_tan" (recurse body)))
   | Call ("formula_exp", [ body ]) ->
       Formula (Ag_formula.exp (as_formula "formula_exp" (recurse body)))
+  | Call ("formula_ln", [ body ]) ->
+      Formula (Ag_formula.ln (as_formula "formula_ln" (recurse body)))
+  | Call ("formula_sqrt", [ body ]) ->
+      Formula (Ag_formula.sqrt (as_formula "formula_sqrt" (recurse body)))
+  | Call ("formula_substitute", [ body; variable; replacement ]) ->
+      let body = as_formula "formula_substitute" (recurse body)
+      and variable = as_text "formula_substitute" (recurse variable)
+      and replacement = as_formula "formula_substitute" (recurse replacement) in
+      Formula (Ag_formula.substitute ~variable ~replacement body)
   | Call ("differentiate", [ body; variable ]) ->
       let expression = as_formula "differentiate" (recurse body) in
       let variable = as_text "differentiate" (recurse variable) in
@@ -515,6 +562,159 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
       Text (Ag_formula.to_latex (as_formula "formula_latex" (recurse body)))
   | Call ("formula_is_zero", [ body ]) ->
       Truth (Ag_formula.is_zero (as_formula "formula_is_zero" (recurse body)))
+  | Call ("formula_to_polynomial", [ body; variable ]) ->
+      let body = as_formula "formula_to_polynomial" (recurse body)
+      and variable = as_text "formula_to_polynomial" (recurse variable) in
+      (match Ag_polynomial.of_formula ~variable body with
+      | Some polynomial -> Polynomial polynomial
+      | None -> error "formula_to_polynomial received a non-polynomial formula")
+  | Call ("polynomial_constant", [ value; variable ]) ->
+      Polynomial
+        (Ag_polynomial.constant
+           ~variable:(as_text "polynomial_constant" (recurse variable))
+           (as_number "polynomial_constant" (recurse value)))
+  | Call ("polynomial_variable", [ variable ]) ->
+      Polynomial (Ag_polynomial.variable (as_text "polynomial_variable" (recurse variable)))
+  | Call ("polynomial_monomial", [ coefficient; degree; variable ]) ->
+      let degree =
+        Ag_number.require_integer "polynomial_monomial"
+          (as_number "polynomial_monomial" (recurse degree))
+      in
+      (try
+         Polynomial
+           (Ag_polynomial.monomial
+              ~variable:(as_text "polynomial_monomial" (recurse variable))
+              (as_number "polynomial_monomial" (recurse coefficient)) degree)
+       with Invalid_argument message -> error message)
+  | Call ("polynomial_linear", [ coefficient; constant_term; variable ]) ->
+      Polynomial
+        (Ag_polynomial.linear
+           ~variable:(as_text "polynomial_linear" (recurse variable))
+           (as_number "polynomial_linear" (recurse coefficient))
+           (as_number "polynomial_linear" (recurse constant_term)))
+  | Call
+      ( "polynomial_quadratic",
+        [ quadratic_coefficient; linear_coefficient; constant_term; variable ] ) ->
+      Polynomial
+        (Ag_polynomial.quadratic
+           ~variable:(as_text "polynomial_quadratic" (recurse variable))
+           (as_number "polynomial_quadratic" (recurse quadratic_coefficient))
+           (as_number "polynomial_quadratic" (recurse linear_coefficient))
+           (as_number "polynomial_quadratic" (recurse constant_term)))
+  | Call ("polynomial_add", [ left; right ]) ->
+      (try
+         Polynomial
+           (Ag_polynomial.add (as_polynomial "polynomial_add" (recurse left))
+              (as_polynomial "polynomial_add" (recurse right)))
+       with Invalid_argument message -> error message)
+  | Call ("polynomial_subtract", [ left; right ]) ->
+      (try
+         Polynomial
+           (Ag_polynomial.subtract (as_polynomial "polynomial_subtract" (recurse left))
+              (as_polynomial "polynomial_subtract" (recurse right)))
+       with Invalid_argument message -> error message)
+  | Call ("polynomial_multiply", [ left; right ]) ->
+      (try
+         Polynomial
+           (Ag_polynomial.multiply (as_polynomial "polynomial_multiply" (recurse left))
+              (as_polynomial "polynomial_multiply" (recurse right)))
+       with Invalid_argument message -> error message)
+  | Call ("polynomial_scale", [ scalar; polynomial ]) ->
+      Polynomial
+        (Ag_polynomial.scale (as_number "polynomial_scale" (recurse scalar))
+           (as_polynomial "polynomial_scale" (recurse polynomial)))
+  | Call ("polynomial_power", [ polynomial; exponent ]) ->
+      let exponent =
+        Ag_number.require_integer "polynomial_power"
+          (as_number "polynomial_power" (recurse exponent))
+      in
+      (try
+         Polynomial
+           (Ag_polynomial.power (as_polynomial "polynomial_power" (recurse polynomial))
+              exponent)
+       with Invalid_argument message -> error message)
+  | Call ("polynomial_derivative", [ polynomial ]) ->
+      Polynomial
+        (Ag_polynomial.derivative
+           (as_polynomial "polynomial_derivative" (recurse polynomial)))
+  | Call ("polynomial_evaluate", [ polynomial; value ]) ->
+      Num
+        (Ag_polynomial.evaluate (as_polynomial "polynomial_evaluate" (recurse polynomial))
+           (as_number "polynomial_evaluate" (recurse value)))
+  | Call ("polynomial_coefficient", [ polynomial; degree ]) ->
+      let degree =
+        Ag_number.require_integer "polynomial_coefficient"
+          (as_number "polynomial_coefficient" (recurse degree))
+      in
+      (try
+         Num
+           (Ag_polynomial.coefficient
+              (as_polynomial "polynomial_coefficient" (recurse polynomial)) degree)
+       with Invalid_argument message -> error message)
+  | Call ("polynomial_degree", [ polynomial ]) ->
+      let degree =
+        match Ag_polynomial.degree (as_polynomial "polynomial_degree" (recurse polynomial)) with
+        | Some degree -> degree
+        | None -> -1
+      in
+      Num (Ag_number.of_int degree)
+  | Call ("polynomial_is_zero", [ polynomial ]) ->
+      Truth (Ag_polynomial.is_zero (as_polynomial "polynomial_is_zero" (recurse polynomial)))
+  | Call ("polynomial_formula", [ polynomial ]) ->
+      Formula (Ag_polynomial.to_formula (as_polynomial "polynomial_formula" (recurse polynomial)))
+  | Call ("polynomial_latex", [ polynomial ]) ->
+      Text (Ag_polynomial.to_latex (as_polynomial "polynomial_latex" (recurse polynomial)))
+  | Call ("equation", [ left; right ]) ->
+      Equation
+        (Ag_equation.make (as_formula "equation" (recurse left))
+           (as_formula "equation" (recurse right)))
+  | Call ("polynomial_equation", [ left; right ]) ->
+      (try
+         Equation
+           (Ag_equation.of_polynomials
+              (as_polynomial "polynomial_equation" (recurse left))
+              (as_polynomial "polynomial_equation" (recurse right)))
+       with Invalid_argument message -> error message)
+  | Call ("equation_normal_form", [ equation ]) ->
+      Formula (Ag_equation.normal_form (as_equation "equation_normal_form" (recurse equation)))
+  | Call ("equation_latex", [ equation ]) ->
+      Text (Ag_equation.to_latex (as_equation "equation_latex" (recurse equation)))
+  | Call ("equation_is_satisfied", [ equation; variable; value ]) ->
+      (try
+         Truth
+           (Ag_equation.satisfies
+              ~variable:(as_text "equation_is_satisfied" (recurse variable))
+              ~value:(as_number "equation_is_satisfied" (recurse value))
+              (as_equation "equation_is_satisfied" (recurse equation)))
+       with Invalid_argument message -> error message)
+  | Call ("equation_has_exact_solutions", [ equation; variable ]) ->
+      let equation = as_equation "equation_has_exact_solutions" (recurse equation)
+      and variable = as_text "equation_has_exact_solutions" (recurse variable) in
+      Truth
+        (match Ag_equation.solve ~variable equation with
+        | Ag_equation.Finite (_ :: _) -> true
+        | Ag_equation.No_solution | Ag_equation.All_values | Ag_equation.Finite []
+        | Ag_equation.Unsupported ->
+            false)
+  | Call ("equation_solution_count", [ equation; variable ]) ->
+      let equation = as_equation "equation_solution_count" (recurse equation)
+      and variable = as_text "equation_solution_count" (recurse variable) in
+      (match Ag_equation.exact_solutions ~variable equation with
+      | Some roots -> Num (Ag_number.of_int (List.length roots))
+      | None -> error "equation_solution_count requires a finite exact solution set")
+  | Call ("equation_solution_set", [ equation; variable ]) ->
+      let equation = as_equation "equation_solution_set" (recurse equation)
+      and variable = as_text "equation_solution_set" (recurse variable) in
+      (match Ag_equation.exact_solutions ~variable equation with
+      | Some roots -> Set (List.fold_left Ag_set.insert Ag_set.empty roots)
+      | None -> error "equation_solution_set requires a finite exact solution set")
+  | Call ("equation_unique_solution", [ equation; variable ]) ->
+      let equation = as_equation "equation_unique_solution" (recurse equation)
+      and variable = as_text "equation_unique_solution" (recurse variable) in
+      (match Ag_equation.exact_solutions ~variable equation with
+      | Some [ root ] -> Num root
+      | Some _ -> error "equation_unique_solution requires exactly one solution"
+      | None -> error "equation_unique_solution requires an exact supported equation")
   | Call ("set_empty", []) -> Set Ag_set.empty
   | Call ("set_insert", [ set; element ]) ->
       let set = as_set "set_insert" (recurse set) in

@@ -103,6 +103,16 @@
                             <button type="button" id="agEditToggleBtn" class="btn btn-secondary">
                                 Edit Grammar
                             </button>
+                            <button type="button" id="agNewBtn" class="btn btn-secondary">New Grammar</button>
+                        </div>
+                        <div id="agNewPanel" hidden>
+                            <div class="ag-controls-row ag-new-row">
+                                <label for="agNewName">File name</label>
+                                <input id="agNewName" type="text" placeholder="linear_equation.ag" maxlength="83" autocomplete="off">
+                                <button type="button" id="agCreateDraftBtn" class="btn btn-primary">Create Draft</button>
+                                <button type="button" id="agCancelNewBtn" class="btn btn-secondary">Cancel</button>
+                                <span id="agNewError" role="alert"></span>
+                            </div>
                         </div>
                         <p class="ag-note">
                             The grammar file defines the generated structure, random
@@ -1351,6 +1361,19 @@
             const agCheckBtn = document.getElementById('agCheckBtn');
             const agSaveBtn = document.getElementById('agSaveBtn');
             const agReloadBtn = document.getElementById('agReloadBtn');
+            const agNewBtn = document.getElementById('agNewBtn');
+            const agNewPanel = document.getElementById('agNewPanel');
+            const agNewName = document.getElementById('agNewName');
+            const agNewError = document.getElementById('agNewError');
+            let agIsNew = false;
+            let agBusy = false;
+            function setAgBusy(busy) {
+                agBusy = busy;
+                [agGrammarSelect, agNewBtn, agReloadBtn, agCheckBtn, agSaveBtn,
+                 document.getElementById('agCreateDraftBtn'), agEditToggleBtn]
+                    .forEach(control => { control.disabled = busy; });
+                agGrammarText.readOnly = busy;
+            }
             let agGrammarsLoaded = false;
             let agOriginalText = '';
             let agCurrentGrammar = '';
@@ -1368,8 +1391,22 @@
                 'cond', 'abs', 'min', 'max', 'bit_and', 'bit_or', 'bit_xor',
                 'complex', 'complex_latex', 'formula_constant', 'formula_variable',
                 'formula_add', 'formula_subtract', 'formula_multiply',
-                'formula_power', 'formula_sin', 'formula_cos', 'formula_exp',
+                'formula_divide', 'formula_power', 'formula_negate',
+                'formula_sin', 'formula_cos', 'formula_tan', 'formula_exp',
+                'formula_ln', 'formula_sqrt', 'formula_substitute',
                 'differentiate', 'formula_latex', 'formula_is_zero',
+                'formula_to_polynomial', 'polynomial_constant',
+                'polynomial_variable', 'polynomial_monomial',
+                'polynomial_linear', 'polynomial_quadratic', 'polynomial_add',
+                'polynomial_subtract', 'polynomial_multiply', 'polynomial_scale',
+                'polynomial_power', 'polynomial_derivative',
+                'polynomial_evaluate', 'polynomial_coefficient',
+                'polynomial_degree', 'polynomial_is_zero', 'polynomial_formula',
+                'polynomial_latex', 'equation', 'polynomial_equation',
+                'equation_normal_form', 'equation_latex',
+                'equation_is_satisfied', 'equation_has_exact_solutions',
+                'equation_solution_count', 'equation_solution_set',
+                'equation_unique_solution',
                 'set_empty', 'set_insert', 'set_interval', 'set_union',
                 'set_intersection', 'set_difference', 'set_latex',
                 'vector2', 'vector3', 'vector4', 'vector_add',
@@ -1517,7 +1554,7 @@
                     + ' · ' + source.length + ' chars';
 
                 if (markDirty) {
-                    agDirty = source !== agOriginalText;
+                    agDirty = agIsNew || source !== agOriginalText;
                     setAgState(agDirty ? 'dirty' : 'saved', agDirty ? 'Unsaved changes' : 'Saved');
                 }
                 syncAgScroll();
@@ -1562,6 +1599,7 @@
 
             function loadAgGrammarList() {
                 if (agGrammarsLoaded) return Promise.resolve();
+                setAgBusy(true);
                 return fetch('/ag_grammars')
                     .then(r => r.json())
                     .then(data => {
@@ -1574,18 +1612,21 @@
                         });
                         agGrammarsLoaded = true;
                     })
-                    .catch(() => {});
+                    .catch(e => showAgMessage('Could not load grammars: ' + e.message, 'error'))
+                    .finally(() => setAgBusy(false));
             }
 
             function loadAgGrammarText(requestedName) {
                 const name = requestedName || agGrammarSelect.value;
                 if (!name) return;
+                setAgBusy(true);
                 showAgMessage('', '');
                 setAgState('checking', 'Loading…');
                 fetch('/ag_grammar?name=' + encodeURIComponent(name))
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
+                            agIsNew = false;
                             agGrammarText.value = data.content;
                             agEditorName.textContent = data.name;
                             agCurrentGrammar = data.name;
@@ -1602,7 +1643,8 @@
                     .catch(e => {
                         showAgMessage('Network error: ' + e.message, 'error');
                         setAgState('dirty', 'Load failed');
-                    });
+                    })
+                    .finally(() => setAgBusy(false));
             }
 
             document.querySelectorAll('input[name="generatorMode"]').forEach(radio => {
@@ -1618,12 +1660,59 @@
                 });
             });
 
+            agNewBtn.addEventListener('click', function() {
+                agNewPanel.hidden = false;
+                agNewError.textContent = '';
+                agNewName.focus();
+            });
+            document.getElementById('agCancelNewBtn').addEventListener('click', function() {
+                agNewPanel.hidden = true;
+            });
+            document.getElementById('agCreateDraftBtn').addEventListener('click', function() {
+                let name = agNewName.value.trim();
+                if (name && !name.endsWith('.ag')) name += '.ag';
+                if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}\.ag$/.test(name)) {
+                    agNewError.textContent = 'Use letters, numbers, underscores or hyphens; start with a letter or number.';
+                    return;
+                }
+                if (Array.from(agGrammarSelect.options).some(option => option.value === name)) {
+                    agNewError.textContent = 'This name already exists. Choose another name.';
+                    return;
+                }
+                if (agDirty && !confirm('Discard unsaved changes and create a new grammar?')) return;
+                agGrammarSelect.querySelectorAll('[data-draft]').forEach(option => option.remove());
+                const option = new Option(name + ' (new)', name, false, true);
+                option.dataset.draft = 'true';
+                agGrammarSelect.add(option);
+                agCurrentGrammar = name;
+                agIsNew = true;
+                agOriginalText = '';
+                agEditorName.textContent = name;
+                agGrammarText.value = 'context "Numeric"\n\nrandom a = integer_between(2, 9)\nrandom b = integer_between(2, 9)\n\nsynth text on Q\nsynth value on Q\n\nstart Q\n\nQ -> "addition" {\n  text = str(a) ++ " + " ++ str(b)\n  value = a + b\n}\n\nprompt "Calculate [`{Q.text}`]."\nanswer Q.value\nwidth 10\n';
+                agEditor.style.display = 'block';
+                agEditToggleBtn.textContent = 'Hide Grammar';
+                agNewPanel.hidden = true;
+                agNewName.value = '';
+                showAgMessage('', '');
+                updateAgEditor(true);
+                agGrammarText.focus();
+            });
+            agNewName.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    document.getElementById('agCreateDraftBtn').click();
+                }
+            });
+
             agGrammarSelect.addEventListener('change', function() {
                 const requested = this.value;
                 if (agDirty && !confirm('This grammar has unsaved changes. Discard them and open another file?')) {
                     this.value = agCurrentGrammar;
                     return;
                 }
+                agGrammarSelect.querySelectorAll('[data-draft]').forEach(option => option.remove());
+                agIsNew = false;
+                agDirty = false;
                 if (agEditor.style.display !== 'none') loadAgGrammarText(requested);
             });
 
@@ -1642,6 +1731,10 @@
             });
 
             agReloadBtn.addEventListener('click', function() {
+                if (agIsNew) {
+                    showAgMessage('This draft has not been saved yet.', 'error');
+                    return;
+                }
                 if (agDirty && !confirm('Discard the unsaved changes and reload this grammar?')) return;
                 loadAgGrammarText();
             });
@@ -1705,7 +1798,8 @@
             });
 
             agCheckBtn.addEventListener('click', function() {
-                agCheckBtn.disabled = true;
+                if (agBusy) return;
+                setAgBusy(true);
                 setAgState('checking', 'Checking…');
                 showAgMessage('Checking...', '');
                 fetch('/ag_grammar_check', {
@@ -1725,23 +1819,31 @@
                         showAgMessage('Network error: ' + e.message, 'error');
                         setAgState(agDirty ? 'dirty' : 'saved', agDirty ? 'Unsaved changes' : 'Saved');
                     })
-                    .finally(() => { agCheckBtn.disabled = false; });
+                    .finally(() => { setAgBusy(false); });
             });
 
             agSaveBtn.addEventListener('click', function() {
-                agSaveBtn.disabled = true;
+                if (agBusy) return;
+                setAgBusy(true);
                 setAgState('checking', 'Saving…');
                 showAgMessage('Saving...', '');
                 fetch('/ag_grammar_save', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: 'name=' + encodeURIComponent(agGrammarSelect.value)
+                        + '&create=' + String(agIsNew)
                         + '&content=' + encodeURIComponent(agGrammarText.value)
                 })
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
                             // 保存前会先校验，所以走到这里文法一定是好的
+                            agIsNew = false;
+                            agCurrentGrammar = data.name;
+                            agEditorName.textContent = data.name;
+                            const option = agGrammarSelect.selectedOptions[0];
+                            option.textContent = data.name;
+                            delete option.dataset.draft;
                             agOriginalText = agGrammarText.value;
                             agDirty = false;
                             setAgState('saved', 'Valid · saved');
@@ -1756,7 +1858,7 @@
                         setAgState('dirty', 'Save failed');
                         showAgMessage('Network error: ' + e.message, 'error');
                     })
-                    .finally(() => { agSaveBtn.disabled = false; });
+                    .finally(() => { setAgBusy(false); });
             });
 
             window.addEventListener('beforeunload', function(event) {

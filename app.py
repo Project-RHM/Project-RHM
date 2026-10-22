@@ -924,9 +924,17 @@ def ag_grammar_save():
     is validated in a temporary file first and only moved into place once it
     passes.
     """
-    name = os.path.basename(request.form.get('name', '').strip() or AG_DEFAULT_GRAMMAR)
-    if not name.endswith('.ag'):
-        return jsonify({'success': False, 'error': 'A grammar file must end in .ag'}), 400
+    name = request.form.get('name', '').strip()
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,79}\.ag', name):
+        return jsonify({'success': False, 'error':
+                        'Use 1-80 letters, numbers, underscores or hyphens, starting '
+                        'with a letter or number, followed by .ag.'}), 400
+    create = request.form.get('create') == 'true'
+    target = os.path.join(AG_GRAMMAR_DIR, name)
+    if os.path.islink(target):
+        return jsonify({'success': False, 'error': 'Cannot save a symbolic link.'}), 400
+    if create and os.path.lexists(target):
+        return jsonify({'success': False, 'error': f'{name} already exists. Choose another name.'}), 409
     content = request.form.get('content', '')
 
     handle, temporary = tempfile.mkstemp(prefix='.check_', suffix='.ag', dir=AG_GRAMMAR_DIR)
@@ -936,12 +944,21 @@ def ag_grammar_save():
         ok, message = check_ag_source(temporary, display_name=name)
         if not ok:
             return jsonify({'success': False, 'error': message})
-        target = os.path.join(AG_GRAMMAR_DIR, name)
-        # Keep one backup so an edit can be undone from the shell.
-        if os.path.exists(target):
-            shutil.copyfile(target, target + '.bak')
-        shutil.move(temporary, target)
-        temporary = None
+        if create:
+            # Publish the checked file atomically without replacing another file.
+            try:
+                os.link(temporary, target)
+            except FileExistsError:
+                return jsonify({'success': False, 'error':
+                                f'{name} already exists. Choose another name.'}), 409
+        else:
+            # Keep one backup so an edit can be undone from the shell.
+            if os.path.exists(target):
+                shutil.copyfile(target, target + '.bak')
+            shutil.move(temporary, target)
+            temporary = None
+    except OSError as error:
+        return jsonify({'success': False, 'error': str(error)}), 500
     finally:
         if temporary and os.path.exists(temporary):
             os.remove(temporary)

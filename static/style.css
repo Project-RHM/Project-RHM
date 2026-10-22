@@ -1169,6 +1169,17 @@ pre {
 }
 
 .ag-controls-row select { min-width: 190px; }
+.ag-new-row { margin-top: 12px; }
+.ag-new-row input[type="text"] {
+    flex: 1 1 200px;
+    min-width: 160px;
+    width: 240px;
+    max-width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #c8d5e0;
+    border-radius: 3px;
+}
+#agNewError { color: #9b232b; font-size: 13px; }
 .ag-controls-row input[type="number"] { width: 70px; }
 
 .ag-note {
