@@ -1,0 +1,50 @@
+# ==========================================================================
+#  Two grammars in one set: a derivative or a Boolean evaluation
+#
+#  This file includes calculus.ag and boolean.ag whole and asks one question
+#  of either: it is how a user puts the question types of two libraries into
+#  one assignment. Each included grammar keeps its own nonterminals (F and T,
+#  E and V), prices and wording helpers; this file adds only the start
+#  symbol that chooses between them and the budget both spend.
+#
+#  Difficulty is the budget `cost`, spent exactly by the form chosen. The
+#  two grammars price on their own scales (a derivative of 8 and a Boolean
+#  expression of 8 are not the same difficulty), so a set built from this
+#  file is best drawn with ag_difficulty.py around a mean.
+#
+#    agrun --set cost=8 derivative_or_boolean.ag
+# ==========================================================================
+
+include "calculus.ag"
+include "boolean.ag"
+
+attribute cost = 8 split       # overrides the two included defaults
+
+synth kind on M
+synth text on M
+synth answer_value on M
+
+start M
+
+M -> F "derivative" weight 1 {
+  kind = "derivative"
+  text = "Differentiate the function with respect to x:
+[`f(x) = " ++ $1.latex ++ "`]."
+  answer_value = differentiate($1.formula, "x")
+  require not formula_is_zero(answer_value)
+}
+
+M -> E "boolean" weight 1 {
+  kind = "boolean"
+  text = "Evaluate the Boolean expression:
+[`" ++ $1.latex ++ "`]
+When:
+- A = " ++ ta ++ "
+- B = " ++ tb ++ "
+- C = " ++ tc ++ "
+Enter 1 for True and 0 for False."
+  answer_value = $1.value
+}
+
+prompt "{M.text}"
+answer M.answer_value

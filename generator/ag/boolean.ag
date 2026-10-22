@@ -30,10 +30,14 @@ attribute cost = 10 split      # operator cost the expression spends exactly
 
 # ---- Synthesized attributes: computed on the way back up ----
 
-synth value                    # whether this subtree is true
-synth latex                    # how this subtree is written
-synth negation                 # 1 when this subtree is a negation, so that
-                               # a negation is never negated again
+# Declared per nonterminal, so that another grammar can include this one
+# without being asked to compute these for its own symbols.
+synth value on E               # whether this subtree is true
+synth value on V
+synth latex on E               # how this subtree is written
+synth latex on V
+synth negation on E            # 1 when this subtree is a negation, so that
+synth negation on V            # a negation is never negated again
 
 
 # ---- Drawn once per question ----

@@ -8,6 +8,7 @@ open Ag_ast
 
 let position (start : Lexing.position) =
   {
+    file = start.Lexing.pos_fname;
     line = start.Lexing.pos_lnum;
     column = start.Lexing.pos_cnum - start.Lexing.pos_bol + 1;
   }
@@ -15,7 +16,7 @@ let position (start : Lexing.position) =
 
 %token ATTRIBUTE SYNTH START CONTEXT PRECEDENCE LEFT RIGHT NONASSOC
 %token RANDOM LET BOOLEAN ON
-%token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH
+%token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH INCLUDE
 %token AND OR NOT
 %token ARROW CONCAT NEQ LE GE EQ LT GT
 %token PLUS MINUS STAR SLASH PERCENT CARET
@@ -82,6 +83,9 @@ declaration:
 
   | WIDTH; columns = INT
       { Width_decl (columns, position $startpos) }
+
+  | INCLUDE; name = STRING
+      { Include_decl (name, position $startpos) }
 
   | rule = rule
       { Rule_decl rule }

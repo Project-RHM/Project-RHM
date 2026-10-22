@@ -272,6 +272,9 @@ let rec to_latex_with_context context expression =
     | Divide (left, right) ->
         "\\frac{" ^ to_latex_with_context 0 left ^ "}{"
         ^ to_latex_with_context 0 right ^ "}"
+    | Power ((Exp _ as base), exponent) ->
+        (* e^{x}^{3} is a double superscript in LaTeX; bracket the base *)
+        "\\left(" ^ to_latex_with_context 0 base ^ "\\right)^{" ^ string_of_int exponent ^ "}"
     | Power (base, exponent) ->
         to_latex_with_context (level + 1) base ^ "^{" ^ string_of_int exponent ^ "}"
     | Negate ((Multiply _ | Divide _) as body) ->

@@ -28,6 +28,10 @@ type template_piece =
   | Text of string
   | Hole of string * string (* {E.latex} — an attribute of the start symbol *)
   | Value_hole of string    (* {ta}      — a question-level random or let *)
+  | Answer_hole of string * string
+      (* {answer Q.nth} -- an answer blank here, graded against that attribute *)
+  | Answer_value_hole of string
+      (* {answer total} -- an answer blank graded against a random or let *)
 
 type spec = {
   inherited : inherited_attribute list;
@@ -43,9 +47,23 @@ type spec = {
   precedences : (string * int * associativity) list;
   rules : rule list;
   prompt : template_piece list;
-  answer : expr;
+  (* The trailing answer blank; None when the prompt places its own blanks. *)
+  answer : expr option;
   width : int option;
+  (* A file without start, prompt and answer is a library: it is meant to be
+     included by a grammar and cannot generate on its own. *)
+  library : bool;
+  (* The start symbol computes `pg_context` / `pg_width` itself, per question. *)
+  per_question_context : bool;
+  per_question_width : bool;
 }
+
+let valid_context_name name =
+  let valid_character = function
+    | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | ' ' | '-' | '_' -> true
+    | _ -> false
+  in
+  name <> "" && String.trim name = name && String.for_all valid_character name
 
 (* Override the starting value of an inherited attribute from outside the file.
    This is how the web configuration sets difficulty: the .ag file owns the
@@ -248,7 +266,35 @@ let parse_template position text =
               let body =
                 String.sub text (index + 1) (close - index - 1) |> String.trim
               in
-              (match String.index_opt body '.' with
+              let answer_target =
+                if String.length body > 7 && String.sub body 0 7 = "answer " then
+                  Some (String.trim (String.sub body 7 (String.length body - 7)))
+                else None
+              in
+              (match answer_target with
+              | Some target -> (
+                  flush ();
+                  match String.index_opt target '.' with
+                  | Some dot when dot > 0 && dot < String.length target - 1 ->
+                      pieces :=
+                        Answer_hole
+                          ( String.sub target 0 dot |> String.trim,
+                            String.sub target (dot + 1) (String.length target - dot - 1)
+                            |> String.trim )
+                        :: !pieces
+                  | _ when target <> "" && not (String.contains target '.') ->
+                      pieces := Answer_value_hole target :: !pieces
+                  | _ ->
+                      errors :=
+                        {
+                          message =
+                            "{answer ...} must name an attribute of the start symbol, as \
+                             in {answer Q.value}, or a random or let, as in {answer total}";
+                          position;
+                        }
+                        :: !errors)
+              | None ->
+              match String.index_opt body '.' with
               | Some dot when dot > 0 && dot < String.length body - 1 ->
                   flush ();
                   let owner = String.sub body 0 dot |> String.trim in
@@ -385,13 +431,13 @@ let check (declarations : file) : (spec, error list) result =
                  "'%s' is already declared as an inherited attribute" name);
           synthesized := !synthesized @ [ (name, scope) ]
       | Start_decl (name, position) -> declared_once "start" start position name
+      | Include_decl (name, position) ->
+          report position
+            (Printf.sprintf
+               "include \"%s\" was not resolved; includes are expanded by the loader"
+               name)
       | Context_decl (name, position) ->
-          let valid_character = function
-            | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | ' ' | '-' | '_' -> true
-            | _ -> false
-          in
-          if name = "" || String.trim name <> name || not (String.for_all valid_character name)
-          then
+          if not (valid_context_name name) then
             report position
               "context must be a non-empty WeBWorK context name containing only \
                letters, numbers, spaces, underscores, or hyphens";
@@ -444,9 +490,11 @@ let check (declarations : file) : (spec, error list) result =
   let is_nonterminal name = List.mem name nonterminals in
 
   (* ---- top-level coherence ---- *)
+  let library = !start = None && !prompt = None && !answer = None in
   let start_symbol =
     match !start with
     | None ->
+        if not library then
         report dummy_position
           "a 'start SYMBOL' declaration is required (which nonterminal does a \
            question begin at?)";
@@ -783,9 +831,10 @@ let check (declarations : file) : (spec, error list) result =
   let prompt_pieces =
     match !prompt with
     | None ->
-        report dummy_position
-          "a 'prompt \"...\"' declaration is required (how does the question \
-           read?)";
+        if not library then
+          report dummy_position
+            "a 'prompt \"...\"' declaration is required (how does the question \
+             read?)";
         []
     | Some (template, position) ->
         let pieces, template_errors = parse_template position template in
@@ -801,7 +850,7 @@ let check (declarations : file) : (spec, error list) result =
                        "{%s} is not a random or a let; to use an attribute of \
                         the expression write {%s.%s}"
                        name start_symbol name)
-            | Hole (owner, attribute) ->
+            | Hole (owner, attribute) | Answer_hole (owner, attribute) ->
                 if owner <> start_symbol then
                   report position
                     (Printf.sprintf
@@ -813,19 +862,33 @@ let check (declarations : file) : (spec, error list) result =
                     (Printf.sprintf
                        "{%s.%s} refers to '%s', which is not a synthesized \
                         attribute"
-                       owner attribute attribute))
+                       owner attribute attribute)
+            | Answer_value_hole name ->
+                if not (is_question_level name) then
+                  report position
+                    (Printf.sprintf "{answer %s} is not a random or a let" name))
           pieces;
         pieces
+  in
+  let inline_blanks =
+    List.exists
+      (function Answer_hole _ | Answer_value_hole _ -> true | _ -> false)
+      prompt_pieces
   in
 
   let answer_expr =
     match !answer with
     | None ->
-        report dummy_position
-          "an 'answer ...' declaration is required (what is the correct \
-           answer?)";
-        Int 0
+        if not (library || inline_blanks) then
+          report dummy_position
+            "an 'answer ...' declaration is required (what is the correct \
+             answer?), or place the blanks in the prompt with {answer ...}";
+        None
     | Some (body, position) ->
+        if inline_blanks then
+          report position
+            "the prompt already places its answer blanks with {answer ...}; \
+             drop the 'answer' declaration";
         iter_expr
           (fun node ->
             match node with
@@ -855,7 +918,14 @@ let check (declarations : file) : (spec, error list) result =
                      index start_symbol)
             | _ -> ())
           body;
-        body
+        Some body
+  in
+  (* The start symbol may compute the context and width of each question. *)
+  let computed_by_start name =
+    List.exists
+      (fun (attribute, scope) ->
+        attribute = name && (scope = None || scope = Some start_symbol))
+      synthesized
   in
 
   match List.rev !errors with
@@ -873,5 +943,8 @@ let check (declarations : file) : (spec, error list) result =
           prompt = prompt_pieces;
           answer = answer_expr;
           width = !width;
+          library;
+          per_question_context = computed_by_start "pg_context";
+          per_question_width = computed_by_start "pg_width";
         }
   | errors -> Error errors

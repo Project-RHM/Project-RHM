@@ -43,7 +43,7 @@ PROJECT = Path(__file__).resolve().parents[1]
 AGRUN = PROJECT / "generator" / "_build" / "default" / "ag" / "agrun.exe"
 
 QUESTION_START = re.compile(r"^\s*\d+\.\s", re.M)
-ANSWER_LINE = re.compile(r"^\s*answer:\s*(.*)$", re.M)
+ANSWER_LINE = re.compile(r"^\s*answers?:\s*(.*)$", re.M)
 DERIVATION_START = re.compile(r"^Question \d+", re.M)
 PRODUCTION_LINE = re.compile(r"^( *)production:", re.M)
 EXPRESSION = re.compile(r"\[`(.*?)`\]", re.S)
@@ -53,10 +53,25 @@ EXPRESSION = re.compile(r"\[`(.*?)`\]", re.S)
 # Running the generator
 # ---------------------------------------------------------------------------
 
+INCLUDE = re.compile(r'^\s*include\s+"([^"]+)"', re.M)
+
+
+def grammar_text(grammar: Path, seen: set[Path] | None = None) -> str:
+    """The grammar's text with its `include`d files' text in front, as the
+    loader reads it, so a budget declared in a library is found."""
+    seen = seen or set()
+    if grammar in seen:
+        return ""
+    seen.add(grammar)
+    text = grammar.read_text()
+    included = [grammar_text(grammar.parent / name, seen) for name in INCLUDE.findall(text)]
+    return "".join(included) + text
+
+
 def budget_default(grammar: Path, budget: str) -> int:
     """The initial value the grammar declares for its budget attribute."""
     declaration = re.compile(rf"^\s*attribute\s+{re.escape(budget)}\s*=\s*(\d+)", re.M)
-    found = declaration.search(grammar.read_text())
+    found = declaration.search(grammar_text(grammar))
     if found is None:
         sys.exit(f"{grammar} declares no inherited attribute named '{budget}'; "
                  "name the budget with --budget")

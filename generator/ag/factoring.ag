@@ -1,0 +1,36 @@
+# ==========================================================================
+#  Factoring a polynomial
+#
+#  The tree of factors comes from polynomial_core.ag; this file shows the
+#  expansion and asks for the factors. The answer is made before the
+#  question, so it is right by construction, as an integral is.
+#
+#    agrun --set cost=2 factoring.ag     easy      (x + 2)(x - 5)
+#    agrun --set cost=5 factoring.ag     medium (the default)
+#    agrun --set cost=8 factoring.ag     hard
+#
+#  The PolynomialFactors context makes WeBWorK insist on a factored answer,
+#  so the expanded polynomial itself is not accepted. The least budget is 1:
+#  a single linear factor is no factoring question.
+# ==========================================================================
+
+include "polynomial_core.ag"
+
+context "PolynomialFactors"
+
+synth text on Q
+synth answer_value on Q
+
+start Q
+
+# A factoring question has at least two factors to find.
+Q -> E {
+  require $1.factors >= 2
+  text = "Factor completely:
+[`" ++ polynomial_latex($1.poly) ++ "`]."
+  answer_value = $1.factored
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
+width 30

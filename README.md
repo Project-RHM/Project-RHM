@@ -37,6 +37,14 @@ attributes, constraints, wording, and answers. The shipped specifications are:
 - `calculus.ag`
 - `set.ag`
 - `vector.ag`
+- `factoring.ag`, `polynomial_expand.ag`, `vector_expr.ag`, `linear_equation.ag`
+- `polynomial_forms.ag`, `sequence_parts.ag`, on the library `polynomial_core.ag`
+- `derivative_or_boolean.ag`, which includes `calculus.ag` and `boolean.ag` whole
+  (see `QUESTION_TYPES.md` for every grammar, its prices and its context)
+
+A grammar may `include` another file, give each question form its own
+WeBWorK context, and place several answer blanks in one prompt; see
+`AG_LANGUAGE_EXTENSIONS.md`.
 
 `sequence.ag` covers arithmetic/geometric nth-term and finite-sum questions.
 It also exercises the signed inclusive range generators `integer_between` and

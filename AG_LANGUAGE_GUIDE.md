@@ -984,6 +984,14 @@ E -> V           when cost = 0             { ... }
 
 要点：每条规则的 `when` 是它能花掉的最小预算；叶子规则只在预算为零时可用；要保证从 0 起的每个整数都能被花掉，这样节点永远不会拿到一笔没有规则能接的预算。
 
-`arithmetic.ag` 同样改用成本预算：加减乘除各 1、2、3、4，数字按首位以外的位数付费（2 位 1，3 位 2，4 位 3），`digit` 只作为位数上限保留，默认预算 12。`calculus.ag` 按求导法则定价：和差 1，乘积 3，叶子的幂或函数 1，复合式的幂或函数 3 加上内层（链式法则），叶子 `cx` 1；积分题在构造 F 之前先付 2，默认预算 7。`complex.ag` 的和差 1、乘积 3、叶子 0，共轭不加价；求模（固定 2）和 `i` 的幂（固定 1）只在预算恰好等于其价格时出现，默认预算 4。`set.ag` 的并 1、交和差各 2，区间叶子 1、有限集叶子 0，默认预算 7。注意：节点手里的预算若没有规则能接，引擎报错而不重试，所以每种模式下每个预算都要能花完。`boolean_equiv.ag` 由定律付价（双重否定 1，双条件 3，其余 2），剩余给子表达式，默认 6。`vector.ag`、`sequence.ag` 和四个 `library_*.ag` 没有递归，每种题型是一个固定价格，只在预算恰好等于价格时出现。
+`arithmetic.ag` 同样改用成本预算：加减乘除各 1、2、3、4，数字按首位以外的位数付费（2 位 1，3 位 2，4 位 3），`digit` 只作为位数上限保留，默认预算 12。`calculus.ag` 按求导法则定价：和差 1，乘积 3，叶子的幂或函数 1，复合式的幂或函数 3 加上内层（链式法则），叶子 `cx` 1；积分题在构造 F 之前先付 2，默认预算 7。`complex.ag` 的和差 1、乘积 3、叶子 0，共轭不加价；求模（固定 2）和 `i` 的幂（固定 1）只在预算恰好等于其价格时出现，默认预算 4。`set.ag` 的并 1、交和差各 2，区间叶子 1、有限集叶子 0，默认预算 7。注意：节点手里的预算若没有规则能接，引擎报错而不重试，所以每种模式下每个预算都要能花完。`boolean_equiv.ag` 由定律付价（双重否定 1，双条件 3，其余 2），剩余给子表达式，默认 6。`vector.ag`、`sequence.ag` 和四个 `library_*.ag` 没有递归，每种题型是一个固定价格，只在预算恰好等于价格时出现。全部文法的题型、价格和上下文列在 `QUESTION_TYPES.md`（英文）和 `QUESTION_TYPES.zh.md`（中文）。
 
 价格表、实测数据、`tools/ag_difficulty.py` 的用法，以及给其他文法加成本预算的步骤，见 `DIFFICULTY_BUDGET.md`（英文）和 `DIFFICULTY_BUDGET.zh.md`（中文）。
+
+## 25. include、每题的上下文、多个答案空（Language extensions）
+
+- `include "polynomial_core.ag"`：读入另一个文件的声明并放在本文件之前。规则、属性、random、let、precedence 累加；`start`、`context`、`prompt`、`answer`、`width` 以本文件为准。没有 `start`、`prompt`、`answer` 的文件是库，只能被包含。
+- `synth pg_context on Q`，规则里写 `pg_context = "Complex"`：每道题自己的 WeBWorK 上下文；`pg_width` 同理。`.pg` 文件按上下文分段并加载相应的宏。
+- 题干里的 `{answer Q.nth}` 在该位置放一个答案空，按 `Q.nth` 判分，`{answer total}` 按 random 或 let 判分；放了内联空的文件不再写 `answer` 声明。
+
+详细说明和示例见 `AG_LANGUAGE_EXTENSIONS.md`（英文）和 `AG_LANGUAGE_EXTENSIONS.zh.md`（中文）；示例文件 `polynomial_core.ag`、`polynomial_forms.ag`、`sequence_parts.ag`，以及把 calculus.ag 和 boolean.ag 整个包含进来的 `derivative_or_boolean.ag`。被包含的文法要按非终结符声明 synth（`synth value on E`），随库发布的文法已经如此。

@@ -105,6 +105,12 @@ let () =
       List.iter (fun error -> prerr_endline (Ag_load.string_of_failure error)) errors;
       exit 1
   | Ok spec -> (
+      if spec.Ag_check.library then begin
+        prerr_endline
+          (options.filename
+         ^ ": this file has no start symbol; it is a library, to be included by a grammar");
+        exit 1
+      end;
       let spec =
         List.fold_left
           (fun spec (name, value) ->
@@ -130,8 +136,10 @@ let () =
         else
           questions
           |> List.mapi (fun index question ->
-                 Printf.sprintf "%2d. %s\n    answer: %s\n" (index + 1)
-                   question.Ag_engine.prompt question.Ag_engine.answer_text)
+                 Printf.sprintf "%2d. %s\n    %s: %s\n" (index + 1)
+                   question.Ag_engine.prompt
+                   (if List.length question.Ag_engine.answers > 1 then "answers" else "answer")
+                   question.Ag_engine.answer_text)
           |> String.concat ""
       in
       (match options.output with

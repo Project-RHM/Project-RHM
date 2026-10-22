@@ -35,8 +35,10 @@ attribute digit = 4 copy       # the most digits a number may have
 
 # ---- Synthesized attributes: results computed on the way back up ----
 
-synth value                    # what this subtree equals -> becomes the answer
-synth latex                    # how this subtree is written -> becomes the question
+synth value on E               # what this subtree equals -> becomes the answer
+synth value on num
+synth latex on E               # how this subtree is written -> becomes the question
+synth latex on num
 
 
 # ---- Precedence: parentheses are added automatically from this table ----

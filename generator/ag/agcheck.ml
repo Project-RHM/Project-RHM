@@ -23,6 +23,8 @@ let describe_symbol = function
 
 let summarize (spec : Ag_check.spec) =
   print_endline "OK";
+  if spec.Ag_check.library then
+    print_endline "  library      : no start symbol; include this file from a grammar";
   Printf.printf "  start symbol : %s\n" spec.Ag_check.start;
   Printf.printf "  context      : %s\n" spec.Ag_check.context;
   let inherited =
@@ -71,7 +73,10 @@ let summarize (spec : Ag_check.spec) =
          | Ag_check.Text text -> text
          | Ag_check.Value_hole name -> Printf.sprintf "<%s>" name
          | Ag_check.Hole (owner, attribute) ->
-             Printf.sprintf "<%s.%s>" owner attribute)
+             Printf.sprintf "<%s.%s>" owner attribute
+         | Ag_check.Answer_hole (owner, attribute) ->
+             Printf.sprintf "[answer %s.%s]" owner attribute
+         | Ag_check.Answer_value_hole name -> Printf.sprintf "[answer %s]" name)
     |> String.concat "")
 
 let () =

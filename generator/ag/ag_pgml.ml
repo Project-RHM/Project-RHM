@@ -26,13 +26,21 @@ let perl_string text =
     text;
   Buffer.contents buffer
 
-let header context =
-  Printf.sprintf
-    "DOCUMENT();\n\
-     loadMacros(\"PGstandard.pl\", \"MathObjects.pl\", \"PGML.pl\");\n\
-     Context(\"%s\");\n\
-     \n"
-    (perl_string context)
+(* A context that lives in its own macro file needs that file loaded before
+   Context() can select it. *)
+let extra_macros = function
+  | "PolynomialFactors" | "PolynomialFactors-Strict" -> [ "contextPolynomialFactors.pl" ]
+  | _ -> []
+
+let header contexts =
+  let extra = List.concat_map extra_macros contexts |> List.sort_uniq compare in
+  let macros =
+    [ "PGstandard.pl"; "MathObjects.pl"; "PGML.pl" ] @ extra
+    |> List.map (Printf.sprintf "\"%s\"")
+    |> String.concat ", "
+  in
+  Printf.sprintf "DOCUMENT();\nloadMacros(%s);\nContext(\"%s\");\n\n" macros
+    (perl_string (List.hd contexts))
 
 let footer = "END_PGML\nENDDOCUMENT();\n"
 
@@ -70,14 +78,48 @@ let blank ?width answer =
   | None -> Printf.sprintf "[_____]{%s}" answer
   | Some columns -> Printf.sprintf "[_____]{answer=>%s,width=>%d}" answer columns
 
+(* The grammar's own width, when it computes one, wins over the document's. *)
 let question_block ?width (question : Ag_engine.question) =
-  Printf.sprintf "%s %s" question.Ag_engine.prompt
-    (blank ?width (answer_of_value question.Ag_engine.answer))
+  let width = match question.Ag_engine.width with Some columns -> Some columns | None -> width in
+  question.Ag_engine.pieces
+  |> List.map (function
+       | Ag_engine.Piece_text text -> text
+       | Ag_engine.Piece_blank value -> blank ?width (answer_of_value value))
+  |> String.concat ""
+  |> String.trim
 
+(* Questions that need different WeBWorK contexts are written in separate
+   PGML blocks, with Context() switched between them. Questions in the same
+   context stay in one block, so a document in a single context reads as it
+   always did. *)
 let document ?width ?(context = "Numeric") questions =
-  header context ^ "BEGIN_PGML\n"
-  ^ (questions |> List.map (question_block ?width) |> String.concat "\n\n")
-  ^ "\n" ^ footer
+  let runs =
+    List.fold_left
+      (fun runs (question : Ag_engine.question) ->
+        match runs with
+        | (run_context, members) :: rest when run_context = question.Ag_engine.context ->
+            (run_context, question :: members) :: rest
+        | _ -> (question.Ag_engine.context, [ question ]) :: runs)
+      [] questions
+    |> List.rev_map (fun (run_context, members) -> (run_context, List.rev members))
+  in
+  let contexts = match runs with [] -> [ context ] | _ -> List.map fst runs in
+  let block members =
+    "BEGIN_PGML\n"
+    ^ (members |> List.map (question_block ?width) |> String.concat "\n\n")
+    ^ "\nEND_PGML\n"
+  in
+  header contexts
+  ^ (match runs with
+    | [] -> "BEGIN_PGML\n\nEND_PGML\n"
+    | (_, first) :: rest ->
+        block first
+        ^ String.concat ""
+            (List.map
+               (fun (run_context, members) ->
+                 Printf.sprintf "Context(\"%s\");\n" (perl_string run_context) ^ block members)
+               rest))
+  ^ "ENDDOCUMENT();\n"
 
 let of_spec ?count (spec : Ag_check.spec) =
   let count = match count with Some count -> count | None -> 6 in

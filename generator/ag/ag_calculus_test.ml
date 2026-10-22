@@ -201,11 +201,20 @@ let rec price = function
   | Ag_formula.Add (left, right) | Ag_formula.Subtract (left, right) ->
       1 + price left + price right
   | Ag_formula.Multiply (left, right) -> 3 + price left + price right
+  | Ag_formula.Divide (left, right) -> 4 + price left + price right
   | Ag_formula.Power (body, _) | Ag_formula.Sin body | Ag_formula.Cos body
-  | Ag_formula.Exp body ->
+  | Ag_formula.Exp body | Ag_formula.Ln body | Ag_formula.Sqrt body | Ag_formula.Tan body ->
       (if is_leaf body then 1 else 3) + price body
-  | Ag_formula.Divide _ | Ag_formula.Tan _ | Ag_formula.Ln _ | Ag_formula.Sqrt _ ->
-      failwith "calculus.ag does not build this construct"
+
+(* ln, sqrt, tan and quotients belong to derivative questions only. *)
+let rec uses_advanced = function
+  | Ag_formula.Divide _ | Ag_formula.Ln _ | Ag_formula.Sqrt _ | Ag_formula.Tan _ -> true
+  | Ag_formula.Constant _ | Ag_formula.Variable _ -> false
+  | Ag_formula.Add (l, r) | Ag_formula.Subtract (l, r) | Ag_formula.Multiply (l, r) ->
+      uses_advanced l || uses_advanced r
+  | Ag_formula.Power (b, _) | Ag_formula.Negate b | Ag_formula.Sin b | Ag_formula.Cos b
+  | Ag_formula.Exp b ->
+      uses_advanced b
 
 let check_cost_budget base =
   let kinds_seen = Hashtbl.create 2 in
@@ -231,7 +240,9 @@ let check_cost_budget base =
               (Printf.sprintf "cost %d: %s %s re-prices as %d" cost kind
                  (Ag_formula.to_pg original) priced);
           if kind = "integral" && cost < 3 then
-            fail (Printf.sprintf "cost %d produced an integral question" cost)
+            fail (Printf.sprintf "cost %d produced an integral question" cost);
+          if kind = "integral" && uses_advanced original then
+            fail (Printf.sprintf "cost %d: integral built from %s" cost (Ag_formula.to_pg original))
     done
   done;
   List.iter
@@ -291,7 +302,7 @@ let () =
     (fun constructor ->
       if not (Hashtbl.mem constructors constructor) then
         fail ("generated formulas never used " ^ constructor))
-    [ "add"; "subtract"; "multiply"; "power"; "sin"; "cos"; "exp" ];
+    [ "add"; "subtract"; "multiply"; "power"; "sin"; "cos"; "exp"; "ln"; "sqrt"; "tan"; "divide" ];
 
   Random.init 9103;
   let first = Ag_engine.generate spec in

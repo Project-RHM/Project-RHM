@@ -831,10 +831,17 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
 
 exception Requirement_failed of string
 
+(* A generated prompt is text with answer blanks in it. *)
+type piece = Piece_text of string | Piece_blank of value
+
 type question = {
-  prompt : string;
-  answer : value;
-  answer_text : string;
+  prompt : string;  (* the text, with each blank shown as [___] *)
+  answer : value;  (* the first blank's answer *)
+  answer_text : string;  (* every blank's answer, for listings *)
+  pieces : piece list;
+  answers : value list;
+  context : string;  (* the WeBWorK context this question needs *)
+  width : int option;  (* its answer width, when the grammar sets one *)
   globals : (string * value) list;
   tree : node;
 }
@@ -1136,26 +1143,88 @@ let draw_globals (spec : Ag_check.spec) =
 
 let generate_once (spec : Ag_check.spec) =
   let open Ag_check in
+  if spec.library then
+    error "this file has no start symbol: it is a library, to be included by a grammar";
   let globals = draw_globals spec in
   let tree, is_inherited, rule_precedence = generate_tree spec ~globals in
-  let answer =
-    evaluate ~globals ~is_inherited ~rule_precedence ~environment:[] ~children:[ tree ]
-      ~rule:None ~target:"value"
-      (bind_root spec.start spec.answer)
+  let global_value name =
+    match List.assoc_opt name globals with
+    | Some value -> value
+    | None -> error (Printf.sprintf "'%s' has no value" name)
   in
-  let prompt =
+  let pieces =
     spec.prompt
     |> List.map (function
-         | Ag_check.Text text -> text
-         | Ag_check.Value_hole name -> (
-             match List.assoc_opt name globals with
-             | Some value -> as_text "prompt" value
-             | None -> error (Printf.sprintf "'%s' has no value" name))
+         | Ag_check.Text text -> Piece_text text
+         | Ag_check.Value_hole name -> Piece_text (as_text "prompt" (global_value name))
          | Ag_check.Hole (_, attribute_name) ->
-             as_text "prompt" (attribute tree attribute_name))
-    |> String.concat ""
+             Piece_text (as_text "prompt" (attribute tree attribute_name))
+         | Ag_check.Answer_hole (_, attribute_name) -> Piece_blank (attribute tree attribute_name)
+         | Ag_check.Answer_value_hole name -> Piece_blank (global_value name))
   in
-  { prompt; answer; answer_text = describe_value answer; globals; tree }
+  (* A trailing `answer` is one more blank after the text. *)
+  let pieces =
+    match spec.answer with
+    | Some expression ->
+        let text =
+          pieces
+          |> List.map (function Piece_text text -> text | Piece_blank _ -> "")
+          |> String.concat ""
+        in
+        [
+          Piece_text text;
+          Piece_blank
+            (evaluate ~globals ~is_inherited ~rule_precedence ~environment:[]
+               ~children:[ tree ] ~rule:None ~target:"value"
+               (bind_root spec.start expression));
+        ]
+    | None -> pieces
+  in
+  let answers =
+    List.filter_map (function Piece_blank value -> Some value | Piece_text _ -> None) pieces
+  in
+  let answer =
+    match answers with
+    | first :: _ -> first
+    | [] -> error "the question has no answer blank"
+  in
+  (* The readable prompt shows an inline blank as [___]; a trailing blank is
+     left unwritten, as it always was. *)
+  let prompt =
+    match spec.answer with
+    | Some _ -> (
+        match pieces with Piece_text text :: _ -> text | _ -> "")
+    | None ->
+        pieces
+        |> List.map (function Piece_text text -> text | Piece_blank _ -> "[___]")
+        |> String.concat ""
+        |> String.trim
+  in
+  let context =
+    if spec.per_question_context then
+      let name = as_text "pg_context" (attribute tree "pg_context") in
+      if not (Ag_check.valid_context_name name) then
+        error (Printf.sprintf "'%s' is not a WeBWorK context name" name);
+      name
+    else spec.context
+  in
+  let width =
+    if spec.per_question_width then
+      Some
+        (Ag_number.require_integer "pg_width" (as_number "pg_width" (attribute tree "pg_width")))
+    else None
+  in
+  {
+    prompt;
+    answer;
+    answer_text = String.concat "; " (List.map describe_value answers);
+    pieces;
+    answers;
+    context;
+    width;
+    globals;
+    tree;
+  }
 
 let generate spec =
   (* Which failure happened how often, so the final error tells the grammar

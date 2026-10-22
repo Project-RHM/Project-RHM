@@ -15,6 +15,9 @@ this document is in `DIFFICULTY_BUDGET.zh.md`.
 | `set.ag` | operations and whether a leaf is an interval | 7 | 9 |
 | `boolean_equiv.ag` | the law plus its subexpressions | 6 | 10 |
 | `vector.ag`, `sequence.ag`, `library_*.ag` | fixed forms, each at its price | 2, 2, 3 | 10 |
+| `factoring.ag`, `polynomial_expand.ag` | products, powers and the kind of each factor | 5 | QUESTION_TYPES.md |
+| `vector_expr.ag` | sums and multiples of vectors, plus the form on top | 4 | QUESTION_TYPES.md |
+| `linear_equation.ag` | sums, bracketed multiples and fractions on the left side | 5 | QUESTION_TYPES.md |
 
 ## 1. The problem with a length budget
 

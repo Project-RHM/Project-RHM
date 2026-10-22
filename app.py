@@ -835,14 +835,25 @@ def check_context_status():
     except Exception as e:
         return jsonify({'success': False, 'error': f'Error checking context status: {str(e)}'})
 
+def is_ag_library(path):
+    """A .ag file without a `start` declaration is a library: it is meant to
+    be included by a grammar and cannot generate questions on its own."""
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return not re.search(r'^\s*start\s+[A-Za-z_]', f.read(), re.M)
+    except OSError:
+        return False
+
+
 def list_ag_grammars():
-    """The .ag files a user can choose from."""
+    """The .ag files a user can choose from: grammars, not libraries."""
     if not os.path.isdir(AG_GRAMMAR_DIR):
         return []
     return sorted(
         name for name in os.listdir(AG_GRAMMAR_DIR)
         # a leading dot marks the temporary file a check writes
         if name.endswith(".ag") and not name.startswith(".")
+        and not is_ag_library(os.path.join(AG_GRAMMAR_DIR, name))
     )
 
 

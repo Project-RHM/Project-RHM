@@ -1,0 +1,164 @@
+# ==========================================================================
+#  Expressions of three-dimensional vectors
+#
+#  The student is given u, v and w and an expression in them: sums,
+#  differences and scalar multiples, under a dot product, a cross product,
+#  a norm, or on its own. vector.ag asks the same questions of a single
+#  vector; here the operands are expressions.
+#
+#  Difficulty is the budget `cost`, spent exactly:
+#
+#    sum or difference of vectors    1        scalar times a bracket   1
+#    the expression itself           0        norm of it               2
+#    dot product of two              2        cross product of two     4
+#
+#  Within one sum each vector appears at most once, so nothing cancels or
+#  repeats; a bracketed multiple starts a new sum, so 2(u + v) - u is fine.
+#  A multiple is never taken of a multiple. The least budget is 1, since a
+#  bare vector is no question.
+#
+#    agrun --set cost=2 vector_expr.ag     easy
+#    agrun --set cost=4 vector_expr.ag     medium (the default)
+#    agrun --set cost=8 vector_expr.ag     hard
+# ==========================================================================
+
+context "Vector"
+
+attribute cost = 4 split
+
+# The first component is nonzero, so every vector has a direction.
+random u1 = nonzero_integer_between(-9, 9)
+random u2 = integer_between(-9, 9)
+random u3 = integer_between(-9, 9)
+random v1 = nonzero_integer_between(-9, 9)
+random v2 = integer_between(-9, 9)
+random v3 = integer_between(-9, 9)
+random w1 = nonzero_integer_between(-9, 9)
+random w2 = integer_between(-9, 9)
+random w3 = integer_between(-9, 9)
+
+let vec_u = vector3(u1, u2, u3)
+let vec_v = vector3(v1, v2, v3)
+let vec_w = vector3(w1, w2, w3)
+
+let definitions = "Suppose the vectors:
+- [`\vec{u} = " ++ vector_latex(vec_u) ++ "`]
+- [`\vec{v} = " ++ vector_latex(vec_v) ++ "`]
+- [`\vec{w} = " ++ vector_latex(vec_w) ++ "`]"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+synth value on E
+synth latex on E
+synth atom on E                # 1 for a bare vector, which needs no brackets
+synth scalar on E              # 1 for a multiple, so multiples do not nest
+synth tight on E               # 1 when the expression needs no brackets as an operand
+synth mask on E                # one bit per vector used, so none cancels or repeats
+
+synth value on V
+synth latex on V
+synth mask on V
+
+start Q
+
+precedence 1 left "+" "-"
+
+# ---- Question forms ------------------------------------------------------
+#
+# Each form pays its price; the expressions spend the rest.
+
+Q -> E "compute" when cost >= 1 weight 3 {
+  kind = "compute"
+  text = definitions ++ "
+Compute [`" ++ $1.latex ++ "`]."
+  answer_value = $1.value
+}
+
+# A sum as an operand of a dot or cross product is bracketed.
+
+Q -> E E "dot" when cost >= 2 weight 3 {
+  cost = -2
+  require $1.latex != $2.latex
+  kind = "dot"
+  text = definitions ++ "
+Compute [`" ++ cond($1.tight = 1, $1.latex, "(" ++ $1.latex ++ ")") ++ " \cdot "
+             ++ cond($2.tight = 1, $2.latex, "(" ++ $2.latex ++ ")") ++ "`]."
+  answer_value = vector_dot($1.value, $2.value)
+}
+
+Q -> E E "cross" when cost >= 4 weight 2 {
+  cost = -4
+  require $1.latex != $2.latex
+  kind = "cross"
+  text = definitions ++ "
+Compute [`" ++ cond($1.tight = 1, $1.latex, "(" ++ $1.latex ++ ")") ++ " \times "
+             ++ cond($2.tight = 1, $2.latex, "(" ++ $2.latex ++ ")") ++ "`]."
+  answer_value = vector_cross($1.value, $2.value)
+  require not vector_is_zero(answer_value)
+}
+
+Q -> E "norm" when cost >= 2 weight 2 {
+  cost = -2
+  kind = "norm"
+  text = definitions ++ "
+Compute [`\left\|" ++ $1.latex ++ "\right\|`]."
+  answer_value = vector_norm_answer($1.value)
+}
+
+# ---- Vector expressions --------------------------------------------------
+#
+# Each rule's guard is the least it can spend. A scalar multiplies a
+# bracketed compound (its operand keeps at least 1), since a scalar on a
+# bare vector would only rename it.
+
+E -> E "+" E when cost >= 1 weight 3 {
+  cost = -1
+  require bit_and($1.mask, $3.mask) = 0
+  value = vector_add($1.value, $3.value)
+  latex = infix($1, "+", $3)
+  atom = 0
+  scalar = 0
+  tight = 0
+  mask = bit_or($1.mask, $3.mask)
+}
+
+E -> E "-" E when cost >= 1 weight 3 {
+  cost = -1
+  require bit_and($1.mask, $3.mask) = 0
+  value = vector_subtract($1.value, $3.value)
+  latex = infix($1, "-", $3)
+  atom = 0
+  scalar = 0
+  tight = 0
+  mask = bit_or($1.mask, $3.mask)
+}
+
+E -> integer_between(2, 5) "\cdot" E when cost >= 2 weight 2 {
+  cost = -1
+  require $3.scalar = 0
+  value = vector_scale($1.value, $3.value)
+  latex = str($1.value) ++ "(" ++ $3.latex ++ ")"
+  atom = 0
+  scalar = 1
+  tight = 1
+  mask = 0
+}
+
+E -> V when cost = 0 {
+  value = $1.value
+  latex = $1.latex
+  atom = 1
+  scalar = 0
+  tight = 1
+  mask = $1.mask
+}
+
+V -> "u" weight 1 { value = vec_u  latex = "\vec{u}"  mask = 1 }
+V -> "v" weight 1 { value = vec_v  latex = "\vec{v}"  mask = 2 }
+V -> "w" weight 1 { value = vec_w  latex = "\vec{w}"  mask = 4 }
+
+prompt "{Q.text}"
+answer Q.answer_value
+width 24

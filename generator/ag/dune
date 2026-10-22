@@ -47,6 +47,37 @@
  (libraries ag))
 
 (test
+ (name ag_factoring_test)
+ (modules ag_factoring_test)
+ (deps factoring.ag polynomial_core.ag)
+ (libraries ag))
+
+(test
+ (name ag_polynomial_expand_test)
+ (modules ag_polynomial_expand_test)
+ (deps polynomial_expand.ag polynomial_core.ag)
+ (libraries ag))
+
+(test
+ (name ag_vector_expr_test)
+ (modules ag_vector_expr_test)
+ (deps vector_expr.ag)
+ (libraries ag))
+
+(test
+ (name ag_linear_equation_test)
+ (modules ag_linear_equation_test)
+ (deps linear_equation.ag)
+ (libraries ag))
+
+(test
+ (name ag_language_test)
+ (modules ag_language_test)
+ (deps polynomial_forms.ag polynomial_core.ag factoring.ag sequence_parts.ag
+       derivative_or_boolean.ag calculus.ag boolean.ag)
+ (libraries ag))
+
+(test
  (name ag_algebra_core_test)
  (modules ag_algebra_core_test)
  (libraries ag))

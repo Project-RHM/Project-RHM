@@ -44,7 +44,7 @@ let () =
       check_int "rule count" 9 (List.length spec.Ag_check.rules);
       check_int "inherited attributes" 2
         (List.length spec.Ag_check.inherited);
-      check_int "synthesized attributes" 2
+      check_int "synthesized attributes" 4
         (List.length spec.Ag_check.synthesized);
       check_string "default context" "Numeric" spec.Ag_check.context;
       check_int "precedence entries" 4 (List.length spec.Ag_check.precedences);

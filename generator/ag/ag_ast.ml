@@ -6,9 +6,9 @@
    This module is only the shape of a parsed file; Ag_check turns a declaration
    list into a validated [spec], and the generation engine consumes that. *)
 
-type position = { line : int; column : int }
+type position = { file : string; line : int; column : int }
 
-let dummy_position = { line = 0; column = 0 }
+let dummy_position = { file = ""; line = 0; column = 0 }
 
 let string_of_position position =
   Printf.sprintf "%d:%d" position.line position.column
@@ -112,6 +112,9 @@ type declaration =
   | Prompt_decl of string * position
   | Answer_decl of expr * position
   | Width_decl of int * position
+  | Include_decl of string * position
+      (* include "core.ag" -- the declarations of another file, resolved by
+         the loader before checking *)
   | Rule_decl of rule
 
 let declaration_position = function
@@ -124,7 +127,8 @@ let declaration_position = function
   | Precedence_decl (_, _, _, position)
   | Prompt_decl (_, position)
   | Answer_decl (_, position)
-  | Width_decl (_, position) -> position
+  | Width_decl (_, position)
+  | Include_decl (_, position) -> position
   | Rule_decl rule -> rule.rule_position
 
 type file = declaration list
