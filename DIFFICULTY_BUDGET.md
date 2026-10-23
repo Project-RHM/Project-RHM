@@ -18,7 +18,7 @@ this document is in `DIFFICULTY_BUDGET.zh.md`.
 | `factoring.ag`, `polynomial_expand.ag` | products, powers and the kind of each factor | 5 | QUESTION_TYPES.md |
 | `vector_expr.ag` | sums and multiples of vectors, plus the form on top | 4 | QUESTION_TYPES.md |
 | `linear_equation.ag` | sums, bracketed multiples and fractions on the left side | 5 | QUESTION_TYPES.md |
-| `logic_forms.ag` | the included law or expression | 6 | QUESTION_TYPES.md |
+| `logic_forms.ag` | the imported law or expression | 6 | QUESTION_TYPES.md |
 | `matrix_expr.ag`, `determinant.ag` | operations and the size of the matrices | 4, 3 | QUESTION_TYPES.md |
 | `matrix_inverse.ag`, `linear_system.ag` | fixed forms, each at its price | 2, 5 | QUESTION_TYPES.md |
 

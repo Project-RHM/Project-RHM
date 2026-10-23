@@ -38,8 +38,8 @@ attribute cost = 10 split      # operator cost the proposition spends exactly
 
 synth f on E                   # the proposition built so far
 synth f on V
-synth value on B               # its truth under the assignment
-synth text on B                # the question
+synth value on Q               # its truth under the assignment
+synth text on Q                # the question
 
 
 # ---- Drawn once per question ----
@@ -64,14 +64,12 @@ let given     = "[`p = " ++ tp ++ "`], [`q = " ++ tq ++ "`] and [`r = " ++ tr ++
 let given_one = "[`p = " ++ tp ++ ",\; q = " ++ tq ++ ",\; r = " ++ tr ++ "`]"
 
 
-# The question symbol is B rather than Q so that this grammar can be
-# included beside calculus.ag, whose question symbol is Q.
-start B
+start Q
 
 
 # ---- Question ----
 
-B -> E {
+Q -> E {
        # An assignment with every variable the same lets a student answer
        # without reading the proposition.
        require tp != tq or tq != tr
@@ -156,7 +154,7 @@ V -> "r" { f = bool_var("r") }
 
 # ---- Question wording ----
 
-prompt "{B.text}
+prompt "{Q.text}
 Enter 1 for true and 0 for false."
 
-answer B.value
+answer Q.value

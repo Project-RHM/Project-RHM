@@ -46,6 +46,7 @@ let rec expression_text = function
 
 let symbol_text = function
   | Symbol name -> name
+  | Module_symbol (alias, name, _) -> alias ^ "." ^ name
   | Literal text -> Printf.sprintf "%S" text
   | Generator (name, arguments) ->
       name ^ "(" ^ String.concat ", " (List.map expression_text arguments) ^ ")"

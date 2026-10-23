@@ -10,7 +10,13 @@
    once -- start, context, prompt, answer, width -- the including file's own
    wins over an included one, so a grammar can include another grammar and
    re-ask its question. A file that includes itself, directly or through
-   others, is refused. *)
+   others, is refused.
+
+   An `import "other.ag" as name` declaration is resolved here too, but the
+   other file is not merged: it is loaded and checked as a module of its own,
+   once per run however many files import it, and handed to the checker so
+   that `name.F`, `name.cost` and `name.given` can be resolved. A file that
+   imports itself, directly or through others, is refused. *)
 
 type failure = { where : string; what : string }
 
@@ -66,9 +72,36 @@ let same_declaration left right =
   | Ag_ast.Inherited_decl (a, _, _, _), Ag_ast.Inherited_decl (b, _, _, _) -> a = b
   | Ag_ast.Random_decl (a, draw_a, _), Ag_ast.Random_decl (b, draw_b, _) -> a = b && draw_a = draw_b
   | Ag_ast.Let_decl (a, body_a, _), Ag_ast.Let_decl (b, body_b, _) -> a = b && body_a = body_b
+  | Ag_ast.Import_decl (a, alias_a, _), Ag_ast.Import_decl (b, alias_b, _) ->
+      a = b && alias_a = alias_b
   | _ -> false
 
 let is_inherited_decl = function Ag_ast.Inherited_decl _ -> true | _ -> false
+
+let resolve ~directory name =
+  if Filename.is_relative name then Filename.concat directory name else name
+
+(* A module is identified by its file, so "lib/../boolean.ag" and
+   "boolean.ag" must come out the same. Lexical only: no symlinks are followed. *)
+let normalize_path path =
+  let absolute = not (Filename.is_relative path) in
+  let parts = String.split_on_char '/' path in
+  let rec walk kept = function
+    | [] -> List.rev kept
+    | ("" | ".") :: rest -> walk kept rest
+    | ".." :: rest -> (
+        match kept with
+        | parent :: before when parent <> ".." -> walk before rest
+        | _ -> walk (".." :: kept) rest)
+    | part :: rest -> walk (part :: kept) rest
+  in
+  let joined = String.concat "/" (walk [] parts) in
+  if absolute then "/" ^ joined else if joined = "" then "." else joined
+
+(* Every module loaded during one top-level load, by its file, so two imports
+   of one file (from two different importers, or under two aliases) share a
+   single checked specification. *)
+type cache = (string, (Ag_check.spec, failure list) result) Hashtbl.t
 
 let rec load_declarations ~stack filename : (Ag_ast.file, failure list) result =
   if List.mem filename stack then
@@ -108,34 +141,90 @@ and expand ~stack ~directory declarations =
   let rec go accumulated = function
     | [] -> Ok accumulated
     | Ag_ast.Include_decl (name, _) :: rest -> (
-        let path =
-          if Filename.is_relative name then Filename.concat directory name else name
-        in
+        let path = resolve ~directory name in
         match load_declarations ~stack path with
         | Error failures -> Error failures
         | Ok included -> go (merge accumulated (List.filter keep included)) rest)
+    (* An import inside an included file is relative to that file, so its
+       path is fixed here, while the directory is still known. *)
+    | Ag_ast.Import_decl (name, alias, position) :: rest ->
+        let path = normalize_path (resolve ~directory name) in
+        go (merge accumulated [ Ag_ast.Import_decl (path, alias, position) ]) rest
     | declaration :: rest -> go (merge accumulated [ declaration ]) rest
   in
   (* The including file's own attributes go first, so that they win. *)
   let own_attributes = List.filter is_inherited_decl declarations in
   go own_attributes (List.filter (fun d -> not (is_inherited_decl d)) declarations)
 
-let check ~filename declarations =
-  match Ag_check.check declarations with
-  | Ok spec -> Ok spec
-  | Error errors ->
-      Error
-        (List.map
-           (fun (error : Ag_check.error) ->
-             let position = error.Ag_check.position in
-             let file = if position.Ag_ast.file = "" then filename else position.Ag_ast.file in
-             {
-               where =
-                 (if position.Ag_ast.line = 0 then file
-                  else Printf.sprintf "%s:%d:%d" file position.Ag_ast.line position.Ag_ast.column);
-               what = error.Ag_check.message;
-             })
-           errors)
+let describe_errors ~filename errors =
+  List.map
+    (fun (error : Ag_check.error) ->
+      let position = error.Ag_check.position in
+      let file = if position.Ag_ast.file = "" then filename else position.Ag_ast.file in
+      {
+        where =
+          (if position.Ag_ast.line = 0 then file
+           else Printf.sprintf "%s:%d:%d" file position.Ag_ast.line position.Ag_ast.column);
+        what = error.Ag_check.message;
+      })
+    errors
+
+let describe_position_of (position : Ag_ast.position) filename =
+  let file = if position.Ag_ast.file = "" then filename else position.Ag_ast.file in
+  if position.Ag_ast.line = 0 then file
+  else Printf.sprintf "%s:%d:%d" file position.Ag_ast.line position.Ag_ast.column
+
+(* Load every module the (already include-expanded) declarations import, then
+   check the declarations against them. [stack] holds the files being loaded,
+   so a file that imports one of them has closed a cycle. *)
+let rec check ~stack ~cache ~filename ~source declarations =
+  let rec load_modules loaded = function
+    | [] -> Ok (List.rev loaded)
+    | Ag_ast.Import_decl (path, alias, position) :: rest -> (
+        let where = describe_position_of position filename in
+        if List.mem path stack then
+          Error
+            [
+              {
+                where;
+                what =
+                  Printf.sprintf "import \"%s\" as %s closes a cycle: %s" path alias
+                    (String.concat " -> " (List.rev (path :: stack)));
+              };
+            ]
+        else
+          match load_module ~stack ~cache path with
+          | Ok module_spec -> load_modules ((alias, module_spec) :: loaded) rest
+          | Error failures ->
+              Error
+                ({
+                   where;
+                   what =
+                     Printf.sprintf "import \"%s\" as %s: the module has problems of its own"
+                       path alias;
+                 }
+                :: failures))
+    | _ :: rest -> load_modules loaded rest
+  in
+  match load_modules [] declarations with
+  | Error failures -> Error failures
+  | Ok modules -> (
+      match Ag_check.check ~source ~modules declarations with
+      | Ok spec -> Ok spec
+      | Error errors -> Error (describe_errors ~filename errors))
+
+and load_module ~stack ~cache path =
+  match Hashtbl.find_opt cache path with
+  | Some result -> result
+  | None ->
+      let result =
+        match load_declarations ~stack path with
+        | Error failures -> Error failures
+        | Ok declarations ->
+            check ~stack:(path :: stack) ~cache ~filename:path ~source:path declarations
+      in
+      Hashtbl.replace cache path result;
+      result
 
 let parse_string ?(filename = "<input>") source :
     (Ag_check.spec, failure list) result =
@@ -147,9 +236,12 @@ let parse_string ?(filename = "<input>") source :
       in
       match expand ~stack:[ filename ] ~directory declarations with
       | Error failures -> Error failures
-      | Ok declarations -> check ~filename declarations)
+      | Ok declarations ->
+          check ~stack:[ filename ] ~cache:(Hashtbl.create 4) ~filename ~source:"" declarations)
 
 let parse_file filename =
-  match load_declarations ~stack:[] filename with
+  let path = normalize_path filename in
+  match load_declarations ~stack:[] path with
   | Error failures -> Error failures
-  | Ok declarations -> check ~filename declarations
+  | Ok declarations ->
+      check ~stack:[ path ] ~cache:(Hashtbl.create 4) ~filename ~source:path declarations

@@ -39,7 +39,7 @@ attributes, constraints, wording, and answers. The shipped specifications are:
 - `vector.ag`
 - `factoring.ag`, `polynomial_expand.ag`, `vector_expr.ag`, `linear_equation.ag`
 - `polynomial_forms.ag`, `sequence_parts.ag`, on the library `polynomial_core.ag`
-- `derivative_or_boolean.ag`, which includes `calculus.ag` and `boolean.ag` whole
+- `derivative_or_boolean.ag`, which imports `calculus.ag` and `boolean.ag` as modules
 - `logic_forms.ag`, three more questions on the Boolean grammars
 - `matrix_expr.ag`, `determinant.ag`, `matrix_inverse.ag`, `linear_system.ag`, on the
   library `matrix_core.ag` and the Matrix value type (`ag_matrix.ml`)
@@ -49,9 +49,10 @@ Propositions are a value type of their own (`ag_boolean.ml`, the `bool_*`
 builtins): the engine renders, evaluates and compares them, so a Boolean
 grammar writes formulas, not truth tables.
 
-A grammar may `include` another file, give each question form its own
-WeBWorK context, and place several answer blanks in one prompt; see
-`AG_LANGUAGE_EXTENSIONS.md`.
+A grammar may `include` another file to extend it, `import` other files as
+modules (`import "calculus.ag" as calc`, then `calc.F(cost = cost)`), give
+each question form its own WeBWorK context, and place several answer blanks
+in one prompt; see `AG_LANGUAGE_EXTENSIONS.md`.
 
 `sequence.ag` covers arithmetic/geometric nth-term and finite-sum questions.
 It also exercises the signed inclusive range generators `integer_between` and

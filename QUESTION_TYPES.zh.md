@@ -20,7 +20,7 @@
 | `linear_equation.ag` | 由选定的根构造的一元一次方程的解 | 和 1，括号的倍数 1，分式 2 | 5 | Numeric |
 | `polynomial_forms.ag` | 同一棵因式树，展开或分解，两种题型各在自己的上下文 | 同 `factoring.ag` | 5 | Numeric / PolynomialFactors |
 | `sequence_parts.ag` | 一个数列，两个空：第 n 项和前 n 项和 | 等差 2，等比 3（固定） | 2 | Numeric |
-| `derivative_or_boolean.ag` | 求导或布尔求值，整个包含两个文法 | 各文法自己的价格 | 8 | Numeric |
+| `derivative_or_boolean.ag` | 求导或布尔求值，把两个文法作为模块引入 | 各文法自己的价格 | 8 | Numeric |
 | `logic_forms.ag` | 命题分类（重言式 / 矛盾式 / 两者皆非）、模型计数、消去条件联结词；建立在 `boolean.ag` 和 `boolean_equiv.ag` 之上 | 定律或表达式自己的价格 | 6 | Numeric / Boolean |
 | `matrix_expr.ag` | 计算 `matrix_core.ag` 中矩阵 A、B、C 的表达式 | 和 1，倍数 1，转置 1，乘积 3；3 阶矩阵 2 | 4 | Matrix |
 | `determinant.ag` | 矩阵或其乘积、转置、倍数的行列式 | 2 阶 1，3 阶 3；乘积 2，转置 1，倍数 1 | 3 | Numeric |
@@ -67,7 +67,7 @@ cost 8   (5(8 + x) - 5*5(3 + 2x)) / 2 = -(39/2 + 43/2 x)  x = 2
 
 ## 第二批：逻辑、线性代数，以及两个文法的可伸缩化
 
-**逻辑**（`logic_forms.ag`）整个包含两个布尔文法，对它们的定律和表达式再问三种问题：分类（像求值题用 1、0 一样，用 1、2、0 编码）、模型计数，以及消去条件联结词——答案是一个命题，在 WeBWorK 的 Boolean 上下文中判分（为此加载 `contextBoolean.pl`；WeBWorK 接受任何等价命题，所以形式本身不被强制）。
+**逻辑**（`logic_forms.ag`）把两个布尔文法作为模块引入，对它们的定律和表达式再问三种问题：分类（像求值题用 1、0 一样，用 1、2、0 编码）、模型计数，以及消去条件联结词——答案是一个命题，在 WeBWorK 的 Boolean 上下文中判分（为此加载 `contextBoolean.pl`；WeBWorK 接受任何等价命题，所以形式本身不被强制）。
 
 **线性代数**建立在新的值类型 `Matrix` 上（`ag_matrix.ml`：精确有理数元素、和、倍数、转置、乘积、余子式行列式、伴随矩阵求逆、作用于向量、LaTeX 和 PG 渲染，以及把一行写成方程的 `matrix_row_latex`）。`matrix_core.ag` 每题抽一次 A、B、C，各有 2 阶和 3 阶版本，继承属性 `dim` 决定题目用哪个。求逆和方程组由单位三角矩阵的乘积构造，所以逆矩阵元素是整数、选定的解是唯一解；方程组在题干里放三个答案空。
 
@@ -75,4 +75,4 @@ cost 8   (5(8 + x) - 5*5(3 + 2x)) / 2 = -(39/2 + 43/2 x)  x = 2
 
 ## 用户能在一个文件里写什么
 
-共享题目级随机值的多种题型，每个有多条 `Q ->` 规则的文法都是例子；需要不同 WeBWorK 上下文的题型（`pg_context`）；有多个答案空的题目（题干里的 `{answer ...}`）；以及与其他文件共享的产生式（`include`）。`polynomial_core.ag` 是一个只有产生式、没有自己问题的库，`factoring.ag`、`polynomial_expand.ag` 和 `polynomial_forms.ag` 都包含它。见 `AG_LANGUAGE_EXTENSIONS.md`。
+共享题目级随机值的多种题型，每个有多条 `Q ->` 规则的文法都是例子；需要不同 WeBWorK 上下文的题型（`pg_context`）；有多个答案空的题目（题干里的 `{answer ...}`）；以及与其他文件共享的产生式（`include`）或整个引入的文法（`import`）。`polynomial_core.ag` 是一个只有产生式、没有自己问题的库，`factoring.ag`、`polynomial_expand.ag` 和 `polynomial_forms.ag` 都包含它。见 `AG_LANGUAGE_EXTENSIONS.md`。

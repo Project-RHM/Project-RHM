@@ -57,11 +57,17 @@ type symbol =
       (* [integer(digit)] — a terminal that produces a random value *)
   | Literal of string
       (* ["\\div"] — a quoted terminal *)
+  | Module_symbol of string * string * (string * expr) list
+      (* [calc.F(cost = cost - 1)] — a nonterminal of an imported module,
+         expanded with that module's rules. The arguments give the starting
+         values of the module's inherited attributes for this subtree; any
+         not named take the module's declared defaults. *)
 
 let symbol_name = function
   | Symbol name -> name
   | Generator (name, _) -> name
   | Literal text -> text
+  | Module_symbol (alias, name, _) -> alias ^ "." ^ name
 
 (* ------------------------------------------------------------------ *)
 (* Declarations.                                                       *)
@@ -115,6 +121,11 @@ type declaration =
   | Include_decl of string * position
       (* include "core.ag" -- the declarations of another file, resolved by
          the loader before checking *)
+  | Import_decl of string * string * position
+      (* import "calculus.ag" as calc -- another file as a module of its own:
+         its names are reached as calc.F, calc.cost, calc.given and never
+         clash with this file's. Resolved by the loader, which checks the
+         module separately. *)
   | Rule_decl of rule
 
 let declaration_position = function
@@ -128,7 +139,8 @@ let declaration_position = function
   | Prompt_decl (_, position)
   | Answer_decl (_, position)
   | Width_decl (_, position)
-  | Include_decl (_, position) -> position
+  | Include_decl (_, position)
+  | Import_decl (_, _, position) -> position
   | Rule_decl rule -> rule.rule_position
 
 type file = declaration list

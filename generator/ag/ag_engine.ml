@@ -383,10 +383,15 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
               if is_inherited name then Num (Ag_number.of_int (lookup environment name))
               else error (Printf.sprintf "'%s' is not in scope" name)))
   | Attr_child (index, name) -> attribute (child_at index) name
-  | Attr_child_named (owner, name) ->
-      error
-        (Printf.sprintf "%s.%s cannot be used inside a rule; write $n.%s instead" owner
-           name name)
+  | Attr_child_named (owner, name) -> (
+      (* calc.given: a random or let of an imported module, kept under its
+         qualified name among this question's values. *)
+      match List.assoc_opt (owner ^ "." ^ name) globals with
+      | Some value -> value
+      | None ->
+          error
+            (Printf.sprintf "%s.%s cannot be used inside a rule; write $n.%s instead" owner
+               name name))
   | Child index ->
       error
         (Printf.sprintf
@@ -1006,7 +1011,11 @@ type question = {
 let retries_per_node = 40
 let retries_per_question = 200
 
-let generate_tree (spec : Ag_check.spec) ~globals =
+(* The values of every module's randoms and lets for the current question,
+   by the module's file. A module imported twice is drawn once. *)
+type module_globals = (string * (string * value) list) list
+
+let rec tree_builder (spec : Ag_check.spec) ~globals ~(module_globals : module_globals) =
   let open Ag_check in
   let nonterminals =
     spec.rules |> List.map (fun rule -> rule.lhs) |> List.sort_uniq String.compare
@@ -1120,6 +1129,59 @@ let generate_tree (spec : Ag_check.spec) ~globals =
           level = atom_level;
         }
     | Symbol name -> expand_nonterminal name environment
+    | Module_symbol (alias, nonterminal, arguments) ->
+        (* The arguments are read in this node's scope -- the environment is
+           already this child's share of any split budget -- and become the
+           module's inherited attributes at the root of the subtree. The
+           module then expands with its own rules, precedences and values. *)
+        let module_spec =
+          match List.assoc_opt alias spec.imports with
+          | Some module_spec -> module_spec
+          | None -> error (Printf.sprintf "'%s' is not an imported module" alias)
+        in
+        let qualified = alias ^ "." ^ nonterminal in
+        let defaults =
+          List.map
+            (fun (declaration : Ag_check.inherited_attribute) ->
+              (declaration.attribute_name, declaration.initial))
+            module_spec.inherited
+        in
+        let initial =
+          List.fold_left
+            (fun current (name, body) ->
+              let value =
+                match
+                  evaluate_in ~environment ~children:[] ~rule:None ~target:name body
+                with
+                | Num number when Ag_number.is_integer number ->
+                    Ag_number.require_integer name number
+                | other ->
+                    error
+                      (Printf.sprintf
+                         "%s: '%s' must start at a whole number, not \"%s\"" qualified
+                         name (describe_value other))
+              in
+              if value < 0 then
+                error
+                  (Printf.sprintf "%s: '%s' cannot start negative (%d was computed)"
+                     qualified name value);
+              bind current name value)
+            defaults arguments
+        in
+        let module_values =
+          match List.assoc_opt module_spec.source module_globals with
+          | Some values -> values
+          | None ->
+              error (Printf.sprintf "the values of module %s were not drawn" alias)
+        in
+        let node =
+          expand_module module_spec ~globals:module_values ~module_globals nonterminal
+            initial
+        in
+        (* The importer's precedence table says nothing about the module's
+           operators, so the subtree is an atom to the importer: infix() adds
+           no brackets around it. A rule that needs them writes them. *)
+        { node with level = atom_level }
 
   and expand_nonterminal name environment =
     let candidates =
@@ -1165,12 +1227,17 @@ let generate_tree (spec : Ag_check.spec) ~globals =
   and build_once name environment candidates =
     let rule = weighted_pick candidates in
     let updated = apply_updates environment rule in
-    (* Only nonterminal positions receive a share of a split budget. *)
+    (* Only nonterminal positions receive a share of a split budget; a
+       module's nonterminal counts as one, so `calc.F(cost = cost)` hands
+       over exactly what a local F would have received. *)
     let expandable =
       rule.rhs
       |> List.mapi (fun index symbol -> (index, symbol))
       |> List.filter (fun (_, symbol) ->
-             match symbol with Symbol name -> is_nonterminal name | _ -> false)
+             match symbol with
+             | Symbol name -> is_nonterminal name
+             | Module_symbol _ -> true
+             | _ -> false)
     in
     let child_environments = Array.make (max 1 (List.length expandable)) updated in
     List.iteri (fun index _ -> child_environments.(index) <- updated) expandable;
@@ -1240,13 +1307,23 @@ let generate_tree (spec : Ag_check.spec) ~globals =
         (match rule_precedence rule with Some (_, level, _) -> level | None -> atom_level);
     }
   in
+  (expand_nonterminal, is_inherited, rule_precedence)
+
+(* A subtree of an imported module, from one of its nonterminals and the
+   starting values an importer gave its inherited attributes. *)
+and expand_module (module_spec : Ag_check.spec) ~globals ~module_globals nonterminal initial =
+  let expand, _, _ = tree_builder module_spec ~globals ~module_globals in
+  expand nonterminal initial
+
+let generate_tree (spec : Ag_check.spec) ~globals ~module_globals =
+  let expand, is_inherited, rule_precedence = tree_builder spec ~globals ~module_globals in
   let initial =
     List.map
       (fun (declaration : Ag_check.inherited_attribute) ->
         (declaration.attribute_name, declaration.initial))
-      spec.inherited
+      spec.Ag_check.inherited
   in
-  (expand_symbol (Symbol spec.start) initial, is_inherited, rule_precedence)
+  (expand spec.Ag_check.start initial, is_inherited, rule_precedence)
 
 (* Rewrite the start symbol's name away so the top-level answer expression can
    be evaluated with the root standing in as child $1. *)
@@ -1262,7 +1339,7 @@ let rec bind_root start expression =
 (* Question-level values are fixed before any expression is generated: every
    occurrence of the same random has to agree across the whole question, which
    a value drawn at the leaves could not guarantee. *)
-let draw_globals (spec : Ag_check.spec) =
+let draw_globals (spec : Ag_check.spec) ~(module_globals : module_globals) =
   let open Ag_check in
   let globals =
     List.map
@@ -1286,6 +1363,22 @@ let draw_globals (spec : Ag_check.spec) =
         (name, value))
       spec.randoms
   in
+  (* The randoms and lets of each imported module, under their qualified
+     names, so a let or a prompt here may read calc.given. *)
+  let globals =
+    List.fold_left
+      (fun known (alias, (module_spec : Ag_check.spec)) ->
+        match List.assoc_opt module_spec.source module_globals with
+        | None -> known
+        | Some values ->
+            known
+            @ List.filter_map
+                (fun (name, value) ->
+                  if String.contains name '.' then None
+                  else Some (alias ^ "." ^ name, value))
+                values)
+      globals spec.imports
+  in
   (* Lets are evaluated in order, so a later one may use an earlier one. *)
   List.fold_left
     (fun known (name, body) ->
@@ -1298,12 +1391,24 @@ let draw_globals (spec : Ag_check.spec) =
       known @ [ (name, value) ])
     globals spec.lets
 
+(* Draw the values of every module a specification imports, directly or
+   through other modules, each once, a module's own imports before it. *)
+let rec draw_module_globals table (spec : Ag_check.spec) : module_globals =
+  List.fold_left
+    (fun table (_, (module_spec : Ag_check.spec)) ->
+      if List.mem_assoc module_spec.Ag_check.source table then table
+      else
+        let table = draw_module_globals table module_spec in
+        (module_spec.Ag_check.source, draw_globals module_spec ~module_globals:table) :: table)
+    table spec.Ag_check.imports
+
 let generate_once (spec : Ag_check.spec) =
   let open Ag_check in
   if spec.library then
     error "this file has no start symbol: it is a library, to be included by a grammar";
-  let globals = draw_globals spec in
-  let tree, is_inherited, rule_precedence = generate_tree spec ~globals in
+  let module_globals = draw_module_globals [] spec in
+  let globals = draw_globals spec ~module_globals in
+  let tree, is_inherited, rule_precedence = generate_tree spec ~globals ~module_globals in
   let global_value name =
     match List.assoc_opt name globals with
     | Some value -> value

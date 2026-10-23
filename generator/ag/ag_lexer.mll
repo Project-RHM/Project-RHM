@@ -30,6 +30,8 @@ let keywords = [
   "answer",     ANSWER;
   "width",      WIDTH;
   "include",    INCLUDE;
+  "import",     IMPORT;
+  "as",         AS;
   "and",        AND;
   "or",         OR;
   "not",        NOT;

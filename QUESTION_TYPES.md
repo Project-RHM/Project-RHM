@@ -28,7 +28,7 @@ attribute, or by the budget.
 | `linear_equation.ag` | the solution of a linear equation whose left side is built from a chosen root | sum 1, a multiple of a bracket 1, a fraction 2 | 5 | Numeric |
 | `polynomial_forms.ag` | the same tree of factors, expanded or factored, each form in its own context | as `factoring.ag` | 5 | Numeric / PolynomialFactors |
 | `sequence_parts.ag` | one sequence, two blanks: its nth term and the sum of its first n terms | arithmetic 2, geometric 3 (fixed) | 2 | Numeric |
-| `derivative_or_boolean.ag` | a derivative or a Boolean evaluation, from the two grammars included whole | each grammar's own prices | 8 | Numeric |
+| `derivative_or_boolean.ag` | a derivative or a Boolean evaluation, from the two grammars imported as modules | each grammar's own prices | 8 | Numeric |
 | `logic_forms.ag` | classify a proposition (tautology / contradiction / neither), count its models, or rewrite it without the conditional family; built on `boolean.ag` and `boolean_equiv.ag` | the law's or expression's own price | 6 | Numeric / Boolean |
 | `matrix_expr.ag` | compute an expression in the matrices A, B, C of `matrix_core.ag` | sum 1, multiple 1, transpose 1, product 3; 3 by 3 matrices 2 | 4 | Matrix |
 | `determinant.ag` | the determinant of a matrix or of a product, transpose or multiple | 2 by 2 1, 3 by 3 3; product 2, transpose 1, multiple 1 | 3 | Numeric |
@@ -101,7 +101,7 @@ cost 8   (5(8 + x) - 5*5(3 + 2x)) / 2 = -(39/2 + 43/2 x)  x = 2
 
 ## The second batch: logic, linear algebra, and two grammars made scalable
 
-**Logic** (`logic_forms.ag`) includes both Boolean grammars whole and asks
+**Logic** (`logic_forms.ag`) imports both Boolean grammars as modules and asks
 three further questions of their laws and expressions: classification
 (coded 1, 2, 0 as the evaluation questions code true and false), model
 counting, and rewriting without the conditional family, whose answer is a

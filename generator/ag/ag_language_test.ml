@@ -189,13 +189,17 @@ let () =
             fail "the conflicting answer declaration was not explained")
 
 (* ------------------------------------------------------------------ *)
-(* 4. Two whole grammars included into one file                         *)
+(* 4. Two whole grammars imported into one file                          *)
 (* ------------------------------------------------------------------ *)
 
+(* derivative_or_boolean.ag hands its budget of 8 to calc.F as it is and to
+   bool.E with two more, so the module's subtree spends 8 or 10. *)
 let () =
   match load "derivative_or_boolean.ag" with
   | None -> ()
   | Some spec ->
+      if List.map fst spec.Ag_check.imports <> [ "calc"; "bool" ] then
+        fail "derivative_or_boolean.ag should import calc and bool";
       let kinds = Hashtbl.create 2 in
       for seed = 0 to 79 do
         Random.init seed;
@@ -204,8 +208,12 @@ let () =
         | question -> (
             let kind = text_attribute question.Ag_engine.tree "kind" in
             Hashtbl.replace kinds kind true;
-            if Ag_engine.consumption question.Ag_engine.tree "cost" <> 8 then
-              fail (Printf.sprintf "mixed seed %d: the including file's budget of 8 was not spent" seed);
+            let expected = if kind = "boolean" then 10 else 8 in
+            let spent = Ag_engine.consumption question.Ag_engine.tree "cost" in
+            if spent <> expected then
+              fail (Printf.sprintf "mixed seed %d: the %s module spent %d, not the %d it was handed" seed kind spent expected);
+            if kind = "boolean" && not (List.mem_assoc "bool.given" question.Ag_engine.globals) then
+              fail (Printf.sprintf "mixed seed %d: the module's values are not kept under their qualified names" seed);
             match (kind, question.Ag_engine.answer) with
             | "derivative", Ag_engine.Formula _ -> ()
             | "boolean", Ag_engine.Truth _ -> ()

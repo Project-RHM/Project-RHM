@@ -56,7 +56,29 @@ type spec = {
   (* The start symbol computes `pg_context` / `pg_width` itself, per question. *)
   per_question_context : bool;
   per_question_width : bool;
+  (* The file this specification was read from ("" for an inline source).
+     Two imports of one file name the same module, and the engine draws that
+     module's randoms once per question, so the file is the module's identity. *)
+  source : string;
+  (* The modules this file imports, by alias. Each is a checked specification
+     of its own; the engine expands `alias.F` with that module's rules. *)
+  imports : (string * spec) list;
 }
+
+(* What an importer may see of a module: the names, not the rules. *)
+let nonterminals_of spec =
+  spec.rules |> List.map (fun rule -> rule.lhs) |> List.sort_uniq String.compare
+
+let synthesized_of_nonterminal spec nonterminal =
+  spec.synthesized
+  |> List.filter (fun (_, scope) ->
+         match scope with None -> true | Some owner -> owner = nonterminal)
+  |> List.map fst
+
+let inherited_names spec = List.map (fun a -> a.attribute_name) spec.inherited
+
+let is_question_level_of spec name =
+  List.mem_assoc name spec.randoms || List.mem_assoc name spec.lets
 
 let valid_context_name name =
   let valid_character = function
@@ -372,9 +394,13 @@ let parse_template position text =
 (* Checking                                                            *)
 (* ------------------------------------------------------------------ *)
 
-let check (declarations : file) : (spec, error list) result =
+let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : file) :
+    (spec, error list) result =
   let errors = ref [] in
   let report position message = errors := { message; position } :: !errors in
+  let module_of alias = List.assoc_opt alias modules in
+  let module_names () = modules |> List.map fst |> String.concat ", " in
+  let imports = ref [] in
 
   (* ---- collect declarations ---- *)
   let inherited = ref [] in
@@ -477,6 +503,17 @@ let check (declarations : file) : (spec, error list) result =
             (Printf.sprintf
                "include \"%s\" was not resolved; includes are expanded by the loader"
                name)
+      | Import_decl (name, alias, position) -> (
+          if List.mem_assoc alias !imports then
+            report position
+              (Printf.sprintf "'%s' is already the alias of another import" alias);
+          match module_of alias with
+          | None ->
+              report position
+                (Printf.sprintf
+                   "import \"%s\" as %s was not resolved; imports are loaded by the loader"
+                   name alias)
+          | Some module_spec -> imports := !imports @ [ (alias, module_spec) ])
       | Context_decl (name, position) ->
           if not (valid_context_name name) then
             report position
@@ -569,7 +606,17 @@ let check (declarations : file) : (spec, error list) result =
   (* [assigned_here] lists the synthesized attributes this rule has already
      computed. Referring to one by its bare name is how a rule reuses its own
      earlier work, as in `safe = "(" ++ latex ++ ")"`. *)
-  let check_expr ?(assigned_here = []) ~context ~arity ~position expression =
+  (* The module child at a position of the rule's right-hand side, if any:
+     its synthesized attributes come from that module, not from this file. *)
+  let module_child rhs index =
+    match List.nth_opt rhs (index - 1) with
+    | Some (Module_symbol (alias, nonterminal, _)) -> (
+        match module_of alias with
+        | Some module_spec -> Some (alias, nonterminal, module_spec)
+        | None -> None)
+    | _ -> None
+  in
+  let check_expr ?(assigned_here = []) ?(rhs = []) ~context ~arity ~position expression =
     iter_expr
       (fun node ->
         match node with
@@ -597,12 +644,24 @@ let check (declarations : file) : (spec, error list) result =
                 (Printf.sprintf
                    "$%d is out of range: this rule has %d symbols on the right"
                    index arity)
-            else if not (is_synthesized name) then
-              report position
-                (Printf.sprintf
-                   "'%s' is not a synthesized attribute, so a child does not \
-                    carry it"
-                   name)
+            else (
+              match module_child rhs index with
+              | Some (alias, nonterminal, module_spec) ->
+                  let carried = synthesized_of_nonterminal module_spec nonterminal in
+                  if not (List.mem name carried) then
+                    report position
+                      (Printf.sprintf
+                         "$%d is %s.%s, which does not carry '%s'; it has %s" index alias
+                         nonterminal name
+                         (if carried = [] then "no synthesized attribute"
+                          else String.concat ", " carried))
+              | None ->
+                  if not (is_synthesized name) then
+                    report position
+                      (Printf.sprintf
+                         "'%s' is not a synthesized attribute, so a child does not \
+                          carry it"
+                         name))
         | Child index ->
             if context = `Downward then
               report position
@@ -613,12 +672,22 @@ let check (declarations : file) : (spec, error list) result =
                 (Printf.sprintf
                    "$%d is out of range: this rule has %d symbols on the right"
                    index arity)
-        | Attr_child_named (owner, name) ->
-            report position
-              (Printf.sprintf
-                 "%s.%s may only be used in a 'prompt' or 'answer' \
-                  declaration; inside a rule, refer to children as $1.%s"
-                 owner name name)
+        | Attr_child_named (owner, name) -> (
+            match module_of owner with
+            | Some module_spec ->
+                if not (is_question_level_of module_spec name) then
+                  report position
+                    (Printf.sprintf
+                       "%s.%s: module %s has no random or let named '%s'" owner name
+                       owner name)
+            | None ->
+                report position
+                  (Printf.sprintf
+                     "%s.%s may only be used in a 'prompt' or 'answer' \
+                      declaration; inside a rule, refer to children as $1.%s%s"
+                     owner name name
+                     (if modules = [] then ""
+                      else "; the imported modules are " ^ module_names ())))
         | Call (name, arguments) -> (
             match List.assoc_opt name expression_builtins with
             | Some expected when expected <> List.length arguments ->
@@ -674,6 +743,12 @@ let check (declarations : file) : (spec, error list) result =
                      "let '%s' refers to '%s', which is not a random or an \
                       earlier let"
                      name referenced)
+          | Attr_child_named (owner, referenced) when module_of owner <> None ->
+              let module_spec = Option.get (module_of owner) in
+              if not (is_question_level_of module_spec referenced) then
+                report position
+                  (Printf.sprintf "%s.%s: module %s has no random or let named '%s'"
+                     owner referenced owner referenced)
           | Attr_child _ | Child _ | Attr_child_named _ ->
               report position
                 (Printf.sprintf
@@ -721,6 +796,40 @@ let check (declarations : file) : (spec, error list) result =
                   List.iter
                     (check_expr ~context:`Downward ~arity ~position)
                     arguments)
+          | Module_symbol (alias, nonterminal, arguments) -> (
+              match module_of alias with
+              | None ->
+                  report position
+                    (Printf.sprintf "'%s' is not an imported module%s" alias
+                       (if modules = [] then "; this file imports nothing"
+                        else "; the imported modules are " ^ module_names ()))
+              | Some module_spec ->
+                  if not (List.mem nonterminal (nonterminals_of module_spec)) then
+                    report position
+                      (Printf.sprintf "module %s has no nonterminal '%s'; it has %s" alias
+                         nonterminal
+                         (match nonterminals_of module_spec with
+                         | [] -> "none"
+                         | names -> String.concat ", " names));
+                  let seen = ref [] in
+                  List.iter
+                    (fun (name, body) ->
+                      if List.mem name !seen then
+                        report position
+                          (Printf.sprintf "%s.%s sets '%s' twice" alias nonterminal name);
+                      seen := name :: !seen;
+                      if not (List.mem name (inherited_names module_spec)) then
+                        report position
+                          (Printf.sprintf
+                             "module %s has no inherited attribute '%s' to start; it has %s"
+                             alias name
+                             (match inherited_names module_spec with
+                             | [] -> "none"
+                             | names -> String.concat ", " names));
+                      (* Evaluated before the child exists, from this rule's own
+                         inherited attributes and the question-level values. *)
+                      check_expr ~context:`Downward ~arity ~position body)
+                    arguments)
           | Symbol _ | Literal _ -> ())
         rule.rhs;
 
@@ -734,8 +843,8 @@ let check (declarations : file) : (spec, error list) result =
         (fun equation ->
           match equation with
           | Require (condition, position) ->
-              check_expr ~assigned_here:(List.rev !assigned) ~context:`Upward ~arity
-                ~position condition
+              check_expr ~assigned_here:(List.rev !assigned) ~rhs:rule.rhs ~context:`Upward
+                ~arity ~position condition
           | Assign (name, body, position) ->
               if List.mem name !assigned then
                 report position
@@ -753,8 +862,8 @@ let check (declarations : file) : (spec, error list) result =
                          name value)
                 | _ -> ())
               else if is_synthesized name then
-                check_expr ~assigned_here:(List.rev !assigned) ~context:`Upward ~arity
-                  ~position body
+                check_expr ~assigned_here:(List.rev !assigned) ~rhs:rule.rhs ~context:`Upward
+                  ~arity ~position body
               else
                 report position
                   (Printf.sprintf
@@ -880,12 +989,33 @@ let check (declarations : file) : (spec, error list) result =
     | Some (template, position) ->
         let pieces, template_errors = parse_template position template in
         List.iter (fun error -> errors := error :: !errors) template_errors;
+        (* {calc.given} and {answer calc.total} name a module's random or let;
+           the engine keeps those under their qualified names. *)
+        let qualify owner attribute module_spec make =
+          if not (is_question_level_of module_spec attribute) then
+            report position
+              (Printf.sprintf "{%s.%s}: module %s has no random or let named '%s'" owner
+                 attribute owner attribute);
+          make (owner ^ "." ^ attribute)
+        in
+        let pieces =
+          List.map
+            (fun piece ->
+              match piece with
+              | Hole (owner, attribute) when module_of owner <> None ->
+                  qualify owner attribute (Option.get (module_of owner)) (fun q -> Value_hole q)
+              | Answer_hole (owner, attribute) when module_of owner <> None ->
+                  qualify owner attribute (Option.get (module_of owner)) (fun q ->
+                      Answer_value_hole q)
+              | other -> other)
+            pieces
+        in
         List.iter
           (fun piece ->
             match piece with
             | Text _ -> ()
             | Value_hole name ->
-                if not (is_question_level name) then
+                if not (is_question_level name || String.contains name '.') then
                   report position
                     (Printf.sprintf
                        "{%s} is not a random or a let; to use an attribute of \
@@ -905,7 +1035,7 @@ let check (declarations : file) : (spec, error list) result =
                         attribute"
                        owner attribute attribute)
             | Answer_value_hole name ->
-                if not (is_question_level name) then
+                if not (is_question_level name || String.contains name '.') then
                   report position
                     (Printf.sprintf "{answer %s} is not a random or a let" name))
           pieces;
@@ -933,6 +1063,11 @@ let check (declarations : file) : (spec, error list) result =
         iter_expr
           (fun node ->
             match node with
+            | Attr_child_named (owner, attribute) when module_of owner <> None ->
+                if not (is_question_level_of (Option.get (module_of owner)) attribute) then
+                  report position
+                    (Printf.sprintf "%s.%s: module %s has no random or let named '%s'"
+                       owner attribute owner attribute)
             | Attr_child_named (owner, attribute) ->
                 if owner <> start_symbol then
                   report position
@@ -987,5 +1122,7 @@ let check (declarations : file) : (spec, error list) result =
           library;
           per_question_context = computed_by_start "pg_context";
           per_question_width = computed_by_start "pg_width";
+          source;
+          imports = !imports;
         }
   | errors -> Error errors

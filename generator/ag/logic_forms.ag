@@ -1,9 +1,9 @@
 # ==========================================================================
 #  Three questions about propositions: classify, count, rewrite
 #
-#  This file includes boolean.ag (for its expression language E) and
-#  boolean_equiv.ag (for its laws L) and asks three further questions of
-#  them, each in the WeBWorK context its answer needs:
+#  This file imports boolean.ag (for its expression language E) and
+#  boolean_equiv.ag (for its laws L) as modules and asks three further
+#  questions of them, each in the WeBWorK context its answer needs:
 #
 #    classify   is the proposition a tautology, a contradiction or neither?
 #               Built from a law: the biconditional of a law that holds is
@@ -14,15 +14,17 @@
 #               by contextBoolean.pl as a proposition; WeBWorK accepts any
 #               equivalent proposition, so the form itself is not enforced)
 #
-#  Difficulty is the budget `cost`, spent exactly by the law or the
-#  expression as boolean.ag and boolean_equiv.ag price them; the forms add
-#  nothing on top.
+#  Each module keeps its own names: bool.E and laws.L are expanded with
+#  their own rules, prices and randoms, and nothing here can clash with
+#  them. The budget `cost` of this file is handed to the module whole with
+#  `cost = cost`, so the law or the expression spends exactly what this
+#  file was given; the forms add nothing on top.
 #
 #    agrun --set cost=6 logic_forms.ag
 # ==========================================================================
 
-include "boolean.ag"
-include "boolean_equiv.ag"
+import "boolean.ag" as bool
+import "boolean_equiv.ag" as laws
 
 attribute cost = 6 split
 
@@ -39,7 +41,7 @@ start K
 # Answers are coded as in the evaluation questions: 1 for a tautology, 2 for
 # a contradiction, 0 for neither.
 
-K -> L "tautology" when cost >= 1 weight 2 {
+K -> laws.L(cost = cost) "tautology" when cost >= 1 weight 2 {
   kind = "tautology"
   pg_context = "Numeric"
   f = bool_iff($1.fa, $1.fb)
@@ -50,7 +52,7 @@ Enter 1 for a tautology, 2 for a contradiction and 0 for neither."
   answer_value = 1
 }
 
-K -> L "contradiction" when cost >= 1 weight 2 {
+K -> laws.L(cost = cost) "contradiction" when cost >= 1 weight 2 {
   kind = "contradiction"
   pg_context = "Numeric"
   f = bool_and($1.fa, bool_not($1.fb))
@@ -61,7 +63,7 @@ Enter 1 for a tautology, 2 for a contradiction and 0 for neither."
   answer_value = 2
 }
 
-K -> L "neither" when cost >= 1 weight 2 {
+K -> laws.L(cost = cost) "neither" when cost >= 1 weight 2 {
   kind = "neither"
   pg_context = "Numeric"
   f = bool_iff($1.fa, $1.fb)
@@ -77,7 +79,7 @@ Enter 1 for a tautology, 2 for a contradiction and 0 for neither."
 #
 # Every variable takes part, so the count is out of eight.
 
-K -> E "count" when cost >= 4 weight 3 {
+K -> bool.E(cost = cost) "count" when cost >= 4 weight 3 {
   kind = "count"
   pg_context = "Numeric"
   f = $1.f
@@ -91,7 +93,7 @@ K -> E "count" when cost >= 4 weight 3 {
 
 # ---- Rewriting without the conditional family -----------------------------
 
-K -> E "rewrite" when cost >= 4 weight 3 {
+K -> bool.E(cost = cost) "rewrite" when cost >= 4 weight 3 {
   kind = "rewrite"
   pg_context = "Boolean"
   f = $1.f

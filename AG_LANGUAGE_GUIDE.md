@@ -845,6 +845,9 @@ matrix 或其他专用答案类型
 | `prompt` | question prompt template | 声明题干模板 |
 | `answer` | answer expression | 声明正确答案表达式 |
 | `width` | answer field width | 设置答案输入框宽度 |
+| `include` | include | 把另一个文件的声明合并进来（扩展） |
+| `import` | import | 把另一个文件作为模块引入（组合） |
+| `as` | module alias | 给引入的模块起别名 |
 | `and` | Boolean AND | 逻辑与 |
 | `or` | Boolean OR | 逻辑或 |
 | `not` | Boolean NOT | 逻辑非 |
@@ -1011,8 +1014,25 @@ E -> V           when cost = 0             { ... }
 - `synth pg_context on Q`，规则里写 `pg_context = "Complex"`：每道题自己的 WeBWorK 上下文；`pg_width` 同理。`.pg` 文件按上下文分段并加载相应的宏。
 - 题干里的 `{answer Q.nth}` 在该位置放一个答案空，按 `Q.nth` 判分，`{answer total}` 按 random 或 let 判分；放了内联空的文件不再写 `answer` 声明。
 
-详细说明和示例见 `AG_LANGUAGE_EXTENSIONS.md`（英文）和 `AG_LANGUAGE_EXTENSIONS.zh.md`（中文）；示例文件 `polynomial_core.ag`、`polynomial_forms.ag`、`sequence_parts.ag`，以及把 calculus.ag 和 boolean.ag 整个包含进来的 `derivative_or_boolean.ag`。被包含的文法要按非终结符声明 synth（`synth value on E`），随库发布的文法已经如此。
+详细说明和示例见 `AG_LANGUAGE_EXTENSIONS.md`（英文）和 `AG_LANGUAGE_EXTENSIONS.zh.md`（中文）；示例文件 `polynomial_core.ag`、`polynomial_forms.ag`、`sequence_parts.ag`。被包含的文法要按非终结符声明 synth（`synth value on E`），随库发布的文法已经如此。要把两个完整的文法并排放进一个文件，用第 27 节的 `import`。
 
 ## 26. 矩阵（Matrix）
 
 值类型 `Matrix`（`ag_matrix.ml`）：元素是精确有理数。内置函数：`matrix2(a, b, c, d)`、`matrix3(…9 个元素…)`、`matrix_identity(n)`、`matrix_add`、`matrix_subtract`、`matrix_multiply`、`matrix_scale(k, m)`、`matrix_transpose`、`matrix_determinant`（返回数）、`matrix_inverse`（奇异矩阵报错）、`matrix_is_invertible`、`matrix_entry(m, i, j)`、`matrix_vector(m, v)`（返回向量）、`matrix_latex`（pmatrix）、`matrix_row_latex(m, i)`（把第 i 行写成 x、y、z 的线性式）、`vector_entry(v, i)`。矩阵答案用 `context "Matrix"`，PG 中写作 `Matrix([[1,2],[3,4]])`。示例见 `matrix_core.ag` 及建立在它上面的四个文法。
+
+## 27. import 模块（Modules）
+
+```
+import "calculus.ag" as calc
+import "boolean.ag" as bool
+attribute cost = 8 copy
+start M
+M -> calc.F(cost = cost) "derivative" { ... $1.latex ... }
+M -> bool.E(cost = cost + 2) "boolean" { ... bool.given ... }
+```
+
+- `import "file.ag" as name`：把另一个文件作为模块引入。文件单独加载和检查，它的名字全部放在别名后面：非终结符 `calc.F`（规则右侧），random 和 let `bool.given`（表达式）、`{bool.given}`（题干）。综合属性照旧用 `$1.latex` 读，检查器按子节点所属的模块检查名字。模块内部不加限定，现有文件含义不变。
+- 参数 `calc.F(cost = cost - 1)` 给模块的继承属性设这棵子树的初值，没写的取模块默认值；参数在父节点求值，必须是非负整数。参数里的父节点属性名表示这个子节点应得的份额（`split` 下是它分到的那份），所以模块花掉的正好是交给它的。模块的预算是它自己的，两套定价标尺的汇率写在引入方的参数里。
+- 同一文件引入多次是同一个模块，random 每道题只画一次。模块自己的 import 对外不可见。库也可以引入。引入成环报错。
+- 模块子树在引入方眼里是原子，`infix()` 不给它加括号；需要括号的规则自己写。
+- 扩展用 `include`，组合用 `import`。示例：`derivative_or_boolean.ag`、`logic_forms.ag`。详见 `AG_LANGUAGE_EXTENSIONS.md` 第 4 节；后续的有名字的题型和 `set` 声明见 `AG_MODULES_DESIGN.md`。

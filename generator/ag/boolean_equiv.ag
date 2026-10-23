@@ -50,7 +50,7 @@ synth rhs on Q
 synth text on Q
 
 random flip = boolean                  # which side is shown first
-random law_phrasing = integer_between(1, 2)   # its own name, so that boolean.ag can be included beside this file
+random phrasing = integer_between(1, 2)
 random target = boolean                # the answer this question is to have
 
 
@@ -67,7 +67,7 @@ Q -> L {
        require holds = target
        lhs   = bool_latex(cond(flip, $1.fa, $1.fb))
        rhs   = bool_latex(cond(flip, $1.fb, $1.fa))
-       text  = cond(law_phrasing = 1,
+       text  = cond(phrasing = 1,
                  "Are the following two propositions logically equivalent?
 [`" ++ lhs ++ "`]
 [`" ++ rhs ++ "`]",

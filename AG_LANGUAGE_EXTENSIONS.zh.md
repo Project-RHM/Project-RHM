@@ -1,6 +1,6 @@
-# 语言扩展：include、每题一个上下文、多个答案空
+# 语言扩展：include、import、每题一个上下文、多个答案空
 
-*`.ag` 语言的三项新增，让一个文件可以容纳作者想要的任何题型。英文原版见 `AG_LANGUAGE_EXTENSIONS.md`，以英文版为准；语言本身见 `AG_LANGUAGE_GUIDE.md`。*
+*`.ag` 语言的四项新增，让一个文件可以容纳作者想要的任何题型。英文原版见 `AG_LANGUAGE_EXTENSIONS.md`，以英文版为准；语言本身见 `AG_LANGUAGE_GUIDE.md`。*
 
 ## 1. `include "file.ag"`：文件之间的复用
 
@@ -22,19 +22,7 @@ answer Q.answer_value
 
 包含方声明的 `attribute` 优先于被包含文件的，两个被包含文件声明同一个属性时以先到的为准，所以默认预算不同的两个文法可以一起包含，由包含方统一设定两者花的预算。两个文件里同名的 random 和 let 仍然报错。
 
-非终结符按名字共享，所以两个都用 `E` 的文法不能原样包含进同一个文件。库应当使用自己专用的非终结符名；打算被包含的文法应当按非终结符声明综合属性（`synth value on E`），因为不带 `on` 的 `synth value` 会要求包含方的每个非终结符都计算它。随库发布的文法都已这样写；calculus 的 `F`、`T` 和 boolean 的 `E`、`V` 互不冲突，`derivative_or_boolean.ag` 把两个文法整个包含进来，每道题问其中之一：
-
-```
-include "calculus.ag"
-include "boolean.ag"
-attribute cost = 8 split
-synth kind on M  synth text on M  synth answer_value on M
-start M
-M -> F "derivative" { ... answer_value = differentiate($1.formula, "x") }
-M -> E "boolean"    { ... answer_value = $1.value }
-prompt "{M.text}"
-answer M.answer_value
-```
+非终结符按名字共享，所以两个都用 `E` 的文法不能原样包含进同一个文件，两个文件里同名的 random 也会冲突。`include` 是**扩展**一个文法的工具：往它的非终结符上加规则、重新提问。要把两个文法并排放在一起，用 **import**（第 4 节）：每个文法的名字都留在自己的别名后面。
 
 ## 2. 每道题自己的上下文和答案宽度
 
@@ -61,6 +49,47 @@ prompt "{Q.text}
 
 可读的文本输出中，内联的空显示为 `[___]`，答案按顺序列出；生成的题目把它们放在 `answers` 里，`answer` 仍是第一个，供只读一个答案的工具使用。
 
+## 4. `import "file.ag" as name`：模块
+
+```
+import "calculus.ag" as calc
+import "boolean.ag" as bool
+
+attribute cost = 8 copy
+synth kind on M  synth text on M  synth answer_value on M
+start M
+
+M -> calc.F(cost = cost) "derivative" {
+  kind = "derivative"
+  text = "Differentiate [`f(x) = " ++ $1.latex ++ "`]."
+  answer_value = differentiate($1.formula, "x")
+}
+M -> bool.E(cost = cost + 2) "boolean" {
+  kind = "boolean"
+  text = "Evaluate [`" ++ bool_latex($1.f) ++ "`] when " ++ bool.given ++ "."
+  answer_value = bool_evaluate($1.f, bool.names, bool.mask)
+}
+
+prompt "{M.text}"
+answer M.answer_value
+```
+
+`import` 把另一个文件作为**模块**引入：该文件单独加载、单独检查，它声明的一切都通过别名访问，所以它和引入方、和其他模块之间不可能撞名。上面就是随库发布的 `derivative_or_boolean.ag`；`logic_forms.ag` 引入 `boolean.ag` 和 `boolean_equiv.ag`，这两个文件都有 `Q`、`E`、`cost` 和 `phrasing`，照样一起用。
+
+**名字。** 模块的非终结符在规则右侧写成 `calc.F`；它的 random 和 let 在表达式里写 `bool.given`、`bool.mask`，在题干里写 `{bool.given}` 或 `{answer bool.total}`。综合属性不用别名：`$1.latex` 从子节点读，检查器知道这个子节点是 `calc.F`，就按那个模块检查名字（`$1 is calc.F, which does not carry 'value'`）。继承属性只在参数里点名。模块的优先级表和规则对外不可见。内置函数是全局的，从不加限定。模块内部自己的名字仍然不加限定，所以现有文件的含义一个都不变。
+
+**参数。** `calc.F(cost = cost - 1, advanced = 1)` 给模块的继承属性设这棵子树上的初值；没点名的取模块声明的默认值（单写 `calc.F` 时从 `calculus.ag` 的 `attribute cost = 7` 开始）。参数表达式在父节点求值，此时子节点还不存在：可以用字面量、父节点的继承属性、引入方的 random 和 let、模块的值、内置函数。结果必须是整数，不能为负。
+
+参数里出现父节点的属性名，表示**这个子节点应得的份额**：`copy` 下是整个值，`split` 下是它作为本地非终结符本来会分到的那份。所以在 `attribute cost = 6 split` 下写 `M -> bool.E(cost = cost) "," laws.L(cost = cost + 1)`，两个模块合计花 7，对每棵子树调 `Ag_engine.consumption` 报的就是该模块花掉的数。模块的预算是它自己的：`calc.F` 永远看不见引入方的 `cost`；定价标尺不同的两个文法在边界相遇，汇率由引入方写在参数里（上面的 `cost + 2`）。
+
+**一个文件一个模块。** 同一个文件被引入两次，无论是两个别名还是两个引入方，都是同一个模块：它的 random 每道题只画一次，两个别名看到同样的值（`a.p = b.p`）。模块自己也可以 import 和 include 文件，那些对外不可见（`forms.bool.E` 不是一个名字）。库（没有 `start`）也可以像文法一样引入：`import "polynomial_core.ag" as poly`，然后 `poly.E(cost = 5)`。直接或间接引入自己的文件会被拒绝，并报出文件链。
+
+**括号。** 引入方的优先级表对模块的运算符一无所知，所以模块子树在引入方眼里是一个原子：`infix()` 不会在它外面加括号。把 `calc.F` 嵌进更大表达式的规则要自己写括号（`"(" ++ $1.latex ++ ")"`），或者用模块为此提供的属性。
+
+**错误**都在引入方报出：别名不存在、模块没有这个非终结符、参数点名了模块没有的属性或设了两次、模块子节点没有这个综合属性、模块没有这个 random 或 let、两个 import 用了同一个别名、引入成环。模块自身内部的错误带着模块的文件名报出，前面先有一行指在 `import` 处说明是哪个引入带进来的。`agcheck` 会列出解析到的 import。
+
+**include 还是 import？** 扩展用 include，组合用 import。一个文件可以两者都用：`factoring.ag` include `polynomial_core.ag` 以在它的因式树上加一道题；`derivative_or_boolean.ag` import 两个完整的文法。
+
 ## 这带来了什么
 
-一个文件现在可以容纳需要不同上下文的多种题型、分成几个小问的题目，以及与其他文件共享的产生式。还做不到的：给单个答案空单独设宽度，以及包含两个非终结符同名的文法。
+一个文件现在可以容纳需要不同上下文的多种题型、分成几个小问的题目、与其他文件共享的产生式，以及并排使用来自其他文件的完整文法而不必改动它们的任何名字。还做不到的：给单个答案空单独设宽度，给题型起名字（一个文件就是一道题），描述一整套题；这些是 `AG_MODULES_DESIGN.md` 里的后续步骤。

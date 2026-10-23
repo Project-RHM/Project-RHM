@@ -16,7 +16,7 @@ let position (start : Lexing.position) =
 
 %token ATTRIBUTE SYNTH START CONTEXT PRECEDENCE LEFT RIGHT NONASSOC
 %token RANDOM LET BOOLEAN ON
-%token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH INCLUDE
+%token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH INCLUDE IMPORT AS
 %token AND OR NOT
 %token ARROW CONCAT NEQ LE GE EQ LT GT
 %token PLUS MINUS STAR SLASH PERCENT CARET
@@ -87,6 +87,9 @@ declaration:
   | INCLUDE; name = STRING
       { Include_decl (name, position $startpos) }
 
+  | IMPORT; name = STRING; AS; alias = IDENT
+      { Import_decl (name, alias, position $startpos) }
+
   | rule = rule
       { Rule_decl rule }
 
@@ -150,6 +153,11 @@ weight:
 symbol:
   | name = IDENT                                          { Symbol name }
   | name = IDENT; LPAREN; args = arguments; RPAREN        { Generator (name, args) }
+  (* A nonterminal of an imported module, with the starting values of the
+     module's inherited attributes. The dot tells it apart from a generator. *)
+  | alias = IDENT; DOT; name = IDENT                      { Module_symbol (alias, name, []) }
+  | alias = IDENT; DOT; name = IDENT;
+    LPAREN; args = named_arguments; RPAREN                { Module_symbol (alias, name, args) }
   | text = STRING                                         { Literal text }
   | PLUS                                                  { Symbol "+" }
   | MINUS                                                 { Symbol "-" }
@@ -173,6 +181,12 @@ equation:
 
 arguments:
   | args = separated_list(COMMA, expr) { args }
+
+named_arguments:
+  | args = separated_list(COMMA, named_argument) { args }
+
+named_argument:
+  | name = IDENT; EQ; body = expr { (name, body) }
 
 expr:
   | value = INT                       { Int value }

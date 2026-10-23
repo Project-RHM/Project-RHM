@@ -20,12 +20,22 @@ let describe_symbol = function
   | Ag_ast.Generator (name, arguments) ->
       Printf.sprintf "%s(%d arg%s)" name (List.length arguments)
         (if List.length arguments = 1 then "" else "s")
+  | Ag_ast.Module_symbol (alias, name, []) -> alias ^ "." ^ name
+  | Ag_ast.Module_symbol (alias, name, arguments) ->
+      Printf.sprintf "%s.%s(%s)" alias name
+        (arguments |> List.map (fun (attribute, _) -> attribute ^ " = ...") |> String.concat ", ")
 
 let summarize (spec : Ag_check.spec) =
   print_endline "OK";
   if spec.Ag_check.library then
     print_endline "  library      : no start symbol; include this file from a grammar";
   Printf.printf "  start symbol : %s\n" spec.Ag_check.start;
+  if spec.Ag_check.imports <> [] then
+    Printf.printf "  imports      : %s\n"
+      (spec.Ag_check.imports
+      |> List.map (fun (alias, (module_spec : Ag_check.spec)) ->
+             alias ^ " = " ^ module_spec.Ag_check.source)
+      |> String.concat ", ");
   Printf.printf "  context      : %s\n" spec.Ag_check.context;
   let inherited =
     spec.Ag_check.inherited
