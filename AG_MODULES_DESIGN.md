@@ -1,8 +1,10 @@
 # Modules and sets for the `.ag` language — design proposal
 
-Status: step 1 (modules and arguments, section 2 and 7.1) is implemented and
-documented in AG_LANGUAGE_EXTENSIONS.md section 4; steps 2 to 4 (named
-questions, sets, docs) are still proposals. Companion: AG_MODULES_DESIGN.zh.md.
+Status: steps 1 and 2 (modules and arguments, named questions; sections 2, 3,
+7.1, 7.2) are implemented and documented in AG_LANGUAGE_EXTENSIONS.md sections
+4 and 5; step 3 (sets) is still a proposal. One departure from section 3: a
+file whose questions are all blocks has no `main`, and its first block is the
+default. Companion: AG_MODULES_DESIGN.zh.md.
 
 ## 0. What this adds, in one paragraph
 

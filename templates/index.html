@@ -98,6 +98,8 @@
                         <div class="ag-controls-row">
                             <label for="agGrammarSelect">Grammar file</label>
                             <select id="agGrammarSelect"></select>
+                            <label for="agQuestionSelect" id="agQuestionLabel" hidden>Question</label>
+                            <select id="agQuestionSelect" hidden></select>
                             <label for="agCount">Questions</label>
                             <input type="number" id="agCount" min="1" max="50" value="6">
                             <button type="button" id="agEditToggleBtn" class="btn btn-secondary">
@@ -1346,6 +1348,23 @@
             const agControls = document.getElementById('agControls');
             const agEditor = document.getElementById('agEditor');
             const agGrammarSelect = document.getElementById('agGrammarSelect');
+            const agQuestionSelect = document.getElementById('agQuestionSelect');
+            const agQuestionLabel = document.getElementById('agQuestionLabel');
+            let agQuestions = {};
+            // The named questions of the chosen file, when it has more than one.
+            function showAgQuestions() {
+                const names = agQuestions[agGrammarSelect.value] || [];
+                agQuestionSelect.innerHTML = '';
+                names.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name === 'main' ? '' : name;
+                    option.textContent = name;
+                    agQuestionSelect.appendChild(option);
+                });
+                agQuestionSelect.hidden = names.length === 0;
+                agQuestionLabel.hidden = names.length === 0;
+            }
+            agGrammarSelect.addEventListener('change', showAgQuestions);
             const agGrammarText = document.getElementById('agGrammarText');
             const agGrammarMessage = document.getElementById('agGrammarMessage');
             const agEditorName = document.getElementById('agEditorName');
@@ -1610,7 +1629,9 @@
                             option.textContent = name;
                             agGrammarSelect.appendChild(option);
                         });
+                        agQuestions = data.questions || {};
                         agGrammarsLoaded = true;
+                        showAgQuestions();
                     })
                     .catch(e => showAgMessage('Could not load grammars: ' + e.message, 'error'))
                     .finally(() => setAgBusy(false));
@@ -1925,6 +1946,7 @@
                 let body = 'student_id=' + encodeURIComponent(studentId);
                 if (useAttributeGrammar) {
                     body += '&grammar=' + encodeURIComponent(document.getElementById('agGrammarSelect').value)
+                          + '&question=' + encodeURIComponent(agQuestionSelect.hidden ? '' : agQuestionSelect.value)
                           + '&count=' + encodeURIComponent(document.getElementById('agCount').value);
                 }
 

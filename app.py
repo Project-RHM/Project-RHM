@@ -857,12 +857,38 @@ def list_ag_grammars():
     )
 
 
+AG_QUESTION_BLOCK = re.compile(r'^\s*question\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{', re.M)
+
+
+def list_ag_questions(name):
+    """The question types a .ag file declares: `main` for its file-level
+    start, prompt and answer, plus one per `question NAME { ... }` block.
+    A file without blocks has just `main`, so the list is left empty."""
+    try:
+        with open(os.path.join(AG_GRAMMAR_DIR, name), 'r', encoding='utf-8') as f:
+            text = f.read()
+    except OSError:
+        return []
+    blocks = AG_QUESTION_BLOCK.findall(text)
+    if not blocks:
+        return []
+    has_main = re.search(r'^\s*start\s+[A-Za-z_]', text, re.M) is not None
+    return (['main'] if has_main else []) + blocks
+
+
 AG_CHECK_PATH = os.path.join(OCAML_PROJECT_DIR, "_build/default/ag/agcheck.exe")
 
 
 @app.route('/ag_grammars')
 def ag_grammars():
-    return jsonify({'success': True, 'grammars': list_ag_grammars()})
+    grammars = list_ag_grammars()
+    return jsonify({
+        'success': True,
+        'grammars': grammars,
+        # file -> its named questions, for the files that have more than main
+        'questions': {name: questions for name in grammars
+                      for questions in [list_ag_questions(name)] if questions},
+    })
 
 
 @app.route('/ag_grammar')
@@ -998,6 +1024,10 @@ def run_attribute_grammar():
     grammar = os.path.basename(grammar)
     if grammar not in list_ag_grammars():
         return jsonify({'error': f'Unknown grammar file: {grammar}'}), 400
+    # One of the file's named questions; empty means the file's default.
+    question = request.form.get('question', '').strip()
+    if question and not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', question):
+        return jsonify({'error': f'Invalid question name: {question}'}), 400
 
     if not os.path.exists(AG_PROGRAM_PATH):
         return jsonify({
@@ -1034,6 +1064,7 @@ def run_attribute_grammar():
         "--out", relative_output,
         "--ast-out", relative_ast,
         "--visualization-out", relative_visualization,
+        *(["--question", question] if question else []),
         os.path.join("ag", grammar),
     ]
 

@@ -1,6 +1,6 @@
-# 语言扩展：include、import、每题一个上下文、多个答案空
+# 语言扩展：include、import、有名字的题型、每题一个上下文、多个答案空
 
-*`.ag` 语言的四项新增，让一个文件可以容纳作者想要的任何题型。英文原版见 `AG_LANGUAGE_EXTENSIONS.md`，以英文版为准；语言本身见 `AG_LANGUAGE_GUIDE.md`。*
+*`.ag` 语言的五项新增，让一个文件可以容纳作者想要的任何题型。英文原版见 `AG_LANGUAGE_EXTENSIONS.md`，以英文版为准；语言本身见 `AG_LANGUAGE_GUIDE.md`。*
 
 ## 1. `include "file.ag"`：文件之间的复用
 
@@ -90,6 +90,42 @@ answer M.answer_value
 
 **include 还是 import？** 扩展用 include，组合用 import。一个文件可以两者都用：`factoring.ag` include `polynomial_core.ag` 以在它的因式树上加一道题；`derivative_or_boolean.ag` import 两个完整的文法。
 
+## 5. `question NAME { ... }`：一个文件里多个有名字的题型
+
+```
+start Q
+prompt "{Q.text}"
+answer Q.answer_value
+width 24
+
+question derivative {
+  start D
+  prompt "{D.text}"
+  answer D.answer_value
+}
+
+question integral {
+  start I
+  prompt "{I.text}"
+  answer I.answer_value
+  cost = 7
+}
+```
+
+一个文件可以对它的规则问不止一道题。文件级的 `start`、`prompt`、`answer`、`context`、`width` 构成名为 **`main`** 的题型；每个 `question NAME { ... }` 块再加一个，有自己的开始符号、题干和答案，可选地有自己的 `context` 和 `width`。块里没写 `context` 或 `width` 时取文件级的。一个文件的所有题型共享它的规则、属性、random 和 let：它们只在从哪里开始、怎么问上不同。
+
+块还可以给它的根节点另设继承属性的初值：`cost = 7` 表示这道题从这个预算开始，不管 `attribute` 行写的是多少；`--set` 仍然可以从外部覆盖它。只能设文件声明过的继承属性，不能为负。
+
+`calculus.ag` 是随库发布的示例：`main`（start `Q`）在导数和积分之间随机，`derivative`（start `D`）和 `integral`（start `I`）各只问一种形式，三者共享形式 `D`、`I` 以及它们之下的表达式文法。全是块、没有 `main` 的文件以第一个块为默认；两者都没有的文件是库。
+
+```
+agrun calculus.ag                                   main
+agrun --question integral --set cost=5 calculus.ag  指定一个题型
+agcheck calculus.ag                                 列出题型
+```
+
+题型多于一个时 `agcheck` 列出每个题型及其开始符号和上下文；网页端对这样的文件多出一个题型下拉框。题型在 `--set` 之前选定，所以块里的初始预算可以被覆盖。块内的错误带着块名报出：缺 `start`、`prompt` 或 `answer`，开始符号没有规则，题干引用了别的符号，`context` 或 `width` 不合法，设了文件没声明的属性，初值为负，同一项声明两次，块叫 `main`，两个块同名。
+
 ## 这带来了什么
 
-一个文件现在可以容纳需要不同上下文的多种题型、分成几个小问的题目、与其他文件共享的产生式，以及并排使用来自其他文件的完整文法而不必改动它们的任何名字。还做不到的：给单个答案空单独设宽度，给题型起名字（一个文件就是一道题），描述一整套题；这些是 `AG_MODULES_DESIGN.md` 里的后续步骤。
+一个文件现在可以容纳需要不同上下文的多种题型、分成几个小问的题目、与其他文件共享的产生式，并排使用来自其他文件的完整文法而不必改动它们的任何名字，以及在一套规则上定义多个有名字的题型。还做不到的：给单个答案空单独设宽度，描述一整套题；后者是 `AG_MODULES_DESIGN.md` 里的下一步。

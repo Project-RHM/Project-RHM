@@ -848,6 +848,7 @@ matrix 或其他专用答案类型
 | `include` | include | 把另一个文件的声明合并进来（扩展） |
 | `import` | import | 把另一个文件作为模块引入（组合） |
 | `as` | module alias | 给引入的模块起别名 |
+| `question` | named question block | 在同一套规则上声明一个有名字的题型 |
 | `and` | Boolean AND | 逻辑与 |
 | `or` | Boolean OR | 逻辑或 |
 | `not` | Boolean NOT | 逻辑非 |
@@ -899,6 +900,12 @@ dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/arithmetic.ag
 
 ```bash
 dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/sequence.ag
+```
+
+生成文件里某个有名字的题型（见第 28 节），`--set` 在它之后生效：
+
+```bash
+dune exec ag/agrun.exe -- --question integral --set cost=5 ag/calculus.ag
 ```
 
 生成复数题：
@@ -1036,3 +1043,23 @@ M -> bool.E(cost = cost + 2) "boolean" { ... bool.given ... }
 - 同一文件引入多次是同一个模块，random 每道题只画一次。模块自己的 import 对外不可见。库也可以引入。引入成环报错。
 - 模块子树在引入方眼里是原子，`infix()` 不给它加括号；需要括号的规则自己写。
 - 扩展用 `include`，组合用 `import`。示例：`derivative_or_boolean.ag`、`logic_forms.ag`。详见 `AG_LANGUAGE_EXTENSIONS.md` 第 4 节；后续的有名字的题型和 `set` 声明见 `AG_MODULES_DESIGN.md`。
+
+## 28. 有名字的题型（Named questions）
+
+```
+start Q
+prompt "{Q.text}"
+answer Q.answer_value
+
+question integral {
+  start I
+  prompt "{I.text}"
+  answer I.answer_value
+  cost = 7
+}
+```
+
+- 文件级的 `start`、`prompt`、`answer`、`context`、`width` 构成题型 `main`；每个 `question NAME { ... }` 块再加一个题型，块内可写 `start`、`prompt`、`answer`、`context`、`width` 和继承属性的初值（`cost = 7`）。没写的 `context`、`width` 取文件级的；初值没写的取 `attribute` 行的。
+- 所有题型共享文件的规则、属性、random 和 let，只在开始符号和问法上不同。全是块的文件以第一个块为默认；两者都没有的是库。
+- `agrun --question NAME file.ag` 生成指定题型，`--set` 在其后生效；`agcheck` 在题型多于一个时列出它们；网页端多出一个题型下拉框。
+- 示例：`calculus.ag` 的 `main`、`derivative`、`integral`。详见 `AG_LANGUAGE_EXTENSIONS.md` 第 5 节；后续的 `set` 声明见 `AG_MODULES_DESIGN.md`。

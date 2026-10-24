@@ -16,7 +16,7 @@ let position (start : Lexing.position) =
 
 %token ATTRIBUTE SYNTH START CONTEXT PRECEDENCE LEFT RIGHT NONASSOC
 %token RANDOM LET BOOLEAN ON
-%token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH INCLUDE IMPORT AS
+%token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH INCLUDE IMPORT AS QUESTION
 %token AND OR NOT
 %token ARROW CONCAT NEQ LE GE EQ LT GT
 %token PLUS MINUS STAR SLASH PERCENT CARET
@@ -90,8 +90,21 @@ declaration:
   | IMPORT; name = STRING; AS; alias = IDENT
       { Import_decl (name, alias, position $startpos) }
 
+  (* A named question type. Its body holds the declarations a grammar makes
+     once, for this question, and starting values for inherited attributes. *)
+  | QUESTION; name = IDENT; LBRACE; items = question_item*; RBRACE
+      { Question_decl (name, items, position $startpos) }
+
   | rule = rule
       { Rule_decl rule }
+
+question_item:
+  | START; name = IDENT                     { Q_start (name, position $startpos) }
+  | CONTEXT; name = STRING                  { Q_context (name, position $startpos) }
+  | PROMPT; template = STRING               { Q_prompt (template, position $startpos) }
+  | ANSWER; body = expr                     { Q_answer (body, position $startpos) }
+  | WIDTH; columns = INT                    { Q_width (columns, position $startpos) }
+  | name = IDENT; EQ; value = signed_int    { Q_default (name, value, position $startpos) }
 
 (* The generator name is not checked here; Ag_check reports an unknown one
    with its position, which reads better than a bare syntax error. *)

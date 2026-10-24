@@ -11,6 +11,7 @@
                        always produces the same paper (same rule as
                        Generator.seed_of_id, which the existing generator uses)
      --set NAME=VALUE  override an inherited attribute's starting value
+     --question NAME   generate one of the file's named questions (default: main)
      --out FILE        write to FILE instead of standard output
      --ast-out FILE    write the attributed derivations as readable text
      --visualization-out FILE
@@ -22,6 +23,7 @@
 
 type options = {
   filename : string;
+  question : string option;
   count : int;
   seed : int;
   overrides : (string * int) list;
@@ -33,7 +35,7 @@ type options = {
 
 let usage () =
   prerr_endline
-    "usage: agrun [--pg] [--count N] [--seed N] [--set NAME=VALUE]... \
+    "usage: agrun [--pg] [--count N] [--seed N] [--question NAME] [--set NAME=VALUE]... \
      [--out FILE] [--ast-out FILE] [--visualization-out FILE] FILE.ag";
   exit 2
 
@@ -69,6 +71,7 @@ let parse_arguments () =
     | "--set" :: value :: rest ->
         walk rest
           { accumulated with overrides = accumulated.overrides @ [ parse_override value ] }
+    | "--question" :: value :: rest -> walk rest { accumulated with question = Some value }
     | "--out" :: value :: rest -> walk rest { accumulated with output = Some value }
     | "--ast-out" :: value :: rest ->
         walk rest { accumulated with ast_output = Some value }
@@ -86,6 +89,7 @@ let parse_arguments () =
       (Array.to_list Sys.argv |> List.tl)
       {
         filename = "";
+        question = None;
         count = 5;
         seed = 0;
         overrides = [];
@@ -111,6 +115,17 @@ let () =
          ^ ": this file has no start symbol; it is a library, to be included by a grammar");
         exit 1
       end;
+      (* The question comes first, then --set overrides its starting budgets. *)
+      let spec =
+        match options.question with
+        | None -> spec
+        | Some name -> (
+            match Ag_check.select_question spec name with
+            | Ok spec -> spec
+            | Error message ->
+                prerr_endline (options.filename ^ ": " ^ message);
+                exit 1)
+      in
       let spec =
         List.fold_left
           (fun spec (name, value) ->

@@ -50,8 +50,15 @@ let formula_answer question =
       fail ("answer expected Formula, got " ^ Ag_engine.describe_value other);
       Ag_formula.zero
 
+(* The expression F under the root: directly, or under the D or I node the
+   question form is now built from. *)
+let rec find_expression (node : Ag_engine.node) =
+  match List.find_opt (fun (child : Ag_engine.node) -> child.Ag_engine.symbol = "F") node.Ag_engine.children with
+  | Some expression -> Some expression
+  | None -> List.find_map find_expression node.Ag_engine.children
+
 let expression_child root =
-  match List.find_opt (fun (node : Ag_engine.node) -> node.symbol = "F") root.Ag_engine.children with
+  match find_expression root with
   | Some expression -> expression
   | None ->
       fail "calculus question has no F child";

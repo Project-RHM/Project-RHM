@@ -50,9 +50,11 @@ builtins): the engine renders, evaluates and compares them, so a Boolean
 grammar writes formulas, not truth tables.
 
 A grammar may `include` another file to extend it, `import` other files as
-modules (`import "calculus.ag" as calc`, then `calc.F(cost = cost)`), give
-each question form its own WeBWorK context, and place several answer blanks
-in one prompt; see `AG_LANGUAGE_EXTENSIONS.md`.
+modules (`import "calculus.ag" as calc`, then `calc.F(cost = cost)`), declare
+several named questions over one set of rules (`question integral { ... }`,
+run with `agrun --question integral`), give each question form its own
+WeBWorK context, and place several answer blanks in one prompt; see
+`AG_LANGUAGE_EXTENSIONS.md`.
 
 `sequence.ag` covers arithmetic/geometric nth-term and finite-sum questions.
 It also exercises the signed inclusive range generators `integer_between` and

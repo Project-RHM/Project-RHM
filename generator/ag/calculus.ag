@@ -46,10 +46,18 @@ attribute constants = 1 copy
 # quotients, which only a derivative question may use.
 attribute advanced = 1 copy
 
-synth kind on Q
+synth kind on Q                # the question forms D and I carry the same four
 synth text on Q
 synth derivative on Q
 synth answer_value on Q
+synth kind on D
+synth text on D
+synth derivative on D
+synth answer_value on D
+synth kind on I
+synth text on I
+synth derivative on I
+synth answer_value on I
 
 synth formula on F
 synth latex on F
@@ -70,10 +78,34 @@ synth power on F               # 1 when the subtree is a power, so powers do not
 start Q
 
 # ---- Question forms ------------------------------------------------------
+#
+# The file asks three questions. `main` (start Q) draws a derivative or an
+# integral, as `calculus_mode` allows; the named questions `derivative`
+# (start D) and `integral` (start I) ask one form only, so that a user who
+# wants "an integral" can say so:
+#
+#    agrun calculus.ag                              either form
+#    agrun --question integral --set cost=5 calculus.ag
+#
+# Q only chooses; the forms themselves are D and I, shared by all three.
+
+Q -> D when calculus_mode != 2 weight 1 {
+  kind = $1.kind
+  derivative = $1.derivative
+  text = $1.text
+  answer_value = $1.answer_value
+}
+
+Q -> I when calculus_mode != 1 and cost >= 3 weight 1 {
+  kind = $1.kind
+  derivative = $1.derivative
+  text = $1.text
+  answer_value = $1.answer_value
+}
 
 # One additive constant is enough to show that it differentiates away; two
 # would read as an unsimplified sum.
-Q -> F "derivative" when calculus_mode != 2 weight 1 {
+D -> F "derivative" {
   kind = "derivative"
   require $1.constants_used <= 1
   derivative = differentiate($1.formula, "x")
@@ -85,7 +117,7 @@ Q -> F "derivative" when calculus_mode != 2 weight 1 {
 
 # The integral premium: 2 for the question form, and at least 1 left for F
 # so that the integrand is never the derivative of a bare x.
-Q -> F "integral" when calculus_mode != 1 and cost >= 3 weight 1 {
+I -> F "integral" when cost >= 3 {
   cost = -2
   constants = -1
   advanced = -1
@@ -95,6 +127,20 @@ Q -> F "integral" when calculus_mode != 1 and cost >= 3 weight 1 {
   text = "Find an antiderivative with the constant of integration C = 0:
 [`\\int \\left(" ++ formula_latex(derivative) ++ "\\right)\\,dx`]."
   answer_value = $1.formula
+}
+
+question derivative {
+  start D
+  prompt "{D.text}"
+  answer D.answer_value
+}
+
+# An integral needs a budget of at least 3: 2 for the form and 1 inside.
+question integral {
+  start I
+  prompt "{I.text}"
+  answer I.answer_value
+  cost = 7
 }
 
 # ---- Recursive symbolic function ---------------------------------------

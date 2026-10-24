@@ -31,6 +31,7 @@ let keywords = [
   "width",      WIDTH;
   "include",    INCLUDE;
   "import",     IMPORT;
+  "question",   QUESTION;
   "as",         AS;
   "and",        AND;
   "or",         OR;

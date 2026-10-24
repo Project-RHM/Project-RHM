@@ -98,6 +98,26 @@ type draw =
   | Draw_boolean
   | Draw_generator of string * expr list
 
+(* What a `question NAME { ... }` block may say: the declarations a grammar
+   makes once, for this question, plus starting values for the inherited
+   attributes at this question's root. *)
+type question_item =
+  | Q_start of string * position
+  | Q_context of string * position
+  | Q_prompt of string * position
+  | Q_answer of expr * position
+  | Q_width of int * position
+  | Q_default of string * int * position
+      (* cost = 7 -- this question's root starts the attribute there *)
+
+let question_item_position = function
+  | Q_start (_, position)
+  | Q_context (_, position)
+  | Q_prompt (_, position)
+  | Q_answer (_, position)
+  | Q_width (_, position)
+  | Q_default (_, _, position) -> position
+
 type declaration =
   | Inherited_decl of string * int * distribution * position
       (* attribute len = 3 split *)
@@ -126,6 +146,10 @@ type declaration =
          its names are reached as calc.F, calc.cost, calc.given and never
          clash with this file's. Resolved by the loader, which checks the
          module separately. *)
+  | Question_decl of string * question_item list * position
+      (* question integral { start I  prompt "..."  answer I.value  cost = 5 }
+         -- a named question type sharing this file's rules. The file-level
+         start, prompt, answer, context and width form the question `main`. *)
   | Rule_decl of rule
 
 let declaration_position = function
@@ -140,7 +164,8 @@ let declaration_position = function
   | Answer_decl (_, position)
   | Width_decl (_, position)
   | Include_decl (_, position)
-  | Import_decl (_, _, position) -> position
+  | Import_decl (_, _, position)
+  | Question_decl (_, _, position) -> position
   | Rule_decl rule -> rule.rule_position
 
 type file = declaration list

@@ -33,6 +33,24 @@ type template_piece =
   | Answer_value_hole of string
       (* {answer total} -- an answer blank graded against a random or let *)
 
+(* One question type of a file: where it starts and how it asks. The
+   file-level start, prompt, answer, context and width form the question
+   `main`; a `question NAME { ... }` block adds another. All questions of a
+   file share its rules, attributes, randoms and lets. *)
+type question = {
+  q_name : string;
+  q_start : string;
+  q_context : string;
+  q_prompt : template_piece list;
+  q_answer : expr option;
+  q_width : int option;
+  q_per_question_context : bool;
+  q_per_question_width : bool;
+  (* The starting value of every inherited attribute at this question's root:
+     the declared initial unless the block says otherwise (`cost = 7`). *)
+  q_initials : (string * int) list;
+}
+
 type spec = {
   inherited : inherited_attribute list;
   (* Drawn once per question, in declaration order. *)
@@ -63,7 +81,41 @@ type spec = {
   (* The modules this file imports, by alias. Each is a checked specification
      of its own; the engine expands `alias.F` with that module's rules. *)
   imports : (string * spec) list;
+  (* Every question of the file, `main` first when it exists. The fields
+     start, context, prompt, answer, width, per_question_* above describe the
+     selected one: `main`, or the first block when there is no `main`.
+     [select_question] switches to another. *)
+  questions : question list;
 }
+
+(* Make another of the file's questions the one the engine generates. *)
+let select_question spec name =
+  match List.find_opt (fun question -> question.q_name = name) spec.questions with
+  | None ->
+      Error
+        (Printf.sprintf "'%s' is not a question of this grammar; it has %s" name
+           (match spec.questions with
+           | [] -> "none"
+           | questions -> questions |> List.map (fun q -> q.q_name) |> String.concat ", "))
+  | Some question ->
+      Ok
+        {
+          spec with
+          start = question.q_start;
+          context = question.q_context;
+          prompt = question.q_prompt;
+          answer = question.q_answer;
+          width = question.q_width;
+          per_question_context = question.q_per_question_context;
+          per_question_width = question.q_per_question_width;
+          inherited =
+            List.map
+              (fun attribute ->
+                match List.assoc_opt attribute.attribute_name question.q_initials with
+                | Some initial -> { attribute with initial }
+                | None -> attribute)
+              spec.inherited;
+        }
 
 (* What an importer may see of a module: the names, not the rules. *)
 let nonterminals_of spec =
@@ -394,6 +446,19 @@ let parse_template position text =
 (* Checking                                                            *)
 (* ------------------------------------------------------------------ *)
 
+(* A question as written, before validation: `main` from the file-level
+   declarations, or one block. *)
+type draft = {
+  d_name : string;
+  d_position : position;
+  d_start : (string * position) option;
+  d_context : (string * position) option;
+  d_prompt : (string * position) option;
+  d_answer : (expr * position) option;
+  d_width : (int * position) option;
+  d_defaults : (string * int * position) list;
+}
+
 let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : file) :
     (spec, error list) result =
   let errors = ref [] in
@@ -414,6 +479,7 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
   let answer = ref None in
   let width = ref None in
   let rules = ref [] in
+  let blocks = ref [] in
 
   let declared_once what current position set =
     match !current with
@@ -540,6 +606,14 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
       | Width_decl (columns, position) ->
           if columns <= 0 then report position "width must be positive";
           declared_once "width" width position columns
+      | Question_decl (name, items, position) ->
+          if name = "main" then
+            report position
+              "'main' is the file-level question: declare it with start, prompt and \
+               answer outside a block, or give this block another name";
+          if List.exists (fun (other, _, _) -> other = name) !blocks then
+            report position (Printf.sprintf "question '%s' is declared more than once" name);
+          blocks := !blocks @ [ (name, items, position) ]
       | Rule_decl rule -> rules := !rules @ [ rule ])
     declarations;
 
@@ -567,22 +641,69 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
   in
   let is_nonterminal name = List.mem name nonterminals in
 
-  (* ---- top-level coherence ---- *)
-  let library = !start = None && !prompt = None && !answer = None in
-  let start_symbol =
-    match !start with
-    | None ->
-        if not library then
-        report dummy_position
-          "a 'start SYMBOL' declaration is required (which nonterminal does a \
-           question begin at?)";
-        ""
-    | Some name ->
-        if not (is_nonterminal name) then
-          report dummy_position
-            (Printf.sprintf "start symbol '%s' has no rules" name);
-        name
+  (* ---- the questions of the file ---- *)
+  (* The file-level declarations form `main`; each block is one more. A file
+     with neither is a library. The drafts are validated after the rules,
+     once the nonterminals and the question-level names are known. *)
+  let main_present = !start <> None || !prompt <> None || !answer <> None in
+  let library = (not main_present) && !blocks = [] in
+  let main_draft =
+    {
+      d_name = "main";
+      d_position = dummy_position;
+      d_start = Option.map (fun name -> (name, dummy_position)) !start;
+      d_context = Option.map (fun name -> (name, dummy_position)) !output_context;
+      d_prompt = !prompt;
+      d_answer = !answer;
+      d_width = Option.map (fun columns -> (columns, dummy_position)) !width;
+      d_defaults = [];
+    }
   in
+  let block_draft (name, items, position) =
+    let draft =
+      ref
+        {
+          d_name = name;
+          d_position = position;
+          d_start = None;
+          d_context = None;
+          d_prompt = None;
+          d_answer = None;
+          d_width = None;
+          d_defaults = [];
+        }
+    in
+    let once what current position =
+      if current <> None then
+        report position (Printf.sprintf "question '%s' declares '%s' more than once" name what)
+    in
+    List.iter
+      (fun item ->
+        match item with
+        | Q_start (symbol, position) ->
+            once "start" !draft.d_start position;
+            draft := { !draft with d_start = Some (symbol, position) }
+        | Q_context (context, position) ->
+            once "context" !draft.d_context position;
+            draft := { !draft with d_context = Some (context, position) }
+        | Q_prompt (template, position) ->
+            once "prompt" !draft.d_prompt position;
+            draft := { !draft with d_prompt = Some (template, position) }
+        | Q_answer (body, position) ->
+            once "answer" !draft.d_answer position;
+            draft := { !draft with d_answer = Some (body, position) }
+        | Q_width (columns, position) ->
+            once "width" !draft.d_width position;
+            draft := { !draft with d_width = Some (columns, position) }
+        | Q_default (attribute, value, position) ->
+            if List.exists (fun (other, _, _) -> other = attribute) !draft.d_defaults then
+              report position
+                (Printf.sprintf "question '%s' sets '%s' more than once" name attribute);
+            draft := { !draft with d_defaults = !draft.d_defaults @ [ (attribute, value, position) ] })
+      items;
+    !draft
+  in
+  let drafts = (if main_present then [ main_draft ] else []) @ List.map block_draft !blocks in
   List.iter
     (fun (name, scope) ->
       match scope with
@@ -977,152 +1098,263 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
              rule.lhs))
     free_rules;
 
-  (* ---- prompt and answer ---- *)
-  let prompt_pieces =
-    match !prompt with
-    | None ->
-        if not library then
-          report dummy_position
-            "a 'prompt \"...\"' declaration is required (how does the question \
-             read?)";
-        []
-    | Some (template, position) ->
-        let pieces, template_errors = parse_template position template in
-        List.iter (fun error -> errors := error :: !errors) template_errors;
-        (* {calc.given} and {answer calc.total} name a module's random or let;
-           the engine keeps those under their qualified names. *)
-        let qualify owner attribute module_spec make =
-          if not (is_question_level_of module_spec attribute) then
+  (* ---- each question: start, prompt, answer, context, width ---- *)
+  let validate (draft : draft) =
+    let named = draft.d_name <> "main" in
+    let report_here message = report draft.d_position message in
+    let start_symbol =
+      match draft.d_start with
+      | None ->
+          report_here
+            (if named then
+               Printf.sprintf
+                 "question '%s' needs a 'start SYMBOL' line (which nonterminal does it \
+                  begin at?)"
+                 draft.d_name
+             else
+               "a 'start SYMBOL' declaration is required (which nonterminal does a \
+                question begin at?)");
+          ""
+      | Some (name, position) ->
+          if not (is_nonterminal name) then
+            report position (Printf.sprintf "start symbol '%s' has no rules" name);
+          name
+    in
+    let context =
+      match draft.d_context with
+      | Some (name, position) ->
+          if named && not (valid_context_name name) then
             report position
-              (Printf.sprintf "{%s.%s}: module %s has no random or let named '%s'" owner
-                 attribute owner attribute);
-          make (owner ^ "." ^ attribute)
-        in
-        let pieces =
-          List.map
+              "context must be a non-empty WeBWorK context name containing only \
+               letters, numbers, spaces, underscores, or hyphens";
+          name
+      | None -> (
+          (* A block without a context takes the file-level one, if any. *)
+          match !output_context with Some name -> name | None -> "Numeric")
+    in
+    let prompt_pieces =
+      match draft.d_prompt with
+      | None ->
+          report_here
+            (if named then
+               Printf.sprintf "question '%s' needs a 'prompt \"...\"' line (how does it read?)"
+                 draft.d_name
+             else
+               "a 'prompt \"...\"' declaration is required (how does the question \
+                read?)");
+          []
+      | Some (template, position) ->
+          let pieces, template_errors = parse_template position template in
+          List.iter (fun error -> errors := error :: !errors) template_errors;
+          (* {calc.given} and {answer calc.total} name a module's random or let;
+             the engine keeps those under their qualified names. *)
+          let qualify owner attribute module_spec make =
+            if not (is_question_level_of module_spec attribute) then
+              report position
+                (Printf.sprintf "{%s.%s}: module %s has no random or let named '%s'" owner
+                   attribute owner attribute);
+            make (owner ^ "." ^ attribute)
+          in
+          let pieces =
+            List.map
+              (fun piece ->
+                match piece with
+                | Hole (owner, attribute) when module_of owner <> None ->
+                    qualify owner attribute (Option.get (module_of owner)) (fun q -> Value_hole q)
+                | Answer_hole (owner, attribute) when module_of owner <> None ->
+                    qualify owner attribute (Option.get (module_of owner)) (fun q ->
+                        Answer_value_hole q)
+                | other -> other)
+              pieces
+          in
+          List.iter
             (fun piece ->
               match piece with
-              | Hole (owner, attribute) when module_of owner <> None ->
-                  qualify owner attribute (Option.get (module_of owner)) (fun q -> Value_hole q)
-              | Answer_hole (owner, attribute) when module_of owner <> None ->
-                  qualify owner attribute (Option.get (module_of owner)) (fun q ->
-                      Answer_value_hole q)
-              | other -> other)
-            pieces
-        in
-        List.iter
-          (fun piece ->
-            match piece with
-            | Text _ -> ()
-            | Value_hole name ->
-                if not (is_question_level name || String.contains name '.') then
+              | Text _ -> ()
+              | Value_hole name ->
+                  if not (is_question_level name || String.contains name '.') then
+                    report position
+                      (Printf.sprintf
+                         "{%s} is not a random or a let; to use an attribute of \
+                          the expression write {%s.%s}"
+                         name start_symbol name)
+              | Hole (owner, attribute) | Answer_hole (owner, attribute) ->
+                  if owner <> start_symbol then
+                    report position
+                      (Printf.sprintf
+                         "{%s.%s} refers to '%s', but a prompt can only use the \
+                          start symbol '%s'"
+                         owner attribute owner start_symbol)
+                  else if not (is_synthesized attribute) then
+                    report position
+                      (Printf.sprintf
+                         "{%s.%s} refers to '%s', which is not a synthesized \
+                          attribute"
+                         owner attribute attribute)
+              | Answer_value_hole name ->
+                  if not (is_question_level name || String.contains name '.') then
+                    report position
+                      (Printf.sprintf "{answer %s} is not a random or a let" name))
+            pieces;
+          pieces
+    in
+    let inline_blanks =
+      List.exists
+        (function Answer_hole _ | Answer_value_hole _ -> true | _ -> false)
+        prompt_pieces
+    in
+    let answer_expr =
+      match draft.d_answer with
+      | None ->
+          if not inline_blanks then
+            report_here
+              (if named then
+                 Printf.sprintf
+                   "question '%s' needs an 'answer ...' line (what is the correct answer?), \
+                    or blanks in its prompt with {answer ...}"
+                   draft.d_name
+               else
+                 "an 'answer ...' declaration is required (what is the correct \
+                  answer?), or place the blanks in the prompt with {answer ...}");
+          None
+      | Some (body, position) ->
+          if inline_blanks then
+            report position
+              "the prompt already places its answer blanks with {answer ...}; \
+               drop the 'answer' declaration";
+          iter_expr
+            (fun node ->
+              match node with
+              | Attr_child_named (owner, attribute) when module_of owner <> None ->
+                  if not (is_question_level_of (Option.get (module_of owner)) attribute) then
+                    report position
+                      (Printf.sprintf "%s.%s: module %s has no random or let named '%s'"
+                         owner attribute owner attribute)
+              | Attr_child_named (owner, attribute) ->
+                  if owner <> start_symbol then
+                    report position
+                      (Printf.sprintf
+                         "%s.%s refers to '%s', but an answer can only use the \
+                          start symbol '%s'"
+                         owner attribute owner start_symbol)
+                  else if not (is_synthesized attribute) then
+                    report position
+                      (Printf.sprintf
+                         "%s.%s refers to '%s', which is not a synthesized \
+                          attribute"
+                         owner attribute attribute)
+              | Attr_here name ->
                   report position
                     (Printf.sprintf
-                       "{%s} is not a random or a let; to use an attribute of \
-                        the expression write {%s.%s}"
-                       name start_symbol name)
-            | Hole (owner, attribute) | Answer_hole (owner, attribute) ->
-                if owner <> start_symbol then
+                       "'%s' on its own is ambiguous here; write %s.%s" name
+                       start_symbol name)
+              | Attr_child (index, _) | Child index ->
                   report position
                     (Printf.sprintf
-                       "{%s.%s} refers to '%s', but a prompt can only use the \
-                        start symbol '%s'"
-                       owner attribute owner start_symbol)
-                else if not (is_synthesized attribute) then
-                  report position
-                    (Printf.sprintf
-                       "{%s.%s} refers to '%s', which is not a synthesized \
-                        attribute"
-                       owner attribute attribute)
-            | Answer_value_hole name ->
-                if not (is_question_level name || String.contains name '.') then
-                  report position
-                    (Printf.sprintf "{answer %s} is not a random or a let" name))
-          pieces;
-        pieces
-  in
-  let inline_blanks =
-    List.exists
-      (function Answer_hole _ | Answer_value_hole _ -> true | _ -> false)
-      prompt_pieces
-  in
-
-  let answer_expr =
-    match !answer with
-    | None ->
-        if not (library || inline_blanks) then
-          report dummy_position
-            "an 'answer ...' declaration is required (what is the correct \
-             answer?), or place the blanks in the prompt with {answer ...}";
-        None
-    | Some (body, position) ->
-        if inline_blanks then
+                       "$%d has no meaning in an 'answer' declaration; write \
+                        %s.value"
+                       index start_symbol)
+              | _ -> ())
+            body;
+          Some body
+    in
+    let width =
+      match draft.d_width with
+      | Some (columns, position) ->
+          if named && columns <= 0 then report position "width must be positive";
+          Some columns
+      | None -> !width
+    in
+    (* The start symbol may compute the context and width of each question. *)
+    let computed_by_start name =
+      List.exists
+        (fun (attribute, scope) ->
+          attribute = name && (scope = None || scope = Some start_symbol))
+        synthesized
+    in
+    (* The root's starting budgets: declared, unless this question says. *)
+    List.iter
+      (fun (attribute, value, position) ->
+        if not (is_inherited attribute) then
           report position
-            "the prompt already places its answer blanks with {answer ...}; \
-             drop the 'answer' declaration";
-        iter_expr
-          (fun node ->
-            match node with
-            | Attr_child_named (owner, attribute) when module_of owner <> None ->
-                if not (is_question_level_of (Option.get (module_of owner)) attribute) then
-                  report position
-                    (Printf.sprintf "%s.%s: module %s has no random or let named '%s'"
-                       owner attribute owner attribute)
-            | Attr_child_named (owner, attribute) ->
-                if owner <> start_symbol then
-                  report position
-                    (Printf.sprintf
-                       "%s.%s refers to '%s', but an answer can only use the \
-                        start symbol '%s'"
-                       owner attribute owner start_symbol)
-                else if not (is_synthesized attribute) then
-                  report position
-                    (Printf.sprintf
-                       "%s.%s refers to '%s', which is not a synthesized \
-                        attribute"
-                       owner attribute attribute)
-            | Attr_here name ->
-                report position
-                  (Printf.sprintf
-                     "'%s' on its own is ambiguous here; write %s.%s" name
-                     start_symbol name)
-            | Attr_child (index, _) | Child index ->
-                report position
-                  (Printf.sprintf
-                     "$%d has no meaning in an 'answer' declaration; write \
-                      %s.value"
-                     index start_symbol)
-            | _ -> ())
-          body;
-        Some body
+            (Printf.sprintf
+               "question '%s' sets '%s', which is not an inherited attribute; a block \
+                may only hold start, context, prompt, answer, width and attribute \
+                starting values"
+               draft.d_name attribute)
+        else if value < 0 then
+          report position
+            (Printf.sprintf "question '%s' starts '%s' at %d; a budget cannot start negative"
+               draft.d_name attribute value))
+      draft.d_defaults;
+    let initials =
+      List.map
+        (fun attribute ->
+          let value =
+            match
+              List.find_opt (fun (name, _, _) -> name = attribute.attribute_name) draft.d_defaults
+            with
+            | Some (_, value, _) -> value
+            | None -> attribute.initial
+          in
+          (attribute.attribute_name, value))
+        inherited
+    in
+    {
+      q_name = draft.d_name;
+      q_start = start_symbol;
+      q_context = context;
+      q_prompt = prompt_pieces;
+      q_answer = answer_expr;
+      q_width = width;
+      q_per_question_context = computed_by_start "pg_context";
+      q_per_question_width = computed_by_start "pg_width";
+      q_initials = initials;
+    }
   in
-  (* The start symbol may compute the context and width of each question. *)
-  let computed_by_start name =
-    List.exists
-      (fun (attribute, scope) ->
-        attribute = name && (scope = None || scope = Some start_symbol))
-      synthesized
+  let questions = List.map validate drafts in
+  (* The fields the engine reads describe the selected question: `main` when
+     the file has one, else the first block; a library has none. *)
+  let selected =
+    match questions with
+    | first :: _ -> first
+    | [] ->
+        {
+          q_name = "";
+          q_start = "";
+          q_context = Option.value ~default:"Numeric" !output_context;
+          q_prompt = [];
+          q_answer = None;
+          q_width = !width;
+          q_per_question_context = false;
+          q_per_question_width = false;
+          q_initials = List.map (fun a -> (a.attribute_name, a.initial)) inherited;
+        }
   in
 
   match List.rev !errors with
   | [] ->
-      Ok
+      let spec =
         {
           inherited;
           randoms;
           lets;
           synthesized;
-          start = start_symbol;
-          context = Option.value ~default:"Numeric" !output_context;
+          start = selected.q_start;
+          context = selected.q_context;
           precedences = !precedences;
           rules;
-          prompt = prompt_pieces;
-          answer = answer_expr;
-          width = !width;
+          prompt = selected.q_prompt;
+          answer = selected.q_answer;
+          width = selected.q_width;
           library;
-          per_question_context = computed_by_start "pg_context";
-          per_question_width = computed_by_start "pg_width";
+          per_question_context = selected.q_per_question_context;
+          per_question_width = selected.q_per_question_width;
           source;
           imports = !imports;
+          questions;
         }
+      in
+      (* The selected question's starting budgets apply; a library has none. *)
+      Ok (match select_question spec selected.q_name with Ok selected -> selected | Error _ -> spec)
   | errors -> Error errors

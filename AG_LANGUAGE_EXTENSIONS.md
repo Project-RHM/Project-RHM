@@ -1,6 +1,6 @@
-# Language Extensions: include, import, a context per question, several blanks
+# Language Extensions: include, import, named questions, a context per question, several blanks
 
-*Four additions to the `.ag` language that let one file hold whatever
+*Five additions to the `.ag` language that let one file hold whatever
 question types its author wants. A Chinese version is in
 `AG_LANGUAGE_EXTENSIONS.zh.md`; the language itself is described in
 `AG_LANGUAGE_GUIDE.md`.*
@@ -174,11 +174,67 @@ brought it in. `agcheck` lists the imports it resolved.
 both: `factoring.ag` includes `polynomial_core.ag` to add a question to its
 tree of factors; `derivative_or_boolean.ag` imports two whole grammars.
 
+## 5. `question NAME { ... }`: several named questions in one file
+
+```
+start Q
+prompt "{Q.text}"
+answer Q.answer_value
+width 24
+
+question derivative {
+  start D
+  prompt "{D.text}"
+  answer D.answer_value
+}
+
+question integral {
+  start I
+  prompt "{I.text}"
+  answer I.answer_value
+  cost = 7
+}
+```
+
+A file may ask more than one question of its rules. The file-level `start`,
+`prompt`, `answer`, `context` and `width` form the question **`main`**;
+each `question NAME { ... }` block adds another, with its own start symbol,
+prompt and answer, and optionally its own `context` and `width`. A block
+that leaves `context` or `width` out takes the file-level ones. All the
+questions of a file share its rules, attributes, randoms and lets: they
+differ only in where they start and how they ask.
+
+A block may also start the inherited attributes elsewhere for its root:
+`cost = 7` means this question begins with that budget, whatever the
+`attribute` line says; `--set` still overrides it from outside. Only the
+file's inherited attributes may be set, and not below zero.
+
+`calculus.ag` is the shipped example: `main` (start `Q`) draws a derivative
+or an integral, `derivative` (start `D`) and `integral` (start `I`) ask one
+form only, and the three share the forms `D` and `I` and the expression
+grammar under them. A file whose questions are all blocks has no `main`;
+the first block is then the default. A file with neither is a library.
+
+```
+agrun calculus.ag                                   main
+agrun --question integral --set cost=5 calculus.ag  one named question
+agcheck calculus.ag                                 lists the questions
+```
+
+`agcheck` lists every question with its start symbol and context when there
+is more than one; the web page offers a question menu for such files. A
+question is selected before `--set` is applied, so a block's starting
+budgets can be overridden. Mistakes inside a block are reported with the
+block's name: a missing `start`, `prompt` or `answer`, a start symbol
+without rules, a prompt that names another symbol, a `context` or `width`
+that is invalid, an attribute the file does not declare, a negative start,
+anything declared twice, a block named `main`, two blocks with one name.
+
 ## What this allows
 
 One file may now hold several question types that need different contexts,
 questions with several parts, productions shared with other files, and
 whole grammars from other files used side by side without renaming anything
-in them. What it still cannot do: give one blank a width of its own, name a
-question type (a file is one question), or describe a whole set of
-questions; those are the next steps in `AG_MODULES_DESIGN.md`.
+in them, and several named questions over one set of rules. What it still
+cannot do: give one blank a width of its own, or describe a whole set of
+questions; the latter is the next step in `AG_MODULES_DESIGN.md`.

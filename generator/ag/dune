@@ -89,6 +89,12 @@
  (libraries ag))
 
 (test
+ (name ag_questions_test)
+ (modules ag_questions_test)
+ (deps calculus.ag)
+ (libraries ag))
+
+(test
  (name ag_modules_test)
  (modules ag_modules_test)
  (deps boolean.ag boolean_equiv.ag calculus.ag polynomial_core.ag

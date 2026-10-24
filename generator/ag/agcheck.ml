@@ -30,6 +30,13 @@ let summarize (spec : Ag_check.spec) =
   if spec.Ag_check.library then
     print_endline "  library      : no start symbol; include this file from a grammar";
   Printf.printf "  start symbol : %s\n" spec.Ag_check.start;
+  if List.length spec.Ag_check.questions > 1 then
+    Printf.printf "  questions    : %s\n"
+      (spec.Ag_check.questions
+      |> List.map (fun (question : Ag_check.question) ->
+             Printf.sprintf "%s (start %s, context %s)" question.Ag_check.q_name
+               question.Ag_check.q_start question.Ag_check.q_context)
+      |> String.concat ", ");
   if spec.Ag_check.imports <> [] then
     Printf.printf "  imports      : %s\n"
       (spec.Ag_check.imports

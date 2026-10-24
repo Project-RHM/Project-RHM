@@ -19,7 +19,7 @@ attribute, or by the budget.
 | `arithmetic.ag` | the value of a four-operation expression | `+` 1, `-` 2, `*` 3, `/` 4; a number pays one per digit beyond its first, a fraction in lowest terms 2 | 12 | Numeric |
 | `boolean.ag` | the truth value of a proposition in p, q, r under an assignment; propositions are the engine's Boolean type | and/or 2, conditional 4, biconditional and xor 6, a negated variable 1, a negated compound 3 | 10 | Numeric |
 | `boolean_equiv.ag` | whether one of thirty laws, stated correctly or with a classic mistake, holds; decided by enumeration | the law 1–3, the parts as in `boolean.ag` | 6 | Numeric |
-| `calculus.ag` | a derivative, or an antiderivative built by differentiating | sum 1, product 3, quotient 4; a power or function of a leaf 1, of a compound 3 (chain rule); an integral pays 2 up front | 7 | Numeric |
+| `calculus.ag` | a derivative, or an antiderivative built by differentiating; the named questions `derivative` and `integral` ask one form only | sum 1, product 3, quotient 4; a power or function of a leaf 1, of a compound 3 (chain rule); an integral pays 2 up front | 7 | Numeric |
 | `complex.ag` | a complex expression, its conjugate, the modulus of a product / conjugate / multiple of Pythagorean-triple numbers, or `i^n` times an expression | sum 1, product 3; modulus 2 plus its expression (product 2, conjugate 1, multiple 1); power of `i` 1 plus its expression | 4 | Complex |
 | `set.ag` | a set expression over three given sets | union 1, intersection and difference 2, an interval leaf 1 | 7 | Interval |
 | `polynomial_expand.ag` | the expansion of a product of factors | product 2, square 1, cube 2, factor `x + b` 0, `ax + b` 1, quadratic 2 | 5 | Numeric |
