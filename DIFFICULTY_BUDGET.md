@@ -22,6 +22,14 @@ this document is in `DIFFICULTY_BUDGET.zh.md`.
 | `matrix_expr.ag`, `determinant.ag` | operations and the size of the matrices | 4, 3 | QUESTION_TYPES.md |
 | `matrix_inverse.ag`, `linear_system.ag` | fixed forms, each at its price | 2, 5 | QUESTION_TYPES.md |
 
+> **Sets in the language.** Since the `set` declaration
+> (`AG_LANGUAGE_EXTENSIONS.md` section 6) a file can say
+> `3 of calc.derivative(cost ~ 6 spread 2)` and `agrun --run` draws budgets
+> around the mean and fixes the mean exactly, which is what
+> `tools/ag_difficulty.py set` did from outside. The tool's `report` and
+> `levels` still measure a grammar; its `set` subcommand is kept for the
+> `--targets` form and otherwise superseded.
+
 ## 1. The problem with a length budget
 
 Every grammar so far controlled difficulty with a length budget: `len` is the

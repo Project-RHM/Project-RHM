@@ -1,6 +1,6 @@
-# 语言扩展：include、import、有名字的题型、每题一个上下文、多个答案空
+# 语言扩展：include、import、有名字的题型、套题、每题一个上下文、多个答案空
 
-*`.ag` 语言的五项新增，让一个文件可以容纳作者想要的任何题型。英文原版见 `AG_LANGUAGE_EXTENSIONS.md`，以英文版为准；语言本身见 `AG_LANGUAGE_GUIDE.md`。*
+*`.ag` 语言的六项新增，让一个文件可以容纳作者想要的任何题型。英文原版见 `AG_LANGUAGE_EXTENSIONS.md`，以英文版为准；语言本身见 `AG_LANGUAGE_GUIDE.md`。*
 
 ## 1. `include "file.ag"`：文件之间的复用
 
@@ -126,6 +126,57 @@ agcheck calculus.ag                                 列出题型
 
 题型多于一个时 `agcheck` 列出每个题型及其开始符号和上下文；网页端对这样的文件多出一个题型下拉框。题型在 `--set` 之前选定，所以块里的初始预算可以被覆盖。块内的错误带着块名报出：缺 `start`、`prompt` 或 `answer`，开始符号没有规则，题干引用了别的符号，`context` 或 `width` 不合法，设了文件没声明的属性，初值为负，同一项声明两次，块叫 `main`，两个块同名。
 
+## 6. `set NAME { ... }`：一个文件描述整份作业
+
+```
+import "calculus.ag" as calc
+import "boolean.ag" as bool
+import "boolean_equiv.ag" as laws
+
+set homework {
+  part "Differentiation"
+    3 of calc.derivative(cost ~ 6 spread 2 low 2)
+    1 of calc.integral(cost in {5, 7})
+  part "Propositional logic"
+    3 of bool.main(cost in {8, 10, 12})
+    2 of laws.main(cost = 6)
+  part "Mixed"
+    2 of any(forms.main(cost = 6), calc.derivative(cost = 8))
+  distinct
+  balanced
+  ordered
+}
+```
+
+`set` 描述一份作业：哪些题型、各几道、预算多少、什么顺序。随库发布的示例是 `homework_set.ag`；一个文件可以有多个 set，可以和自己的题型放在一起，也可以像它那样只有 set。
+
+```
+agrun --run homework --seed 42 homework_set.ag            带预算和均值的列表
+agrun --run homework --seed 42 --pg homework_set.ag       一个编号的 PG 文档
+agrun --run quick --seed-from 2330026211 --pg-dir out/ homework_set.ag
+agcheck homework_set.ag                                   列出 set
+```
+
+**条目。** `N of 题型(抽取)` 要 N 道某种题型：本文件的 `main` 或某个块，或引入模块的 `alias.name`。`N of any(Q1(...), Q2(...))` 让 N 道题在列出的题型间均匀分配。抽取给题型继承属性设初值，有三种写法：
+
+- `cost = 5`：这一条目的每道题都从 5 开始。
+- `cost in {8, 10, 12}`：每道题抽列表中的一个值；列表均匀使用，每个值都用过一次才会重复。
+- `cost ~ 6 spread 2`：围绕均值抽预算，再调整到这一条目的均值正好是 6（`low 2` 保证每个预算不低于 2；`allowed {4, 6, 8}` 把抽取限制在这些值里，用于只有固定形式的文法，此时均值尽量接近）。这就是 `tools/ag_difficulty.py set` 的算法搬进语言：期望控制难度住在这里。
+
+**部分。** `part "标题"` 开始一个部分；之后的条目在一个大题号下按字母编号，`1(a)`、`1(b)`，标题印在前面。没有 `part` 行的 set 是平铺的：每道题自己一个号。
+
+**约束**，各一个词：`distinct` 拒绝和前面某道题树形相同的题（用到的规则相同、叶子擦掉：3 + 4 和 7 + 2 是同一个形状）；`balanced` 拒绝连续第三个相同的编码答案（真/假，或一位数编码）；`ordered` 把部分内的题按总预算从易到难排。满足不了的约束——`distinct` 下两道只有一条规则的题——在有限次尝试后报出，并点名那道题。
+
+**种子。** set 的种子决定所有抽取；每道题的种子由它和题的位置派生，所以同一种子给同一份作业，在末尾加一道题不会改变前面的题。`--set`、`--count`、`--question` 对 `--run` 不起作用：set 自带这些。
+
+**输出。** 列表给出每道题的题型和预算，末尾是每部分各预算的均值。`--pg` 写一个文档：标题作为段落，每道题干前有 `1(a).`，相同上下文的连续题在一个 PGML 块里，中间切换 `Context()`。`--pg-dir` 每道题写一个 `.pg` 文件。
+
+**是词不是关键字。** 只有 `set` 是保留字。`part`、`of`、`any`、`in`、`spread`、`low`、`allowed`、`distinct`、`balanced`、`ordered` 都是普通标识符，只在 set 块内有含义，所以文法仍可以把属性叫 `low`；写错的词按"此处应为某词"报出。
+
+**错误**都在 set 处报出：文件或模块没有这个题型、别名没有引入、文法没有这个属性或同一属性抽两次、负值、数量为零、没有条目的 set、两个 set 同名、同一约束写两次。
+
+只有 import 和 set 的文件没有自己的题：`agrun` 会说明并列出 set，网页端的文法列表不显示它。
+
 ## 这带来了什么
 
-一个文件现在可以容纳需要不同上下文的多种题型、分成几个小问的题目、与其他文件共享的产生式，并排使用来自其他文件的完整文法而不必改动它们的任何名字，以及在一套规则上定义多个有名字的题型。还做不到的：给单个答案空单独设宽度，描述一整套题；后者是 `AG_MODULES_DESIGN.md` 里的下一步。
+一个文件现在可以容纳需要不同上下文的多种题型、分成几个小问的题目、与其他文件共享的产生式，并排使用来自其他文件的完整文法而不必改动它们的任何名字，在一套规则上定义多个有名字的题型，以及在一个文件里描述并生成整份作业。还做不到的：给单个答案空单独设宽度，让文法为套题声明覆盖约束（“每条律先各出一次再重复”）；见 `AG_MODULES_DESIGN.md` 第 8 节。

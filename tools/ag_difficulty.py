@@ -260,6 +260,9 @@ def draw_targets(mean: float, spread: float, count: int, low: int,
 
 
 def command_set(args: argparse.Namespace) -> None:
+    print("note: a `set` declaration in a .ag file does this inside the language now, "
+          "e.g. `3 of calc.derivative(cost ~ 6 spread 2)` run with `agrun --run NAME`; "
+          "see AG_LANGUAGE_EXTENSIONS.md section 6.", file=sys.stderr)
     rng = random.Random(args.seed)
     if args.targets:
         targets = parse_list(args.targets)

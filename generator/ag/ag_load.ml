@@ -34,6 +34,14 @@ let parse_declarations ~filename source : (Ag_ast.file, failure list) result =
   | declarations -> Ok declarations
   | exception Ag_lexer.Lexing_error (message, position) ->
       Error [ { where = describe_position filename position; what = message } ]
+  | exception Ag_ast.Syntax_error (message, position) ->
+      Error
+        [
+          {
+            where = Printf.sprintf "%s:%d:%d" filename position.Ag_ast.line position.Ag_ast.column;
+            what = message;
+          };
+        ]
   | exception Ag_parser.Error ->
       let position = Lexing.lexeme_start_p lexbuf in
       let token = Lexing.lexeme lexbuf in

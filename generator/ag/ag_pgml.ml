@@ -93,25 +93,36 @@ let question_block ?width (question : Ag_engine.question) =
   |> String.concat ""
   |> String.trim
 
+(* A question in a document, with the label a set gives it ("2(a).", or ""
+   for none) and the heading of the part it opens, if any. *)
+type item = { label : string; heading : string option; question : Ag_engine.question }
+
+let item_block ?width item =
+  let body = question_block ?width item.question in
+  let labelled = if item.label = "" then body else item.label ^ " " ^ body in
+  match item.heading with
+  | Some heading -> heading ^ "\n\n" ^ labelled
+  | None -> labelled
+
 (* Questions that need different WeBWorK contexts are written in separate
    PGML blocks, with Context() switched between them. Questions in the same
    context stay in one block, so a document in a single context reads as it
    always did. *)
-let document ?width ?(context = "Numeric") questions =
+let document_items ?width ?(context = "Numeric") items =
   let runs =
     List.fold_left
-      (fun runs (question : Ag_engine.question) ->
+      (fun runs item ->
         match runs with
-        | (run_context, members) :: rest when run_context = question.Ag_engine.context ->
-            (run_context, question :: members) :: rest
-        | _ -> (question.Ag_engine.context, [ question ]) :: runs)
-      [] questions
+        | (run_context, members) :: rest when run_context = item.question.Ag_engine.context ->
+            (run_context, item :: members) :: rest
+        | _ -> (item.question.Ag_engine.context, [ item ]) :: runs)
+      [] items
     |> List.rev_map (fun (run_context, members) -> (run_context, List.rev members))
   in
   let contexts = match runs with [] -> [ context ] | _ -> List.map fst runs in
   let block members =
     "BEGIN_PGML\n"
-    ^ (members |> List.map (question_block ?width) |> String.concat "\n\n")
+    ^ (members |> List.map (item_block ?width) |> String.concat "\n\n")
     ^ "\nEND_PGML\n"
   in
   header contexts
@@ -125,6 +136,10 @@ let document ?width ?(context = "Numeric") questions =
                  Printf.sprintf "Context(\"%s\");\n" (perl_string run_context) ^ block members)
                rest))
   ^ "ENDDOCUMENT();\n"
+
+let document ?width ?context questions =
+  document_items ?width ?context
+    (List.map (fun question -> { label = ""; heading = None; question }) questions)
 
 let of_spec ?count (spec : Ag_check.spec) =
   let count = match count with Some count -> count | None -> 6 in

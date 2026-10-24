@@ -12,6 +12,9 @@
                        Generator.seed_of_id, which the existing generator uses)
      --set NAME=VALUE  override an inherited attribute's starting value
      --question NAME   generate one of the file's named questions (default: main)
+     --run NAME        generate the set NAME declared in the file (its own budgets
+                       and count; --set, --count and --question do not apply)
+     --pg-dir DIR      with --run: one .pg file per question, written to DIR
      --out FILE        write to FILE instead of standard output
      --ast-out FILE    write the attributed derivations as readable text
      --visualization-out FILE
@@ -24,6 +27,8 @@
 type options = {
   filename : string;
   question : string option;
+  run : string option;  (* a set of the file to generate *)
+  pg_dir : string option;  (* one .pg file per question of the set, here *)
   count : int;
   seed : int;
   overrides : (string * int) list;
@@ -35,7 +40,7 @@ type options = {
 
 let usage () =
   prerr_endline
-    "usage: agrun [--pg] [--count N] [--seed N] [--question NAME] [--set NAME=VALUE]... \
+    "usage: agrun [--pg] [--count N] [--seed N] [--question NAME | --run SET [--pg-dir DIR]] [--set NAME=VALUE]... \
      [--out FILE] [--ast-out FILE] [--visualization-out FILE] FILE.ag";
   exit 2
 
@@ -72,6 +77,8 @@ let parse_arguments () =
         walk rest
           { accumulated with overrides = accumulated.overrides @ [ parse_override value ] }
     | "--question" :: value :: rest -> walk rest { accumulated with question = Some value }
+    | "--run" :: value :: rest -> walk rest { accumulated with run = Some value }
+    | "--pg-dir" :: value :: rest -> walk rest { accumulated with pg_dir = Some value }
     | "--out" :: value :: rest -> walk rest { accumulated with output = Some value }
     | "--ast-out" :: value :: rest ->
         walk rest { accumulated with ast_output = Some value }
@@ -90,6 +97,8 @@ let parse_arguments () =
       {
         filename = "";
         question = None;
+        run = None;
+        pg_dir = None;
         count = 5;
         seed = 0;
         overrides = [];
@@ -102,17 +111,81 @@ let parse_arguments () =
   if options.filename = "" then usage ();
   options
 
+let write_file path text =
+  let channel = open_out path in
+  Fun.protect ~finally:(fun () -> close_out channel) (fun () -> output_string channel text)
+
+(* --run NAME: the set's own entries say what to generate and how hard. *)
+let run_set options (spec : Ag_check.spec) =
+  let name = Option.get options.run in
+  if options.question <> None then begin
+    prerr_endline "--question and --run cannot be combined: a set names its own questions";
+    exit 2
+  end;
+  if options.overrides <> [] then
+    prerr_endline "note: --set is ignored with --run; a set draws its own budgets";
+  let set =
+    match List.find_opt (fun (set : Ag_ast.set_decl) -> set.Ag_ast.set_name = name) spec.Ag_check.sets with
+    | Some set -> set
+    | None ->
+        prerr_endline
+          (Printf.sprintf "%s: '%s' is not a set of this file; it has %s" options.filename name
+             (match spec.Ag_check.sets with
+             | [] -> "none"
+             | sets -> sets |> List.map (fun (set : Ag_ast.set_decl) -> set.Ag_ast.set_name) |> String.concat ", "));
+        exit 1
+  in
+  let result =
+    try Ag_sets.run spec set ~seed:options.seed
+    with Ag_engine.Generation_error message ->
+      prerr_endline ("generation failed: " ^ message);
+      exit 1
+  in
+  (match options.pg_dir with
+  | None -> ()
+  | Some directory ->
+      if not (Sys.file_exists directory) then Sys.mkdir directory 0o755;
+      List.iter
+        (fun (file, text) -> write_file (Filename.concat directory file) text)
+        (Ag_sets.documents result);
+      prerr_endline
+        (Printf.sprintf "%d PG files written to %s" (List.length (Ag_sets.documents result)) directory));
+  let text = if options.as_pg then Ag_sets.document result else Ag_sets.listing result in
+  (match options.output with
+  | None -> print_string text
+  | Some path ->
+      write_file path text;
+      prerr_endline ("written to " ^ path));
+  let questions = Ag_sets.questions result in
+  (match options.ast_output with
+  | None -> ()
+  | Some path ->
+      Ag_visualization.write_ast path questions;
+      prerr_endline ("AST saved to: " ^ path));
+  match options.visualization_output with
+  | None -> ()
+  | Some path ->
+      Ag_visualization.write_html path ~grammar:options.filename questions;
+      prerr_endline ("Tree visualization saved to: " ^ path)
+
 let () =
   let options = parse_arguments () in
   match Ag_load.parse_file options.filename with
   | Error errors ->
       List.iter (fun error -> prerr_endline (Ag_load.string_of_failure error)) errors;
       exit 1
+  | Ok spec when options.run <> None -> run_set options spec
   | Ok spec -> (
       if spec.Ag_check.library then begin
         prerr_endline
-          (options.filename
-         ^ ": this file has no start symbol; it is a library, to be included by a grammar");
+          (if spec.Ag_check.sets <> [] then
+             Printf.sprintf "%s: this file has no question of its own; it holds the set%s %s, run one with --run NAME"
+               options.filename
+               (if List.length spec.Ag_check.sets = 1 then "" else "s")
+               (spec.Ag_check.sets |> List.map (fun (set : Ag_ast.set_decl) -> set.Ag_ast.set_name) |> String.concat ", ")
+           else
+             options.filename
+             ^ ": this file has no start symbol; it is a library, to be included by a grammar");
         exit 1
       end;
       (* The question comes first, then --set overrides its starting budgets. *)

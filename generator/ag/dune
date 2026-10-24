@@ -1,7 +1,7 @@
 (library
  (name ag)
  (wrapped false)
- (modules ag_ast ag_lexer ag_parser ag_check ag_load ag_number ag_formula ag_boolean ag_polynomial ag_equation ag_matrix ag_set ag_vector ag_engine ag_pgml ag_visualization)
+ (modules ag_ast ag_lexer ag_parser ag_check ag_load ag_number ag_formula ag_boolean ag_polynomial ag_equation ag_matrix ag_set ag_vector ag_engine ag_pgml ag_sets ag_visualization)
  (libraries menhirLib))
 
 (menhir
@@ -86,6 +86,12 @@
  (modules ag_language_test)
  (deps polynomial_forms.ag polynomial_core.ag factoring.ag sequence_parts.ag
        derivative_or_boolean.ag calculus.ag boolean.ag)
+ (libraries ag))
+
+(test
+ (name ag_sets_test)
+ (modules ag_sets_test)
+ (deps homework_set.ag calculus.ag boolean.ag boolean_equiv.ag logic_forms.ag)
  (libraries ag))
 
 (test

@@ -12,11 +12,31 @@ let position (start : Lexing.position) =
     line = start.Lexing.pos_lnum;
     column = start.Lexing.pos_cnum - start.Lexing.pos_bol + 1;
   }
+
+(* The words inside a `set` block -- part, of, any, in, spread, low, allowed,
+   distinct, balanced, ordered -- are not reserved: a grammar may still name
+   an attribute `low`. They are plain identifiers that the actions below
+   check, so a wrong word is reported as the word that was expected. *)
+let expect_word expected (found : string) start =
+  if found <> expected then
+    raise
+      (Syntax_error
+         (Printf.sprintf "expected '%s' here, not '%s'" expected found, position start))
+
+let expect_one_of expected (found : string) start =
+  if not (List.mem found expected) then
+    raise
+      (Syntax_error
+         ( Printf.sprintf "expected one of %s here, not '%s'"
+             (String.concat ", " (List.map (fun word -> "'" ^ word ^ "'") expected))
+             found,
+           position start ))
 %}
 
 %token ATTRIBUTE SYNTH START CONTEXT PRECEDENCE LEFT RIGHT NONASSOC
 %token RANDOM LET BOOLEAN ON
-%token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH INCLUDE IMPORT AS QUESTION
+%token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH INCLUDE IMPORT AS QUESTION SET
+%token TILDE
 %token AND OR NOT
 %token ARROW CONCAT NEQ LE GE EQ LT GT
 %token PLUS MINUS STAR SLASH PERCENT CARET
@@ -95,8 +115,78 @@ declaration:
   | QUESTION; name = IDENT; LBRACE; items = question_item*; RBRACE
       { Question_decl (name, items, position $startpos) }
 
+  (* A whole assignment: parts, entries and constraints. *)
+  | SET; name = IDENT; LBRACE; items = set_item*; RBRACE
+      { Set_decl { set_name = name; set_items = items; set_position = position $startpos } }
+
   | rule = rule
       { Rule_decl rule }
+
+(* ------------------------------------------------------------------ *)
+(* Sets                                                                *)
+(* ------------------------------------------------------------------ *)
+
+set_item:
+  (* part "Heading" -- or a bare word: part, distinct, balanced, ordered *)
+  | word = IDENT; heading = STRING
+      { expect_word "part" word $startpos;
+        Set_part (Some heading, position $startpos) }
+  | word = IDENT
+      { expect_one_of [ "part"; "distinct"; "balanced"; "ordered" ] word $startpos;
+        match word with
+        | "part" -> Set_part (None, position $startpos)
+        | "distinct" -> Set_distinct (position $startpos)
+        | "balanced" -> Set_balanced (position $startpos)
+        | _ -> Set_ordered (position $startpos) }
+  | count = INT; word = IDENT; choices = set_choice
+      { expect_word "of" word $startpos(word);
+        Set_entry { se_count = count; se_choices = choices; se_position = position $startpos } }
+
+(* One question type, or any(...) of several. *)
+set_choice:
+  | question = set_question                                      { [ question ] }
+  | word = IDENT; LPAREN;
+    questions = separated_nonempty_list(COMMA, set_question); RPAREN
+      { expect_word "any" word $startpos; questions }
+
+set_question:
+  | name = IDENT; draws = ioption(set_draws)
+      { { sq_alias = None; sq_name = name;
+          sq_draws = (match draws with Some draws -> draws | None -> []);
+          sq_position = position $startpos } }
+  | alias = IDENT; DOT; name = IDENT; draws = ioption(set_draws)
+      { { sq_alias = Some alias; sq_name = name;
+          sq_draws = (match draws with Some draws -> draws | None -> []);
+          sq_position = position $startpos } }
+
+set_draws:
+  | LPAREN; draws = separated_list(COMMA, set_draw); RPAREN { draws }
+
+set_draw:
+  | name = IDENT; EQ; value = signed_int
+      { (name, Fixed value) }
+  | name = IDENT; word = IDENT; LBRACE; values = separated_nonempty_list(COMMA, signed_int); RBRACE
+      { expect_word "in" word $startpos(word); (name, Among values) }
+  | name = IDENT; TILDE; mean = signed_int; options = around_option*
+      { let spread = ref 2 and low = ref 0 and allowed = ref None in
+        List.iter
+          (fun (word, value, start) ->
+            match (word, value) with
+            | "spread", Around_int value -> spread := value
+            | "low", Around_int value -> low := value
+            | "allowed", Around_list values -> allowed := Some values
+            | ("spread" | "low"), Around_list _ ->
+                raise (Syntax_error (word ^ " takes one whole number", position start))
+            | "allowed", Around_int _ ->
+                raise (Syntax_error ("allowed takes a list in braces, such as {4, 6, 8}", position start))
+            | _ -> expect_one_of [ "spread"; "low"; "allowed" ] word start)
+          options;
+        (name, Around { mean; spread = !spread; low = !low; allowed = !allowed }) }
+
+around_option:
+  | word = IDENT; value = signed_int                                        { (word, Around_int value, $startpos) }
+  | word = IDENT; LBRACE; values = separated_nonempty_list(COMMA, signed_int); RBRACE
+      { (word, Around_list values, $startpos) }
 
 question_item:
   | START; name = IDENT                     { Q_start (name, position $startpos) }

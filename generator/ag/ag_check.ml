@@ -86,6 +86,9 @@ type spec = {
      selected one: `main`, or the first block when there is no `main`.
      [select_question] switches to another. *)
   questions : question list;
+  (* The sets the file declares, validated: every question they name exists
+     and every budget they draw is an inherited attribute of its grammar. *)
+  sets : Ag_ast.set_decl list;
 }
 
 (* Make another of the file's questions the one the engine generates. *)
@@ -128,6 +131,9 @@ let synthesized_of_nonterminal spec nonterminal =
   |> List.map fst
 
 let inherited_names spec = List.map (fun a -> a.attribute_name) spec.inherited
+
+let inherited_names_of_attributes attributes =
+  List.map (fun a -> a.attribute_name) attributes
 
 let is_question_level_of spec name =
   List.mem_assoc name spec.randoms || List.mem_assoc name spec.lets
@@ -480,6 +486,7 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
   let width = ref None in
   let rules = ref [] in
   let blocks = ref [] in
+  let sets = ref [] in
 
   let declared_once what current position set =
     match !current with
@@ -614,6 +621,11 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
           if List.exists (fun (other, _, _) -> other = name) !blocks then
             report position (Printf.sprintf "question '%s' is declared more than once" name);
           blocks := !blocks @ [ (name, items, position) ]
+      | Set_decl set ->
+          if List.exists (fun (other : Ag_ast.set_decl) -> other.set_name = set.set_name) !sets then
+            report set.set_position
+              (Printf.sprintf "set '%s' is declared more than once" set.set_name);
+          sets := !sets @ [ set ]
       | Rule_decl rule -> rules := !rules @ [ rule ])
     declarations;
 
@@ -713,10 +725,12 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
                owner)
       | _ -> ())
     synthesized;
-  if synthesized = [] then
+  (* A file of imports and sets alone has no rules of its own; that is fine. *)
+  let set_file = rules = [] && !sets <> [] && !blocks = [] && not main_present in
+  if synthesized = [] && not set_file then
     report dummy_position
       "declare at least one synthesized attribute, for example: synth value";
-  if rules = [] then report dummy_position "the grammar has no rules";
+  if rules = [] && not set_file then report dummy_position "the grammar has no rules";
 
   (* ---- expression checking ---- *)
   (* [context] describes what an expression is allowed to look at:
@@ -1313,6 +1327,105 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
     }
   in
   let questions = List.map validate drafts in
+
+  (* ---- sets ---- *)
+  (* Each question a set names must exist, here or in the module named, and
+     each budget it draws must be an inherited attribute of that grammar. *)
+  let question_names (spec_questions : question list) =
+    List.map (fun question -> question.q_name) spec_questions
+  in
+  let check_set (set : Ag_ast.set_decl) =
+    let check_question (target : Ag_ast.set_question) =
+      let position = target.sq_position in
+      let grammar =
+        match target.sq_alias with
+        | None ->
+            if not (List.mem target.sq_name (question_names questions)) then (
+              report position
+                (Printf.sprintf "set '%s' asks for '%s', which is not a question of this file; it has %s"
+                   set.set_name target.sq_name
+                   (match question_names questions with
+                   | [] -> "none"
+                   | names -> String.concat ", " names));
+              None)
+            else Some (inherited_names_of_attributes inherited)
+        | Some alias -> (
+            match module_of alias with
+            | None ->
+                report position
+                  (Printf.sprintf "set '%s' asks for %s.%s, but '%s' is not an imported module"
+                     set.set_name alias target.sq_name alias);
+                None
+            | Some module_spec ->
+                if not (List.mem target.sq_name (question_names module_spec.questions)) then (
+                  report position
+                    (Printf.sprintf
+                       "set '%s' asks for %s.%s, but module %s has no such question; it has %s"
+                       set.set_name alias target.sq_name alias
+                       (match question_names module_spec.questions with
+                       | [] -> "none"
+                       | names -> String.concat ", " names));
+                  None)
+                else Some (inherited_names module_spec))
+      in
+      let seen = ref [] in
+      List.iter
+        (fun (attribute, draw) ->
+          if List.mem attribute !seen then
+            report position
+              (Printf.sprintf "set '%s' draws '%s' twice for %s" set.set_name attribute
+                 target.sq_name);
+          seen := attribute :: !seen;
+          (match grammar with
+          | Some attributes when not (List.mem attribute attributes) ->
+              report position
+                (Printf.sprintf
+                   "set '%s' draws '%s' for %s, which has no such inherited attribute; it has %s"
+                   set.set_name attribute target.sq_name
+                   (match attributes with [] -> "none" | names -> String.concat ", " names))
+          | _ -> ());
+          let non_negative what value =
+            if value < 0 then
+              report position
+                (Printf.sprintf "set '%s': %s of '%s' cannot be negative (%d)" set.set_name what
+                   attribute value)
+          in
+          match draw with
+          | Ag_ast.Fixed value -> non_negative "the value" value
+          | Ag_ast.Among values -> List.iter (non_negative "a value") values
+          | Ag_ast.Around { mean; spread; low; allowed } ->
+              non_negative "the mean" mean;
+              non_negative "the spread" spread;
+              non_negative "low" low;
+              Option.iter (List.iter (non_negative "an allowed value")) allowed)
+        target.sq_draws
+    in
+    let constraints = ref [] in
+    let once what position =
+      if List.mem what !constraints then
+        report position (Printf.sprintf "set '%s' says '%s' more than once" set.set_name what);
+      constraints := what :: !constraints
+    in
+    let entries = ref 0 in
+    List.iter
+      (fun item ->
+        match item with
+        | Ag_ast.Set_part _ -> ()
+        | Ag_ast.Set_distinct position -> once "distinct" position
+        | Ag_ast.Set_balanced position -> once "balanced" position
+        | Ag_ast.Set_ordered position -> once "ordered" position
+        | Ag_ast.Set_entry entry ->
+            incr entries;
+            if entry.se_count <= 0 then
+              report entry.se_position
+                (Printf.sprintf "set '%s' asks for %d questions; the count must be positive"
+                   set.set_name entry.se_count);
+            List.iter check_question entry.se_choices)
+      set.set_items;
+    if !entries = 0 then
+      report set.set_position (Printf.sprintf "set '%s' asks for no questions" set.set_name)
+  in
+  List.iter check_set !sets;
   (* The fields the engine reads describe the selected question: `main` when
      the file has one, else the first block; a library has none. *)
   let selected =
@@ -1353,6 +1466,7 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
           source;
           imports = !imports;
           questions;
+          sets = !sets;
         }
       in
       (* The selected question's starting budgets apply; a library has none. *)

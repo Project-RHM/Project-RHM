@@ -1,6 +1,6 @@
 # `.ag` 语言的模块层与组合层——设计方案
 
-状态：第 1、2 步（模块与参数、有名字的题型；第 2、3 节和 7.1、7.2）已实现，说明见 AG_LANGUAGE_EXTENSIONS.zh.md 第 4、5 节；第 3 步（套题）仍是方案。与第 3 节的一处出入：全是块、没有 `main` 的文件以第一个块为默认。对应英文版：AG_MODULES_DESIGN.md。
+状态：三步（模块与参数、有名字的题型、套题）全部实现，说明见 AG_LANGUAGE_EXTENSIONS.zh.md 第 4 到 6 节。与下文的出入：全是块、没有 `main` 的文件以第一个块为默认；约束是单个词 `distinct`、`balanced`、`ordered`；预算列表写在花括号里（`cost in {8, 10, 12}`、`allowed {4, 6, 8}`）；`~` 的均值是整数；`ag_difficulty.py set` 为 `--targets` 保留而未改写为封装。对应英文版：AG_MODULES_DESIGN.md。
 
 ## 0. 一段话说清楚加了什么
 

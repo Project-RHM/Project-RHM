@@ -1,6 +1,6 @@
-# Language Extensions: include, import, named questions, a context per question, several blanks
+# Language Extensions: include, import, named questions, sets, a context per question, several blanks
 
-*Five additions to the `.ag` language that let one file hold whatever
+*Six additions to the `.ag` language that let one file hold whatever
 question types its author wants. A Chinese version is in
 `AG_LANGUAGE_EXTENSIONS.zh.md`; the language itself is described in
 `AG_LANGUAGE_GUIDE.md`.*
@@ -230,11 +230,99 @@ without rules, a prompt that names another symbol, a `context` or `width`
 that is invalid, an attribute the file does not declare, a negative start,
 anything declared twice, a block named `main`, two blocks with one name.
 
+## 6. `set NAME { ... }`: a whole assignment in one file
+
+```
+import "calculus.ag" as calc
+import "boolean.ag" as bool
+import "boolean_equiv.ag" as laws
+
+set homework {
+  part "Differentiation"
+    3 of calc.derivative(cost ~ 6 spread 2 low 2)
+    1 of calc.integral(cost in {5, 7})
+  part "Propositional logic"
+    3 of bool.main(cost in {8, 10, 12})
+    2 of laws.main(cost = 6)
+  part "Mixed"
+    2 of any(forms.main(cost = 6), calc.derivative(cost = 8))
+  distinct
+  balanced
+  ordered
+}
+```
+
+A `set` describes an assignment: which questions, how many of each, with
+what budgets, in what order. `homework_set.ag` is the shipped example; a
+file may hold several sets, beside its own questions or, as there, alone.
+
+```
+agrun --run homework --seed 42 homework_set.ag            listing with budgets and means
+agrun --run homework --seed 42 --pg homework_set.ag       one PG document, numbered
+agrun --run quick --seed-from 2330026211 --pg-dir out/ homework_set.ag
+agcheck homework_set.ag                                   lists the sets
+```
+
+**Entries.** `N of QUESTION(draws)` asks for N questions of one type:
+`main` or a block of this file, or `alias.name` from an imported module.
+`N of any(Q1(...), Q2(...))` draws each of the N from the listed types
+evenly. The draws give the starting values of the question's inherited
+attributes, three ways:
+
+- `cost = 5`: every question of the entry starts there.
+- `cost in {8, 10, 12}`: each question draws one of the values; the list is
+  used evenly, every value once before any repeats.
+- `cost ~ 6 spread 2`: the budgets are drawn around the mean and adjusted
+  so that the entry's mean is exactly 6 (`low 2` keeps every budget at or
+  above 2; `allowed {4, 6, 8}` restricts the draw to those values, for a
+  grammar of fixed forms, and the mean is then as close as they permit).
+  This is the algorithm of `tools/ag_difficulty.py set`, moved into the
+  language: the expectation method of difficulty control lives here.
+
+**Parts.** `part "Heading"` opens a part; the entries that follow are
+lettered under one number, `1(a)`, `1(b)`, with the heading printed before
+them. A set without `part` lines is flat: each question has its own number.
+
+**Constraints**, each one word: `distinct` refuses a question whose tree has
+the shape of an earlier one (rules used, leaves erased: 3 + 4 and 7 + 2 are
+one shape); `balanced` refuses a third equal coded answer in a row (true /
+false, or a one-digit code); `ordered` puts the questions of a part in order
+of total budget, easier first. A constraint that cannot be met -- two
+copies of a one-rule question under `distinct` -- is reported after a
+bounded number of attempts, naming the question.
+
+**Seeds.** The set's seed fixes every draw; each question's own seed is
+derived from it and the question's position, so the same seed gives the
+same assignment and a question added at the end leaves the earlier ones as
+they were. `--set`, `--count` and `--question` do not apply with `--run`:
+the set carries its own.
+
+**Output.** The listing shows each question with its type and budgets, and
+ends with the mean of each budget per part. `--pg` writes one document:
+headings as paragraphs, `1(a).` before each prompt, one PGML block per run
+of equal contexts with `Context()` switched between. `--pg-dir` writes one
+`.pg` file per question.
+
+**Words, not keywords.** Only `set` is reserved. `part`, `of`, `any`, `in`,
+`spread`, `low`, `allowed`, `distinct`, `balanced`, `ordered` are ordinary
+identifiers that mean something inside a set block, so a grammar may still
+call an attribute `low`; a wrong word is reported as the word expected there.
+
+**Errors** are reported at the set: a question the file or module does not
+have, an alias not imported, an attribute the grammar does not declare or
+drawn twice, a negative value, a count of zero, a set with no entries, two
+sets with one name, a constraint said twice.
+
+A file of imports and sets alone has no question of its own: `agrun` says
+so and names the sets, and the web page leaves it out of the grammar list.
+
 ## What this allows
 
 One file may now hold several question types that need different contexts,
 questions with several parts, productions shared with other files, and
 whole grammars from other files used side by side without renaming anything
-in them, and several named questions over one set of rules. What it still
-cannot do: give one blank a width of its own, or describe a whole set of
-questions; the latter is the next step in `AG_MODULES_DESIGN.md`.
+in them, several named questions over one set of rules, and a whole
+assignment described and generated from one file. What it still cannot do:
+give one blank a width of its own, or let a grammar declare a coverage
+constraint for sets ("each law once before any repeats"); see
+`AG_MODULES_DESIGN.md` section 8.

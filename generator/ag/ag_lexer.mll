@@ -32,6 +32,7 @@ let keywords = [
   "include",    INCLUDE;
   "import",     IMPORT;
   "question",   QUESTION;
+  "set",        SET;
   "as",         AS;
   "and",        AND;
   "or",         OR;
@@ -76,6 +77,7 @@ rule token = parse
   | '%'               { PERCENT }
   | '^'               { CARET }
   | '.'               { DOT }
+  | '~'               { TILDE }
   | ','               { COMMA }
   | '('               { LPAREN }
   | ')'               { RPAREN }

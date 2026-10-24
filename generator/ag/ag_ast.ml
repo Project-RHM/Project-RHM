@@ -118,6 +118,54 @@ let question_item_position = function
   | Q_width (_, position)
   | Q_default (_, _, position) -> position
 
+(* ------------------------------------------------------------------ *)
+(* Sets: a whole assignment described in the file.                      *)
+(* ------------------------------------------------------------------ *)
+
+(* How a set draws the starting value of one inherited attribute for the
+   questions of an entry. *)
+type budget_draw =
+  | Fixed of int
+      (* cost = 5           every question starts there *)
+  | Among of int list
+      (* cost in {8, 10, 12}   each question draws one; the list is used
+                               evenly before any value repeats *)
+  | Around of { mean : int; spread : int; low : int; allowed : int list option }
+      (* cost ~ 6 spread 2 [low 1] [allowed {4, 6, 8}]   drawn around the
+         mean and adjusted so the entry's mean is exactly the mean *)
+
+(* One question type a set asks for: this file's `main` or a block, or a
+   module's through its alias, with the draws for its budgets. *)
+type set_question = {
+  sq_alias : string option;
+  sq_name : string;
+  sq_draws : (string * budget_draw) list;
+  sq_position : position;
+}
+
+(* `4 of calc.derivative(cost ~ 6 spread 2)`, or `2 of any(A, B)`: the
+   questions of an entry are drawn evenly from its choices. *)
+type set_entry = { se_count : int; se_choices : set_question list; se_position : position }
+
+type set_item =
+  | Set_part of string option * position
+      (* part "Heading"   the entries that follow are lettered under one number *)
+  | Set_entry of set_entry
+  | Set_distinct of position
+      (* no two questions of the set have the same tree shape *)
+  | Set_balanced of position
+      (* no three equal coded answers in a row *)
+  | Set_ordered of position
+      (* within a part, easier first *)
+
+type set_decl = { set_name : string; set_items : set_item list; set_position : position }
+
+(* An option after `~ mean`: `spread 2`, `low 1` or `allowed {4, 6, 8}`. *)
+type around_value = Around_int of int | Around_list of int list
+
+(* A word the parser expects at some place inside a set, and did not find. *)
+exception Syntax_error of string * position
+
 type declaration =
   | Inherited_decl of string * int * distribution * position
       (* attribute len = 3 split *)
@@ -150,6 +198,9 @@ type declaration =
       (* question integral { start I  prompt "..."  answer I.value  cost = 5 }
          -- a named question type sharing this file's rules. The file-level
          start, prompt, answer, context and width form the question `main`. *)
+  | Set_decl of set_decl
+      (* set homework { part "A"  4 of calc.derivative(cost ~ 6 spread 2) ... }
+         -- a whole assignment, run with `agrun --run homework`. *)
   | Rule_decl of rule
 
 let declaration_position = function
@@ -166,6 +217,7 @@ let declaration_position = function
   | Include_decl (_, position)
   | Import_decl (_, _, position)
   | Question_decl (_, _, position) -> position
+  | Set_decl set -> set.set_position
   | Rule_decl rule -> rule.rule_position
 
 type file = declaration list

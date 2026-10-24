@@ -101,6 +101,10 @@ cost 8   (5(8 + x) - 5*5(3 + 2x)) / 2 = -(39/2 + 43/2 x)  x = 2
 
 ## The second batch: logic, linear algebra, and two grammars made scalable
 
+**A whole assignment** (`homework_set.ag`) asks for no question of its own: it
+imports four grammars and declares two `set`s, run with `agrun --run homework`;
+see `AG_LANGUAGE_EXTENSIONS.md` section 6.
+
 **Logic** (`logic_forms.ag`) imports both Boolean grammars as modules and asks
 three further questions of their laws and expressions: classification
 (coded 1, 2, 0 as the evaluation questions code true and false), model

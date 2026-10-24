@@ -1,10 +1,13 @@
 # Modules and sets for the `.ag` language — design proposal
 
-Status: steps 1 and 2 (modules and arguments, named questions; sections 2, 3,
-7.1, 7.2) are implemented and documented in AG_LANGUAGE_EXTENSIONS.md sections
-4 and 5; step 3 (sets) is still a proposal. One departure from section 3: a
-file whose questions are all blocks has no `main`, and its first block is the
-default. Companion: AG_MODULES_DESIGN.zh.md.
+Status: all three steps (modules and arguments, named questions, sets) are
+implemented and documented in AG_LANGUAGE_EXTENSIONS.md sections 4 to 6.
+Departures from the text below: a file whose questions are all blocks has no
+`main` and its first block is the default; the constraints are the single
+words `distinct`, `balanced`, `ordered`; a list of budgets is written in
+braces (`cost in {8, 10, 12}`, `allowed {4, 6, 8}`); the mean of `~` is a
+whole number; `ag_difficulty.py set` is kept for `--targets` rather than
+rewritten as a wrapper. Companion: AG_MODULES_DESIGN.zh.md.
 
 ## 0. What this adds, in one paragraph
 

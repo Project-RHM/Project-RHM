@@ -849,6 +849,7 @@ matrix 或其他专用答案类型
 | `import` | import | 把另一个文件作为模块引入（组合） |
 | `as` | module alias | 给引入的模块起别名 |
 | `question` | named question block | 在同一套规则上声明一个有名字的题型 |
+| `set` | set declaration | 描述一份作业：题型、数量、预算、顺序（块内的 part、of、any、in、spread、low、allowed、distinct、balanced、ordered 是普通词） |
 | `and` | Boolean AND | 逻辑与 |
 | `or` | Boolean OR | 逻辑或 |
 | `not` | Boolean NOT | 逻辑非 |
@@ -906,6 +907,12 @@ dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/sequence.ag
 
 ```bash
 dune exec ag/agrun.exe -- --question integral --set cost=5 ag/calculus.ag
+```
+
+生成文件里声明的一套题（见第 29 节），`--pg` 输出带编号的文档，`--pg-dir` 每题一个文件：
+
+```bash
+dune exec ag/agrun.exe -- --run homework --seed 42 --pg ag/homework_set.ag
 ```
 
 生成复数题：
@@ -1063,3 +1070,26 @@ question integral {
 - 所有题型共享文件的规则、属性、random 和 let，只在开始符号和问法上不同。全是块的文件以第一个块为默认；两者都没有的是库。
 - `agrun --question NAME file.ag` 生成指定题型，`--set` 在其后生效；`agcheck` 在题型多于一个时列出它们；网页端多出一个题型下拉框。
 - 示例：`calculus.ag` 的 `main`、`derivative`、`integral`。详见 `AG_LANGUAGE_EXTENSIONS.md` 第 5 节；后续的 `set` 声明见 `AG_MODULES_DESIGN.md`。
+
+## 29. 套题（Sets）
+
+```
+import "calculus.ag" as calc
+import "boolean.ag" as bool
+
+set homework {
+  part "Differentiation"
+    3 of calc.derivative(cost ~ 6 spread 2 low 2)
+  part "Logic"
+    3 of bool.main(cost in {8, 10, 12})
+    2 of any(calc.integral(cost = 5), bool.main(cost = 12))
+  distinct
+  balanced
+  ordered
+}
+```
+
+- `set NAME { ... }` 描述一份作业。条目 `N of 题型(抽取)`：题型是本文件的 `main`/块名或引入模块的 `alias.name`；`any(...)` 在几种题型间均匀分配。抽取给继承属性设初值：`cost = 5` 定值，`cost in {8, 10, 12}` 列表轮抽，`cost ~ 6 spread 2 [low 2] [allowed {4, 6, 8}]` 围绕均值抽并调到精确均值（期望控制难度）。
+- `part "标题"` 分部分，部分内按 `1(a)`、`1(b)` 编号；没有 part 的 set 每题一个号。约束：`distinct`（树形不重复）、`balanced`（编码答案不连续三个相同）、`ordered`（部分内由易到难）。
+- `agrun --run NAME file.ag`，`--seed`/`--seed-from` 决定整份作业，`--pg` 一个文档，`--pg-dir DIR` 每题一个文件；`--set`、`--count`、`--question` 对 set 不起作用。`agcheck` 列出 set 及题数。
+- 只有 `set` 是保留字，块内其他词是普通标识符。示例 `homework_set.ag`。详见 `AG_LANGUAGE_EXTENSIONS.md` 第 6 节。

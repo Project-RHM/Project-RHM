@@ -52,8 +52,10 @@ grammar writes formulas, not truth tables.
 A grammar may `include` another file to extend it, `import` other files as
 modules (`import "calculus.ag" as calc`, then `calc.F(cost = cost)`), declare
 several named questions over one set of rules (`question integral { ... }`,
-run with `agrun --question integral`), give each question form its own
-WeBWorK context, and place several answer blanks in one prompt; see
+run with `agrun --question integral`), describe a whole assignment as a
+`set` (`3 of calc.derivative(cost ~ 6 spread 2)`, run with
+`agrun --run homework --pg`; see `homework_set.ag`), give each question form
+its own WeBWorK context, and place several answer blanks in one prompt; see
 `AG_LANGUAGE_EXTENSIONS.md`.
 
 `sequence.ag` covers arithmetic/geometric nth-term and finite-sum questions.

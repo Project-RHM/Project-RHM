@@ -21,6 +21,8 @@
 | `matrix_expr.ag`、`determinant.ag` | 运算和矩阵的阶 | 4、3 | QUESTION_TYPES.md |
 | `matrix_inverse.ag`、`linear_system.ag` | 固定形式，各按其价 | 2、5 | QUESTION_TYPES.md |
 
+> **套题进了语言。** 有了 `set` 声明（`AG_LANGUAGE_EXTENSIONS.zh.md` 第 6 节），文件里可以写 `3 of calc.derivative(cost ~ 6 spread 2)`，`agrun --run` 围绕均值抽预算并把均值调到精确值，这正是 `tools/ag_difficulty.py set` 原来在外部做的事。工具的 `report` 和 `levels` 仍用于测量一个文法；它的 `set` 子命令为 `--targets` 形式保留，其余功能已被取代。
+
 ## 1. 长度预算的问题
 
 此前所有文法都用长度预算控制难度：`len` 是运算符个数，用 `split` 沿树向下传递，每条产生式花掉一个单位。长度并不能很好地衡量难度。在 `boolean.ag` 中，旧设置 `len = 3` 生成的题目，其运算符成本（定义见下节）从 4 到 18 不等，均值 10.2：一个套在条件句里的双条件句和三个连续的合取都算作三个运算符，于是一套"中等"题里两者随意混杂。

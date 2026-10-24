@@ -28,7 +28,24 @@ let describe_symbol = function
 let summarize (spec : Ag_check.spec) =
   print_endline "OK";
   if spec.Ag_check.library then
-    print_endline "  library      : no start symbol; include this file from a grammar";
+    print_endline
+      (if spec.Ag_check.sets <> [] then
+         "  set file     : no question of its own; run a set with agrun --run NAME"
+       else "  library      : no start symbol; include this file from a grammar");
+  if spec.Ag_check.sets <> [] then
+    Printf.printf "  sets         : %s\n"
+      (spec.Ag_check.sets
+      |> List.map (fun (set : Ag_ast.set_decl) ->
+             let count =
+               List.fold_left
+                 (fun total item ->
+                   match item with
+                   | Ag_ast.Set_entry entry -> total + entry.Ag_ast.se_count
+                   | _ -> total)
+                 0 set.Ag_ast.set_items
+             in
+             Printf.sprintf "%s (%d questions)" set.Ag_ast.set_name count)
+      |> String.concat ", ");
   Printf.printf "  start symbol : %s\n" spec.Ag_check.start;
   if List.length spec.Ag_check.questions > 1 then
     Printf.printf "  questions    : %s\n"
