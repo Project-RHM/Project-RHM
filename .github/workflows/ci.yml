@@ -36,18 +36,20 @@ jobs:
       - name: Install the package's dependencies
         run: opam install ./generator --deps-only --with-test
 
+      # setup-ocaml makes a local switch in the workspace; outside it, opam
+      # exec must be told which switch to use, or it exits with code 50.
       - name: Build and test from a clean export, as opam does
         run: |
           rm -rf "$RUNNER_TEMP/export" && mkdir "$RUNNER_TEMP/export"
           git archive HEAD:generator | tar x -C "$RUNNER_TEMP/export"
           cd "$RUNNER_TEMP/export"
-          opam exec -- dune build -p rhema @install @runtest
-          opam exec -- opam lint rhema.opam
+          opam exec --switch "$GITHUB_WORKSPACE" -- dune build -p rhema @install @runtest
+          opam exec --switch "$GITHUB_WORKSPACE" -- opam lint rhema.opam
 
       - name: Install into a prefix and run the command from elsewhere
         run: |
           cd "$RUNNER_TEMP/export"
-          opam exec -- dune install --prefix "$RUNNER_TEMP/prefix" rhema
+          opam exec --switch "$GITHUB_WORKSPACE" -- dune install --prefix "$RUNNER_TEMP/prefix" rhema
           cd "$RUNNER_TEMP"
           prefix/bin/rhema --version
           prefix/bin/rhema check prefix/share/rhema/*.rhm
