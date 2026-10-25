@@ -7,29 +7,29 @@
 
 | 文法 | 预算花在 | 默认 | 节 |
 | --- | --- | --- | --- |
-| `boolean.ag` | 联结词，按种类和所否定的对象定价；命题是引擎自己求值的值类型 | 10 | 2–4 |
-| `arithmetic.ag` | 运算和数字的位数 | 12 | 6 |
-| `calculus.ag` | 函数所需的求导法则，积分另加 2 | 7 | 7 |
-| `complex.ag` | 运算；求模和 `i` 的幂是固定形式 | 4 | 8 |
-| `set.ag` | 运算和叶子是否为区间 | 7 | 9 |
-| `boolean_equiv.ag` | 定律加上子表达式 | 6 | 10 |
-| `vector.ag`、`sequence.ag`、`library_*.ag` | 固定形式，各按其价 | 2、2、3 | 10 |
-| `factoring.ag`、`polynomial_expand.ag` | 乘积、幂和每个因式的种类 | 5 | QUESTION_TYPES.md |
-| `vector_expr.ag` | 向量的和与倍数，加上顶层的题型 | 4 | QUESTION_TYPES.md |
-| `linear_equation.ag` | 左边的和、括号倍数和分式 | 5 | QUESTION_TYPES.md |
-| `logic_forms.ag` | 所引入的定律或表达式 | 6 | QUESTION_TYPES.md |
-| `matrix_expr.ag`、`determinant.ag` | 运算和矩阵的阶 | 4、3 | QUESTION_TYPES.md |
-| `matrix_inverse.ag`、`linear_system.ag` | 固定形式，各按其价 | 2、5 | QUESTION_TYPES.md |
+| `boolean.rhm` | 联结词，按种类和所否定的对象定价；命题是引擎自己求值的值类型 | 10 | 2–4 |
+| `arithmetic.rhm` | 运算和数字的位数 | 12 | 6 |
+| `calculus.rhm` | 函数所需的求导法则，积分另加 2 | 7 | 7 |
+| `complex.rhm` | 运算；求模和 `i` 的幂是固定形式 | 4 | 8 |
+| `set.rhm` | 运算和叶子是否为区间 | 7 | 9 |
+| `boolean_equiv.rhm` | 定律加上子表达式 | 6 | 10 |
+| `vector.rhm`、`sequence.rhm`、`library_*.rhm` | 固定形式，各按其价 | 2、2、3 | 10 |
+| `factoring.rhm`、`polynomial_expand.rhm` | 乘积、幂和每个因式的种类 | 5 | QUESTION_TYPES.md |
+| `vector_expr.rhm` | 向量的和与倍数，加上顶层的题型 | 4 | QUESTION_TYPES.md |
+| `linear_equation.rhm` | 左边的和、括号倍数和分式 | 5 | QUESTION_TYPES.md |
+| `logic_forms.rhm` | 所引入的定律或表达式 | 6 | QUESTION_TYPES.md |
+| `matrix_expr.rhm`、`determinant.rhm` | 运算和矩阵的阶 | 4、3 | QUESTION_TYPES.md |
+| `matrix_inverse.rhm`、`linear_system.rhm` | 固定形式，各按其价 | 2、5 | QUESTION_TYPES.md |
 
-> **套题进了语言。** 有了 `set` 声明（`AG_LANGUAGE_EXTENSIONS.zh.md` 第 6 节），文件里可以写 `3 of calc.derivative(cost ~ 6 spread 2)`，`agrun --run` 围绕均值抽预算并把均值调到精确值，这正是 `tools/ag_difficulty.py set` 原来在外部做的事。工具的 `report` 和 `levels` 仍用于测量一个文法；它的 `set` 子命令为 `--targets` 形式保留，其余功能已被取代。
+> **套题进了语言。** 有了 `set` 声明（`RHEMA_LANGUAGE_EXTENSIONS.zh.md` 第 6 节），文件里可以写 `3 of calc.derivative(cost ~ 6 spread 2)`，`rhema --run` 围绕均值抽预算并把均值调到精确值，这正是 `tools/rhema_difficulty.py set` 原来在外部做的事。工具的 `report` 和 `levels` 仍用于测量一个文法；它的 `set` 子命令为 `--targets` 形式保留，其余功能已被取代。
 
 ## 1. 长度预算的问题
 
-此前所有文法都用长度预算控制难度：`len` 是运算符个数，用 `split` 沿树向下传递，每条产生式花掉一个单位。长度并不能很好地衡量难度。在 `boolean.ag` 中，旧设置 `len = 3` 生成的题目，其运算符成本（定义见下节）从 4 到 18 不等，均值 10.2：一个套在条件句里的双条件句和三个连续的合取都算作三个运算符，于是一套"中等"题里两者随意混杂。
+此前所有文法都用长度预算控制难度：`len` 是运算符个数，用 `split` 沿树向下传递，每条产生式花掉一个单位。长度并不能很好地衡量难度。在 `boolean.rhm` 中，旧设置 `len = 3` 生成的题目，其运算符成本（定义见下节）从 4 到 18 不等，均值 10.2：一个套在条件句里的双条件句和三个连续的合取都算作三个运算符，于是一套"中等"题里两者随意混杂。
 
 ## 2. 运算符成本
 
-这是老师提出的第一种方法：把每个运算符看作一个函数，输入是操作数的难度，输出是它所构成的复合式的难度。`boolean.ag` 中的定价如下：
+这是老师提出的第一种方法：把每个运算符看作一个函数，输入是操作数的难度，输出是它所构成的复合式的难度。`boolean.rhm` 中的定价如下：
 
 | 结构 | 价格 |
 | --- | --- |
@@ -43,7 +43,7 @@
 
 ## 3. 成本即预算：构造而不是过滤
 
-成本并不是在生成之后再计算、再过滤的，它本身就是预算。`boolean.ag` 声明
+成本并不是在生成之后再计算、再过滤的，它本身就是预算。`boolean.rhm` 声明
 
 ```
 attribute cost = 10 split
@@ -70,9 +70,9 @@ E -> V           when cost = 0   weight 3 { f = $1.f }
 
 ```bash
 cd generator
-_build/default/ag/agrun.exe --set cost=6  ag/boolean.ag    # 容易
-_build/default/ag/agrun.exe --set cost=10 ag/boolean.ag    # 中等，即默认值
-_build/default/ag/agrun.exe --set cost=14 ag/boolean.ag    # 困难
+_build/default/rhema/bin/rhema --set cost=6  ag/boolean.rhm    # 容易
+_build/default/rhema/bin/rhema --set cost=10 ag/boolean.rhm    # 中等，即默认值
+_build/default/rhema/bin/rhema --set cost=14 ag/boolean.rhm    # 困难
 ```
 
 每档 500 题的实测结果（seed 7），课程的形状规则同时生效（三个叶子以上必须用全部变量、最多两个否定、赋值要让至少两个变量起作用、答案用硬币平衡）：
@@ -87,15 +87,15 @@ _build/default/ag/agrun.exe --set cost=14 ag/boolean.ag    # 困难
 
 成本不等于长度：同一预算买到的表达式大小不一。小预算能买到的不同题目很少，所以一套题不应建在大约 6 以下；预算 1 没有题，因为它只买得起一个否定变量，而文法拒绝把否定变量当整个命题。
 
-## 5. 工具：`tools/ag_difficulty.py`
+## 5. 工具：`tools/rhema_difficulty.py`
 
-该工具驱动已构建的 `agrun.exe`，适用于任何以预算定义难度的文法；`--budget NAME` 指定预算属性名（默认 `cost`；`--budget len` 可以用同样的方式测量旧的长度预算）。
+该工具驱动已构建的 `rhema`，适用于任何以预算定义难度的文法；`--budget NAME` 指定预算属性名（默认 `cost`；`--budget len` 可以用同样的方式测量旧的长度预算）。
 
 ```bash
-python3 tools/ag_difficulty.py report generator/ag/boolean.ag --at 6,10,14
-python3 tools/ag_difficulty.py levels generator/ag/boolean.ag
-python3 tools/ag_difficulty.py set generator/ag/boolean.ag --mean 10 --spread 2 --count 10
-python3 tools/ag_difficulty.py set generator/ag/boolean.ag --targets 6,8,10,12 --pg-dir out/
+python3 tools/rhema_difficulty.py report generator/stdlib/boolean.rhm --at 6,10,14
+python3 tools/rhema_difficulty.py levels generator/stdlib/boolean.rhm
+python3 tools/rhema_difficulty.py set generator/stdlib/boolean.rhm --mean 10 --spread 2 --count 10
+python3 tools/rhema_difficulty.py set generator/stdlib/boolean.rhm --targets 6,8,10,12 --pg-dir out/
 ```
 
 - `report` 对每个预算打印：不重复题目的比例、最常见答案所占比例、显示表达式的长度、推导树的节点数和深度。后两项来自 `--ast-out`，因此对所有文法都可用。
@@ -104,7 +104,7 @@ python3 tools/ag_difficulty.py set generator/ag/boolean.ag --targets 6,8,10,12 -
 
 ## 6. 第二个文法：算术
 
-`arithmetic.ag` 用同一个预算给两样东西定价，因为一道算术题的难度既取决于运算，也同样取决于数字的大小：
+`arithmetic.rhm` 用同一个预算给两样东西定价，因为一道算术题的难度既取决于运算，也同样取决于数字的大小：
 
 | 结构 | 价格 |
 | --- | --- |
@@ -116,7 +116,7 @@ python3 tools/ag_difficulty.py set generator/ag/boolean.ag --targets 6,8,10,12 -
 
 因此 `98 \cdot 347` 成本为 3 + 1 + 2 = 6，`(25 + 536) \div 7` 成本为 4 + 1 + 0 + 2 = 7。运算付出自己的价格，把剩余部分拆分给两个操作数；只要剩余预算买得起它的位数（`when cost <= 3`），一个数就可以出现在那里，并把预算花在位数上。一位数从 2 到 9 中抽取，因为 0 和 1 会让运算变得没有意义。`digit` 保留为位数上限（默认 4，也是定价覆盖的最大位数）。默认预算为 12；旧默认值是四位数上的八次运算，答案动辄十几位，没有保留。
 
-权重在这里比在 `boolean.ag` 中更重要。运算便宜而数字最多只能花 3，所以沿用旧权重（加法 10，数字 1）时，预算 18 会变成十来个一位数的连加。把数字规则的权重提到 15、四种运算分别设为 6、4、3、2 之后，预算花在更大数字上和花在更多运算上的机会相当。预算 6、12、18 的样本：
+权重在这里比在 `boolean.rhm` 中更重要。运算便宜而数字最多只能花 3，所以沿用旧权重（加法 10，数字 1）时，预算 18 会变成十来个一位数的连加。把数字规则的权重提到 15、四种运算分别设为 6、4、3、2 之后，预算花在更大数字上和花在更多运算上的机会相当。预算 6、12、18 的样本：
 
 ```
 98 \cdot 347                              7 \cdot (7 + 4) - 9
@@ -130,7 +130,7 @@ python3 tools/ag_difficulty.py set generator/ag/boolean.ag --targets 6,8,10,12 -
 
 ## 7. 第三个文法：微积分
 
-在 `calculus.ag` 中，"算子"就是求导法则，一个结构的价格就是它迫使学生使用的法则：
+在 `calculus.rhm` 中，"算子"就是求导法则，一个结构的价格就是它迫使学生使用的法则：
 
 | 结构 | 价格 | 法则 |
 | --- | --- | --- |
@@ -143,7 +143,7 @@ python3 tools/ag_difficulty.py set generator/ag/boolean.ag --targets 6,8,10,12 -
 | 叶子 `x`、常数 | 0 | |
 | 叶子 `cx` | 1 | 需要带着的系数 |
 
-和 `boolean.ag` 中的否定一样，幂和函数各有两条产生式：作用在叶子上的一条只在预算为 1 或 2 时可用；作用在复合式上的一条自身需要 3，内层至少需要 2。没有任何叶子能花掉 2，所以复合式规则的操作数一定是复合式，每个打印出来的表达式只有一种价格。
+和 `boolean.rhm` 中的否定一样，幂和函数各有两条产生式：作用在叶子上的一条只在预算为 1 或 2 时可用；作用在复合式上的一条自身需要 3，内层至少需要 2。没有任何叶子能花掉 2，所以复合式规则的操作数一定是复合式，每个打印出来的表达式只有一种价格。
 
 积分题由同一个 F 构造，但同一个 F 对应的积分题更难：链式对应换元，乘积对应分部积分。因此积分形式在构造 F 之前先付 2，并要求给 F 至少留 1，使被积函数不会是裸 `x` 的导数。预算低于 3 时只生成求导题。
 
@@ -159,13 +159,13 @@ python3 tools/ag_difficulty.py set generator/ag/boolean.ag --targets 6,8,10,12 -
 | 9 | 99% | |
 | 12 | 100% | |
 
-测试对生成完的公式树（`Ag_formula.t`）而不是推导重新定价，`Negate` 只是负系数的显示形式，不计价。
+测试对生成完的公式树（`Rhema_formula.t`）而不是推导重新定价，`Negate` 只是负系数的显示形式，不计价。
 
 定价时顺带去掉了旧文法的三个习惯，因为每一个都会让题目比它的价格更便宜：导数为零的和或差（`x - (7 + x)`）被拒绝；两个单项式的乘积（`x^5 \cdot x`）被拒绝，因为它会合并成一项；含两个一次项的和（`x^4 - x + x`、`3x + x`）被拒绝，求导题最多带一个加法常数。负系数现在打印成 `-5 \cdot x` 而不是 `-(5 \cdot x)`：公式渲染去掉了被否定的乘积或商外面的括号，数值不变。
 
 ## 8. 第四个文法：复数，带固定形式的题型
 
-`complex.ag` 混合了两类题：递归表达式（计算和共轭）与两种固定形式（勾股三元组数的模，以及 `i` 的幂）。表达式的定价和前面一样：
+`complex.rhm` 混合了两类题：递归表达式（计算和共轭）与两种固定形式（勾股三元组数的模，以及 `i` 的幂）。表达式的定价和前面一样：
 
 | 结构 | 价格 |
 | --- | --- |
@@ -182,7 +182,7 @@ python3 tools/ag_difficulty.py set generator/ag/boolean.ag --targets 6,8,10,12 -
 | 求模 | 固定 2 | 恰好 2 |
 | `i` 的幂 | 固定 1 | 恰好 1 |
 
-固定形式不随任何东西伸缩，所以它是一个价格，而不是一笔可以花的预算。为了让预算精确花完，这类题型只在预算恰好等于其价格时提供。由此带来的后果是有意的：默认预算 4 的混合模式只会生成计算题和共轭题；围绕某个均值抽取的套题（`ag_difficulty.py set --mean 4 --spread 2`）会在低端带出固定形式，`i` 的幂本来就属于那里。让它们伸缩（求模乘上整数因子、`i` 的幂乘上一个表达式）改变的是题目而不是价格。
+固定形式不随任何东西伸缩，所以它是一个价格，而不是一笔可以花的预算。为了让预算精确花完，这类题型只在预算恰好等于其价格时提供。由此带来的后果是有意的：默认预算 4 的混合模式只会生成计算题和共轭题；围绕某个均值抽取的套题（`rhema_difficulty.py set --mean 4 --spread 2`）会在低端带出固定形式，`i` 的幂本来就属于那里。让它们伸缩（求模乘上整数因子、`i` 的幂乘上一个表达式）改变的是题目而不是价格。
 
 乘积的权重更重（3，和与差各 2）；沿用旧权重时，预算 4 的题有一半是四个和的连写。默认预算为 4；用这张表给旧文法（`len = 2`）定价，计算题均值 3.1，共轭题 2.9。
 
@@ -199,7 +199,7 @@ python3 tools/ag_difficulty.py set generator/ag/boolean.ag --targets 6,8,10,12 -
 
 ## 9. 第五个文法：集合，以及引擎强加的一条规则
 
-`set.ag` 对三个集合做并、交、差，每个集合是有限集或区间。运算和操作数的种类都定价：
+`set.rhm` 对三个集合做并、交、差，每个集合是有限集或区间。运算和操作数的种类都定价：
 
 | 结构 | 价格 |
 | --- | --- |
@@ -224,24 +224,24 @@ python3 tools/ag_difficulty.py set generator/ag/boolean.ag --targets 6,8,10,12 -
 
 ## 10. 其余的文法
 
-**布尔等价**（`boolean_equiv.ag`，默认 6）。一个断言是课程的三十条定律之一，十五条写对、十五条带一个经典错误，陈述在一个小表达式语言的部分之上；断言是否成立由引擎枚举所有赋值判定（`bool_equivalent`）。定律付出自己的价格：双重否定和单纯换序 1；分配律、输出律、结合律和双条件的两种展开 3；其他定律 2，写错的定律与它所破坏的定律同价，因为学生事先无法区分。剩余部分拆分给各部分，按 `boolean.ag` 定价。每条定律把价格声明为一个属性，测试检查声明的价格加上重新定价的部分等于预算。最小预算是 1，因为没有免费的定律；预算 1 只有双重否定和换序可用、所有断言都成立，所以套题不应建在大约 2 以下。答案和 `boolean.ag` 一样用硬币平衡。
+**布尔等价**（`boolean_equiv.rhm`，默认 6）。一个断言是课程的三十条定律之一，十五条写对、十五条带一个经典错误，陈述在一个小表达式语言的部分之上；断言是否成立由引擎枚举所有赋值判定（`bool_equivalent`）。定律付出自己的价格：双重否定和单纯换序 1；分配律、输出律、结合律和双条件的两种展开 3；其他定律 2，写错的定律与它所破坏的定律同价，因为学生事先无法区分。剩余部分拆分给各部分，按 `boolean.rhm` 定价。每条定律把价格声明为一个属性，测试检查声明的价格加上重新定价的部分等于预算。最小预算是 1，因为没有免费的定律；预算 1 只有双重否定和换序可用、所有断言都成立，所以套题不应建在大约 2 以下。答案和 `boolean.rhm` 一样用硬币平衡。
 
-**固定形式的文法。** `vector.ag`、`sequence.ag` 和四个 `library_*.ag` 没有递归：每种题型都是一个固定形状，里面填上随机数。因此一种形式是一个价格，而不是一笔可以花的预算，只在预算恰好等于其价格时提供，和 `complex.ag` 的固定形式一样。单一模式（`vector_mode`、`question_mode`）必须在该形式的价格下运行；混合模式在某个预算下只显示该价格的形式；围绕均值抽取的套题（`ag_difficulty.py set --allowed ...`）把它们混合起来。
+**固定形式的文法。** `vector.rhm`、`sequence.rhm` 和四个 `library_*.rhm` 没有递归：每种题型都是一个固定形状，里面填上随机数。因此一种形式是一个价格，而不是一笔可以花的预算，只在预算恰好等于其价格时提供，和 `complex.rhm` 的固定形式一样。单一模式（`vector_mode`、`question_mode`）必须在该形式的价格下运行；混合模式在某个预算下只显示该价格的形式；围绕均值抽取的套题（`rhema_difficulty.py set --allowed ...`）把它们混合起来。
 
 | 文法（默认） | 价格 1 | 价格 2 | 价格 3 | 价格 4 |
 | --- | --- | --- | --- | --- |
-| `vector.ag`（2） | 平行向量 | 点积、模、同方向 | 单位向量 | 叉积 |
-| `sequence.ag`（2） | 等差数列第 n 项 | 等比数列第 n 项、等差数列和 | 等比数列和 | |
-| `library_linear.ag`（3） | | 一个括号 | 两边都有括号 | 分式 |
-| `library_quadratic.ag`（3） | | 两个整数根 | 重根、无实根 | 两个有理根 |
-| `library_polynomial.ag`（3） | 求值 | 次数 | 展开、系数 | 求导 |
-| `library_formula.ag`（3） | | 复合 | 对数、根式、正切 | 商、组合乘积 |
+| `vector.rhm`（2） | 平行向量 | 点积、模、同方向 | 单位向量 | 叉积 |
+| `sequence.rhm`（2） | 等差数列第 n 项 | 等比数列第 n 项、等差数列和 | 等比数列和 | |
+| `library_linear.rhm`（3） | | 一个括号 | 两边都有括号 | 分式 |
+| `library_quadratic.rhm`（3） | | 两个整数根 | 重根、无实根 | 两个有理根 |
+| `library_polynomial.rhm`（3） | 求值 | 次数 | 展开、系数 | 求导 |
+| `library_formula.rhm`（3） | | 复合 | 对数、根式、正切 | 商、组合乘积 |
 
-定价时还有两处小清理：`boolean.ag` 和 `boolean_equiv.ag` 不再对否定再取否定（`\neg \neg C` 读起来像笔误，否定变量嵌进定律时也不再加括号），`arithmetic.ag` 不再让相等的值相减（`6 - 6`）。
+定价时还有两处小清理：`boolean.rhm` 和 `boolean_equiv.rhm` 不再对否定再取否定（`\neg \neg C` 读起来像笔误，否定变量嵌进定律时也不再加括号），`arithmetic.rhm` 不再让相等的值相减（`6 - 6`）。
 
 这些价格只在同一个文法内按所需的工作量给形式排序，不同文法之间不可比。预算在固定形式里买不到的是数字的大小，它们仍然随机：`n = 8` 的数列题和 `n = 2` 的同价。给这类形式加上可伸缩的部分（更大的下标、更高的指数）就是改题目了。
 
-`tools/ag_difficulty.py` 对文法没有题目的预算报告 `no question at this budget`，`set --allowed 1,2,3,4` 只从固定形式文法接受的预算中抽取。
+`tools/rhema_difficulty.py` 对文法没有题目的预算报告 `no question at this budget`，`set --allowed 1,2,3,4` 只从固定形式文法接受的预算中抽取。
 
 ## 11. 给其他文法加上成本预算
 
@@ -250,11 +250,11 @@ python3 tools/ag_difficulty.py set generator/ag/boolean.ag --targets 6,8,10,12 -
 3. 在每条产生式里扣减价格（`cost = -p`），并用它能花掉的最小值做守卫（`when cost >= p + 操作数的最小成本`）。
 4. 让叶子规则成为 `cost = 0` 时唯一允许的规则。
 5. 检查从 0 开始的每个整数在每个节点、在文法提供的每种模式下都能被花掉。节点手里有一笔没有规则能接的预算是错误，不是重试，所以缺口意味着失败的种子，而不是更少见的题目。如果有花不掉的值，补一条规则填上缺口或降低某个价格；守卫依赖随机值的规则，必须有保证让它需要的值总会被抽到。
-6. 加一个类似 `ag_boolean_test.ml` 第 3 节、`ag_engine_test.ml` 第 2b 节或 `ag_calculus_test.ml`、`ag_set_test.ml` 中 `check_cost_budget` 的测试：范围内每个预算都能成功生成，`Ag_engine.consumption tree "cost"` 等于预算，并且一个独立的读取器对打印出的表达式重新定价得到同一个数。
-7. 运行 `tools/ag_difficulty.py report`，先看不重复比例，再决定分档。
+6. 加一个类似 `rhema_boolean_test.ml` 第 3 节、`rhema_engine_test.ml` 第 2b 节或 `rhema_calculus_test.ml`、`rhema_set_test.ml` 中 `check_cost_budget` 的测试：范围内每个预算都能成功生成，`Rhema_engine.consumption tree "cost"` 等于预算，并且一个独立的读取器对打印出的表达式重新定价得到同一个数。
+7. 运行 `tools/rhema_difficulty.py report`，先看不重复比例，再决定分档。
 
 ## 12. 它不做的事
 
 - 它给表达式定价，不给措辞定价。措辞保持不变。
-- 它不比较题型之间的难度：`boolean.ag` 的成本 10 和另一个文法的成本 10 不是同一个难度。
+- 它不比较题型之间的难度：`boolean.rhm` 的成本 10 和另一个文法的成本 10 不是同一个难度。
 - 它不知道这些价格是否符合学生的真实感受。这需要一个班级的成绩数据，是课程测试完成之后的下一步。

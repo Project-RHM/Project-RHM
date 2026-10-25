@@ -1,0 +1,6 @@
+; The library grammars, installed beside the command as share/rhema so that
+; `import "calculus.rhm" as calc` works from any directory.
+(install
+ (section share)
+ (package rhema)
+ (files (glob_files *.rhm)))

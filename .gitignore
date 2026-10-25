@@ -63,3 +63,6 @@ run.txt
 .DS_Store?
 ._*
 Thumbs.db
+
+# dune writes this when building the package in release mode
+generator/*.install

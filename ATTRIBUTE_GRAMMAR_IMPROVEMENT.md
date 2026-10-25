@@ -42,7 +42,7 @@ config_setting/config.json
         │
         │ max_expr_depth 作为初始 len
         ▼
-generator/arithmetic.ag
+generator/arithmetic.rhm
         │
         │ 解析属性、产生式、guard、weight
         ▼
@@ -68,7 +68,7 @@ Ast.math_expr
 
 属性文法核心模块，负责：
 
-- 解析 `.ag` 文法；
+- 解析 `.rhm` 文法；
 - 校验属性名、初始值、规则权重和更新值；
 - 维护生成时的属性环境；
 - 根据 guard 筛选合法规则；
@@ -80,7 +80,7 @@ Ast.math_expr
 - 避免生成除零表达式；
 - 提供操作符计数和表达式求值函数供测试使用。
 
-### `generator/arithmetic.ag`
+### `generator/arithmetic.rhm`
 
 算术题的声明式属性文法。默认内容：
 
@@ -122,7 +122,7 @@ Attribute_grammar.generate_math_expr
 - 生成表达式能否正常求值；
 - 是否避免除零；
 - 相同随机 seed 是否生成相同 AST；
-- `generator/arithmetic.ag` 是否能被正确加载。
+- `generator/arithmetic.rhm` 是否能被正确加载。
 
 ### `generator/dune`
 
@@ -199,7 +199,7 @@ attribute digit = 2 copy
 attribute digit = 3 copy
 ```
 
-即可生成三位整数。修改 `.ag` 文件后不需要重新编译 OCaml，下一次生成时会重新读取文法。
+即可生成三位整数。修改 `.rhm` 文件后不需要重新编译 OCaml，下一次生成时会重新读取文法。
 
 ### 5.3 `guard`
 
@@ -269,7 +269,7 @@ max_expr_depth
 
 字段名暂时没有修改，以避免同时改动 Flask 配置、HTML 表单和已有 JSON。后续可以将其重命名为 `arithmetic_operator_budget` 或 `arithmetic_len`。
 
-`.ag` 文件里的默认 `len` 会被 `max_expr_depth` 覆盖；默认 `digit` 仍从 `.ag` 文件读取。
+`.rhm` 文件里的默认 `len` 会被 `max_expr_depth` 覆盖；默认 `digit` 仍从 `.rhm` 文件读取。
 
 ## 7. 示例结果
 
@@ -381,14 +381,14 @@ http://127.0.0.1:5001
 默认情况下，程序会依次查找：
 
 ```text
-arithmetic.ag
-generator/arithmetic.ag
+arithmetic.rhm
+generator/arithmetic.rhm
 ```
 
 也可以通过环境变量指定其他文件：
 
 ```bash
-ATTRIBUTE_GRAMMAR_FILE=/absolute/path/custom_arithmetic.ag \
+ATTRIBUTE_GRAMMAR_FILE=/absolute/path/custom_arithmetic.rhm \
 python3 -m flask --app app run --port 5001
 ```
 
@@ -461,7 +461,7 @@ Formula('4.87708333333')
 
 1. 将 `max_expr_depth` 重命名为更准确的运算符预算字段；
 2. 解决三位有效数字和 WeBWorK tolerance 不一致的问题；
-3. 增加 `.ag` 文件语法错误测试；
+3. 增加 `.rhm` 文件语法错误测试；
 4. 增加生成结果分布测试，验证 weight 是否符合预期；
 5. 将 Boolean Expression 作为第二个 Attribute Grammar 迁移对象；
 6. 增加综合属性，用声明式规则计算表达式值；
@@ -495,7 +495,7 @@ python3 tools/test_question_types.py \
 ```text
 ATTRIBUTE_GRAMMAR_IMPROVEMENT.md
 README.md
-generator/arithmetic.ag
+generator/arithmetic.rhm
 generator/attribute_grammar.ml
 generator/attribute_grammar_test.ml
 generator/dune
@@ -506,13 +506,13 @@ generator/generator.ml
 
 ## 13. 布尔题的「手写感」改造（2026-09-09）
 
-求值题（`boolean.ag`）和判等价题（`boolean_equiv.ag`）要直接放进学生作业，
+求值题（`boolean.rhm`）和判等价题（`boolean_equiv.rhm`）要直接放进学生作业，
 所以除了答案正确，还要求一套题看起来和老师手出的没有区别。本节记录为此做的
-改动、检查手段和验收数字。改动全部在 `.ag` 文件和测试里，引擎没有动。
+改动、检查手段和验收数字。改动全部在 `.rhm` 文件和测试里，引擎没有动。
 
 ### 13.1 原来的题哪里像机器出的
 
-用 `agrun` 各生成 12 道对照，问题集中在四处：
+用 `rhema` 各生成 12 道对照，问题集中在四处：
 
 1. 冗余子式：`A \land (A \land B)`、`C \lor (C \lor B)`、`B \land (B \lor C)`。
    原来的 `require $1.latex != $3.latex` 只拦完全相同的两边。
@@ -573,7 +573,7 @@ De Morgan 漏否定、逆命题、否命题、蕴含否定放错边、分配漏�
 
 ### 13.4 测试
 
-`ag_boolean_reader.ml` 是两套测试共用的独立读回器：把题干里的表达式解析成树，
+`rhema_boolean_reader.ml` 是两套测试共用的独立读回器：把题干里的表达式解析成树，
 自行求值、自行按上面的括号策略重新渲染。测试项：
 
 | 检查 | 求值题 | 等价题 |
@@ -589,9 +589,9 @@ De Morgan 漏否定、逆命题、否命题、蕴含否定放错边、分配漏�
 
 ```bash
 cd generator && dune build && cd ..
-python3 tools/ag_stats.py generator/ag/boolean.ag --count 3000
-python3 tools/ag_stats.py generator/ag/boolean_equiv.ag --count 3000 --samples 8
-python3 tools/ag_stats.py generator/ag/boolean.ag --set extras=0
+python3 tools/rhema_stats.py generator/stdlib/boolean.rhm --count 3000
+python3 tools/rhema_stats.py generator/stdlib/boolean_equiv.rhm --count 3000 --samples 8
+python3 tools/rhema_stats.py generator/stdlib/boolean.rhm --set extras=0
 ```
 
 输出不重复率、答案比例、连接词数分布、稀有连接词分布和问法分布。
@@ -613,8 +613,8 @@ python3 tools/ag_stats.py generator/ag/boolean.ag --set extras=0
   做整学期题库会撞题。扩空间要加第四个变量，而真值表现在是硬编码的 8 位整数
   （`V -> "A" { table = 240 }`），需要引擎侧加一个布尔公式值类型由引擎算真值表。
 - 解答步骤：推导树上每个节点的 `value` 已经算出，按顺序输出就是解题过程，
-  但需要 `agrun`/`ag_pgml` 支持 PGML solution 块，是引擎工作。
-- `ag_pgml.ml` 把 `Context("Numeric")` 写死，答案只能是 1/0。
+  但需要 `rhema`/`rhema_pgml` 支持 PGML solution 块，是引擎工作。
+- `rhema_pgml.ml` 把 `Context("Numeric")` 写死，答案只能是 1/0。
 - 变量名沿用 A、B、C；命题逻辑教材常用 p、q、r，只需改 `V` 规则。
 
 ### 13.8 第二轮：公式值类型与课程校准（2026-09-21）
@@ -622,13 +622,13 @@ python3 tools/ag_stats.py generator/ag/boolean.ag --set extras=0
 第一轮把「像人写的」写成了文法里的位掩码和手工括号，能用但难读，真值表也写死在
 三个变量上。第二轮把这些搬进引擎，并按 MATH2003 的真实作业重新校准。
 
-**引擎：`ag_boolean.ml`。** 命题公式成为一等值，`bool_*` 内建函数见
-`AG_LANGUAGE_GUIDE.md`。等价由枚举全部赋值决定，变量个数不限；渲染按课程括号
+**引擎：`rhema_boolean.ml`。** 命题公式成为一等值，`bool_*` 内建函数见
+`RHEMA_LANGUAGE_GUIDE.md`。等价由枚举全部赋值决定，变量个数不限；渲染按课程括号
 习惯；`bool_is_tidy` 一个函数判定「人不会这么写」的形状；`bool_sensitivity`
 给出某赋值下有几个变量翻转会改变答案。两个公式用 `=` 比较即逻辑等价。
 
-**文法。** `boolean.ag` 每条规则只剩 `f = bool_and($1.f, $3.f)` 和
-`require bool_is_tidy(f)`；`boolean_equiv.ag` 每条定律只写一次公式，题面和答案
+**文法。** `boolean.rhm` 每条规则只剩 `f = bool_and($1.f, $3.f)` 和
+`require bool_is_tidy(f)`；`boolean_equiv.rhm` 每条定律只写一次公式，题面和答案
 都从它派生，成立的定律 `require bool_equivalent(fa, fb)` 作断言，错误定律
 `require not bool_equivalent(fa, fb)` 让碰巧成立的重抽。
 
@@ -644,13 +644,13 @@ python3 tools/ag_stats.py generator/ag/boolean.ag --set extras=0
 - 等价题补了作业里考的定律族：→ 对 ∨、∧ 的分配律，输出律，→ 不满足结合律而
   ↔、⊕ 满足，否定蕴含，双条件的两种展开。共 17 条成立、13 条错误。
 
-**编排工具 `tools/ag_set.py`。** 一份作业不是独立抽样。工具先用 `agrun` 生成
+**编排工具 `tools/rhema_set.py`。** 一份作业不是独立抽样。工具先用 `rhema` 生成
 题池，再按约束挑出 a) b) c)：难度从易到难、骨架（变量重命名后）不重复、每条定律
 考一次、答案无三连、同一大题同一种问法。按学号播种可复现，`--pg` 直接输出
 WeBWorK 文档。
 
 ```bash
-python3 tools/ag_set.py generator/ag/boolean.ag:3 generator/ag/boolean_equiv.ag:4 --seed 2330026211
+python3 tools/rhema_set.py generator/stdlib/boolean.rhm:3 generator/stdlib/boolean_equiv.rhm:4 --seed 2330026211
 ```
 
 **验收数字（1000 道）：**
@@ -666,5 +666,5 @@ python3 tools/ag_set.py generator/ag/boolean.ag:3 generator/ag/boolean_equiv.ag:
 | 生成耗时 | 4.2 ms/题 | 2.8 ms/题 |
 
 **仍未做的：** 盲测（需要真题混生成题让人分辨）；解答步骤输出；一道大题下
-共用题干的 PGML 排版还只是 `ag_set.py --pg` 的简单版本。
+共用题干的 PGML 排版还只是 `rhema_set.py --pg` 的简单版本。
 

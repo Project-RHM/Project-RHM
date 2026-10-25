@@ -1,0 +1,44 @@
+# ==========================================================================
+#  Expanding a product of polynomial factors
+#
+#  The tree of factors comes from polynomial_core.rhm; this file shows the
+#  factors and asks for the expansion, and adds one factor of its own, a
+#  general quadratic ax^2 + bx + c (price 2), which the factoring question
+#  cannot use because it need not be irreducible.
+#
+#    rhema run polynomial_expand.rhm --set cost=2     easy      (x + 2)(x - 5)
+#    rhema run polynomial_expand.rhm --set cost=5     medium (the default)
+#    rhema run polynomial_expand.rhm --set cost=8     hard
+#
+#  The least budget is 1: a single factor in brackets is nothing to expand.
+# ==========================================================================
+
+include "polynomial_core.rhm"
+
+context "Numeric"
+
+synth text on Q
+synth answer_value on Q
+
+start Q
+
+Q -> E {
+  require $1.factors >= 2
+  text = "Expand and collect like terms:
+[`" ++ $1.latex ++ "`]."
+  answer_value = $1.poly
+}
+
+# A general quadratic factor; no bit, since it need not be irreducible.
+L -> "quadratic" integer_between(1, 2) nonzero_integer_between(-4, 4) nonzero_integer_between(-5, 5) when cost = 2 weight 1 {
+  cost = -2
+  poly = polynomial_quadratic($2.value, $3.value, $4.value, "x")
+  factored = polynomial_formula(poly)
+  latex = polynomial_latex(poly)
+  value = poly
+  mask = 0
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
+width 40

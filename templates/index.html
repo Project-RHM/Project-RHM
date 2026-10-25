@@ -94,94 +94,94 @@
                         </label>
                     </div>
 
-                    <div class="ag-controls" id="agControls" style="display: none;">
-                        <div class="ag-controls-row">
-                            <label for="agGrammarSelect">Grammar file</label>
-                            <select id="agGrammarSelect"></select>
-                            <label for="agQuestionSelect" id="agQuestionLabel" hidden>Question</label>
-                            <select id="agQuestionSelect" hidden></select>
-                            <label for="agCount">Questions</label>
-                            <input type="number" id="agCount" min="1" max="50" value="6">
-                            <button type="button" id="agEditToggleBtn" class="btn btn-secondary">
+                    <div class="rhema-controls" id="rhemaControls" style="display: none;">
+                        <div class="rhema-controls-row">
+                            <label for="rhemaGrammarSelect">Grammar file</label>
+                            <select id="rhemaGrammarSelect"></select>
+                            <label for="rhemaQuestionSelect" id="rhemaQuestionLabel" hidden>Question</label>
+                            <select id="rhemaQuestionSelect" hidden></select>
+                            <label for="rhemaCount">Questions</label>
+                            <input type="number" id="rhemaCount" min="1" max="50" value="6">
+                            <button type="button" id="rhemaEditToggleBtn" class="btn btn-secondary">
                                 Edit Grammar
                             </button>
-                            <button type="button" id="agNewBtn" class="btn btn-secondary">New Grammar</button>
+                            <button type="button" id="rhemaNewBtn" class="btn btn-secondary">New Grammar</button>
                         </div>
-                        <div id="agNewPanel" hidden>
-                            <div class="ag-controls-row ag-new-row">
-                                <label for="agNewName">File name</label>
-                                <input id="agNewName" type="text" placeholder="linear_equation.ag" maxlength="83" autocomplete="off">
-                                <button type="button" id="agCreateDraftBtn" class="btn btn-primary">Create Draft</button>
-                                <button type="button" id="agCancelNewBtn" class="btn btn-secondary">Cancel</button>
-                                <span id="agNewError" role="alert"></span>
+                        <div id="rhemaNewPanel" hidden>
+                            <div class="rhema-controls-row rhema-new-row">
+                                <label for="rhemaNewName">File name</label>
+                                <input id="rhemaNewName" type="text" placeholder="linear_equation.rhm" maxlength="83" autocomplete="off">
+                                <button type="button" id="rhemaCreateDraftBtn" class="btn btn-primary">Create Draft</button>
+                                <button type="button" id="rhemaCancelNewBtn" class="btn btn-secondary">Cancel</button>
+                                <span id="rhemaNewError" role="alert"></span>
                             </div>
                         </div>
-                        <p class="ag-note">
+                        <p class="rhema-note">
                             The grammar file defines the generated structure, random
                             parameters, constraints, answer, wording, and difficulty.
                             Editing it takes effect immediately — no rebuild.
                         </p>
                     </div>
 
-                    <div class="ag-editor" id="agEditor" style="display: none;">
-                        <div class="ag-editor-head">
-                            <div class="ag-file-identity">
-                                <span class="ag-file-mark">AG</span>
+                    <div class="rhema-editor" id="rhemaEditor" style="display: none;">
+                        <div class="rhema-editor-head">
+                            <div class="rhema-file-identity">
+                                <span class="rhema-file-mark">AG</span>
                                 <div>
-                                    <span id="agEditorName">arithmetic.ag</span>
-                                    <span class="ag-save-state" id="agSaveState" data-state="saved">
-                                        <span class="ag-save-dot"></span>
-                                        <span id="agSaveStateText">Saved</span>
+                                    <span id="rhemaEditorName">arithmetic.rhm</span>
+                                    <span class="rhema-save-state" id="rhemaSaveState" data-state="saved">
+                                        <span class="rhema-save-dot"></span>
+                                        <span id="rhemaSaveStateText">Saved</span>
                                     </span>
                                 </div>
                             </div>
-                            <div class="ag-editor-actions">
-                                <button type="button" id="agReloadBtn" class="btn ag-btn ag-btn-quiet" title="Reload from disk">Reload</button>
-                                <button type="button" id="agCheckBtn" class="btn ag-btn ag-btn-check">Check</button>
-                                <button type="button" id="agSaveBtn" class="btn ag-btn ag-btn-save" title="Save grammar (Ctrl/Command + S)">Save</button>
+                            <div class="rhema-editor-actions">
+                                <button type="button" id="rhemaReloadBtn" class="btn rhema-btn rhema-btn-quiet" title="Reload from disk">Reload</button>
+                                <button type="button" id="rhemaCheckBtn" class="btn rhema-btn rhema-btn-check">Check</button>
+                                <button type="button" id="rhemaSaveBtn" class="btn rhema-btn rhema-btn-save" title="Save grammar (Ctrl/Command + S)">Save</button>
                             </div>
                         </div>
-                        <div class="ag-editor-shell" id="agEditorShell">
-                            <div class="ag-line-numbers" id="agLineNumbers" aria-hidden="true"></div>
-                            <div class="ag-code-stage" id="agCodeStage">
-                                <div class="ag-active-line" id="agActiveLine" aria-hidden="true"></div>
-                                <pre id="agHighlight" class="ag-highlight" aria-hidden="true"></pre>
-                                <textarea id="agGrammarText" class="ag-textarea"
+                        <div class="rhema-editor-shell" id="rhemaEditorShell">
+                            <div class="rhema-line-numbers" id="rhemaLineNumbers" aria-hidden="true"></div>
+                            <div class="rhema-code-stage" id="rhemaCodeStage">
+                                <div class="rhema-active-line" id="rhemaActiveLine" aria-hidden="true"></div>
+                                <pre id="rhemaHighlight" class="rhema-highlight" aria-hidden="true"></pre>
+                                <textarea id="rhemaGrammarText" class="rhema-textarea"
                                     aria-label="Attribute grammar source"
-                                    aria-describedby="agEditorHelp"
+                                    aria-describedby="rhemaEditorHelp"
                                     autocomplete="off" autocapitalize="off"
                                     spellcheck="false" wrap="off"></textarea>
                             </div>
                         </div>
-                        <div class="ag-editor-status" id="agEditorHelp">
-                            <div class="ag-syntax-legend" aria-label="Syntax highlight legend">
-                                <span><i class="ag-legend-keyword"></i>keyword</span>
-                                <span><i class="ag-legend-attribute"></i>attribute</span>
-                                <span><i class="ag-legend-string"></i>string</span>
-                                <span><i class="ag-legend-comment"></i>comment</span>
+                        <div class="rhema-editor-status" id="rhemaEditorHelp">
+                            <div class="rhema-syntax-legend" aria-label="Syntax highlight legend">
+                                <span><i class="rhema-legend-keyword"></i>keyword</span>
+                                <span><i class="rhema-legend-attribute"></i>attribute</span>
+                                <span><i class="rhema-legend-string"></i>string</span>
+                                <span><i class="rhema-legend-comment"></i>comment</span>
                             </div>
-                            <div class="ag-cursor-status">
+                            <div class="rhema-cursor-status">
                                 <span>Tab inserts spaces</span>
                                 <span aria-hidden="true">·</span>
-                                <span id="agCursorPosition">Ln 1, Col 1</span>
+                                <span id="rhemaCursorPosition">Ln 1, Col 1</span>
                                 <span aria-hidden="true">·</span>
-                                <span id="agDocumentStats">0 lines</span>
+                                <span id="rhemaDocumentStats">0 lines</span>
                             </div>
                         </div>
-                        <pre id="agGrammarMessage" class="ag-message" aria-live="polite" style="display: none;"></pre>
+                        <pre id="rhemaGrammarMessage" class="rhema-message" aria-live="polite" style="display: none;"></pre>
                     </div>
 
                     <!-- 修改：将Add Context整合到输入框中 -->
                     <div class="input-with-context generation-launch">
                         <div class="launch-heading">
                             <div>
-                                <label for="studentId">Student ID</label>
-                                <span>Each student gets a paper of their own, and the same one every time.</span>
+                                <label for="studentId">Student ID (optional for grammars)</label>
+                                <span>An assignment is one paper, the same every time. Enter a student number only for a paper of that student's own.</span>
                             </div>
                         </div>
                         <div class="input-group">
                             <input type="text" id="studentId" name="student_id"
-                                placeholder="e.g. 2230026100" autocomplete="off" required>
+                                placeholder="e.g. 2230026100" autocomplete="off">
                             <button type="submit"><span>Generate questions</span><span aria-hidden="true">→</span></button>
                         </div>
                         <div class="context-option">
@@ -1345,66 +1345,66 @@
                 return checked ? checked.value : 'classic';
             }
 
-            const agControls = document.getElementById('agControls');
-            const agEditor = document.getElementById('agEditor');
-            const agGrammarSelect = document.getElementById('agGrammarSelect');
-            const agQuestionSelect = document.getElementById('agQuestionSelect');
-            const agQuestionLabel = document.getElementById('agQuestionLabel');
-            let agQuestions = {};
+            const rhemaControls = document.getElementById('rhemaControls');
+            const rhemaEditor = document.getElementById('rhemaEditor');
+            const rhemaGrammarSelect = document.getElementById('rhemaGrammarSelect');
+            const rhemaQuestionSelect = document.getElementById('rhemaQuestionSelect');
+            const rhemaQuestionLabel = document.getElementById('rhemaQuestionLabel');
+            let rhemaQuestions = {};
             // The named questions of the chosen file, when it has more than one.
-            function showAgQuestions() {
-                const names = agQuestions[agGrammarSelect.value] || [];
-                agQuestionSelect.innerHTML = '';
+            function showRhemaQuestions() {
+                const names = rhemaQuestions[rhemaGrammarSelect.value] || [];
+                rhemaQuestionSelect.innerHTML = '';
                 names.forEach(name => {
                     const option = document.createElement('option');
                     option.value = name === 'main' ? '' : name;
                     option.textContent = name;
-                    agQuestionSelect.appendChild(option);
+                    rhemaQuestionSelect.appendChild(option);
                 });
-                agQuestionSelect.hidden = names.length === 0;
-                agQuestionLabel.hidden = names.length === 0;
+                rhemaQuestionSelect.hidden = names.length === 0;
+                rhemaQuestionLabel.hidden = names.length === 0;
             }
-            agGrammarSelect.addEventListener('change', showAgQuestions);
-            const agGrammarText = document.getElementById('agGrammarText');
-            const agGrammarMessage = document.getElementById('agGrammarMessage');
-            const agEditorName = document.getElementById('agEditorName');
-            const agEditToggleBtn = document.getElementById('agEditToggleBtn');
-            const agHighlight = document.getElementById('agHighlight');
-            const agLineNumbers = document.getElementById('agLineNumbers');
-            const agActiveLine = document.getElementById('agActiveLine');
-            const agCodeStage = document.getElementById('agCodeStage');
-            const agCursorPosition = document.getElementById('agCursorPosition');
-            const agDocumentStats = document.getElementById('agDocumentStats');
-            const agSaveState = document.getElementById('agSaveState');
-            const agSaveStateText = document.getElementById('agSaveStateText');
-            const agCheckBtn = document.getElementById('agCheckBtn');
-            const agSaveBtn = document.getElementById('agSaveBtn');
-            const agReloadBtn = document.getElementById('agReloadBtn');
-            const agNewBtn = document.getElementById('agNewBtn');
-            const agNewPanel = document.getElementById('agNewPanel');
-            const agNewName = document.getElementById('agNewName');
-            const agNewError = document.getElementById('agNewError');
-            let agIsNew = false;
-            let agBusy = false;
-            function setAgBusy(busy) {
-                agBusy = busy;
-                [agGrammarSelect, agNewBtn, agReloadBtn, agCheckBtn, agSaveBtn,
-                 document.getElementById('agCreateDraftBtn'), agEditToggleBtn]
+            rhemaGrammarSelect.addEventListener('change', showRhemaQuestions);
+            const rhemaGrammarText = document.getElementById('rhemaGrammarText');
+            const rhemaGrammarMessage = document.getElementById('rhemaGrammarMessage');
+            const rhemaEditorName = document.getElementById('rhemaEditorName');
+            const rhemaEditToggleBtn = document.getElementById('rhemaEditToggleBtn');
+            const rhemaHighlight = document.getElementById('rhemaHighlight');
+            const rhemaLineNumbers = document.getElementById('rhemaLineNumbers');
+            const rhemaActiveLine = document.getElementById('rhemaActiveLine');
+            const rhemaCodeStage = document.getElementById('rhemaCodeStage');
+            const rhemaCursorPosition = document.getElementById('rhemaCursorPosition');
+            const rhemaDocumentStats = document.getElementById('rhemaDocumentStats');
+            const rhemaSaveState = document.getElementById('rhemaSaveState');
+            const rhemaSaveStateText = document.getElementById('rhemaSaveStateText');
+            const rhemaCheckBtn = document.getElementById('rhemaCheckBtn');
+            const rhemaSaveBtn = document.getElementById('rhemaSaveBtn');
+            const rhemaReloadBtn = document.getElementById('rhemaReloadBtn');
+            const rhemaNewBtn = document.getElementById('rhemaNewBtn');
+            const rhemaNewPanel = document.getElementById('rhemaNewPanel');
+            const rhemaNewName = document.getElementById('rhemaNewName');
+            const rhemaNewError = document.getElementById('rhemaNewError');
+            let rhemaIsNew = false;
+            let rhemaBusy = false;
+            function setRhemaBusy(busy) {
+                rhemaBusy = busy;
+                [rhemaGrammarSelect, rhemaNewBtn, rhemaReloadBtn, rhemaCheckBtn, rhemaSaveBtn,
+                 document.getElementById('rhemaCreateDraftBtn'), rhemaEditToggleBtn]
                     .forEach(control => { control.disabled = busy; });
-                agGrammarText.readOnly = busy;
+                rhemaGrammarText.readOnly = busy;
             }
-            let agGrammarsLoaded = false;
-            let agOriginalText = '';
-            let agCurrentGrammar = '';
-            let agDirty = false;
+            let rhemaGrammarsLoaded = false;
+            let rhemaOriginalText = '';
+            let rhemaCurrentGrammar = '';
+            let rhemaDirty = false;
 
-            const agKeywords = new Set([
+            const rhemaKeywords = new Set([
                 'context', 'attribute', 'random', 'let', 'boolean', 'synth', 'on', 'start',
                 'precedence', 'left', 'right', 'nonassoc', 'copy', 'split',
                 'when', 'weight', 'require', 'prompt', 'answer', 'width',
                 'and', 'or', 'not'
             ]);
-            const agBuiltins = new Set([
+            const rhemaBuiltins = new Set([
                 'integer', 'nonzero_integer', 'integer_between',
                 'nonzero_integer_between', 'str', 'paren', 'infix', 'prefix',
                 'cond', 'abs', 'min', 'max', 'bit_and', 'bit_or', 'bit_xor',
@@ -1435,20 +1435,20 @@
                 'vector_same_direction_answer'
             ]);
 
-            function escapeAgHtml(text) {
+            function escapeRhemaHtml(text) {
                 return text
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;');
             }
 
-            function agToken(kind, text) {
-                return '<span class="ag-token-' + kind + '">' + escapeAgHtml(text) + '</span>';
+            function rhemaToken(kind, text) {
+                return '<span class="rhema-token-' + kind + '">' + escapeRhemaHtml(text) + '</span>';
             }
 
             // Small lexer used only for presentation. The real OCaml lexer remains
             // the source of truth when Check or Save is pressed.
-            function highlightAgSource(source) {
+            function highlightRhemaSource(source) {
                 let output = '';
                 let index = 0;
                 while (index < source.length) {
@@ -1457,7 +1457,7 @@
                     if (character === '#') {
                         let end = source.indexOf('\n', index);
                         if (end === -1) end = source.length;
-                        output += agToken('comment', source.slice(index, end));
+                        output += rhemaToken('comment', source.slice(index, end));
                         index = end;
                         continue;
                     }
@@ -1474,7 +1474,7 @@
                                 end += 1;
                             }
                         }
-                        output += agToken('string', source.slice(index, end));
+                        output += rhemaToken('string', source.slice(index, end));
                         index = end;
                         continue;
                     }
@@ -1486,7 +1486,7 @@
                             end += 1;
                             while (/[A-Za-z0-9_]/.test(source[end] || '')) end += 1;
                         }
-                        output += agToken('child', source.slice(index, end));
+                        output += rhemaToken('child', source.slice(index, end));
                         index = end;
                         continue;
                     }
@@ -1494,7 +1494,7 @@
                     if (/[0-9]/.test(character)) {
                         let end = index + 1;
                         while (/[0-9]/.test(source[end] || '')) end += 1;
-                        output += agToken('number', source.slice(index, end));
+                        output += rhemaToken('number', source.slice(index, end));
                         index = end;
                         continue;
                     }
@@ -1504,88 +1504,88 @@
                         while (/[A-Za-z0-9_]/.test(source[end] || '')) end += 1;
                         const word = source.slice(index, end);
                         let kind = 'attribute';
-                        if (agKeywords.has(word)) kind = 'keyword';
-                        else if (agBuiltins.has(word)) kind = 'builtin';
+                        if (rhemaKeywords.has(word)) kind = 'keyword';
+                        else if (rhemaBuiltins.has(word)) kind = 'builtin';
                         else if (/^[A-Z]/.test(word)) kind = 'symbol';
-                        output += agToken(kind, word);
+                        output += rhemaToken(kind, word);
                         index = end;
                         continue;
                     }
 
                     const pair = source.slice(index, index + 2);
                     if (['->', '++', '!=', '<=', '>='].includes(pair)) {
-                        output += agToken('operator', pair);
+                        output += rhemaToken('operator', pair);
                         index += 2;
                         continue;
                     }
                     if ('=<>+-*/%^.,(){}'.includes(character)) {
-                        output += agToken('operator', character);
+                        output += rhemaToken('operator', character);
                         index += 1;
                         continue;
                     }
 
-                    output += escapeAgHtml(character);
+                    output += escapeRhemaHtml(character);
                     index += 1;
                 }
                 return output;
             }
 
-            function setAgState(state, text) {
-                agSaveState.dataset.state = state;
-                agSaveStateText.textContent = text;
+            function setRhemaState(state, text) {
+                rhemaSaveState.dataset.state = state;
+                rhemaSaveStateText.textContent = text;
             }
 
-            function syncAgScroll() {
-                agHighlight.scrollTop = agGrammarText.scrollTop;
-                agHighlight.scrollLeft = agGrammarText.scrollLeft;
-                agLineNumbers.scrollTop = agGrammarText.scrollTop;
-                updateAgCursor();
+            function syncRhemaScroll() {
+                rhemaHighlight.scrollTop = rhemaGrammarText.scrollTop;
+                rhemaHighlight.scrollLeft = rhemaGrammarText.scrollLeft;
+                rhemaLineNumbers.scrollTop = rhemaGrammarText.scrollTop;
+                updateRhemaCursor();
             }
 
-            function updateAgCursor() {
-                const beforeCaret = agGrammarText.value.slice(0, agGrammarText.selectionStart);
+            function updateRhemaCursor() {
+                const beforeCaret = rhemaGrammarText.value.slice(0, rhemaGrammarText.selectionStart);
                 const line = beforeCaret.split('\n').length;
                 const lastBreak = beforeCaret.lastIndexOf('\n');
-                const column = agGrammarText.selectionStart - lastBreak;
-                const computed = window.getComputedStyle(agGrammarText);
+                const column = rhemaGrammarText.selectionStart - lastBreak;
+                const computed = window.getComputedStyle(rhemaGrammarText);
                 const lineHeight = parseFloat(computed.lineHeight) || 21.45;
                 const paddingTop = parseFloat(computed.paddingTop) || 16;
-                const top = paddingTop + ((line - 1) * lineHeight) - agGrammarText.scrollTop;
+                const top = paddingTop + ((line - 1) * lineHeight) - rhemaGrammarText.scrollTop;
 
-                agCodeStage.style.setProperty('--ag-line-height', lineHeight + 'px');
-                agActiveLine.style.transform = 'translateY(' + (top - paddingTop) + 'px)';
-                agActiveLine.style.opacity = top + lineHeight < 0 || top > agCodeStage.clientHeight ? '0' : '1';
-                agCursorPosition.textContent = 'Ln ' + line + ', Col ' + column;
+                rhemaCodeStage.style.setProperty('--rhema-line-height', lineHeight + 'px');
+                rhemaActiveLine.style.transform = 'translateY(' + (top - paddingTop) + 'px)';
+                rhemaActiveLine.style.opacity = top + lineHeight < 0 || top > rhemaCodeStage.clientHeight ? '0' : '1';
+                rhemaCursorPosition.textContent = 'Ln ' + line + ', Col ' + column;
 
-                agLineNumbers.querySelectorAll('.active').forEach(item => item.classList.remove('active'));
-                const currentNumber = agLineNumbers.children[line - 1];
+                rhemaLineNumbers.querySelectorAll('.active').forEach(item => item.classList.remove('active'));
+                const currentNumber = rhemaLineNumbers.children[line - 1];
                 if (currentNumber) currentNumber.classList.add('active');
             }
 
-            function updateAgEditor(markDirty) {
-                const source = agGrammarText.value;
+            function updateRhemaEditor(markDirty) {
+                const source = rhemaGrammarText.value;
                 const lineCount = source.split('\n').length;
-                agHighlight.innerHTML = highlightAgSource(source) + (source.endsWith('\n') ? ' ' : '');
-                agLineNumbers.innerHTML = Array.from({ length: lineCount }, (_, index) =>
-                    '<span class="ag-line-number">' + (index + 1) + '</span>'
+                rhemaHighlight.innerHTML = highlightRhemaSource(source) + (source.endsWith('\n') ? ' ' : '');
+                rhemaLineNumbers.innerHTML = Array.from({ length: lineCount }, (_, index) =>
+                    '<span class="rhema-line-number">' + (index + 1) + '</span>'
                 ).join('');
-                agDocumentStats.textContent = lineCount + (lineCount === 1 ? ' line' : ' lines')
+                rhemaDocumentStats.textContent = lineCount + (lineCount === 1 ? ' line' : ' lines')
                     + ' · ' + source.length + ' chars';
 
                 if (markDirty) {
-                    agDirty = agIsNew || source !== agOriginalText;
-                    setAgState(agDirty ? 'dirty' : 'saved', agDirty ? 'Unsaved changes' : 'Saved');
+                    rhemaDirty = rhemaIsNew || source !== rhemaOriginalText;
+                    setRhemaState(rhemaDirty ? 'dirty' : 'saved', rhemaDirty ? 'Unsaved changes' : 'Saved');
                 }
-                syncAgScroll();
+                syncRhemaScroll();
             }
 
-            function extractAgLocation(text) {
+            function extractRhemaLocation(text) {
                 const match = String(text || '').match(/:(\d+):(\d+):/);
                 return match ? { line: Number(match[1]), column: Number(match[2]) } : null;
             }
 
-            function goToAgLocation(line, column) {
-                const lines = agGrammarText.value.split('\n');
+            function goToRhemaLocation(line, column) {
+                const lines = rhemaGrammarText.value.split('\n');
                 const safeLine = Math.max(1, Math.min(line, lines.length));
                 const safeColumn = Math.max(1, Math.min(column, lines[safeLine - 1].length + 1));
                 let offset = 0;
@@ -1593,182 +1593,182 @@
                     offset += lines[index].length + 1;
                 }
                 offset += safeColumn - 1;
-                agGrammarText.focus();
-                agGrammarText.setSelectionRange(offset, offset);
-                const lineHeight = parseFloat(window.getComputedStyle(agGrammarText).lineHeight) || 21.45;
-                agGrammarText.scrollTop = Math.max(0, ((safeLine - 1) * lineHeight) - (agGrammarText.clientHeight / 3));
-                syncAgScroll();
+                rhemaGrammarText.focus();
+                rhemaGrammarText.setSelectionRange(offset, offset);
+                const lineHeight = parseFloat(window.getComputedStyle(rhemaGrammarText).lineHeight) || 21.45;
+                rhemaGrammarText.scrollTop = Math.max(0, ((safeLine - 1) * lineHeight) - (rhemaGrammarText.clientHeight / 3));
+                syncRhemaScroll();
             }
 
-            function showAgMessage(text, kind) {
-                agGrammarMessage.textContent = text;
-                agGrammarMessage.className = 'ag-message ' + (kind || '');
-                agGrammarMessage.style.display = text ? 'block' : 'none';
-                const location = kind === 'error' ? extractAgLocation(text) : null;
-                agGrammarMessage.classList.toggle('has-location', Boolean(location));
-                agGrammarMessage.dataset.line = location ? String(location.line) : '';
-                agGrammarMessage.dataset.column = location ? String(location.column) : '';
+            function showRhemaMessage(text, kind) {
+                rhemaGrammarMessage.textContent = text;
+                rhemaGrammarMessage.className = 'rhema-message ' + (kind || '');
+                rhemaGrammarMessage.style.display = text ? 'block' : 'none';
+                const location = kind === 'error' ? extractRhemaLocation(text) : null;
+                rhemaGrammarMessage.classList.toggle('has-location', Boolean(location));
+                rhemaGrammarMessage.dataset.line = location ? String(location.line) : '';
+                rhemaGrammarMessage.dataset.column = location ? String(location.column) : '';
             }
 
-            agGrammarMessage.addEventListener('click', function() {
+            rhemaGrammarMessage.addEventListener('click', function() {
                 if (this.dataset.line) {
-                    goToAgLocation(Number(this.dataset.line), Number(this.dataset.column));
+                    goToRhemaLocation(Number(this.dataset.line), Number(this.dataset.column));
                 }
             });
 
-            function loadAgGrammarList() {
-                if (agGrammarsLoaded) return Promise.resolve();
-                setAgBusy(true);
-                return fetch('/ag_grammars')
+            function loadRhemaGrammarList() {
+                if (rhemaGrammarsLoaded) return Promise.resolve();
+                setRhemaBusy(true);
+                return fetch('/rhema_grammars')
                     .then(r => r.json())
                     .then(data => {
-                        agGrammarSelect.innerHTML = '';
+                        rhemaGrammarSelect.innerHTML = '';
                         (data.grammars || []).forEach(name => {
                             const option = document.createElement('option');
                             option.value = name;
                             option.textContent = name;
-                            agGrammarSelect.appendChild(option);
+                            rhemaGrammarSelect.appendChild(option);
                         });
-                        agQuestions = data.questions || {};
-                        agGrammarsLoaded = true;
-                        showAgQuestions();
+                        rhemaQuestions = data.questions || {};
+                        rhemaGrammarsLoaded = true;
+                        showRhemaQuestions();
                     })
-                    .catch(e => showAgMessage('Could not load grammars: ' + e.message, 'error'))
-                    .finally(() => setAgBusy(false));
+                    .catch(e => showRhemaMessage('Could not load grammars: ' + e.message, 'error'))
+                    .finally(() => setRhemaBusy(false));
             }
 
-            function loadAgGrammarText(requestedName) {
-                const name = requestedName || agGrammarSelect.value;
+            function loadRhemaGrammarText(requestedName) {
+                const name = requestedName || rhemaGrammarSelect.value;
                 if (!name) return;
-                setAgBusy(true);
-                showAgMessage('', '');
-                setAgState('checking', 'Loading…');
-                fetch('/ag_grammar?name=' + encodeURIComponent(name))
+                setRhemaBusy(true);
+                showRhemaMessage('', '');
+                setRhemaState('checking', 'Loading…');
+                fetch('/rhema_grammar?name=' + encodeURIComponent(name))
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
-                            agIsNew = false;
-                            agGrammarText.value = data.content;
-                            agEditorName.textContent = data.name;
-                            agCurrentGrammar = data.name;
-                            agGrammarSelect.value = data.name;
-                            agOriginalText = data.content;
-                            agDirty = false;
-                            setAgState('saved', 'Saved');
-                            updateAgEditor(false);
+                            rhemaIsNew = false;
+                            rhemaGrammarText.value = data.content;
+                            rhemaEditorName.textContent = data.name;
+                            rhemaCurrentGrammar = data.name;
+                            rhemaGrammarSelect.value = data.name;
+                            rhemaOriginalText = data.content;
+                            rhemaDirty = false;
+                            setRhemaState('saved', 'Saved');
+                            updateRhemaEditor(false);
                         } else {
-                            showAgMessage(data.error || 'Could not load the grammar.', 'error');
-                            setAgState('dirty', 'Load failed');
+                            showRhemaMessage(data.error || 'Could not load the grammar.', 'error');
+                            setRhemaState('dirty', 'Load failed');
                         }
                     })
                     .catch(e => {
-                        showAgMessage('Network error: ' + e.message, 'error');
-                        setAgState('dirty', 'Load failed');
+                        showRhemaMessage('Network error: ' + e.message, 'error');
+                        setRhemaState('dirty', 'Load failed');
                     })
-                    .finally(() => setAgBusy(false));
+                    .finally(() => setRhemaBusy(false));
             }
 
             document.querySelectorAll('input[name="generatorMode"]').forEach(radio => {
                 radio.addEventListener('change', function() {
                     const isAg = currentGeneratorMode() === 'ag';
-                    agControls.style.display = isAg ? 'block' : 'none';
+                    rhemaControls.style.display = isAg ? 'block' : 'none';
                     if (!isAg) {
-                        agEditor.style.display = 'none';
-                        agEditToggleBtn.textContent = 'Edit Grammar';
+                        rhemaEditor.style.display = 'none';
+                        rhemaEditToggleBtn.textContent = 'Edit Grammar';
                     } else {
-                        loadAgGrammarList();
+                        loadRhemaGrammarList();
                     }
                 });
             });
 
-            agNewBtn.addEventListener('click', function() {
-                agNewPanel.hidden = false;
-                agNewError.textContent = '';
-                agNewName.focus();
+            rhemaNewBtn.addEventListener('click', function() {
+                rhemaNewPanel.hidden = false;
+                rhemaNewError.textContent = '';
+                rhemaNewName.focus();
             });
-            document.getElementById('agCancelNewBtn').addEventListener('click', function() {
-                agNewPanel.hidden = true;
+            document.getElementById('rhemaCancelNewBtn').addEventListener('click', function() {
+                rhemaNewPanel.hidden = true;
             });
-            document.getElementById('agCreateDraftBtn').addEventListener('click', function() {
-                let name = agNewName.value.trim();
-                if (name && !name.endsWith('.ag')) name += '.ag';
-                if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}\.ag$/.test(name)) {
-                    agNewError.textContent = 'Use letters, numbers, underscores or hyphens; start with a letter or number.';
+            document.getElementById('rhemaCreateDraftBtn').addEventListener('click', function() {
+                let name = rhemaNewName.value.trim();
+                if (name && !name.endsWith('.rhm')) name += '.rhm';
+                if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}\.rhm$/.test(name)) {
+                    rhemaNewError.textContent = 'Use letters, numbers, underscores or hyphens; start with a letter or number.';
                     return;
                 }
-                if (Array.from(agGrammarSelect.options).some(option => option.value === name)) {
-                    agNewError.textContent = 'This name already exists. Choose another name.';
+                if (Array.from(rhemaGrammarSelect.options).some(option => option.value === name)) {
+                    rhemaNewError.textContent = 'This name already exists. Choose another name.';
                     return;
                 }
-                if (agDirty && !confirm('Discard unsaved changes and create a new grammar?')) return;
-                agGrammarSelect.querySelectorAll('[data-draft]').forEach(option => option.remove());
+                if (rhemaDirty && !confirm('Discard unsaved changes and create a new grammar?')) return;
+                rhemaGrammarSelect.querySelectorAll('[data-draft]').forEach(option => option.remove());
                 const option = new Option(name + ' (new)', name, false, true);
                 option.dataset.draft = 'true';
-                agGrammarSelect.add(option);
-                agCurrentGrammar = name;
-                agIsNew = true;
-                agOriginalText = '';
-                agEditorName.textContent = name;
-                agGrammarText.value = 'context "Numeric"\n\nrandom a = integer_between(2, 9)\nrandom b = integer_between(2, 9)\n\nsynth text on Q\nsynth value on Q\n\nstart Q\n\nQ -> "addition" {\n  text = str(a) ++ " + " ++ str(b)\n  value = a + b\n}\n\nprompt "Calculate [`{Q.text}`]."\nanswer Q.value\nwidth 10\n';
-                agEditor.style.display = 'block';
-                agEditToggleBtn.textContent = 'Hide Grammar';
-                agNewPanel.hidden = true;
-                agNewName.value = '';
-                showAgMessage('', '');
-                updateAgEditor(true);
-                agGrammarText.focus();
+                rhemaGrammarSelect.add(option);
+                rhemaCurrentGrammar = name;
+                rhemaIsNew = true;
+                rhemaOriginalText = '';
+                rhemaEditorName.textContent = name;
+                rhemaGrammarText.value = 'context "Numeric"\n\nrandom a = integer_between(2, 9)\nrandom b = integer_between(2, 9)\n\nsynth text on Q\nsynth value on Q\n\nstart Q\n\nQ -> "addition" {\n  text = str(a) ++ " + " ++ str(b)\n  value = a + b\n}\n\nprompt "Calculate [`{Q.text}`]."\nanswer Q.value\nwidth 10\n';
+                rhemaEditor.style.display = 'block';
+                rhemaEditToggleBtn.textContent = 'Hide Grammar';
+                rhemaNewPanel.hidden = true;
+                rhemaNewName.value = '';
+                showRhemaMessage('', '');
+                updateRhemaEditor(true);
+                rhemaGrammarText.focus();
             });
-            agNewName.addEventListener('keydown', function(event) {
+            rhemaNewName.addEventListener('keydown', function(event) {
                 if (event.key === 'Enter') {
                     event.preventDefault();
-                    document.getElementById('agCreateDraftBtn').click();
+                    document.getElementById('rhemaCreateDraftBtn').click();
                 }
             });
 
-            agGrammarSelect.addEventListener('change', function() {
+            rhemaGrammarSelect.addEventListener('change', function() {
                 const requested = this.value;
-                if (agDirty && !confirm('This grammar has unsaved changes. Discard them and open another file?')) {
-                    this.value = agCurrentGrammar;
+                if (rhemaDirty && !confirm('This grammar has unsaved changes. Discard them and open another file?')) {
+                    this.value = rhemaCurrentGrammar;
                     return;
                 }
-                agGrammarSelect.querySelectorAll('[data-draft]').forEach(option => option.remove());
-                agIsNew = false;
-                agDirty = false;
-                if (agEditor.style.display !== 'none') loadAgGrammarText(requested);
+                rhemaGrammarSelect.querySelectorAll('[data-draft]').forEach(option => option.remove());
+                rhemaIsNew = false;
+                rhemaDirty = false;
+                if (rhemaEditor.style.display !== 'none') loadRhemaGrammarText(requested);
             });
 
-            agEditToggleBtn.addEventListener('click', function() {
-                const opening = agEditor.style.display === 'none';
-                agEditor.style.display = opening ? 'block' : 'none';
-                agEditToggleBtn.textContent = opening ? 'Hide Grammar' : 'Edit Grammar';
+            rhemaEditToggleBtn.addEventListener('click', function() {
+                const opening = rhemaEditor.style.display === 'none';
+                rhemaEditor.style.display = opening ? 'block' : 'none';
+                rhemaEditToggleBtn.textContent = opening ? 'Hide Grammar' : 'Edit Grammar';
                 if (opening) {
-                    if (!agCurrentGrammar || agCurrentGrammar !== agGrammarSelect.value) {
-                        loadAgGrammarText();
+                    if (!rhemaCurrentGrammar || rhemaCurrentGrammar !== rhemaGrammarSelect.value) {
+                        loadRhemaGrammarText();
                     } else {
-                        updateAgEditor(false);
-                        agGrammarText.focus();
+                        updateRhemaEditor(false);
+                        rhemaGrammarText.focus();
                     }
                 }
             });
 
-            agReloadBtn.addEventListener('click', function() {
-                if (agIsNew) {
-                    showAgMessage('This draft has not been saved yet.', 'error');
+            rhemaReloadBtn.addEventListener('click', function() {
+                if (rhemaIsNew) {
+                    showRhemaMessage('This draft has not been saved yet.', 'error');
                     return;
                 }
-                if (agDirty && !confirm('Discard the unsaved changes and reload this grammar?')) return;
-                loadAgGrammarText();
+                if (rhemaDirty && !confirm('Discard the unsaved changes and reload this grammar?')) return;
+                loadRhemaGrammarText();
             });
 
-            agGrammarText.addEventListener('input', function() {
-                updateAgEditor(true);
-                showAgMessage('', '');
+            rhemaGrammarText.addEventListener('input', function() {
+                updateRhemaEditor(true);
+                showRhemaMessage('', '');
             });
-            agGrammarText.addEventListener('scroll', syncAgScroll);
+            rhemaGrammarText.addEventListener('scroll', syncRhemaScroll);
             ['click', 'keyup', 'select'].forEach(eventName =>
-                agGrammarText.addEventListener(eventName, updateAgCursor));
+                rhemaGrammarText.addEventListener(eventName, updateRhemaCursor));
 
-            agGrammarText.addEventListener('keydown', function(event) {
+            rhemaGrammarText.addEventListener('keydown', function(event) {
                 if (event.key === 'Tab') {
                     event.preventDefault();
                     const start = this.selectionStart;
@@ -1805,85 +1805,85 @@
                     } else {
                         this.setRangeText('    ', start, end, 'end');
                     }
-                    updateAgEditor(true);
+                    updateRhemaEditor(true);
                 }
 
                 if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
                     event.preventDefault();
-                    agSaveBtn.click();
+                    rhemaSaveBtn.click();
                 }
                 if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
                     event.preventDefault();
-                    agCheckBtn.click();
+                    rhemaCheckBtn.click();
                 }
             });
 
-            agCheckBtn.addEventListener('click', function() {
-                if (agBusy) return;
-                setAgBusy(true);
-                setAgState('checking', 'Checking…');
-                showAgMessage('Checking...', '');
-                fetch('/ag_grammar_check', {
+            rhemaCheckBtn.addEventListener('click', function() {
+                if (rhemaBusy) return;
+                setRhemaBusy(true);
+                setRhemaState('checking', 'Checking…');
+                showRhemaMessage('Checking...', '');
+                fetch('/rhema_grammar_check', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'name=' + encodeURIComponent(agGrammarSelect.value)
-                        + '&content=' + encodeURIComponent(agGrammarText.value)
+                    body: 'name=' + encodeURIComponent(rhemaGrammarSelect.value)
+                        + '&content=' + encodeURIComponent(rhemaGrammarText.value)
                 })
                     .then(r => r.json())
                     .then(data => {
-                        showAgMessage(data.success ? data.message : data.error,
+                        showRhemaMessage(data.success ? data.message : data.error,
                             data.success ? 'ok' : 'error');
-                        setAgState(agDirty ? 'dirty' : 'saved',
-                            data.success ? (agDirty ? 'Valid · unsaved' : 'Valid · saved') : 'Check failed');
+                        setRhemaState(rhemaDirty ? 'dirty' : 'saved',
+                            data.success ? (rhemaDirty ? 'Valid · unsaved' : 'Valid · saved') : 'Check failed');
                     })
                     .catch(e => {
-                        showAgMessage('Network error: ' + e.message, 'error');
-                        setAgState(agDirty ? 'dirty' : 'saved', agDirty ? 'Unsaved changes' : 'Saved');
+                        showRhemaMessage('Network error: ' + e.message, 'error');
+                        setRhemaState(rhemaDirty ? 'dirty' : 'saved', rhemaDirty ? 'Unsaved changes' : 'Saved');
                     })
-                    .finally(() => { setAgBusy(false); });
+                    .finally(() => { setRhemaBusy(false); });
             });
 
-            agSaveBtn.addEventListener('click', function() {
-                if (agBusy) return;
-                setAgBusy(true);
-                setAgState('checking', 'Saving…');
-                showAgMessage('Saving...', '');
-                fetch('/ag_grammar_save', {
+            rhemaSaveBtn.addEventListener('click', function() {
+                if (rhemaBusy) return;
+                setRhemaBusy(true);
+                setRhemaState('checking', 'Saving…');
+                showRhemaMessage('Saving...', '');
+                fetch('/rhema_grammar_save', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'name=' + encodeURIComponent(agGrammarSelect.value)
-                        + '&create=' + String(agIsNew)
-                        + '&content=' + encodeURIComponent(agGrammarText.value)
+                    body: 'name=' + encodeURIComponent(rhemaGrammarSelect.value)
+                        + '&create=' + String(rhemaIsNew)
+                        + '&content=' + encodeURIComponent(rhemaGrammarText.value)
                 })
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
                             // 保存前会先校验，所以走到这里文法一定是好的
-                            agIsNew = false;
-                            agCurrentGrammar = data.name;
-                            agEditorName.textContent = data.name;
-                            const option = agGrammarSelect.selectedOptions[0];
+                            rhemaIsNew = false;
+                            rhemaCurrentGrammar = data.name;
+                            rhemaEditorName.textContent = data.name;
+                            const option = rhemaGrammarSelect.selectedOptions[0];
                             option.textContent = data.name;
                             delete option.dataset.draft;
-                            agOriginalText = agGrammarText.value;
-                            agDirty = false;
-                            setAgState('saved', 'Valid · saved');
-                            showAgMessage('Saved. Generate again to see the change.\n\n'
+                            rhemaOriginalText = rhemaGrammarText.value;
+                            rhemaDirty = false;
+                            setRhemaState('saved', 'Valid · saved');
+                            showRhemaMessage('Saved. Generate again to see the change.\n\n'
                                 + data.message, 'ok');
                         } else {
-                            setAgState('dirty', 'Save failed');
-                            showAgMessage(data.error, 'error');
+                            setRhemaState('dirty', 'Save failed');
+                            showRhemaMessage(data.error, 'error');
                         }
                     })
                     .catch(e => {
-                        setAgState('dirty', 'Save failed');
-                        showAgMessage('Network error: ' + e.message, 'error');
+                        setRhemaState('dirty', 'Save failed');
+                        showRhemaMessage('Network error: ' + e.message, 'error');
                     })
-                    .finally(() => { setAgBusy(false); });
+                    .finally(() => { setRhemaBusy(false); });
             });
 
             window.addEventListener('beforeunload', function(event) {
-                if (!agDirty) return;
+                if (!rhemaDirty) return;
                 event.preventDefault();
                 event.returnValue = '';
             });
@@ -1891,11 +1891,11 @@
             document.getElementById('studentForm').addEventListener('submit', function(e) {
                 e.preventDefault();
 
-                if (currentGeneratorMode() === 'ag' && agDirty) {
-                    agEditor.style.display = 'block';
-                    agEditToggleBtn.textContent = 'Hide Grammar';
-                    showAgMessage('Save the grammar before generating so the new rules are used.', 'error');
-                    agGrammarText.focus();
+                if (currentGeneratorMode() === 'ag' && rhemaDirty) {
+                    rhemaEditor.style.display = 'block';
+                    rhemaEditToggleBtn.textContent = 'Hide Grammar';
+                    showRhemaMessage('Save the grammar before generating so the new rules are used.', 'error');
+                    rhemaGrammarText.focus();
                     return;
                 }
                 
@@ -1936,18 +1936,18 @@
                 // 重置编辑状态
                 resetEditState('generate');
 
-                // 按生成方式分流：属性文法走 /run_ag，经典生成器走 /run
+                // 按生成方式分流：属性文法走 /run_rhema，经典生成器走 /run
                 const useAttributeGrammar = currentGeneratorMode() === 'ag';
-                const endpoint = useAttributeGrammar ? '/run_ag' : '/run';
+                const endpoint = useAttributeGrammar ? '/run_rhema' : '/run';
                 setTreeViewLabels(
                     'generate',
                     useAttributeGrammar ? 'attribute_grammar' : 'ast_dcst'
                 );
                 let body = 'student_id=' + encodeURIComponent(studentId);
                 if (useAttributeGrammar) {
-                    body += '&grammar=' + encodeURIComponent(document.getElementById('agGrammarSelect').value)
-                          + '&question=' + encodeURIComponent(agQuestionSelect.hidden ? '' : agQuestionSelect.value)
-                          + '&count=' + encodeURIComponent(document.getElementById('agCount').value);
+                    body += '&grammar=' + encodeURIComponent(document.getElementById('rhemaGrammarSelect').value)
+                          + '&question=' + encodeURIComponent(rhemaQuestionSelect.hidden ? '' : rhemaQuestionSelect.value)
+                          + '&count=' + encodeURIComponent(document.getElementById('rhemaCount').value);
                 }
 
                 // 发送请求

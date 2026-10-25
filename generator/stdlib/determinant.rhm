@@ -1,0 +1,88 @@
+# ==========================================================================
+#  Determinants
+#
+#  The determinant of a matrix of matrix_core.rhm, or of an expression whose
+#  determinant follows from the rules: det(AB) = det A det B, det A^T =
+#  det A, det(kA) = k^n det A. The engine computes the determinant of the
+#  value directly; the rules are what the student is meant to use.
+#
+#  Difficulty is the budget `cost`, spent exactly:
+#
+#    determinant of a 2 by 2       1        of a 3 by 3              3
+#    a product under the det       2        a transpose              1
+#    a whole-number multiple       1
+#
+#    rhema run determinant.rhm --set cost=1     easy      det A, 2 by 2
+#    rhema run determinant.rhm --set cost=3     medium (the default)
+#    rhema run determinant.rhm --set cost=6     hard
+# ==========================================================================
+
+include "matrix_core.rhm"
+
+context "Numeric"
+
+attribute cost = 3 split
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+synth value on D
+synth latex on D
+synth top on D
+
+start Q
+
+Q -> D "small" when cost >= 1 weight 2 {
+  cost = -1
+  dim = -1
+  kind = "small"
+  text = given2 ++ "
+Compute [`\det(" ++ $1.latex ++ ")`]."
+  answer_value = matrix_determinant($1.value)
+}
+
+Q -> D "large" when cost >= 3 weight 2 {
+  cost = -3
+  kind = "large"
+  text = given3 ++ "
+Compute [`\det(" ++ $1.latex ++ ")`]."
+  answer_value = matrix_determinant($1.value)
+}
+
+# ---- What stands under the determinant ------------------------------------------
+
+D -> D "\times" D when cost >= 2 weight 3 {
+  cost = -2
+  require $1.latex != $3.latex
+  value = matrix_multiply($1.value, $3.value)
+  latex = cond($1.top = "scale", "(" ++ $1.latex ++ ")", $1.latex)
+          ++ cond($3.top = "scale", "(" ++ $3.latex ++ ")", $3.latex)
+  top = "product"
+}
+
+D -> D "^T" when cost >= 1 weight 2 {
+  cost = -1
+  require $1.top != "transpose"
+  value = matrix_transpose($1.value)
+  latex = cond($1.top = "leaf", $1.latex, "(" ++ $1.latex ++ ")") ++ "^{T}"
+  top = "transpose"
+}
+
+D -> integer_between(2, 3) "\cdot" D when cost >= 1 weight 2 {
+  cost = -1
+  require $3.top != "scale"
+  value = matrix_scale($1.value, $3.value)
+  latex = str($1.value) ++ cond($3.top = "leaf", $3.latex, "(" ++ $3.latex ++ ")")
+  top = "scale"
+}
+
+D -> V when cost = 0 {
+  value = $1.value
+  latex = $1.latex
+  top = "leaf"
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
+width 12

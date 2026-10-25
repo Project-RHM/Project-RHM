@@ -8,25 +8,25 @@ this document is in `DIFFICULTY_BUDGET.zh.md`.
 
 | grammar | budget spent on | default | section |
 | --- | --- | --- | --- |
-| `boolean.ag` | connectives, priced by kind and by what they negate; propositions are a value the engine evaluates | 10 | 2–4 |
-| `arithmetic.ag` | operations and the digits of the numbers | 12 | 6 |
-| `calculus.ag` | the differentiation rules a function calls for, plus 2 for an integral | 7 | 7 |
-| `complex.ag` | operations; modulus and power of `i` are fixed forms | 4 | 8 |
-| `set.ag` | operations and whether a leaf is an interval | 7 | 9 |
-| `boolean_equiv.ag` | the law plus its subexpressions | 6 | 10 |
-| `vector.ag`, `sequence.ag`, `library_*.ag` | fixed forms, each at its price | 2, 2, 3 | 10 |
-| `factoring.ag`, `polynomial_expand.ag` | products, powers and the kind of each factor | 5 | QUESTION_TYPES.md |
-| `vector_expr.ag` | sums and multiples of vectors, plus the form on top | 4 | QUESTION_TYPES.md |
-| `linear_equation.ag` | sums, bracketed multiples and fractions on the left side | 5 | QUESTION_TYPES.md |
-| `logic_forms.ag` | the imported law or expression | 6 | QUESTION_TYPES.md |
-| `matrix_expr.ag`, `determinant.ag` | operations and the size of the matrices | 4, 3 | QUESTION_TYPES.md |
-| `matrix_inverse.ag`, `linear_system.ag` | fixed forms, each at its price | 2, 5 | QUESTION_TYPES.md |
+| `boolean.rhm` | connectives, priced by kind and by what they negate; propositions are a value the engine evaluates | 10 | 2–4 |
+| `arithmetic.rhm` | operations and the digits of the numbers | 12 | 6 |
+| `calculus.rhm` | the differentiation rules a function calls for, plus 2 for an integral | 7 | 7 |
+| `complex.rhm` | operations; modulus and power of `i` are fixed forms | 4 | 8 |
+| `set.rhm` | operations and whether a leaf is an interval | 7 | 9 |
+| `boolean_equiv.rhm` | the law plus its subexpressions | 6 | 10 |
+| `vector.rhm`, `sequence.rhm`, `library_*.rhm` | fixed forms, each at its price | 2, 2, 3 | 10 |
+| `factoring.rhm`, `polynomial_expand.rhm` | products, powers and the kind of each factor | 5 | QUESTION_TYPES.md |
+| `vector_expr.rhm` | sums and multiples of vectors, plus the form on top | 4 | QUESTION_TYPES.md |
+| `linear_equation.rhm` | sums, bracketed multiples and fractions on the left side | 5 | QUESTION_TYPES.md |
+| `logic_forms.rhm` | the imported law or expression | 6 | QUESTION_TYPES.md |
+| `matrix_expr.rhm`, `determinant.rhm` | operations and the size of the matrices | 4, 3 | QUESTION_TYPES.md |
+| `matrix_inverse.rhm`, `linear_system.rhm` | fixed forms, each at its price | 2, 5 | QUESTION_TYPES.md |
 
 > **Sets in the language.** Since the `set` declaration
-> (`AG_LANGUAGE_EXTENSIONS.md` section 6) a file can say
-> `3 of calc.derivative(cost ~ 6 spread 2)` and `agrun --run` draws budgets
+> (`RHEMA_LANGUAGE_EXTENSIONS.md` section 6) a file can say
+> `3 of calc.derivative(cost ~ 6 spread 2)` and `rhema --run` draws budgets
 > around the mean and fixes the mean exactly, which is what
-> `tools/ag_difficulty.py set` did from outside. The tool's `report` and
+> `tools/rhema_difficulty.py set` did from outside. The tool's `report` and
 > `levels` still measure a grammar; its `set` subcommand is kept for the
 > `--targets` form and otherwise superseded.
 
@@ -34,7 +34,7 @@ this document is in `DIFFICULTY_BUDGET.zh.md`.
 
 Every grammar so far controlled difficulty with a length budget: `len` is the
 number of operators, handed down the tree with `split` and spent one unit per
-production. Length is a poor measure of difficulty. In `boolean.ag` the old
+production. Length is a poor measure of difficulty. In `boolean.rhm` the old
 setting `len = 3` produced questions whose operator cost (defined below)
 ranged from 4 to 18 with a mean of 10.2: a biconditional nested in a
 conditional and three conjunctions both counted as three operators, and a
@@ -44,7 +44,7 @@ conditional and three conjunctions both counted as three operators, and a
 
 The teacher's first method: treat each operator as a function from the
 difficulty of its operands to the difficulty of the compound it builds. In
-`boolean.ag` the prices are
+`boolean.rhm` the prices are
 
 | construct | price |
 | --- | --- |
@@ -65,7 +65,7 @@ grammar, so revising them is an edit to one file.
 ## 3. Cost as a budget: construct, do not filter
 
 The cost is not computed after generation and then filtered. It is the budget
-itself. `boolean.ag` declares
+itself. `boolean.rhm` declares
 
 ```
 attribute cost = 10 split
@@ -102,9 +102,9 @@ only in what the productions deduct and when they are allowed.
 
 ```bash
 cd generator
-_build/default/ag/agrun.exe --set cost=6  ag/boolean.ag    # easy
-_build/default/ag/agrun.exe --set cost=10 ag/boolean.ag    # medium, the default
-_build/default/ag/agrun.exe --set cost=14 ag/boolean.ag    # hard
+rhema run ag/boolean.rhm --set cost=6     # easy
+rhema run ag/boolean.rhm --set cost=10    # medium, the default
+rhema run ag/boolean.rhm --set cost=14    # hard
 ```
 
 Measured on 500 questions per budget (seed 7), with the course's shape
@@ -126,17 +126,17 @@ about 6, and a budget of 1 has no question at all, since the only thing it
 buys is a negated variable, which the grammar refuses as a whole
 proposition.
 
-## 5. The tool: `tools/ag_difficulty.py`
+## 5. The tool: `tools/rhema_difficulty.py`
 
-The tool drives the built `agrun.exe` and works for any grammar whose
+The tool drives the built `rhema` and works for any grammar whose
 difficulty is a budget; `--budget NAME` names the attribute (default `cost`,
 and `--budget len` measures the old length budgets the same way).
 
 ```bash
-python3 tools/ag_difficulty.py report generator/ag/boolean.ag --at 6,10,14
-python3 tools/ag_difficulty.py levels generator/ag/boolean.ag
-python3 tools/ag_difficulty.py set generator/ag/boolean.ag --mean 10 --spread 2 --count 10
-python3 tools/ag_difficulty.py set generator/ag/boolean.ag --targets 6,8,10,12 --pg-dir out/
+python3 tools/rhema_difficulty.py report generator/stdlib/boolean.rhm --at 6,10,14
+python3 tools/rhema_difficulty.py levels generator/stdlib/boolean.rhm
+python3 tools/rhema_difficulty.py set generator/stdlib/boolean.rhm --mean 10 --spread 2 --count 10
+python3 tools/rhema_difficulty.py set generator/stdlib/boolean.rhm --targets 6,8,10,12 --pg-dir out/
 ```
 
 - `report` prints, for each budget, the share of distinct questions, the
@@ -155,7 +155,7 @@ python3 tools/ag_difficulty.py set generator/ag/boolean.ag --targets 6,8,10,12 -
 
 ## 6. A second grammar: arithmetic
 
-`arithmetic.ag` prices two things from one budget, because the difficulty of
+`arithmetic.rhm` prices two things from one budget, because the difficulty of
 a sum depends as much on the size of the numbers as on the operations:
 
 | construct | price |
@@ -175,7 +175,7 @@ the number of digits (default 4, which is also the most that is priced). The
 default budget is 12; the old default, eight operations on four-digit
 numbers, produced answers of a dozen digits and was not kept.
 
-The weights matter more here than in `boolean.ag`. Operations are cheap and
+The weights matter more here than in `boolean.rhm`. Operations are cheap and
 numbers are capped at 3, so with the old weights (addition 10, number 1) a
 budget of 18 became a chain of a dozen one-digit additions. With the number
 rule at weight 15 and the operations at 6, 4, 3 and 2, a budget is as likely
@@ -202,7 +202,7 @@ it without changing the budget mechanism.
 
 ## 7. A third grammar: calculus
 
-In `calculus.ag` the operators are differentiation rules, and the price of a
+In `calculus.rhm` the operators are differentiation rules, and the price of a
 construct is the rule it makes the student apply:
 
 | construct | price | rule |
@@ -216,7 +216,7 @@ construct is the rule it makes the student apply:
 | leaf `x`, a constant | 0 | |
 | leaf `cx` | 1 | a coefficient to carry |
 
-As with negation in `boolean.ag`, a power or a function has two productions:
+As with negation in `boolean.rhm`, a power or a function has two productions:
 one on a leaf, allowed while the budget is 1 or 2, and one on a compound,
 which needs 3 for itself and at least 2 inside. No leaf can spend 2, so the
 operand of the compound rule is always a compound, and every printed
@@ -246,7 +246,7 @@ questions per budget:
 | 9 | 99% | |
 | 12 | 100% | |
 
-The test re-prices the finished formula tree (`Ag_formula.t`) rather than the
+The test re-prices the finished formula tree (`Rhema_formula.t`) rather than the
 derivation, with `Negate` costing nothing since it only renders a negative
 coefficient.
 
@@ -262,7 +262,7 @@ value.
 
 ## 8. A fourth grammar: complex numbers, with fixed forms
 
-`complex.ag` mixes two kinds of question: recursive expressions (arithmetic
+`complex.rhm` mixes two kinds of question: recursive expressions (arithmetic
 and conjugate) and two fixed forms (modulus of a Pythagorean-triple number,
 and a power of `i`). The expression is priced as before:
 
@@ -285,7 +285,7 @@ A fixed form does not scale with anything, so it is a price, not a budget to
 spend. To keep the budget spent exactly, such a form is offered only when the
 budget equals its price. The consequence is deliberate: at the default budget
 of 4 a mixed run produces arithmetic and conjugate questions only; a set drawn
-around a mean (`ag_difficulty.py set --mean 4 --spread 2`) brings the fixed
+around a mean (`rhema_difficulty.py set --mean 4 --spread 2`) brings the fixed
 forms in at its low end, where a power of `i` belongs. Making them scale (a
 modulus with an integer factor, a power of `i` times an expression) would be a
 change of question, not of price.
@@ -311,7 +311,7 @@ its kind.
 
 ## 9. A fifth grammar: sets, and a rule the engine imposes
 
-`set.ag` computes unions, intersections and differences of three sets, each
+`set.rhm` computes unions, intersections and differences of three sets, each
 of which is a finite set or an interval. Both the operation and the kind of
 operand are priced:
 
@@ -354,7 +354,7 @@ under it.
 
 ## 10. The remaining grammars
 
-**Boolean equivalence** (`boolean_equiv.ag`, default 6). A claim is one of
+**Boolean equivalence** (`boolean_equiv.rhm`, default 6). A claim is one of
 thirty laws of the course, fifteen stated correctly and fifteen with a
 classic mistake, over parts drawn from a small expression language; the
 engine decides whether the claim holds by enumerating every assignment
@@ -362,35 +362,35 @@ engine decides whether the claim holds by enumerating every assignment
 reordering 1; distribution, exportation, associativity and the two
 expansions of the biconditional 3; every other law 2, a broken law costing
 the same as the law it breaks, since the student cannot tell them apart in
-advance. The rest is split between the parts, priced as in `boolean.ag`.
+advance. The rest is split between the parts, priced as in `boolean.rhm`.
 Each law declares its price as an attribute, and the test checks that the
 declared price plus the re-priced parts is the budget. The least budget is
 1, since there is no law for nothing; at 1 only double negation and
 reordering fit and every claim holds, so a set should not be built below
-about 2. The answer is balanced by a coin, as in `boolean.ag`.
+about 2. The answer is balanced by a coin, as in `boolean.rhm`.
 
-**Grammars of fixed forms.** `vector.ag`, `sequence.ag` and the four
-`library_*.ag` grammars have no recursion: each question form is a fixed
+**Grammars of fixed forms.** `vector.rhm`, `sequence.rhm` and the four
+`library_*.rhm` grammars have no recursion: each question form is a fixed
 shape with random numbers in it. A form is therefore a price, not a budget to
 spend, and is offered only when the budget equals its price, as the fixed
-forms of `complex.ag` are. A single mode (`vector_mode`, `question_mode`)
+forms of `complex.rhm` are. A single mode (`vector_mode`, `question_mode`)
 must be run at the price of its form; a mixed run at one budget shows the
-forms of that price; a set drawn around a mean (`ag_difficulty.py set
+forms of that price; a set drawn around a mean (`rhema_difficulty.py set
 --allowed ...`) mixes them.
 
 | grammar (default) | price 1 | price 2 | price 3 | price 4 |
 | --- | --- | --- | --- | --- |
-| `vector.ag` (2) | parallel vector | dot product, norm, same direction | unit vector | cross product |
-| `sequence.ag` (2) | arithmetic nth term | geometric nth term, arithmetic sum | geometric sum | |
-| `library_linear.ag` (3) | | one bracket | brackets on both sides | fraction |
-| `library_quadratic.ag` (3) | | two integer roots | repeated root, no real roots | two rational roots |
-| `library_polynomial.ag` (3) | evaluation | degree | expansion, coefficient | derivative |
-| `library_formula.ag` (3) | | composition | logarithm, radical, tangent | quotient, combined |
+| `vector.rhm` (2) | parallel vector | dot product, norm, same direction | unit vector | cross product |
+| `sequence.rhm` (2) | arithmetic nth term | geometric nth term, arithmetic sum | geometric sum | |
+| `library_linear.rhm` (3) | | one bracket | brackets on both sides | fraction |
+| `library_quadratic.rhm` (3) | | two integer roots | repeated root, no real roots | two rational roots |
+| `library_polynomial.rhm` (3) | evaluation | degree | expansion, coefficient | derivative |
+| `library_formula.rhm` (3) | | composition | logarithm, radical, tangent | quotient, combined |
 
-Two smaller cleanups came with the pricing: `boolean.ag` and
-`boolean_equiv.ag` no longer negate a negation (`\neg \neg C` read as a
+Two smaller cleanups came with the pricing: `boolean.rhm` and
+`boolean_equiv.rhm` no longer negate a negation (`\neg \neg C` read as a
 slip, and a negated variable needs no brackets when spliced into a law), and
-`arithmetic.ag` no longer subtracts equal values (`6 - 6`).
+`arithmetic.rhm` no longer subtracts equal values (`6 - 6`).
 
 These prices rank the forms within one grammar by the work they ask for;
 they are not comparable across grammars. What the budget cannot buy in a
@@ -398,7 +398,7 @@ fixed form is the size of its numbers, which stays random: a sequence with
 `n = 8` costs the same as one with `n = 2`. Giving such a form a scalable
 part (a larger index, a bigger exponent) would be a change of question.
 
-`tools/ag_difficulty.py` reports `no question at this budget` for a budget a
+`tools/rhema_difficulty.py` reports `no question at this budget` for a budget a
 grammar has nothing at, and `set --allowed 1,2,3,4` draws only from the
 budgets a grammar of fixed forms accepts.
 
@@ -418,17 +418,17 @@ budgets a grammar of fixed forms accepts.
    question. If some values cannot be spent, add a rule for the gap or lower
    a price; a rule whose guard depends on a random value must be backed by a
    guarantee that the value it needs is always drawn.
-6. Add a test like section 3 of `ag_boolean_test.ml`, section 2b of `ag_engine_test.ml` or `check_cost_budget` in `ag_calculus_test.ml` and `ag_set_test.ml`: generation succeeds at
-   every budget in range, `Ag_engine.consumption tree "cost"` equals the
+6. Add a test like section 3 of `rhema_boolean_test.ml`, section 2b of `rhema_engine_test.ml` or `check_cost_budget` in `rhema_calculus_test.ml` and `rhema_set_test.ml`: generation succeeds at
+   every budget in range, `Rhema_engine.consumption tree "cost"` equals the
    budget, and an independent reader re-prices the printed expression to the
    same number.
-7. Run `tools/ag_difficulty.py report` and look at the distinct share before
+7. Run `tools/rhema_difficulty.py report` and look at the distinct share before
    choosing levels.
 
 ## 12. What this does not do
 
 - It prices the expression, not the wording. The wording is held constant.
-- It does not compare question types: a cost of 10 in `boolean.ag` and a cost
+- It does not compare question types: a cost of 10 in `boolean.rhm` and a cost
   of 10 in another grammar are not the same difficulty.
 - It does not know whether the prices match what students find hard. That
   needs results from a class, and is the next step once the course test has

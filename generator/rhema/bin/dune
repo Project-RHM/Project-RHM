@@ -1,0 +1,6 @@
+(executable
+ (name rhema_main)
+ (public_name rhema)
+ (package rhema)
+ (modules rhema_main)
+ (libraries rhema))
