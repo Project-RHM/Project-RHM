@@ -1,0 +1,53 @@
+# ==========================================================================
+#  A sequence question in two parts
+#
+#  One sequence, two answer blanks: (a) its nth term, (b) the sum of its
+#  first n terms. The blanks are placed in the prompt with {answer ...} and
+#  are graded separately.
+#
+#  Difficulty is the budget `cost`, spent exactly; each form is offered at
+#  its price alone: arithmetic 2, geometric 3.
+# ==========================================================================
+
+attribute cost = 2 split
+
+random first      = integer_between(-10, 10)
+random difference = nonzero_integer_between(-8, 8)
+random ratio      = nonzero_integer_between(-5, 5)
+random index      = integer_between(2, 8)
+
+let first_text      = str(first)
+let difference_text = str(difference)
+let ratio_text      = str(ratio)
+let index_text      = str(index)
+
+synth kind on Q
+synth text on Q
+synth nth on Q
+synth sum on Q
+
+start Q
+
+Q -> "arithmetic" when cost = 2 weight 3 {
+  cost = -2
+  kind = "arithmetic"
+  text = "An arithmetic sequence has first term [`a_1 = " ++ first_text
+         ++ "`] and common difference [`d = " ++ difference_text ++ "`]."
+  nth  = first + (index - 1) * difference
+  sum  = index * (2 * first + (index - 1) * difference) / 2
+}
+
+# cond is lazy, so r = 1 does not evaluate the division.
+Q -> "geometric" when cost = 3 weight 2 {
+  cost = -3
+  kind = "geometric"
+  text = "A geometric sequence has first term [`a_1 = " ++ first_text
+         ++ "`] and common ratio [`r = " ++ ratio_text ++ "`]."
+  nth  = first * (ratio ^ (index - 1))
+  sum  = cond(ratio = 1, first * index, first * ((ratio ^ index) - 1) / (ratio - 1))
+}
+
+prompt "{Q.text}
+(a) Find [`a_{{{index_text}}}`]: {answer Q.nth}
+(b) Find the sum [`S_{{{index_text}}}`]: {answer Q.sum}"
+width 10

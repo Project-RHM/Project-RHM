@@ -1,0 +1,71 @@
+# ==========================================================================
+#  A system of three linear equations
+#
+#  The solution (x, y, z) is chosen first. The coefficient matrix is built
+#  as a product of unit triangular matrices with small whole entries, so it
+#  is invertible and the solution is the one chosen; each row is then
+#  multiplied by 1, 2 or 3 so the system does not look factored. The right
+#  side is the matrix applied to the solution. Three answer blanks, one per
+#  unknown, are placed in the prompt.
+#
+#  Difficulty is the budget `cost`, spent exactly; each form is fixed and
+#  offered at its price alone: a triangular system (back substitution) 3,
+#  a full system 5.
+# ==========================================================================
+
+context "Numeric"
+
+attribute cost = 5 split
+
+random x1 = integer_between(-5, 5)
+random x2 = integer_between(-5, 5)
+random x3 = integer_between(-5, 5)
+random u1 = nonzero_integer_between(-2, 2)
+random u2 = integer_between(-2, 2)
+random u3 = nonzero_integer_between(-2, 2)
+random v1 = nonzero_integer_between(-2, 2)
+random v2 = integer_between(-2, 2)
+random v3 = nonzero_integer_between(-2, 2)
+random s1 = integer_between(1, 3)
+random s2 = integer_between(1, 3)
+random s3 = integer_between(1, 3)
+
+let lower = matrix3(1, 0, 0, u1, 1, 0, u2, u3, 1)
+let upper = matrix3(1, v1, v2, 0, 1, v3, 0, 0, 1)
+let scaling = matrix3(s1, 0, 0, 0, s2, 0, 0, 0, s3)
+let full = matrix_multiply(scaling, matrix_multiply(lower, upper))
+let triangular = matrix_multiply(scaling, upper)
+let solution = vector3(x1, x2, x3)
+
+synth kind on Q
+synth text on Q
+synth matrix on Q
+synth rhs on Q
+
+start Q
+
+Q -> "triangular" when cost = 3 weight 2 {
+  cost = -3
+  kind = "triangular"
+  matrix = triangular
+  rhs = matrix_vector(matrix, solution)
+  text = "Solve the system of equations:
+[`" ++ matrix_row_latex(matrix, 1) ++ " = " ++ str(vector_entry(rhs, 1)) ++ "`]
+[`" ++ matrix_row_latex(matrix, 2) ++ " = " ++ str(vector_entry(rhs, 2)) ++ "`]
+[`" ++ matrix_row_latex(matrix, 3) ++ " = " ++ str(vector_entry(rhs, 3)) ++ "`]"
+}
+
+Q -> "full" when cost = 5 weight 3 {
+  cost = -5
+  kind = "full"
+  matrix = full
+  rhs = matrix_vector(matrix, solution)
+  text = "Solve the system of equations:
+[`" ++ matrix_row_latex(matrix, 1) ++ " = " ++ str(vector_entry(rhs, 1)) ++ "`]
+[`" ++ matrix_row_latex(matrix, 2) ++ " = " ++ str(vector_entry(rhs, 2)) ++ "`]
+[`" ++ matrix_row_latex(matrix, 3) ++ " = " ++ str(vector_entry(rhs, 3)) ++ "`]"
+}
+
+prompt "{Q.text}
+[`x = `] {answer x1}, [`y = `] {answer x2}, [`z = `] {answer x3}"
+width 6

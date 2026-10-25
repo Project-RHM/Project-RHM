@@ -1,0 +1,124 @@
+# ==========================================================================
+# Three-dimensional vector questions.
+#
+# vector_mode = 0  mixed
+#               1  dot product
+#               2  cross product
+#               3  norm
+#               4  unit vector
+#               5  any parallel vector
+#               6  vector in the same direction
+# ==========================================================================
+
+context "Vector"
+
+attribute vector_mode = 0 copy
+# Difficulty is the budget `cost`, spent exactly. Every form is fixed, so each
+# is offered at its price alone: parallel 1, dot, norm and same direction 2,
+# unit 3, cross 4. A set drawn around a mean mixes them.
+attribute cost = 2 split
+
+
+# The first component is nonzero, so every generated vector has a defined
+# direction and a unit vector.
+random u1 = nonzero_integer_between(-9, 9)
+random u2 = integer_between(-9, 9)
+random u3 = integer_between(-9, 9)
+random v1 = nonzero_integer_between(-9, 9)
+random v2 = integer_between(-9, 9)
+random v3 = integer_between(-9, 9)
+random w1 = nonzero_integer_between(-9, 9)
+random w2 = integer_between(-9, 9)
+random w3 = integer_between(-9, 9)
+
+let vec_u = vector3(u1, u2, u3)
+let vec_v = vector3(v1, v2, v3)
+let vec_w = vector3(w1, w2, w3)
+
+let definitions = "Suppose the vectors:
+- [`\vec{u} = " ++ vector_latex(vec_u) ++ "`]
+- [`\vec{v} = " ++ vector_latex(vec_v) ++ "`]
+- [`\vec{w} = " ++ vector_latex(vec_w) ++ "`]"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+synth value on V
+synth latex on V
+synth label on V
+
+start Q
+
+Q -> V V "dot" when (vector_mode = 0 or vector_mode = 1) and cost = 2 weight 3 {
+  cost = -2
+  require $1.label != $2.label
+  kind = "dot"
+  text = definitions ++ "
+Compute [`" ++ $1.latex ++ " \cdot " ++ $2.latex ++ "`]."
+  answer_value = vector_dot($1.value, $2.value)
+}
+
+Q -> V V "cross" when (vector_mode = 0 or vector_mode = 2) and cost = 4 weight 3 {
+  cost = -4
+  require $1.label != $2.label
+  kind = "cross"
+  text = definitions ++ "
+Compute [`" ++ $1.latex ++ " \times " ++ $2.latex ++ "`]."
+  answer_value = vector_cross($1.value, $2.value)
+  require not vector_is_zero(answer_value)
+}
+
+Q -> V "norm" when (vector_mode = 0 or vector_mode = 3) and cost = 2 weight 2 {
+  cost = -2
+  kind = "norm"
+  text = definitions ++ "
+Compute [`\left\|" ++ $1.latex ++ "\right\|`]."
+  answer_value = vector_norm_answer($1.value)
+}
+
+Q -> V "unit" when (vector_mode = 0 or vector_mode = 4) and cost = 3 weight 2 {
+  cost = -3
+  kind = "unit"
+  text = definitions ++ "
+Enter a unit vector in the direction of [`" ++ $1.latex ++ "`]."
+  answer_value = vector_unit_answer($1.value)
+}
+
+Q -> V "parallel" when (vector_mode = 0 or vector_mode = 5) and cost = 1 weight 2 {
+  cost = -1
+  kind = "parallel"
+  text = definitions ++ "
+Enter a vector parallel to [`" ++ $1.latex ++ "`]."
+  answer_value = vector_parallel_answer($1.value)
+}
+
+Q -> V "same_direction" when (vector_mode = 0 or vector_mode = 6) and cost = 2 weight 2 {
+  cost = -2
+  kind = "same_direction"
+  text = definitions ++ "
+Enter a vector in the same direction as [`" ++ $1.latex ++ "`]."
+  answer_value = vector_same_direction_answer($1.value)
+}
+
+V -> "u" weight 1 {
+  value = vec_u
+  latex = "\vec{u}"
+  label = "u"
+}
+
+V -> "v" weight 1 {
+  value = vec_v
+  latex = "\vec{v}"
+  label = "v"
+}
+
+V -> "w" weight 1 {
+  value = vec_w
+  latex = "\vec{w}"
+  label = "w"
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
+width 24

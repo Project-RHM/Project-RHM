@@ -1,0 +1,89 @@
+# ==========================================================================
+#  Arithmetic and geometric sequences
+#
+#  One specification covers four question forms. Question-level random values
+#  are drawn once, while weighted Q rules decide which form is asked.
+# ==========================================================================
+
+random first      = integer_between(-10, 10)
+random difference = nonzero_integer_between(-8, 8)
+random ratio      = nonzero_integer_between(-5, 5)
+random index      = integer_between(2, 8)
+
+# Difficulty is the budget `cost`, spent exactly. Every form is fixed, so each
+# is offered at its price alone: arithmetic nth term 1, geometric nth term
+# and arithmetic sum 2, geometric sum 3.
+attribute cost = 2 split
+
+
+let first_text      = str(first)
+let difference_text = str(difference)
+let ratio_text      = str(ratio)
+let index_text      = str(index)
+
+synth kind on Q
+synth first_value on Q
+synth step_value on Q
+synth index_value on Q
+synth text on Q
+synth value on Q
+
+start Q
+
+# Arithmetic nth term: a_n = a_1 + (n - 1)d
+Q -> "arithmetic_nth" when cost = 1 weight 3 {
+  cost = -1
+  kind        = "arithmetic_nth"
+  first_value = first
+  step_value  = difference
+  index_value = index
+  text        = "An arithmetic sequence has first term [`a_1 = " ++ first_text
+                ++ "`] and common difference [`d = " ++ difference_text
+                ++ "`]. Find [`a_{" ++ index_text ++ "}`]."
+  value       = first + (index - 1) * difference
+}
+
+# Geometric nth term: a_n = a_1 r^(n - 1)
+Q -> "geometric_nth" when cost = 2 weight 3 {
+  cost = -2
+  kind        = "geometric_nth"
+  first_value = first
+  step_value  = ratio
+  index_value = index
+  text        = "A geometric sequence has first term [`a_1 = " ++ first_text
+                ++ "`] and common ratio [`r = " ++ ratio_text
+                ++ "`]. Find [`a_{" ++ index_text ++ "}`]."
+  value       = first * (ratio ^ (index - 1))
+}
+
+# Arithmetic finite sum: S_n = n(2a_1 + (n - 1)d)/2
+Q -> "arithmetic_sum" when cost = 2 weight 2 {
+  cost = -2
+  kind        = "arithmetic_sum"
+  first_value = first
+  step_value  = difference
+  index_value = index
+  text        = "An arithmetic sequence has first term [`a_1 = " ++ first_text
+                ++ "`] and common difference [`d = " ++ difference_text
+                ++ "`]. Find the sum [`S_{" ++ index_text ++ "}`]."
+  value       = index * (2 * first + (index - 1) * difference) / 2
+}
+
+# Geometric finite sum. cond is lazy, so r = 1 does not evaluate the division.
+Q -> "geometric_sum" when cost = 3 weight 2 {
+  cost = -3
+  kind        = "geometric_sum"
+  first_value = first
+  step_value  = ratio
+  index_value = index
+  text        = "A geometric sequence has first term [`a_1 = " ++ first_text
+                ++ "`] and common ratio [`r = " ++ ratio_text
+                ++ "`]. Find the sum [`S_{" ++ index_text ++ "}`]."
+  value       = cond(ratio = 1,
+                     first * index,
+                     first * ((ratio ^ index) - 1) / (ratio - 1))
+}
+
+prompt "{Q.text}"
+answer Q.value
+width 10

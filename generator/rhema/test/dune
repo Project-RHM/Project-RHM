@@ -1,0 +1,184 @@
+(tests
+ (names rhema_test rhema_engine_test)
+ (modules rhema_test rhema_engine_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_boolean_core_test)
+ (modules rhema_boolean_core_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_matrix_core_test)
+ (modules rhema_matrix_core_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+; The two Boolean suites share one independent reader for the questions.
+(tests
+ (names rhema_boolean_test rhema_equiv_test rhema_logic_forms_test)
+ (modules rhema_boolean_test rhema_equiv_test rhema_logic_forms_test rhema_boolean_reader)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_sequence_test)
+ (modules rhema_sequence_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_complex_test)
+ (modules rhema_complex_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_calculus_test)
+ (modules rhema_calculus_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_factoring_test)
+ (modules rhema_factoring_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_polynomial_expand_test)
+ (modules rhema_polynomial_expand_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_vector_expr_test)
+ (modules rhema_vector_expr_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_linear_equation_test)
+ (modules rhema_linear_equation_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_matrix_test)
+ (modules rhema_matrix_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_language_test)
+ (modules rhema_language_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_cli_test)
+ (modules rhema_cli_test)
+ (libraries rhema str)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_sets_test)
+ (modules rhema_sets_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_questions_test)
+ (modules rhema_questions_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_modules_test)
+ (modules rhema_modules_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_algebra_core_test)
+ (modules rhema_algebra_core_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_library_specs_test)
+ (modules rhema_library_specs_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_set_test)
+ (modules rhema_set_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_vector_test)
+ (modules rhema_vector_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_visualization_test)
+ (modules rhema_visualization_test)
+ (libraries rhema)
+ (package rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+; The round-trip check needs the project's own PG front-end as well.
+(test
+ (name rhema_pgml_test)
+ (modules rhema_pgml_test)
+ (libraries rhema pg_core)
+ (package rhema))
+

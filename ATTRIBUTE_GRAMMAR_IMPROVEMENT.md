@@ -42,7 +42,7 @@ config_setting/config.json
         │
         │ max_expr_depth 作为初始 len
         ▼
-generator/arithmetic.ag
+generator/arithmetic.rhm
         │
         │ 解析属性、产生式、guard、weight
         ▼
@@ -68,7 +68,7 @@ Ast.math_expr
 
 属性文法核心模块，负责：
 
-- 解析 `.ag` 文法；
+- 解析 `.rhm` 文法；
 - 校验属性名、初始值、规则权重和更新值；
 - 维护生成时的属性环境；
 - 根据 guard 筛选合法规则；
@@ -80,7 +80,7 @@ Ast.math_expr
 - 避免生成除零表达式；
 - 提供操作符计数和表达式求值函数供测试使用。
 
-### `generator/arithmetic.ag`
+### `generator/arithmetic.rhm`
 
 算术题的声明式属性文法。默认内容：
 
@@ -122,7 +122,7 @@ Attribute_grammar.generate_math_expr
 - 生成表达式能否正常求值；
 - 是否避免除零；
 - 相同随机 seed 是否生成相同 AST；
-- `generator/arithmetic.ag` 是否能被正确加载。
+- `generator/arithmetic.rhm` 是否能被正确加载。
 
 ### `generator/dune`
 
@@ -199,7 +199,7 @@ attribute digit = 2 copy
 attribute digit = 3 copy
 ```
 
-即可生成三位整数。修改 `.ag` 文件后不需要重新编译 OCaml，下一次生成时会重新读取文法。
+即可生成三位整数。修改 `.rhm` 文件后不需要重新编译 OCaml，下一次生成时会重新读取文法。
 
 ### 5.3 `guard`
 
@@ -269,7 +269,7 @@ max_expr_depth
 
 字段名暂时没有修改，以避免同时改动 Flask 配置、HTML 表单和已有 JSON。后续可以将其重命名为 `arithmetic_operator_budget` 或 `arithmetic_len`。
 
-`.ag` 文件里的默认 `len` 会被 `max_expr_depth` 覆盖；默认 `digit` 仍从 `.ag` 文件读取。
+`.rhm` 文件里的默认 `len` 会被 `max_expr_depth` 覆盖；默认 `digit` 仍从 `.rhm` 文件读取。
 
 ## 7. 示例结果
 
@@ -381,14 +381,14 @@ http://127.0.0.1:5001
 默认情况下，程序会依次查找：
 
 ```text
-arithmetic.ag
-generator/arithmetic.ag
+arithmetic.rhm
+generator/arithmetic.rhm
 ```
 
 也可以通过环境变量指定其他文件：
 
 ```bash
-ATTRIBUTE_GRAMMAR_FILE=/absolute/path/custom_arithmetic.ag \
+ATTRIBUTE_GRAMMAR_FILE=/absolute/path/custom_arithmetic.rhm \
 python3 -m flask --app app run --port 5001
 ```
 
@@ -461,7 +461,7 @@ Formula('4.87708333333')
 
 1. 将 `max_expr_depth` 重命名为更准确的运算符预算字段；
 2. 解决三位有效数字和 WeBWorK tolerance 不一致的问题；
-3. 增加 `.ag` 文件语法错误测试；
+3. 增加 `.rhm` 文件语法错误测试；
 4. 增加生成结果分布测试，验证 weight 是否符合预期；
 5. 将 Boolean Expression 作为第二个 Attribute Grammar 迁移对象；
 6. 增加综合属性，用声明式规则计算表达式值；
@@ -495,7 +495,7 @@ python3 tools/test_question_types.py \
 ```text
 ATTRIBUTE_GRAMMAR_IMPROVEMENT.md
 README.md
-generator/arithmetic.ag
+generator/arithmetic.rhm
 generator/attribute_grammar.ml
 generator/attribute_grammar_test.ml
 generator/dune
@@ -503,3 +503,168 @@ generator/generator.ml
 ```
 
 测试生成的 `.pg`、AST、HTML 和 `_build` 目录通常不应该作为本次功能提交的核心内容，是否提交取决于团队现有仓库规范。
+
+## 13. 布尔题的「手写感」改造（2026-09-09）
+
+求值题（`boolean.rhm`）和判等价题（`boolean_equiv.rhm`）要直接放进学生作业，
+所以除了答案正确，还要求一套题看起来和老师手出的没有区别。本节记录为此做的
+改动、检查手段和验收数字。改动全部在 `.rhm` 文件和测试里，引擎没有动。
+
+### 13.1 原来的题哪里像机器出的
+
+用 `rhema` 各生成 12 道对照，问题集中在四处：
+
+1. 冗余子式：`A \land (A \land B)`、`C \lor (C \lor B)`、`B \land (B \lor C)`。
+   原来的 `require $1.latex != $3.latex` 只拦完全相同的两边。
+2. 连接词混搭：`B \oplus C \leftrightarrow B \lor A`，教材题不会把 ⊕、→、↔
+   塞进同一道题。
+3. 括号只按优先级加：`C \lor B \land C \to A`、`B \to A \to A \land C`，
+   出题人恰恰会避免让学生猜优先级和结合性。
+4. 题干：`- A = \mathsf{T}` 写在数学模式外面（WeBWorK 会显示成原文）；
+   每题恰好 3 个连接词；等价题两个式子用逗号挤在一个数学块里，
+   错误项全是「同一条定律换一个连接词」，成立/不成立的比例 60/40。
+
+### 13.2 表达式规则
+
+两份文法的二元规则共用三条 `require`，靠三个综合属性实现：
+`vars`（用到的变量，位掩码 A=1 B=2 C=4）、`atom`（是否为变量或带否定的变量）、
+`chain`（在同一连接词的平铺链里「单独出现」的变量）。
+
+```text
+require $1.vars != $3.vars                     # 两边不得覆盖同一组变量
+require bit_and(chain_from($1), $3.vars) = 0   # 链里单独出现的变量不得再出现在另一操作数里
+require bit_and(chain_from($3), $1.vars) = 0
+```
+
+其中 `chain_from($n)` 在文法里写作 `cond($n.atom = 1 or $n.op = X, $n.chain, 0)`，
+X 是本条规则的连接词。效果：
+
+- 拦掉 `A \land A`、`A \lor \neg A`、`(A \land B) \lor (B \land A)`；
+- 拦掉 `A \land (A \land B)`、`\neg B \lor (B \lor C)`、`A \lor C \lor C \lor \neg B`；
+- 保留 `(A \lor B) \land (\neg A \lor C)` 这种两个复合操作数共用变量的写法，
+  这正是人复用变量的方式。
+
+其余规则：
+
+- 括号：`\land`/`\lor` 同连接词的链平铺（`A \land B \land C`），混合连接词、
+  `\to`/`\leftrightarrow`/`\oplus` 的非原子操作数一律加括号，否定式不加括号。
+  括号由规则里的 `cond(...)` 手工决定，不再依赖 `infix` 的优先级判断。
+- 否定：`E -> "\neg" V when len = 0` 让带否定的变量作为叶子免费出现
+  （不占连接词预算），`E -> "\neg" E when len > 1` 只对复合式取反，
+  不会产生 `\neg \neg`。
+- 规模：`len` 改为上限，`S` 层按 1:2:1 削去 2/1/0 个预算，默认 `len = 4`
+  得到 2、3、4 个连接词。预算只能减不能加，所以只能从上限往下削。
+- 稀有连接词：新增预算 `extras`（默认 1），`\to`/`\leftrightarrow`/`\oplus`
+  共用，一题最多一个；`T` 层再以 50% 概率放弃这个预算。
+  `--set extras=0` 得到只有 ¬ ∧ ∨ 的基础题。
+- 赋值：`require ta != tb or tb != tc`，不出全真或全假的赋值。
+- 题干：三种问法轮换，赋值写在数学模式内；等价题分两行或写成 `\equiv` 一行，
+  `flip` 随机决定哪一边先出现。
+
+### 13.3 等价题的定律
+
+19 条：成立 10 条（De Morgan ×2、蕴含改析取、蕴含改否定合取、逆否、双重否定、
+吸收、分配、双条件拆两个蕴含、换序重排），常见错误 9 条（De Morgan 不换连接词 ×2、
+De Morgan 漏否定、逆命题、否命题、蕴含否定放错边、分配漏一半、吸收反写、
+双条件只留一个蕴含）。`holds` 一律由真值表比较得出，不是断言。
+
+各定律的出现频率不等于 weight：`require` 拒绝率高的定律会被稀释，
+所以 weight 是按 `--ast-out` 统计的实际频率反推调的。
+
+### 13.4 测试
+
+`rhema_boolean_reader.ml` 是两套测试共用的独立读回器：把题干里的表达式解析成树，
+自行求值、自行按上面的括号策略重新渲染。测试项：
+
+| 检查 | 求值题 | 等价题 |
+|---|---|---|
+| 答案与题面一致 | 300 seeds | 300 seeds，8 组赋值逐一比较 |
+| 预算含义：`len` 上限、`extras` 上限 | 每个 len 0..6 各 40 seeds | — |
+| 不出现冗余子式、`\neg \neg`、全同赋值 | 500 seeds | 500 seeds（吸收律除外） |
+| 重新渲染等于原文（括号策略） | 500 seeds | 500 seeds |
+| 答案比例在 40%–60% | 1000 seeds | 1000 seeds |
+| 各种问法都出现 | 100 seeds | 100 seeds |
+
+### 13.5 度量工具
+
+```bash
+cd generator && dune build && cd ..
+python3 tools/rhema_stats.py generator/stdlib/boolean.rhm --count 3000
+python3 tools/rhema_stats.py generator/stdlib/boolean_equiv.rhm --count 3000 --samples 8
+python3 tools/rhema_stats.py generator/stdlib/boolean.rhm --set extras=0
+```
+
+输出不重复率、答案比例、连接词数分布、稀有连接词分布和问法分布。
+改文法前后各跑一次对照。
+
+### 13.6 验收数字（3000 道，seed 1）
+
+| | 改前 | 改后 |
+|---|---|---|
+| 求值题答案为 1 | 54% | 53% |
+| 求值题连接词数 | 全部 3 | 2 / 3 / 4 = 731 / 1533 / 736 |
+| 求值题含 →/↔/⊕ | 77% | 34% |
+| 等价题答案为 1 | 64% | 49% |
+| 等价题 3000 道中不重复 | 71% | 65% |
+
+### 13.7 已知限制
+
+- 等价题的空间只有几千道：三个变量、定律模板固定。按学号播种一个班没问题，
+  做整学期题库会撞题。扩空间要加第四个变量，而真值表现在是硬编码的 8 位整数
+  （`V -> "A" { table = 240 }`），需要引擎侧加一个布尔公式值类型由引擎算真值表。
+- 解答步骤：推导树上每个节点的 `value` 已经算出，按顺序输出就是解题过程，
+  但需要 `rhema`/`rhema_pgml` 支持 PGML solution 块，是引擎工作。
+- `rhema_pgml.ml` 把 `Context("Numeric")` 写死，答案只能是 1/0。
+- 变量名沿用 A、B、C；命题逻辑教材常用 p、q、r，只需改 `V` 规则。
+
+### 13.8 第二轮：公式值类型与课程校准（2026-09-21）
+
+第一轮把「像人写的」写成了文法里的位掩码和手工括号，能用但难读，真值表也写死在
+三个变量上。第二轮把这些搬进引擎，并按 MATH2003 的真实作业重新校准。
+
+**引擎：`rhema_boolean.ml`。** 命题公式成为一等值，`bool_*` 内建函数见
+`RHEMA_LANGUAGE_GUIDE.md`。等价由枚举全部赋值决定，变量个数不限；渲染按课程括号
+习惯；`bool_is_tidy` 一个函数判定「人不会这么写」的形状；`bool_sensitivity`
+给出某赋值下有几个变量翻转会改变答案。两个公式用 `=` 比较即逻辑等价。
+
+**文法。** `boolean.rhm` 每条规则只剩 `f = bool_and($1.f, $3.f)` 和
+`require bool_is_tidy(f)`；`boolean_equiv.rhm` 每条定律只写一次公式，题面和答案
+都从它派生，成立的定律 `require bool_equivalent(fa, fb)` 作断言，错误定律
+`require not bool_equivalent(fa, fb)` 让碰巧成立的重抽。
+
+按作业校准的改动：
+
+- 变量 p、q、r；
+- →、↔、⊕ 是主菜不是稀有品：`extras` 默认 2，→ 权重最高，85% 的求值题含至少一个；
+- 否定只挂在变量上、每式最多 2 个、不再整体取反；
+- 三个及以上叶子时变量用满；
+- 赋值按敏感度挑：`require bool_sensitivity(f, names, mask) >= 2`，至少两个变量
+  必须读到才能得出答案，原来 56% 的题看一个变量就能答；
+- 答案先抛硬币再生成：`require value = target`，两种答案严格对半；
+- 等价题补了作业里考的定律族：→ 对 ∨、∧ 的分配律，输出律，→ 不满足结合律而
+  ↔、⊕ 满足，否定蕴含，双条件的两种展开。共 17 条成立、13 条错误。
+
+**编排工具 `tools/rhema_set.py`。** 一份作业不是独立抽样。工具先用 `rhema` 生成
+题池，再按约束挑出 a) b) c)：难度从易到难、骨架（变量重命名后）不重复、每条定律
+考一次、答案无三连、同一大题同一种问法。按学号播种可复现，`--pg` 直接输出
+WeBWorK 文档。
+
+```bash
+python3 tools/rhema_set.py generator/stdlib/boolean.rhm:3 generator/stdlib/boolean_equiv.rhm:4 --seed 2330026211
+```
+
+**验收数字（1000 道）：**
+
+| | 第一轮 | 第二轮 |
+|---|---|---|
+| 答案由单个变量决定 | 56% | 0% |
+| 整体取反 | 35% | 0% |
+| 3 个以上否定 | 23% | 0% |
+| 只用了 2 个变量却给 3 个赋值 | 7% | 0% |
+| 求值题答案为 1 | 53% | 50% |
+| 等价题答案为 1 | 49% | 54% |
+| 生成耗时 | 4.2 ms/题 | 2.8 ms/题 |
+
+**仍未做的：** 盲测（需要真题混生成题让人分辨）；解答步骤输出；一道大题下
+共用题干的 PGML 排版还只是 `rhema_set.py --pg` 的简单版本。
+

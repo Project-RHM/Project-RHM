@@ -1,0 +1,85 @@
+# ==========================================================================
+#  The inverse of a matrix
+#
+#  The matrix is built as a product of a unit lower and a unit upper
+#  triangular matrix with small whole entries, so its determinant is 1 and
+#  its inverse has whole entries; a random swap of the columns (determinant
+#  -1) and a random transpose add variety without changing that. A scaled
+#  form multiplies the matrix by 2 or 3, so the inverse has fractions.
+#
+#  Difficulty is the budget `cost`, spent exactly; every form is fixed and
+#  offered at its price alone: 2 by 2 2, scaled 3, 3 by 3 5, scaled 6.
+# ==========================================================================
+
+context "Matrix"
+
+attribute cost = 2 split
+
+random p = nonzero_integer_between(-3, 3)
+random q = nonzero_integer_between(-3, 3)
+random u1 = integer_between(-2, 2)
+random u2 = integer_between(-2, 2)
+random u3 = integer_between(-2, 2)
+random v1 = integer_between(-2, 2)
+random v2 = integer_between(-2, 2)
+random v3 = integer_between(-2, 2)
+random swap = boolean
+random flip = boolean
+random k = integer_between(2, 3)
+
+# A 2 by 2 unimodular matrix: [1 q; p pq+1] has determinant 1.
+let base2 = matrix2(1, q, p, p * q + 1)
+let swapped2 = cond(swap, matrix_multiply(base2, matrix2(0, 1, 1, 0)), base2)
+let a2 = cond(flip, matrix_transpose(swapped2), swapped2)
+
+# A 3 by 3 one: L U with unit diagonals.
+let lower = matrix3(1, 0, 0, u1, 1, 0, u2, u3, 1)
+let upper = matrix3(1, v1, v2, 0, 1, v3, 0, 0, 1)
+let base3 = matrix_multiply(lower, upper)
+let swapped3 = cond(swap, matrix_multiply(base3, matrix3(0, 1, 0, 1, 0, 0, 0, 0, 1)), base3)
+let a3 = cond(flip, matrix_transpose(swapped3), swapped3)
+
+synth kind on Q
+synth text on Q
+synth matrix on Q
+synth answer_value on Q
+
+start Q
+
+Q -> "small" when cost = 2 weight 3 {
+  cost = -2
+  kind = "small"
+  matrix = a2
+  require matrix != matrix_identity(2)
+  text = "Find the inverse of [`A = " ++ matrix_latex(matrix) ++ "`]."
+  answer_value = matrix_inverse(matrix)
+}
+
+Q -> "small_scaled" when cost = 3 weight 2 {
+  cost = -3
+  kind = "small_scaled"
+  matrix = matrix_scale(k, a2)
+  text = "Find the inverse of [`A = " ++ matrix_latex(matrix) ++ "`]."
+  answer_value = matrix_inverse(matrix)
+}
+
+Q -> "large" when cost = 5 weight 3 {
+  cost = -5
+  kind = "large"
+  matrix = a3
+  require matrix != matrix_identity(3)
+  text = "Find the inverse of [`A = " ++ matrix_latex(matrix) ++ "`]."
+  answer_value = matrix_inverse(matrix)
+}
+
+Q -> "large_scaled" when cost = 6 weight 2 {
+  cost = -6
+  kind = "large_scaled"
+  matrix = matrix_scale(k, a3)
+  text = "Find the inverse of [`A = " ++ matrix_latex(matrix) ++ "`]."
+  answer_value = matrix_inverse(matrix)
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
+width 30

@@ -1,0 +1,44 @@
+# ==========================================================================
+#  One tree, two questions: expand it, or factor it
+#
+#  The tree of factors comes from polynomial_core.rhm. The "expand" form
+#  shows the factors and asks for the expansion, a Numeric answer; the
+#  "factor" form shows the expansion and asks for the factors, an answer in
+#  the PolynomialFactors context. Each form names its own context, so one
+#  .pg file carries both kinds of question.
+#
+#    rhema run polynomial_forms.rhm --set cost=5
+# ==========================================================================
+
+include "polynomial_core.rhm"
+
+context "Numeric"
+
+synth kind on Q
+synth pg_context on Q          # each form says which WeBWorK context it needs
+synth text on Q
+synth answer_value on Q
+
+start Q
+
+Q -> E "expand" weight 1 {
+  require $1.factors >= 2
+  kind = "expand"
+  pg_context = "Numeric"
+  text = "Expand and collect like terms:
+[`" ++ $1.latex ++ "`]."
+  answer_value = $1.poly
+}
+
+Q -> E "factor" weight 1 {
+  require $1.factors >= 2
+  kind = "factor"
+  pg_context = "PolynomialFactors"
+  text = "Factor completely:
+[`" ++ polynomial_latex($1.poly) ++ "`]."
+  answer_value = $1.factored
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
+width 40

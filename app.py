@@ -25,12 +25,15 @@ OCAML_PROJECT_DIR = os.path.join(BASE_DIR, "generator")
 OCAML_PROGRAM_PATH = os.path.join(OCAML_PROJECT_DIR, "_build/default/unparser.exe")
 
 # The attribute-grammar path. Unlike the generator above, this one is driven by
-# a .ag file: what a question looks like, what it asks, and how hard it is all
+# a .rhm file: what a question looks like, what it asks, and how hard it is all
 # come from that file, so changing any of it means editing the file rather than
 # rebuilding OCaml.
-AG_PROGRAM_PATH = os.path.join(OCAML_PROJECT_DIR, "_build/default/ag/agrun.exe")
-AG_GRAMMAR_DIR = os.path.join(OCAML_PROJECT_DIR, "ag")
-AG_DEFAULT_GRAMMAR = "arithmetic.ag"
+RHEMA_COMMAND = os.path.join(OCAML_PROJECT_DIR, "_build/install/default/bin/rhema")
+# Grammars a user writes or edits in the browser live here; the shipped
+# library is read from RHEMA_STDLIB_DIR beside it. Both are offered in the list.
+RHEMA_GRAMMAR_DIR = os.path.join(OCAML_PROJECT_DIR, "grammars")
+RHEMA_STDLIB_DIR = os.path.join(OCAML_PROJECT_DIR, "stdlib")
+RHEMA_DEFAULT_GRAMMAR = "arithmetic.rhm"
 CONFIG_JSON_PATH = os.path.join(BASE_DIR, "config_setting/config.json")
 CONFIG_ML_TEMPLATE_PATH = os.path.join(BASE_DIR, "config_setting/config.ml.template")
 
@@ -835,52 +838,106 @@ def check_context_status():
     except Exception as e:
         return jsonify({'success': False, 'error': f'Error checking context status: {str(e)}'})
 
-def list_ag_grammars():
-    """The .ag files a user can choose from."""
-    if not os.path.isdir(AG_GRAMMAR_DIR):
+def is_rhema_library(path):
+    """A .rhm file without a `start` declaration is a library: it is meant to
+    be included by a grammar and cannot generate questions on its own."""
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return not re.search(r'^\s*start\s+[A-Za-z_]', f.read(), re.M)
+    except OSError:
+        return False
+
+
+def rhema_grammar_dirs():
+    """The user's directory first, then the shipped library."""
+    return [d for d in (RHEMA_GRAMMAR_DIR, RHEMA_STDLIB_DIR) if os.path.isdir(d)]
+
+
+def rhema_grammar_path(name):
+    """Where a grammar of that name lives: the user's copy wins over the
+    library's. None when no such file exists."""
+    for directory in rhema_grammar_dirs():
+        path = os.path.join(directory, name)
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def list_rhema_grammars():
+    """The .rhm files a user can choose from: grammars, not libraries."""
+    names = set()
+    for directory in rhema_grammar_dirs():
+        for name in os.listdir(directory):
+            # a leading dot marks the temporary file a check writes
+            if name.endswith(".rhm") and not name.startswith(".") \
+                    and not is_rhema_library(os.path.join(directory, name)):
+                names.add(name)
+    return sorted(names)
+
+
+RHEMA_QUESTION_BLOCK = re.compile(r'^\s*question\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{', re.M)
+
+
+def list_rhema_questions(name):
+    """The question types a .rhm file declares: `main` for its file-level
+    start, prompt and answer, plus one per `question NAME { ... }` block.
+    A file without blocks has just `main`, so the list is left empty."""
+    path = rhema_grammar_path(name)
+    if path is None:
         return []
-    return sorted(
-        name for name in os.listdir(AG_GRAMMAR_DIR)
-        # a leading dot marks the temporary file a check writes
-        if name.endswith(".ag") and not name.startswith(".")
-    )
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            text = f.read()
+    except OSError:
+        return []
+    blocks = RHEMA_QUESTION_BLOCK.findall(text)
+    if not blocks:
+        return []
+    has_main = re.search(r'^\s*start\s+[A-Za-z_]', text, re.M) is not None
+    return (['main'] if has_main else []) + blocks
 
 
-AG_CHECK_PATH = os.path.join(OCAML_PROJECT_DIR, "_build/default/ag/agcheck.exe")
 
 
-@app.route('/ag_grammars')
-def ag_grammars():
-    return jsonify({'success': True, 'grammars': list_ag_grammars()})
+@app.route('/rhema_grammars')
+def rhema_grammars():
+    grammars = list_rhema_grammars()
+    return jsonify({
+        'success': True,
+        'grammars': grammars,
+        # file -> its named questions, for the files that have more than main
+        'questions': {name: questions for name in grammars
+                      for questions in [list_rhema_questions(name)] if questions},
+    })
 
 
-@app.route('/ag_grammar')
-def ag_grammar():
-    """Return the text of a .ag file so it can be edited in the browser."""
-    name = os.path.basename(request.args.get('name', '').strip() or AG_DEFAULT_GRAMMAR)
-    if name not in list_ag_grammars():
+@app.route('/rhema_grammar')
+def rhema_grammar():
+    """Return the text of a .rhm file so it can be edited in the browser."""
+    name = os.path.basename(request.args.get('name', '').strip() or RHEMA_DEFAULT_GRAMMAR)
+    if name not in list_rhema_grammars():
         return jsonify({'success': False, 'error': f'Unknown grammar file: {name}'}), 400
     try:
-        with open(os.path.join(AG_GRAMMAR_DIR, name), 'r', encoding='utf-8') as f:
+        with open(rhema_grammar_path(name), 'r', encoding='utf-8') as f:
             return jsonify({'success': True, 'name': name, 'content': f.read()})
     except OSError as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-def check_ag_source(path, display_name=None):
-    """Run agcheck on a .ag file. Returns (ok, message).
+def check_rhema_source(path, display_name=None):
+    """Run `rhema check` on a .rhm file. Returns (ok, message).
 
     Checking happens in a temporary file so that a broken edit never reaches
-    disk, but agcheck reports problems as "<path>:line:column: ...". Rewriting
+    disk, but rhema reports problems as "<path>:line:column: ...". Rewriting
     that path to the grammar the user is actually editing keeps the message
-    readable; otherwise it points at a scratch name like .check_ab12cd.ag.
+    readable; otherwise it points at a scratch name like .check_ab12cd.rhm.
     """
-    if not os.path.exists(AG_CHECK_PATH):
-        return False, ('agcheck.exe was not found. Run "dune build" in the '
+    if not os.path.exists(RHEMA_COMMAND):
+        return False, ('rhema was not found. Run "dune build" in the '
                        'generator directory first.')
     try:
         result = subprocess.run(
-            [AG_CHECK_PATH, path],
+            [RHEMA_COMMAND, "check", path],
             capture_output=True, text=True, timeout=20, cwd=OCAML_PROJECT_DIR,
         )
     except subprocess.TimeoutExpired:
@@ -889,7 +946,7 @@ def check_ag_source(path, display_name=None):
     def readable(text):
         if not display_name:
             return text
-        # agcheck is run with cwd=generator, so it may print either form.
+        # rhema is run with cwd=generator, so it may print either form.
         for written in (path, os.path.relpath(path, OCAML_PROJECT_DIR)):
             text = text.replace(written, display_name)
         return text
@@ -900,48 +957,51 @@ def check_ag_source(path, display_name=None):
         result.stderr.strip() or result.stdout.strip() or 'Invalid grammar.')
 
 
-@app.route('/ag_grammar_check', methods=['POST'])
-def ag_grammar_check():
+@app.route('/rhema_grammar_check', methods=['POST'])
+def rhema_grammar_check():
     """Check submitted grammar text without saving it."""
     content = request.form.get('content', '')
-    display = os.path.basename(request.form.get('name', '').strip() or AG_DEFAULT_GRAMMAR)
-    handle, temporary = tempfile.mkstemp(prefix='.check_', suffix='.ag', dir=AG_GRAMMAR_DIR)
+    display = os.path.basename(request.form.get('name', '').strip() or RHEMA_DEFAULT_GRAMMAR)
+    os.makedirs(RHEMA_GRAMMAR_DIR, exist_ok=True)
+    handle, temporary = tempfile.mkstemp(prefix='.check_', suffix='.rhm', dir=RHEMA_GRAMMAR_DIR)
     try:
         with os.fdopen(handle, 'w', encoding='utf-8') as f:
             f.write(content)
-        ok, message = check_ag_source(temporary, display_name=display)
+        ok, message = check_rhema_source(temporary, display_name=display)
     finally:
         if os.path.exists(temporary):
             os.remove(temporary)
     return jsonify({'success': ok, 'message' if ok else 'error': message})
 
 
-@app.route('/ag_grammar_save', methods=['POST'])
-def ag_grammar_save():
+@app.route('/rhema_grammar_save', methods=['POST'])
+def rhema_grammar_save():
     """Save grammar text, but only if it checks out.
 
-    A broken .ag file would make every later generation fail, so the new text
+    A broken .rhm file would make every later generation fail, so the new text
     is validated in a temporary file first and only moved into place once it
     passes.
     """
     name = request.form.get('name', '').strip()
-    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,79}\.ag', name):
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,79}\.rhm', name):
         return jsonify({'success': False, 'error':
                         'Use 1-80 letters, numbers, underscores or hyphens, starting '
-                        'with a letter or number, followed by .ag.'}), 400
+                        'with a letter or number, followed by .rhm.'}), 400
     create = request.form.get('create') == 'true'
-    target = os.path.join(AG_GRAMMAR_DIR, name)
+    os.makedirs(RHEMA_GRAMMAR_DIR, exist_ok=True)
+    # A new file is the user's; an existing one is saved where it lives.
+    target = (rhema_grammar_path(name) if not create else None) or os.path.join(RHEMA_GRAMMAR_DIR, name)
     if os.path.islink(target):
         return jsonify({'success': False, 'error': 'Cannot save a symbolic link.'}), 400
     if create and os.path.lexists(target):
         return jsonify({'success': False, 'error': f'{name} already exists. Choose another name.'}), 409
     content = request.form.get('content', '')
 
-    handle, temporary = tempfile.mkstemp(prefix='.check_', suffix='.ag', dir=AG_GRAMMAR_DIR)
+    handle, temporary = tempfile.mkstemp(prefix='.check_', suffix='.rhm', dir=os.path.dirname(target))
     try:
         with os.fdopen(handle, 'w', encoding='utf-8') as f:
             f.write(content)
-        ok, message = check_ag_source(temporary, display_name=name)
+        ok, message = check_rhema_source(temporary, display_name=name)
         if not ok:
             return jsonify({'success': False, 'error': message})
         if create:
@@ -966,31 +1026,35 @@ def ag_grammar_save():
     return jsonify({'success': True, 'name': name, 'message': message})
 
 
-@app.route('/run_ag', methods=['POST'])
-def run_attribute_grammar():
-    """Generate a paper from a .ag grammar file.
+@app.route('/run_rhema', methods=['POST'])
+def run_rhema():
+    """Generate a paper from a .rhm grammar file.
 
     No dune build is needed here: the grammar is read at run time, so editing
-    the .ag file is enough to change what comes out.
+    the .rhm file is enough to change what comes out.
     """
+    # An assignment is one paper, the same every time; a student number is
+    # optional and gives that student a paper of their own.
     student_id = request.form.get('student_id', '').strip()
-    if not student_id:
-        return jsonify({'error': 'Please enter a student number.'}), 400
-    if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', student_id):
+    if student_id and not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', student_id):
         return jsonify({
             'error': ('Student number may contain only letters, numbers, '
                       'underscores, and hyphens.')
         }), 400
 
-    grammar = request.form.get('grammar', '').strip() or AG_DEFAULT_GRAMMAR
+    grammar = request.form.get('grammar', '').strip() or RHEMA_DEFAULT_GRAMMAR
     # Keep the choice inside the grammar directory.
     grammar = os.path.basename(grammar)
-    if grammar not in list_ag_grammars():
+    if grammar not in list_rhema_grammars():
         return jsonify({'error': f'Unknown grammar file: {grammar}'}), 400
+    # One of the file's named questions; empty means the file's default.
+    question = request.form.get('question', '').strip()
+    if question and not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', question):
+        return jsonify({'error': f'Invalid question name: {question}'}), 400
 
-    if not os.path.exists(AG_PROGRAM_PATH):
+    if not os.path.exists(RHEMA_COMMAND):
         return jsonify({
-            'error': 'agrun.exe was not found. Run "dune build" in the generator '
+            'error': 'rhema was not found. Run "dune build" in the generator '
                      'directory first.'
         }), 500
 
@@ -1002,7 +1066,7 @@ def run_attribute_grammar():
     count = max(1, min(count, 50))
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    base_name = f"{student_id}_{timestamp}"
+    base_name = f"{student_id or 'assignment'}_{timestamp}"
     relative_output = f"generated_questions/{base_name}.pg"
     relative_ast = f"generated_asts/{base_name}_ast.txt"
     relative_visualization = f"generated_visualizations/{base_name}_trees.html"
@@ -1013,17 +1077,18 @@ def run_attribute_grammar():
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
     command = [
-        AG_PROGRAM_PATH,
-        "--pg",
+        RHEMA_COMMAND,
+        os.path.relpath(rhema_grammar_path(grammar), OCAML_PROJECT_DIR),
+        "-o", relative_output,
         "--count", str(count),
-        "--seed-from", student_id,
-        # Difficulty is left to the .ag file. Overriding len from config.json
+        "--assignment", f"{grammar}:{question or 'main'}",
+        *(["--student", student_id] if student_id else []),
+        # Difficulty is left to the .rhm file. Overriding len from config.json
         # here would silently ignore what the user just typed into the grammar
         # editor, which defeats the point of the file being the definition.
-        "--out", relative_output,
         "--ast-out", relative_ast,
         "--visualization-out", relative_visualization,
-        os.path.join("ag", grammar),
+        *(["--question", question] if question else []),
     ]
 
     try:
@@ -1040,7 +1105,7 @@ def run_attribute_grammar():
         return jsonify({'error': f'Generation failed: {e}'}), 500
 
     if result.returncode != 0:
-        # agrun reports grammar problems with file:line:column on stderr.
+        # rhema reports grammar problems with file:line:column on stderr.
         return jsonify({
             'success': False,
             'error': result.stderr.strip() or 'Generation failed.'

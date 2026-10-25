@@ -1,3 +1,23 @@
-(lang dune 3.5)
-(name unparser)
+(lang dune 3.6)
+(name rhema)
+(version 0.1.0)
 (using menhir 2.1)
+
+; rhema.opam is generated from this file: edit here, then `dune build`.
+(generate_opam_files true)
+
+(license MIT)
+(authors "Jingming Zhang" "Jiaming Lei" "Xiaobo Huang" "Jiesen Long" "Zhiyuan Li")
+(maintainers "Jingming Zhang")
+(source (github Project-RHM/Project-RHM))
+(documentation "https://github.com/Project-RHM/Project-RHM/blob/main/RHEMA_LANGUAGE_GUIDE.md")
+
+(package
+ (name rhema)
+ (synopsis "Rhema: an attribute-grammar language for generating mathematics questions")
+ (description
+  "Rhema is the question-grammar language of the RHM project. A .rhm file describes a question type as an attribute grammar whose inherited budgets set the difficulty and whose synthesized attributes compute the answer, or a whole assignment as a set of such questions. The rhema command checks a file and generates WeBWorK PG, the same paper every time for the same assignment. The package installs the command and a library of grammars for arithmetic, algebra, calculus, propositional logic, sets, vectors, complex numbers and linear algebra.")
+ (tags (education mathematics "attribute grammar" webwork "question generation"))
+ (depends
+  (ocaml (>= 4.14))
+  (menhir (>= 20201216))))

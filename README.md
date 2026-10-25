@@ -23,33 +23,88 @@ The complete pipeline is:
 PG source -> Lexer -> Parser -> AST -> Describe -> DCST -> Settle -> CST -> PG source
 ```
 
-## Universal Attribute Grammar Generator
+## Rhema: the attribute-grammar generator
 
-The runtime-editable generator lives in `generator/ag/`. Its `.ag` language
+The library of grammars lives in `generator/stdlib/`, the user's own files in
+`generator/grammars/`, and the compiler in `generator/rhema/` (`lib`, `bin`,
+`test`). The language, Rhema (`.rhm` files),
 defines production rules, random parameters, inherited and synthesized
 attributes, constraints, wording, and answers. The shipped specifications are:
 
-- `arithmetic.ag`
-- `boolean.ag`
-- `boolean_equiv.ag`
-- `sequence.ag`
-- `complex.ag`
-- `calculus.ag`
-- `set.ag`
-- `vector.ag`
+- `arithmetic.rhm`
+- `boolean.rhm`
+- `boolean_equiv.rhm`
+- `sequence.rhm`
+- `complex.rhm`
+- `calculus.rhm`
+- `set.rhm`
+- `vector.rhm`
+- `factoring.rhm`, `polynomial_expand.rhm`, `vector_expr.rhm`, `linear_equation.rhm`
+- `polynomial_forms.rhm`, `sequence_parts.rhm`, on the library `polynomial_core.rhm`
+- `derivative_or_boolean.rhm`, which imports `calculus.rhm` and `boolean.rhm` as modules
+- `logic_forms.rhm`, three more questions on the Boolean grammars
+- `matrix_expr.rhm`, `determinant.rhm`, `matrix_inverse.rhm`, `linear_system.rhm`, on the
+  library `matrix_core.rhm` and the Matrix value type (`rhema_matrix.ml`)
+  (see `QUESTION_TYPES.md` for every grammar, its prices and its context)
 
-`sequence.ag` covers arithmetic/geometric nth-term and finite-sum questions.
+### The `rhema` command
+
+```bash
+cd generator && dune build && dune install --prefix ~/.local rhema
+
+rhema check calculus.rhm                 # file:line:col: error: ... or OK
+rhema calculus.rhm -o calculus.pg        # compile: generate, write WeBWorK PG
+rhema homework_set.rhm --run homework    # a whole assignment -> homework.pg
+rhema run boolean.rhm --set cost=6       # see questions and answers in the terminal
+rhema list calculus.rhm                  # questions, budgets, sets, imports
+rhema doc                                # the builtin functions
+```
+
+One assignment is one paper, the same every time it is generated;
+`--student ID` gives a student a paper of their own. Imported files are
+found beside the importer, then in `-I` directories, `RHEMA_PATH` and the
+installed library (`share/rhema`). `rhema` and `rhema check` remain as
+the entry points the web app and the Python tools drive. Versions follow
+`CHANGELOG.md`; `rhema --version` prints the one built.
+
+Propositions are a value type of their own (`rhema_boolean.ml`, the `bool_*`
+builtins): the engine renders, evaluates and compares them, so a Boolean
+grammar writes formulas, not truth tables.
+
+A grammar may `include` another file to extend it, `import` other files as
+modules (`import "calculus.rhm" as calc`, then `calc.F(cost = cost)`), declare
+several named questions over one set of rules (`question integral { ... }`,
+run with `rhema run calculus.rhm --question integral`), describe a whole assignment as a
+`set` (`3 of calc.derivative(cost ~ 6 spread 2)`, run with
+`rhema homework_set.rhm --run homework`; see `homework_set.rhm`), give each question form
+its own WeBWorK context, and place several answer blanks in one prompt; see
+`RHEMA_LANGUAGE_EXTENSIONS.md`.
+
+`sequence.rhm` covers arithmetic/geometric nth-term and finite-sum questions.
 It also exercises the signed inclusive range generators `integer_between` and
-`nonzero_integer_between`. `complex.ag` uses recursive expression productions
+`nonzero_integer_between`. `complex.rhm` uses recursive expression productions
 for arithmetic, together with conjugate, modulus, and powers of `i`; typed
 complex answers are rendered in WeBWorK's `Complex` context. See
-`AG_LANGUAGE_GUIDE.md` for the language and CLI. `calculus.ag` shares a typed
+`RHEMA_LANGUAGE_GUIDE.md` for the language and CLI. `calculus.rhm` shares a typed
 symbolic Formula AST between derivative questions and reverse-generated
 indefinite integrals, with mixed and single-question modes.
-`set.ag` recursively composes union, intersection, and difference over stable
-finite-set or interval definitions. `vector.ag` covers dot product, cross
+`set.rhm` recursively composes union, intersection, and difference over stable
+finite-set or interval definitions. `vector.rhm` covers dot product, cross
 product, norm, unit-vector, parallel-vector, and same-direction questions with
 typed Vector answers and comparators.
+
+Difficulty is a budget the grammar spends. `boolean.rhm` prices each
+connective (conjunction 2, conditional 4, biconditional 6, and so on) and
+`arithmetic.rhm` prices its operations and the digits of its numbers;
+`calculus.rhm` prices the differentiation rules a function calls for;
+`complex.rhm` and `set.rhm` price their expressions, `boolean_equiv.rhm` its
+laws, and the grammars of fixed forms (`vector.rhm`, `sequence.rhm`, the
+`library_*.rhm` files) offer each form at its price. Every grammar spends
+an operator-cost budget exactly, so `--set cost=6` and
+`--set cost=14` ask for an easy and a hard question of the same type.
+`tools/rhema_difficulty.py` reports what each budget buys, suggests levels, and
+builds a set whose mean budget is a chosen value. See `DIFFICULTY_BUDGET.md`
+(English) and `DIFFICULTY_BUDGET.zh.md` (Chinese).
 
 Attribute Grammar generation also writes a native visualization. Its applied
 production tree shows which weighted rule was selected at each nonterminal;
@@ -61,7 +116,7 @@ and historical Attribute Grammar question sets.
 
 Arithmetic expressions are generated by a small attribute-grammar engine in
 `generator/attribute_grammar.ml`. Its default declarative grammar is
-`generator/arithmetic.ag`.
+`generator/arithmetic.rhm`.
 
 For the implementation rationale, migration details, testing record, known
 limitations, and team handoff notes, see
@@ -90,7 +145,7 @@ current guard; they do not override attribute constraints.
 
 The existing `max_expr_depth` configuration currently supplies the initial
 `len` budget. The initial `digit` value and rule weights can be edited in
-`generator/arithmetic.ag`. Set `ATTRIBUTE_GRAMMAR_FILE` to load a different
+`generator/arithmetic.rhm`. Set `ATTRIBUTE_GRAMMAR_FILE` to load a different
 grammar file.
 
 Run the focused tests with:
@@ -101,7 +156,7 @@ dune runtest
 ```
 
 These tests verify exact operator budgets, digit limits, termination, valid
-evaluation, and deterministic output for a fixed random seed.
+evaluation, and one paper per assignment, the same every time it is generated.
 
 ## Visualize the AST and DCST
 
