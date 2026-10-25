@@ -722,7 +722,7 @@ width 8
 文法检查通过后，每道题按以下顺序生成：
 
 ```text
-1. 初始化随机种子（random seed）
+1. 由学生和作业派生这份卷子的变体（没有学生时是一份样例）
 2. 抽取 random 值
 3. 按顺序计算 let 值
 4. 从 start 非终结符开始
@@ -888,19 +888,19 @@ dune exec ag/agcheck.exe -- ag/arithmetic.ag
 生成可读题目：
 
 ```bash
-dune exec ag/agrun.exe -- --count 5 --seed 21 ag/arithmetic.ag
+dune exec ag/agrun.exe -- --count 5 ag/arithmetic.ag
 ```
 
 生成 PGML：
 
 ```bash
-dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/arithmetic.ag
+dune exec ag/agrun.exe -- --pg --count 5 ag/arithmetic.ag
 ```
 
 生成数列题：
 
 ```bash
-dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/sequence.ag
+dune exec ag/agrun.exe -- --pg --count 5 ag/sequence.ag
 ```
 
 生成文件里某个有名字的题型（见第 28 节），`--set` 在它之后生效：
@@ -912,26 +912,26 @@ dune exec ag/agrun.exe -- --question integral --set cost=5 ag/calculus.ag
 生成文件里声明的一套题（见第 29 节），`--pg` 输出带编号的文档，`--pg-dir` 每题一个文件：
 
 ```bash
-dune exec ag/agrun.exe -- --run homework --seed 42 --pg ag/homework_set.ag
+dune exec ag/agrun.exe -- --run homework --student 2330026211 --pg ag/homework_set.ag
 ```
 
 生成复数题：
 
 ```bash
-dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/complex.ag
+dune exec ag/agrun.exe -- --pg --count 5 ag/complex.ag
 ```
 
 生成 mixed 微分与积分题：
 
 ```bash
-dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/calculus.ag
+dune exec ag/agrun.exe -- --pg --count 5 ag/calculus.ag
 ```
 
 按难度生成布尔题（`cost` 是运算符成本预算，见第 24 节）：
 
 ```bash
-dune exec ag/agrun.exe -- --count 5 --seed 21 --set cost=6 ag/boolean.ag
-dune exec ag/agrun.exe -- --count 5 --seed 21 --set cost=14 ag/boolean.ag
+dune exec ag/agrun.exe -- --count 5 --set cost=6 ag/boolean.ag
+dune exec ag/agrun.exe -- --count 5 --set cost=14 ag/boolean.ag
 ```
 
 查看各预算档位的题目特征，或生成平均预算为指定值的一套题（在仓库根目录运行）：
@@ -951,7 +951,7 @@ dune exec ag/agrun.exe -- --set calculus_mode=2 ag/calculus.ag
 生成 mixed 集合题，或限制为 union/intersection/difference：
 
 ```bash
-dune exec ag/agrun.exe -- --pg --count 5 --seed 21 ag/set.ag
+dune exec ag/agrun.exe -- --pg --count 5 ag/set.ag
 dune exec ag/agrun.exe -- --set set_mode=1 ag/set.ag
 dune exec ag/agrun.exe -- --set set_mode=2 ag/set.ag
 dune exec ag/agrun.exe -- --set set_mode=3 ag/set.ag
@@ -960,15 +960,15 @@ dune exec ag/agrun.exe -- --set set_mode=3 ag/set.ag
 生成 mixed 向量题，或用 `vector_mode=1..6` 选择单一操作：
 
 ```bash
-dune exec ag/agrun.exe -- --pg --count 6 --seed 21 ag/vector.ag
+dune exec ag/agrun.exe -- --pg --count 6 ag/vector.ag
 dune exec ag/agrun.exe -- --set vector_mode=2 ag/vector.ag
 ```
 
-同时保存 PGML、可读 derivation 和交互式 production/attribute trees：
+给某个学生出一份卷子，同时保存 PGML、可读 derivation 和交互式 production/attribute trees：
 
 ```bash
 dune exec ag/agrun.exe -- \
-  --pg --count 5 --seed-from STUDENT_ID \
+  --pg --count 5 --student STUDENT_ID \
   --out generated_questions/STUDENT_ID.pg \
   --ast-out generated_asts/STUDENT_ID_ast.txt \
   --visualization-out generated_visualizations/STUDENT_ID_trees.html \
@@ -981,13 +981,13 @@ dune exec ag/agrun.exe -- \
 dune exec ag/agrun.exe -- --set cost=9 --set digit=3 ag/arithmetic.ag
 ```
 
-用字符串稳定派生随机种子：
+一份卷子由学生和作业决定：
 
 ```bash
-dune exec ag/agrun.exe -- --seed-from STUDENT_ID ag/arithmetic.ag
+dune exec ag/agrun.exe -- --student STUDENT_ID --assignment "MATH2003 HW3" ag/arithmetic.ag
 ```
 
-相同 `.ag`、相同 seed 和相同覆盖值会得到可复现的随机序列。
+同一个学生、同一个作业、同一个 `.ag` 和同样的覆盖值，永远得到同一份卷子；换一个作业名就是另一份。`--assignment` 省略时默认是 set 的名字或"文件名:题型名"。不写 `--student` 时输出一份样例。用户不需要考虑随机种子：它是引擎内部从这两个名字派生的。
 
 ## 23. 实践建议（Authoring recommendations）
 
@@ -998,7 +998,7 @@ dune exec ag/agrun.exe -- --seed-from STUDENT_ID ag/arithmetic.ag
 - 为递归规则设置会递减的非负预算，并提供预算耗尽时的终止规则；
 - 用 `infix` 和 `prefix` 生成运算符表达式，避免手工拼接导致括号含义错误；
 - 尽量让答案由综合属性计算，而不是根据选中的规则名称写死；
-- 给复杂文法固定 seed 测试，便于复现生成错误；
+- 用固定的 `--student` 复现生成错误，便于排查；
 - 避免只能靠极低概率满足的 `require`，否则生成会频繁重试甚至失败。
 
 ## 24. 难度预算（Difficulty budget）
@@ -1091,5 +1091,5 @@ set homework {
 
 - `set NAME { ... }` 描述一份作业。条目 `N of 题型(抽取)`：题型是本文件的 `main`/块名或引入模块的 `alias.name`；`any(...)` 在几种题型间均匀分配。抽取给继承属性设初值：`cost = 5` 定值，`cost in {8, 10, 12}` 列表轮抽，`cost ~ 6 spread 2 [low 2] [allowed {4, 6, 8}]` 围绕均值抽并调到精确均值（期望控制难度）。
 - `part "标题"` 分部分，部分内按 `1(a)`、`1(b)` 编号；没有 part 的 set 每题一个号。约束：`distinct`（树形不重复）、`balanced`（编码答案不连续三个相同）、`ordered`（部分内由易到难）。
-- `agrun --run NAME file.ag`，`--seed`/`--seed-from` 决定整份作业，`--pg` 一个文档，`--pg-dir DIR` 每题一个文件；`--set`、`--count`、`--question` 对 set 不起作用。`agcheck` 列出 set 及题数。
+- `agrun --run NAME file.ag`，`--student`（和可选的 `--assignment`）决定整份作业，`--pg` 一个文档，`--pg-dir DIR` 每题一个文件；`--set`、`--count`、`--question` 对 set 不起作用。`agcheck` 列出 set 及题数。
 - 只有 `set` 是保留字，块内其他词是普通标识符。示例 `homework_set.ag`。详见 `AG_LANGUAGE_EXTENSIONS.md` 第 6 节。

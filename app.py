@@ -1057,7 +1057,8 @@ def run_attribute_grammar():
         AG_PROGRAM_PATH,
         "--pg",
         "--count", str(count),
-        "--seed-from", student_id,
+        "--student", student_id,
+        "--assignment", f"{grammar}:{question or 'main'}",
         # Difficulty is left to the .ag file. Overriding len from config.json
         # here would silently ignore what the user just typed into the grammar
         # editor, which defeats the point of the file being the definition.

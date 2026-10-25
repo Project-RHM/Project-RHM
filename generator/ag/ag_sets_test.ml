@@ -37,7 +37,7 @@ let set_named (spec : Ag_check.spec) name =
   List.find (fun (set : Ag_ast.set_decl) -> set.Ag_ast.set_name = name) spec.Ag_check.sets
 
 let run spec name seed =
-  match Ag_sets.run spec (set_named spec name) ~seed with
+  match Ag_sets.run spec (set_named spec name) ~variant:seed with
   | result -> Some result
   | exception Ag_engine.Generation_error message ->
       fail (Printf.sprintf "set %s seed %d: %s" name seed message);
@@ -147,7 +147,7 @@ let () =
           let listing = Ag_sets.listing result in
           List.iter
             (fun fragment -> if not (contains listing fragment) then fail ("the listing lacks " ^ fragment))
-            [ "set homework, seed 5: 11 questions in 3 parts"; "1. Differentiation"; "budget means:"; "part 1 Differentiation: cost"; "over 4" ];
+            [ "homework (sample): 11 questions in 3 parts"; "1. Differentiation"; "budget means:"; "part 1 Differentiation: cost"; "over 4" ];
           let files = Ag_sets.documents result in
           if List.length files <> 11 then fail (Printf.sprintf "%d per-question documents" (List.length files));
           if fst (List.hd files) <> "question01.pg" then fail ("first file " ^ fst (List.hd files))
@@ -211,7 +211,7 @@ set twins { 2 of single  distinct }
   match Ag_load.parse_string ~filename:"twins.ag" source with
   | Error errors -> List.iter (fun error -> fail ("twins: " ^ Ag_load.string_of_failure error)) errors
   | Ok spec -> (
-      match Ag_sets.run spec (set_named spec "twins") ~seed:1 with
+      match Ag_sets.run spec (set_named spec "twins") ~variant:1 with
       | _ -> fail "two identical shapes were accepted as distinct"
       | exception Ag_engine.Generation_error message ->
           if not (contains message "question 2 (single) could not satisfy the set's constraints") then

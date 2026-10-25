@@ -6,10 +6,11 @@
    Options:
      --pg              emit a complete WeBWorK .pg document
      --count N         how many questions (default 5)
-     --seed N          random seed (default 0)
-     --seed-from ID    derive the seed from a string, so the same student id
-                       always produces the same paper (same rule as
-                       Generator.seed_of_id, which the existing generator uses)
+     --student ID      the student this paper is for: the same student gets the
+                       same paper every time, another student another one
+     --assignment NAME the assignment it belongs to, so one student's papers
+                       differ between assignments (default: the set's name, or
+                       FILE:QUESTION)
      --set NAME=VALUE  override an inherited attribute's starting value
      --question NAME   generate one of the file's named questions (default: main)
      --run NAME        generate the set NAME declared in the file (its own budgets
@@ -26,6 +27,8 @@
 
 type options = {
   filename : string;
+  student : string option;
+  assignment : string option;
   question : string option;
   run : string option;  (* a set of the file to generate *)
   pg_dir : string option;  (* one .pg file per question of the set, here *)
@@ -40,7 +43,7 @@ type options = {
 
 let usage () =
   prerr_endline
-    "usage: agrun [--pg] [--count N] [--seed N] [--question NAME | --run SET [--pg-dir DIR]] [--set NAME=VALUE]... \
+    "usage: agrun [--pg] [--count N] [--student ID] [--assignment NAME] [--question NAME | --run SET [--pg-dir DIR]] [--set NAME=VALUE]... \
      [--out FILE] [--ast-out FILE] [--visualization-out FILE] FILE.ag";
   exit 2
 
@@ -71,6 +74,10 @@ let parse_arguments () =
     | "--pg" :: rest -> walk rest { accumulated with as_pg = true }
     | "--count" :: value :: rest ->
         walk rest { accumulated with count = int_of_string value }
+    | "--student" :: value :: rest -> walk rest { accumulated with student = Some value }
+    | "--assignment" :: value :: rest -> walk rest { accumulated with assignment = Some value }
+    (* Not in the usage text: the paper's variant as a number, for the Python
+       tools and tests. A user names a student and an assignment instead. *)
     | "--seed" :: value :: rest -> walk rest { accumulated with seed = int_of_string value }
     | "--seed-from" :: value :: rest -> walk rest { accumulated with seed = seed_of_id value }
     | "--set" :: value :: rest ->
@@ -96,6 +103,8 @@ let parse_arguments () =
       (Array.to_list Sys.argv |> List.tl)
       {
         filename = "";
+        student = None;
+        assignment = None;
         question = None;
         run = None;
         pg_dir = None;
@@ -110,6 +119,29 @@ let parse_arguments () =
   in
   if options.filename = "" then usage ();
   options
+
+(* The paper a run produces is named by its student and its assignment; the
+   variant the engine starts from is derived from the two, so neither has to
+   be a number and nobody chooses one. Without a student the run is a sample. *)
+let assignment_of options =
+  match options.assignment with
+  | Some name -> name
+  | None -> (
+      match options.run with
+      | Some set -> set
+      | None ->
+          Filename.remove_extension (Filename.basename options.filename)
+          ^ ":" ^ Option.value ~default:"main" options.question)
+
+let paper_of options =
+  match options.student with
+  | Some student -> Printf.sprintf "%s for %s" (assignment_of options) student
+  | None -> assignment_of options ^ " (sample)"
+
+let variant_of options =
+  match options.student with
+  | Some student -> seed_of_id (assignment_of options ^ "/" ^ student)
+  | None -> options.seed
 
 let write_file path text =
   let channel = open_out path in
@@ -136,7 +168,7 @@ let run_set options (spec : Ag_check.spec) =
         exit 1
   in
   let result =
-    try Ag_sets.run spec set ~seed:options.seed
+    try Ag_sets.run spec set ~variant:(variant_of options) ~paper:(paper_of options)
     with Ag_engine.Generation_error message ->
       prerr_endline ("generation failed: " ^ message);
       exit 1
@@ -209,7 +241,7 @@ let () =
                 exit 1)
           spec options.overrides
       in
-      Random.init options.seed;
+      Random.init (variant_of options);
       let questions =
         try
           List.init options.count (fun _ -> Ag_engine.generate spec)

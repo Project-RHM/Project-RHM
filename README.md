@@ -134,7 +134,7 @@ dune runtest
 ```
 
 These tests verify exact operator budgets, digit limits, termination, valid
-evaluation, and deterministic output for a fixed random seed.
+evaluation, and the same paper for the same student and assignment every time.
 
 ## Visualize the AST and DCST
 

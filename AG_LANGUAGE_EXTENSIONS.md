@@ -257,9 +257,9 @@ what budgets, in what order. `homework_set.ag` is the shipped example; a
 file may hold several sets, beside its own questions or, as there, alone.
 
 ```
-agrun --run homework --seed 42 homework_set.ag            listing with budgets and means
-agrun --run homework --seed 42 --pg homework_set.ag       one PG document, numbered
-agrun --run quick --seed-from 2330026211 --pg-dir out/ homework_set.ag
+agrun --run homework homework_set.ag                      a sample, as a listing with budgets and means
+agrun --run homework --student 2330026211 --pg homework_set.ag   that student's paper, one PG document
+agrun --run quick --student 2330026211 --pg-dir out/ homework_set.ag
 agcheck homework_set.ag                                   lists the sets
 ```
 
@@ -291,11 +291,14 @@ of total budget, easier first. A constraint that cannot be met -- two
 copies of a one-rule question under `distinct` -- is reported after a
 bounded number of attempts, naming the question.
 
-**Seeds.** The set's seed fixes every draw; each question's own seed is
-derived from it and the question's position, so the same seed gives the
-same assignment and a question added at the end leaves the earlier ones as
-they were. `--set`, `--count` and `--question` do not apply with `--run`:
-the set carries its own.
+**Whose paper.** `--student ID` names the student and `--assignment NAME`
+the assignment (default: the set's name); the same student gets the same
+paper every time, another student or another assignment another one, and a
+question added at the end of the set leaves the earlier ones as they were.
+Nobody chooses or sees a seed: the variant is derived from the two names
+inside the engine. Without `--student` the run is a sample. `--set`,
+`--count` and `--question` do not apply with `--run`: the set carries its
+own.
 
 **Output.** The listing shows each question with its type and budgets, and
 ends with the mean of each budget per part. `--pg` writes one document:

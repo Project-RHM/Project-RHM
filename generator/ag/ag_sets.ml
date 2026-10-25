@@ -3,9 +3,10 @@
    A set is a whole assignment: parts, entries of `N of question(draws)`,
    and constraints. This module draws the budgets each entry asks for,
    generates every question from the grammar it names with those budgets,
-   keeps the constraints, and numbers the result. The set's seed fixes all
-   of it: the same seed gives the same assignment, and each question has a
-   seed of its own derived from the set's and its position, so adding a
+   keeps the constraints, and numbers the result. The paper's variant (an
+   integer agrun derives from the student and the assignment) fixes all of
+   it: the same variant gives the same assignment, and each question starts
+   from a value derived from the variant and its position, so adding a
    question at the end leaves the earlier ones as they were. *)
 
 type drawn = {
@@ -17,7 +18,12 @@ type drawn = {
   question : Ag_engine.question;
 }
 
-type result = { name : string; seed : int; parts : (string option * drawn list) list }
+type result = {
+  name : string;
+  paper : string;  (* whose paper this is: "homework for 2330026211", or a sample *)
+  variant : int;  (* what the draws started from; derived, never chosen *)
+  parts : (string option * drawn list) list;
+}
 
 let error message = raise (Ag_engine.Generation_error message)
 
@@ -218,7 +224,9 @@ let plan (spec : Ag_check.spec) (set : Ag_ast.set_decl) =
   if has_parts then parts
   else List.concat_map (fun (_, members) -> List.map (fun slot -> (None, [ slot ])) members) parts
 
-let run (spec : Ag_check.spec) (set : Ag_ast.set_decl) ~seed =
+let run ?paper (spec : Ag_check.spec) (set : Ag_ast.set_decl) ~variant =
+  let paper = Option.value ~default:(set.Ag_ast.set_name ^ " (sample)") paper in
+  let seed = variant in
   let items = set.Ag_ast.set_items in
   let wants constraint_ = List.exists constraint_ items in
   let distinct = wants (function Ag_ast.Set_distinct _ -> true | _ -> false) in
@@ -304,7 +312,7 @@ let run (spec : Ag_check.spec) (set : Ag_ast.set_decl) ~seed =
             members ))
       generated
   in
-  { name = set.Ag_ast.set_name; seed; parts }
+  { name = set.Ag_ast.set_name; paper; variant; parts }
 
 let questions result = List.concat_map (fun (_, members) -> List.map (fun d -> d.question) members) result.parts
 
@@ -330,7 +338,7 @@ let means members =
 
 let listing result =
   let buffer = Buffer.create 4096 in
-  Printf.bprintf buffer "set %s, seed %d: %d questions in %d part%s\n" result.name result.seed
+  Printf.bprintf buffer "%s: %d questions in %d part%s\n" result.paper
     (List.length (questions result)) (List.length result.parts)
     (if List.length result.parts = 1 then "" else "s");
   List.iter

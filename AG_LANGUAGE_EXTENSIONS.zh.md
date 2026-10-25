@@ -151,9 +151,9 @@ set homework {
 `set` 描述一份作业：哪些题型、各几道、预算多少、什么顺序。随库发布的示例是 `homework_set.ag`；一个文件可以有多个 set，可以和自己的题型放在一起，也可以像它那样只有 set。
 
 ```
-agrun --run homework --seed 42 homework_set.ag            带预算和均值的列表
-agrun --run homework --seed 42 --pg homework_set.ag       一个编号的 PG 文档
-agrun --run quick --seed-from 2330026211 --pg-dir out/ homework_set.ag
+agrun --run homework homework_set.ag                      一份样例，带预算和均值的列表
+agrun --run homework --student 2330026211 --pg homework_set.ag   这个学生的卷子，一个 PG 文档
+agrun --run quick --student 2330026211 --pg-dir out/ homework_set.ag
 agcheck homework_set.ag                                   列出 set
 ```
 
@@ -167,7 +167,7 @@ agcheck homework_set.ag                                   列出 set
 
 **约束**，各一个词：`distinct` 拒绝和前面某道题树形相同的题（用到的规则相同、叶子擦掉：3 + 4 和 7 + 2 是同一个形状）；`balanced` 拒绝连续第三个相同的编码答案（真/假，或一位数编码）；`ordered` 把部分内的题按总预算从易到难排。满足不了的约束——`distinct` 下两道只有一条规则的题——在有限次尝试后报出，并点名那道题。
 
-**种子。** set 的种子决定所有抽取；每道题的种子由它和题的位置派生，所以同一种子给同一份作业，在末尾加一道题不会改变前面的题。`--set`、`--count`、`--question` 对 `--run` 不起作用：set 自带这些。
+**谁的卷子。** `--student ID` 指定学生，`--assignment NAME` 指定作业（默认是 set 的名字）；同一学生总是得到同一份卷子，换学生或换作业就是另一份，在 set 末尾加一道题不会改变前面的题。没有人选择或看到种子：变体由这两个名字在引擎内部派生。不写 `--student` 时输出一份样例。`--set`、`--count`、`--question` 对 `--run` 不起作用：set 自带这些。
 
 **输出。** 列表给出每道题的题型和预算，末尾是每部分各预算的均值。`--pg` 写一个文档：标题作为段落，每道题干前有 `1(a).`，相同上下文的连续题在一个 PGML 块里，中间切换 `Context()`。`--pg-dir` 每道题写一个 `.pg` 文件。
 

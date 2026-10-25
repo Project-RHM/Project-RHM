@@ -6,9 +6,13 @@
 #  budgets, in which order. `agrun --run homework` generates the set and,
 #  with --pg, writes it as one PG document with numbered parts.
 #
-#    agrun --run homework --seed 42 homework_set.ag
-#    agrun --run homework --seed 42 --pg homework_set.ag > homework.pg
-#    agrun --run quick --seed-from 2330026211 --pg-dir out/ homework_set.ag
+#    agrun --run homework homework_set.ag                        a sample
+#    agrun --run homework --student 2330026211 --pg homework_set.ag > homework.pg
+#    agrun --run quick --student 2330026211 --pg-dir out/ homework_set.ag
+#
+#  A paper is named by its student and its assignment (the set's name unless
+#  --assignment says otherwise): the same student gets the same paper every
+#  time, another student another one.
 #
 #  Budgets are drawn three ways: a fixed value (cost = 6), one of a list
 #  used evenly (cost in {8, 10, 12}), or around a mean, adjusted so that
