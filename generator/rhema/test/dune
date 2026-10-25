@@ -179,5 +179,7 @@
 (test
  (name rhema_pgml_test)
  (modules rhema_pgml_test)
- (libraries rhema pg_core))
+ (libraries rhema pg_core)
+ ; reads the PG back with the classic parser, a development-only library
+ (enabled_if (= %{profile} dev)))
 

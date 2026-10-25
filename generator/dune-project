@@ -1,6 +1,6 @@
 (lang dune 3.6)
 (name rhema)
-(version 0.1.0)
+(version 0.1.1)
 (using menhir 2.1)
 
 ; rhema.opam is generated from this file: edit here, then `dune build`.

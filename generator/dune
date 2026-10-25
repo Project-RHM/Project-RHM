@@ -1,5 +1,9 @@
+; The classic generator (unparser) and its PG parser need pprint and
+; menhirCST, which the rhema package does not depend on. They are built in
+; the development profile only, so `dune build -p rhema` never sees them.
 (library
  (name pg_core)
+ (enabled_if (= %{profile} dev))
  (wrapped false)
  (modules ast lexer parser ast_printer semantic describe print_pprint visualization attribute_grammar)
  (libraries menhirLib menhirCST pprint)
@@ -7,18 +11,21 @@
 
 (executable
  (name unparser)
+ (enabled_if (= %{profile} dev))
  (modules generator unparser config)
  (libraries pg_core unix menhirLib menhirCST pprint)
  (flags (:standard -w -26-27)))
 
 (executable
  (name visualize)
+ (enabled_if (= %{profile} dev))
  (modules visualize)
  (libraries pg_core menhirLib menhirCST pprint)
  (flags (:standard -w -26-27)))
 
 (test
  (name attribute_grammar_test)
+ (enabled_if (= %{profile} dev))
  (modules attribute_grammar_test)
  (libraries pg_core)
  (flags (:standard -w -26-27)))

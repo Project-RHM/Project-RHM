@@ -3,7 +3,11 @@
 The package `rhema` is defined in `generator/dune-project`; `generator/rhema.opam`
 is generated from it (edit the project file, then `dune build`). The package
 installs the `rhema` command and the library grammars (`share/rhema`), and
-its tests run with `--with-test`.
+its tests run with `--with-test`. The classic generator in `generator/`
+(`pg_core`, `unparser`, `visualize`, the PG read-back test) is built in the
+development profile only (`enabled_if (= %{profile} dev)`): it needs
+`pprint` and `menhirCST`, which the package does not depend on, and opam's
+`dune build -p rhema @runtest` must not reach it.
 
 ## Before the first public release
 

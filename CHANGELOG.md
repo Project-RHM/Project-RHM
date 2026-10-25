@@ -5,6 +5,13 @@ functions' names and arguments, and the `rhema` command's options are the
 public interface. A breaking change raises the major version; a deprecation
 is announced one version before the removal.
 
+## 0.1.1 (2026-10-25)
+
+Packaging only. The classic generator and its PG parser, which need
+`pprint` and `menhirCST`, are built in the development profile only, so the
+package's tests no longer fail on a machine without them (`dune build -p
+rhema @runtest`). No change to the language or the command.
+
 ## 0.1.0 (2026-10-24)
 
 The first version with a name.
