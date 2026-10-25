@@ -5,7 +5,7 @@ functions' names and arguments, and the `rhema` command's options are the
 public interface. A breaking change raises the major version; a deprecation
 is announced one version before the removal.
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-10-24)
 
 The first version with a name.
 
