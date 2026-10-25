@@ -23,8 +23,16 @@ its tests run with `--with-test`.
    dune build && dune build -p rhema @install @runtest && opam lint rhema.opam
    ```
 
-3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
-4. Make the source archive. Because the dune project lives in `generator/`,
+3. Build the package from a clean export of the commit, exactly as opam
+   will, before tagging; a file that is tracked by mistake or ignored by
+   mistake shows up here and nowhere else:
+
+   ```bash
+   rm -rf /tmp/rhema-export && mkdir /tmp/rhema-export && git archive HEAD:generator | tar x -C /tmp/rhema-export && (cd /tmp/rhema-export && dune build -p rhema @install @runtest --force && opam lint rhema.opam)
+   ```
+
+4. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+5. Make the source archive. Because the dune project lives in `generator/`,
    the release archive is that directory, not the repository: install
    `dune-release` (`opam install dune-release`) and run, in `generator/`:
 
@@ -35,7 +43,7 @@ its tests run with `--with-test`.
    It writes `_build/rhema-X.Y.Z.tbz`. Upload it as an asset of the GitHub
    release for the tag (`dune-release publish distrib` does this with a
    GitHub token, or do it by hand).
-5. Submit to opam: `dune-release opam pkg` writes the entry, `dune-release
+6. Submit to opam: `dune-release opam pkg` writes the entry, `dune-release
    opam submit` opens the pull request against ocaml/opam-repository. By
    hand, the entry is `packages/rhema/rhema.X.Y.Z/opam`: the generated
    `rhema.opam` with the `version:` line removed and this appended:

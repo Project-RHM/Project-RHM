@@ -1,0 +1,17 @@
+(library
+ (name rhema)
+ (package rhema)
+ (wrapped false)
+ (modules rhema_ast rhema_lexer rhema_parser rhema_check rhema_load rhema_number rhema_formula rhema_boolean rhema_polynomial rhema_equation rhema_matrix rhema_set rhema_vector rhema_engine rhema_pgml rhema_sets rhema_cli rhema_version rhema_visualization)
+ (libraries menhirLib))
+
+(menhir
+ (modules rhema_parser)
+ (flags --explain --unused-token UMINUS))
+
+(ocamllex rhema_lexer)
+
+; The version the command prints comes from dune-project, in one place.
+(rule
+ (with-stdout-to rhema_version.ml
+  (echo "let version = \"%{version:rhema}\"\n")))

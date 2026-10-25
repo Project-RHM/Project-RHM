@@ -179,6 +179,5 @@
 (test
  (name rhema_pgml_test)
  (modules rhema_pgml_test)
- (libraries rhema pg_core)
- (package rhema))
+ (libraries rhema pg_core))
 
