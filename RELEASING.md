@@ -29,7 +29,9 @@ development profile only (`enabled_if (= %{profile} dev)`): it needs
 
 3. Build the package from a clean export of the commit, exactly as opam
    will, before tagging; a file that is tracked by mistake or ignored by
-   mistake shows up here and nowhere else:
+   mistake shows up here and nowhere else. CI (`.github/workflows/ci.yml`)
+   does the same on every push, so a green `package` job on the commit is
+   this step done; locally:
 
    ```bash
    rm -rf /tmp/rhema-export && mkdir /tmp/rhema-export && git archive HEAD:generator | tar x -C /tmp/rhema-export && (cd /tmp/rhema-export && dune build -p rhema @install @runtest --force && opam lint rhema.opam)

@@ -5,6 +5,13 @@ functions' names and arguments, and the `rhema` command's options are the
 public interface. A breaking change raises the major version; a deprecation
 is announced one version before the removal.
 
+## Unreleased
+
+- **CI**: GitHub Actions builds the package from a clean export on OCaml
+  4.14 and 5, Linux and macOS, exactly as opam does, installs it into a
+  prefix and runs the command; a second job builds the whole tree with every
+  suite and the Python checks.
+
 ## 0.1.1 (2026-10-25)
 
 Packaging only. The classic generator and its PG parser, which need

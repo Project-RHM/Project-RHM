@@ -1,0 +1,111 @@
+# Two views of the project on every push and pull request:
+#
+#   package      what `opam install rhema --with-test` does, from a clean
+#                export of generator/ (so a file that is ignored or untracked
+#                by mistake fails here, not in the opam repository), on the
+#                oldest and the newest supported OCaml, on Linux and macOS.
+#   development  the whole tree as a developer builds it: the classic
+#                generator too, every test, and the Python checks that drive
+#                the rhema command through the web app and the tools.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  package:
+    name: package (OCaml ${{ matrix.ocaml }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        ocaml: ["4.14", "5"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml }}
+          opam-pin: false
+
+      - name: Install the package's dependencies
+        run: opam install ./generator --deps-only --with-test
+
+      - name: Build and test from a clean export, as opam does
+        run: |
+          rm -rf "$RUNNER_TEMP/export" && mkdir "$RUNNER_TEMP/export"
+          git archive HEAD:generator | tar x -C "$RUNNER_TEMP/export"
+          cd "$RUNNER_TEMP/export"
+          opam exec -- dune build -p rhema @install @runtest
+          opam exec -- opam lint rhema.opam
+
+      - name: Install into a prefix and run the command from elsewhere
+        run: |
+          cd "$RUNNER_TEMP/export"
+          opam exec -- dune install --prefix "$RUNNER_TEMP/prefix" rhema
+          cd "$RUNNER_TEMP"
+          prefix/bin/rhema --version
+          prefix/bin/rhema check prefix/share/rhema/*.rhm
+          printf 'import "calculus.rhm" as calc\nset s { 2 of calc.integral(cost = 5) }\n' > s.rhm
+          prefix/bin/rhema s.rhm --run s -o s.pg && test -s s.pg
+          prefix/bin/rhema run prefix/share/rhema/homework_set.rhm --run homework > /dev/null
+
+  development:
+    name: development (everything)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5"
+          opam-pin: false
+
+      - name: Install the dependencies, including the classic generator's
+        run: |
+          opam install ./generator --deps-only --with-test
+          opam install pprint
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the web app's requirements
+        run: pip install -r requirements.txt
+
+      - name: Render the classic generator's config.ml (ignored in git)
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, ".")
+          import app
+          open("generator/config.ml", "w", encoding="utf-8").write(app.render_ml_config(app.DEFAULT_CONFIG))
+          PY
+
+      - name: Build everything and run every suite
+        working-directory: generator
+        run: |
+          opam exec -- dune build
+          opam exec -- dune build @rhema/test/runtest --force
+
+      - name: Check and run every library grammar with rhema
+        working-directory: generator
+        run: |
+          R=_build/install/default/bin/rhema
+          $R check stdlib/*.rhm
+          for f in stdlib/*.rhm; do
+            if grep -Eq '^\s*start\s+[A-Za-z_]' "$f"; then $R run "$f" --count 100 > /dev/null; fi
+          done
+          $R run stdlib/homework_set.rhm --run homework > /dev/null
+          $R run stdlib/homework_set.rhm --run quick > /dev/null
+
+      - name: Python checks that drive rhema
+        run: |
+          python tools/test_grammar_creation.py
+          python tools/rhema_difficulty.py report generator/stdlib/boolean.rhm --at 6 --count 50
+          python tools/rhema_stats.py generator/stdlib/boolean.rhm --count 20

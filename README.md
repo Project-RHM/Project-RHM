@@ -1,5 +1,7 @@
 # Project-RHM
 
+[![CI](https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml/badge.svg)](https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml)
+
 Project-RHM is a mathematical question generator implemented in OCaml, with a
 Flask web interface.
 
