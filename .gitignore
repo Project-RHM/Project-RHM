@@ -67,3 +67,6 @@ Thumbs.db
 
 # dune writes this when building the package in release mode
 generator/*.install
+
+# the documentation site, built by mkdocs
+/site/

@@ -1108,7 +1108,7 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
           (Printf.sprintf
              "this rule can reach '%s' again without spending any inherited \
               attribute, so a derivation could circle forever; make the loop \
-              consume a budget, for example 'len = -1'"
+              consume a budget, for example 'cost = -1'"
              rule.lhs))
     free_rules;
 

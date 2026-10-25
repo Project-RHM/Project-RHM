@@ -1,0 +1,19 @@
+# Second derivatives, built on the library's expressions.
+
+import "calculus.rhm" as calc
+
+attribute cost = 4 copy
+
+synth text on M
+synth answer_value on M
+
+start M
+
+M -> calc.F(cost = cost) {
+  answer_value = differentiate(differentiate($1.formula, "x"), "x")
+  require not formula_is_zero(answer_value)
+  text = "Find the second derivative of [`f(x) = " ++ $1.latex ++ "`]."
+}
+
+prompt "{M.text}"
+answer M.answer_value

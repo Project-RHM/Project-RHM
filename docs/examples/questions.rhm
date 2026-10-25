@@ -1,0 +1,34 @@
+# The sequence of chapter 4, asked three ways.
+
+random first = integer_between(-10, 10)
+random step  = nonzero_integer_between(-6, 6)
+random n     = integer_between(8, 15)
+
+let nth = first + (n - 1) * step
+let sum = n * (2 * first + (n - 1) * step) / 2
+
+synth kind on Q
+
+start Q
+
+Q -> "arithmetic" { kind = "arithmetic" }
+
+# The file-level prompt is the question `main`: both parts.
+prompt "An arithmetic sequence has first term [`a_1 = {first}`] and common
+difference [`d = {step}`].
+
+(a) Find [`a_{{{n}}}`]. {answer nth}
+
+(b) Find the sum of its first [`{n}`] terms. {answer sum}"
+
+question nth {
+  start Q
+  prompt "An arithmetic sequence has first term [`a_1 = {first}`] and common
+difference [`d = {step}`]. Find [`a_{{{n}}}`]. {answer nth}"
+}
+
+question sum {
+  start Q
+  prompt "An arithmetic sequence has first term [`a_1 = {first}`] and common
+difference [`d = {step}`]. Find the sum of its first [`{n}`] terms. {answer sum}"
+}

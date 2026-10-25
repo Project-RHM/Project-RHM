@@ -132,12 +132,15 @@ let budgets_for (draws : (string * Rhema_ast.budget_draw) list) count =
 (* ------------------------------------------------------------------ *)
 
 (* The shape of a derivation: which rule was applied at each node, in order,
-   with the leaves' values erased, so 3 + 4 and 7 + 2 are one shape. *)
+   with the leaves' values erased, so 3 + 4 and 7 + 2 are one shape. A rule
+   is named by its file and line, so rules of two files never collide. *)
 let rec skeleton (node : Rhema_engine.node) =
   match node.Rhema_engine.applied_rule with
   | None -> "."
   | Some rule ->
-      Printf.sprintf "%s@%d(%s)" node.Rhema_engine.symbol rule.Rhema_ast.rule_position.Rhema_ast.line
+      let position = rule.Rhema_ast.rule_position in
+      Printf.sprintf "%s@%s:%d(%s)" node.Rhema_engine.symbol position.Rhema_ast.file
+        position.Rhema_ast.line
         (node.Rhema_engine.children |> List.map skeleton |> String.concat ",")
 
 (* An answer a student picks from a few codes: true/false, or a small whole
@@ -269,7 +272,9 @@ let run ?paper (spec : Rhema_check.spec) (set : Rhema_ast.set_decl) ~variant =
       else begin
         Random.init (Hashtbl.hash (seed, position, retries_per_question - remaining));
         let question = Rhema_engine.generate grammar in
-        let shape = skeleton question.Rhema_engine.tree in
+        (* Two different questions are never repeats of each other, even
+           when they are built on the same rules (seq.nth and seq.sum). *)
+        let shape = kind ^ "|" ^ skeleton question.Rhema_engine.tree in
         let code = coded_answer question in
         let repeats_shape = distinct && Hashtbl.mem seen_shapes shape in
         let third_in_a_row =
@@ -349,9 +354,11 @@ let listing result =
       | _ -> ());
       List.iter
         (fun drawn ->
-          Printf.bprintf buffer "%s%s  [%s; %s]\n%s\n    %s: %s\n"
+          Printf.bprintf buffer "%s%s  [%s%s]\n%s\n    %s: %s\n"
             (if List.length members > 1 then "  " else "\n")
-            drawn.label drawn.kind (describe_budgets drawn.budgets) drawn.question.Rhema_engine.prompt
+            drawn.label drawn.kind
+            (match drawn.budgets with [] -> "" | budgets -> "; " ^ describe_budgets budgets)
+            drawn.question.Rhema_engine.prompt
             (if List.length drawn.question.Rhema_engine.answers > 1 then "answers" else "answer")
             drawn.question.Rhema_engine.answer_text)
         members)

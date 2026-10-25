@@ -389,15 +389,24 @@ let list options =
 (* The builtin functions, grouped by the value type their name starts with. *)
 let doc options =
   let wanted = match options.files with [] -> None | name :: _ -> Some name in
+  (* The value type a function works on, from its name: matrix2 and
+     matrix_add are matrix functions, differentiate a formula function. *)
   let group name =
-    match String.index_opt name '_' with
-    | Some i when List.mem (String.sub name 0 i) [ "formula"; "polynomial"; "equation"; "bool"; "matrix"; "set"; "vector"; "complex" ] ->
-        String.sub name 0 i
-    | _ -> "general"
+    let starts prefix =
+      String.length name >= String.length prefix
+      && String.sub name 0 (String.length prefix) = prefix
+    in
+    match
+      List.find_opt starts
+        [ "formula"; "polynomial"; "equation"; "bool"; "matrix"; "set_"; "vector"; "complex" ]
+    with
+    | Some "set_" -> "set"
+    | Some prefix -> prefix
+    | None -> if name = "differentiate" then "formula" else "general"
   in
   let entries =
     List.map (fun (name, arity) -> (group name, name, arity, "expression")) Rhema_check.expression_builtins
-    @ List.map (fun (name, arity) -> ("general", name, arity, "generator")) Rhema_check.generator_builtins
+    @ List.map (fun (name, arity) -> ("generators", name, arity, "generator")) Rhema_check.generator_builtins
   in
   match wanted with
   | Some name -> (
@@ -422,7 +431,7 @@ let doc options =
                   (if kind = "generator" then "   (a leaf that draws a value)" else ""))
             entries)
         groups;
-      print_endline "\nSee RHEMA_LANGUAGE_GUIDE.md section 12 for what each one does."
+      print_endline "\nWhat each one does: https://project-rhm.github.io/reference/builtins/"
 
 let () =
   match Array.to_list Sys.argv |> List.tl with

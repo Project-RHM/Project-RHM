@@ -1,0 +1,6 @@
+# What building the documentation site needs (mkdocs build, from the
+# repository root). The rhema command must also be built or installed: the
+# builtin functions page is generated from `rhema doc`.
+mkdocs==1.6.1
+mkdocs-material==9.8.0
+pymdown-extensions>=10.0,<11

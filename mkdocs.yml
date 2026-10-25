@@ -1,0 +1,64 @@
+site_name: Rhema
+site_description: A language for writing mathematics questions as attribute grammars, and its compiler.
+site_url: https://project-rhm.github.io/
+repo_url: https://github.com/Project-RHM/Project-RHM
+repo_name: GitHub
+edit_uri: edit/main/docs/
+copyright: Jingming Zhang, Jiaming Lei, Xiaobo Huang, Jiesen Long, Zhiyuan Li. MIT licence.
+
+docs_dir: docs
+exclude_docs: |
+  _hooks/
+  examples/
+
+theme:
+  name: readthedocs
+  highlightjs: false
+  navigation_depth: 3
+  collapse_navigation: false
+  sticky_navigation: true
+  prev_next_buttons_location: bottom
+
+extra_css:
+  - assets/pygments.css
+  - assets/rhema.css
+
+hooks:
+  - docs/_hooks/rhema_docs.py
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: false
+      use_pygments: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.snippets:
+      base_path: [docs/examples, .]
+      check_paths: true
+
+nav:
+  - Rhema: index.md
+  - Tutorial:
+      - Overview: tutorial/index.md
+      - 1. A first question: tutorial/first.md
+      - 2. Difficulty is a budget: tutorial/budget.md
+      - 3. Values and answers: tutorial/values.md
+      - 4. Prompts, contexts, blanks: tutorial/prompts.md
+      - 5. Several questions in one file: tutorial/questions.md
+      - 6. Building on the library: tutorial/import.md
+      - 7. A whole assignment: tutorial/sets.md
+      - 8. Into WeBWorK: tutorial/webwork.md
+  - Reference:
+      - The language: reference/language.md
+      - The rhema command: reference/command.md
+      - Builtin functions: reference/builtins.md
+      - The question library: reference/library.md
+      - Difficulty budgets: reference/difficulty.md
+  - Changes: changelog.md

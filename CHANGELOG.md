@@ -7,10 +7,21 @@ is announced one version before the removal.
 
 ## Unreleased
 
+- **Documentation site** (`docs/`, `mkdocs.yml`): a home page, an
+  eight-chapter tutorial, the language reference with its grammar in EBNF,
+  the command, the builtin functions (generated from `rhema doc`), the
+  library and difficulty budgets. Every example file is checked and run in
+  CI, and the site must build without warnings.
+- **Fixed**: `distinct` in a set counted two different named questions built
+  on the same rule as repeats, and could confuse rules of two files at the
+  same line; it now compares the question type and the rule's file too.
+- `rhema doc` groups functions by value type (`matrix2` with the matrices,
+  `differentiate` with the formulas, the generators on their own) and points
+  to the website. The set listing no longer prints an empty budget list.
 - **CI**: GitHub Actions builds the package from a clean export on OCaml
   4.14 and 5, Linux and macOS, exactly as opam does, installs it into a
   prefix and runs the command; a second job builds the whole tree with every
-  suite and the Python checks.
+  suite, the documentation examples and site, and the Python checks.
 
 ## 0.1.1 (2026-10-25)
 

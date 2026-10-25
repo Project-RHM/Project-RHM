@@ -217,6 +217,26 @@ set twins { 2 of single  distinct }
           if not (contains message "question 2 (single) could not satisfy the set's constraints") then
             fail ("unexpected message: " ^ message))
 
+(* Two named questions over the same rule are different questions: distinct
+   does not count one as a repeat of the other. *)
+let () =
+  let source =
+    {|synth value
+N -> integer(1) { value = $1.value }
+question first { start N  prompt "[`{N.value}`]"  answer N.value }
+question second { start N  prompt "Again: [`{N.value}`]"  answer N.value }
+set pair { 1 of first  1 of second  distinct }
+|}
+  in
+  match Rhema_load.parse_string ~filename:"pair.rhm" source with
+  | Error errors -> List.iter (fun error -> fail ("pair: " ^ Rhema_load.string_of_failure error)) errors
+  | Ok spec -> (
+      match Rhema_sets.run spec (set_named spec "pair") ~variant:1 with
+      | result ->
+          if List.length (Rhema_sets.questions result) <> 2 then fail "pair should give two questions"
+      | exception Rhema_engine.Generation_error message ->
+          fail ("two named questions on one rule were taken for repeats: " ^ message))
+
 (* ------------------------------------------------------------------ *)
 (* 3. Mistakes in a set                                                 *)
 (* ------------------------------------------------------------------ *)

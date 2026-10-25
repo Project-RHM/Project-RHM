@@ -1,0 +1,21 @@
+# The derivative of a x^n + b x. The coefficients are drawn once per question.
+
+random a = integer_between(2, 9)
+random n = integer_between(2, 6)
+random b = nonzero_integer_between(-9, 9)
+
+let x = formula_variable("x")
+let f = formula_add(formula_multiply(formula_constant(a), formula_power(x, n)),
+                    formula_multiply(formula_constant(b), x))
+let f_latex = formula_latex(f)
+
+synth derivative on Q
+
+start Q
+
+Q -> "derivative" {
+  derivative = differentiate(f, "x")
+}
+
+prompt "Differentiate [`f(x) = {f_latex}`] with respect to [`x`]."
+answer Q.derivative

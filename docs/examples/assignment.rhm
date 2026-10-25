@@ -1,0 +1,19 @@
+# Week 3: sequences, differentiation and logic, as one assignment.
+
+import "questions.rhm" as seq
+import "calculus.rhm" as calc
+import "boolean.rhm" as bool
+
+set week3 {
+  part "Sequences"
+    1 of seq.nth
+    1 of seq.sum
+  part "Differentiation"
+    3 of calc.derivative(cost ~ 6 spread 2 low 2)
+    1 of calc.integral(cost in {5, 7})
+  part "Logic"
+    3 of bool.main(cost in {8, 10, 12})
+  distinct
+  balanced
+  ordered
+}

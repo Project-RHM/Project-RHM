@@ -106,8 +106,51 @@ jobs:
           $R run stdlib/homework_set.rhm --run homework > /dev/null
           $R run stdlib/homework_set.rhm --run quick > /dev/null
 
+      - name: Documentation examples check and run
+        run: tools/check_doc_examples.sh generator/_build/install/default/bin/rhema
+
+      - name: Documentation site builds without warnings
+        env:
+          RHEMA: generator/_build/install/default/bin/rhema
+        run: |
+          pip install -r docs/requirements.txt
+          NO_MKDOCS_2_WARNING=1 mkdocs build --strict
+
       - name: Python checks that drive rhema
         run: |
           python tools/test_grammar_creation.py
           python tools/rhema_difficulty.py report generator/stdlib/boolean.rhm --at 6 --count 50
           python tools/rhema_stats.py generator/stdlib/boolean.rhm --count 20
+
+      # The site built above is published to Project-RHM/project-rhm.github.io
+      # on every push to main, once that repository has a deploy key whose
+      # private half is this repository's DOCS_DEPLOY_KEY secret. Without the
+      # secret the step is skipped and CI stays green.
+      - name: Publish the documentation site
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          DOCS_DEPLOY_KEY: ${{ secrets.DOCS_DEPLOY_KEY }}
+        run: |
+          if [ -z "$DOCS_DEPLOY_KEY" ]; then
+            echo "DOCS_DEPLOY_KEY is not set; not publishing."
+            exit 0
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DOCS_DEPLOY_KEY" > ~/.ssh/docs_deploy
+          chmod 600 ~/.ssh/docs_deploy
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/docs_deploy -o IdentitiesOnly=yes"
+          git clone --depth 1 git@github.com:Project-RHM/project-rhm.github.io.git "$RUNNER_TEMP/pages"
+          cd "$RUNNER_TEMP/pages"
+          git rm -rq --ignore-unmatch . > /dev/null
+          cp -R "$GITHUB_WORKSPACE/site/." .
+          touch .nojekyll
+          git add -A
+          if git diff --cached --quiet; then
+            echo "The site has not changed."
+            exit 0
+          fi
+          git -c user.name="Rhema docs" -c user.email="actions@github.com" \
+            commit -q -m "Site from Project-RHM/Project-RHM@${GITHUB_SHA::7}"
+          git push -q origin HEAD
+          echo "Published https://project-rhm.github.io/"
