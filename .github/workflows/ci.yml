@@ -142,6 +142,8 @@ jobs:
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/docs_deploy -o IdentitiesOnly=yes"
           git clone --depth 1 git@github.com:Project-RHM/project-rhm.github.io.git "$RUNNER_TEMP/pages"
           cd "$RUNNER_TEMP/pages"
+          # The site lives on main; an empty repository gets its first commit there.
+          git checkout -q -B main
           git rm -rq --ignore-unmatch . > /dev/null
           cp -R "$GITHUB_WORKSPACE/site/." .
           touch .nojekyll
@@ -152,5 +154,5 @@ jobs:
           fi
           git -c user.name="Rhema docs" -c user.email="actions@github.com" \
             commit -q -m "Site from Project-RHM/Project-RHM@${GITHUB_SHA::7}"
-          git push -q origin HEAD
+          git push -q origin main
           echo "Published https://project-rhm.github.io/"

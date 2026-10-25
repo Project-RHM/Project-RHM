@@ -78,6 +78,7 @@ says a question.
 
 ## Authors
 
-Jingming Zhang, Jiaming Lei, Xiaobo Huang, Jiesen Long and Zhiyuan Li.
-Rhema is free software under the MIT licence; the source is on
-[GitHub](https://github.com/Project-RHM/Project-RHM).
+Jingming Zhang, Jiaming Lei, Xiaobo Huang, Jiesen Long and Zhiyuan Li, at
+[Beijing Normal-Hong Kong Baptist University](https://www.bnbu.edu.cn/en/);
+see [Authors](authors.md). Rhema is free software under the MIT licence; the
+source is on [GitHub](https://github.com/Project-RHM/Project-RHM).
