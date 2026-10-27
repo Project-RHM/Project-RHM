@@ -100,6 +100,12 @@ let rec independent_contains value = function
       lower_ok && upper_ok
   | Rhema_set.Union (left, right) ->
       independent_contains value left || independent_contains value right
+  | Rhema_set.Above (bound, endpoint) ->
+      let c = Rhema_number.compare value bound in
+      if endpoint = Rhema_set.Open then c > 0 else c >= 0
+  | Rhema_set.Below (bound, endpoint) ->
+      let c = Rhema_number.compare value bound in
+      if endpoint = Rhema_set.Open then c < 0 else c <= 0
   | Rhema_set.Intersection (left, right) ->
       independent_contains value left && independent_contains value right
   | Rhema_set.Difference (left, right) ->

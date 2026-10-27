@@ -273,6 +273,8 @@ let expression_builtins =
     ("set_empty", 0);
     ("set_insert", 2);
     ("set_interval", 4);
+    ("set_above", 2);
+    ("set_below", 2);
     ("set_union", 2);
     ("set_intersection", 2);
     ("set_difference", 2);
@@ -298,6 +300,18 @@ let expression_builtins =
     ("bit_and", 2);
     ("bit_or", 2);
     ("bit_xor", 2);
+    (* Whole-number functions for counting and number theory. They work on
+       exact integers and stop generation, with a message, outside their
+       range (a factorial above 20!, a modulus that is not positive, an
+       inverse that does not exist). *)
+    ("number_latex", 1);
+    ("factorial", 1);
+    ("choose", 2);
+    ("permutations", 2);
+    ("gcd", 2);
+    ("lcm", 2);
+    ("pow_mod", 3);
+    ("mod_inverse", 2);
   ]
 
 (* Builtins usable as a right-hand side symbol, i.e. leaves that draw a random
@@ -790,13 +804,30 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
                          nonterminal name
                          (if carried = [] then "no synthesized attribute"
                           else String.concat ", " carried))
-              | None ->
-                  if not (is_synthesized name) then
+              | None -> (
+                  (* A leaf -- a generator, a quoted word, an operator or any
+                     symbol with no productions -- carries exactly one
+                     attribute, `value`, whether or not the file declares it. *)
+                  let leaf =
+                    match List.nth_opt rhs (index - 1) with
+                    | Some (Generator _ | Literal _) -> true
+                    | Some (Symbol symbol) -> not (is_nonterminal symbol)
+                    | _ -> false
+                  in
+                  if leaf then begin
+                    if name <> "value" then
+                      report position
+                        (Printf.sprintf
+                           "$%d is a leaf, which carries only 'value'; write str($%d.value) to \
+                            render it"
+                           index index)
+                  end
+                  else if not (is_synthesized name) then
                     report position
                       (Printf.sprintf
                          "'%s' is not a synthesized attribute, so a child does not \
                           carry it"
-                         name))
+                         name)))
         | Child index ->
             if context = `Downward then
               report position

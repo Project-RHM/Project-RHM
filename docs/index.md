@@ -31,8 +31,9 @@ opam install rhema
 ```
 
 This installs the `rhema` command and a library of grammars for arithmetic,
-algebra, calculus, propositional logic, sets, vectors, complex numbers,
-sequences and linear algebra. Until the package reaches the opam repository:
+algebra, calculus, limits, series, propositional logic, sets and
+inequalities, vectors, complex numbers, sequences, linear algebra and
+eigenvalues, counting and probability, and number theory. Until the package reaches the opam repository:
 
 ```text
 opam pin add rhema https://github.com/Project-RHM/Project-RHM.git#v0.1.1 --subpath generator

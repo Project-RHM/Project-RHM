@@ -20,6 +20,7 @@
 | `logic_forms.rhm` | 所引入的定律或表达式 | 6 | QUESTION_TYPES.md |
 | `matrix_expr.rhm`、`determinant.rhm` | 运算和矩阵的阶 | 4、3 | QUESTION_TYPES.md |
 | `matrix_inverse.rhm`、`linear_system.rhm` | 固定形式，各按其价 | 2、5 | QUESTION_TYPES.md |
+| `counting.rhm`、`number_theory.rhm`、`series.rhm`、`limits.rhm`、`eigen.rhm`、`inequality.rhm` | 固定形式，价格 1 到 3 | 2 | QUESTION_TYPES.md |
 
 > **套题进了语言。** 有了 `set` 声明（`RHEMA_LANGUAGE_EXTENSIONS.zh.md` 第 6 节），文件里可以写 `3 of calc.derivative(cost ~ 6 spread 2)`，`rhema --run` 围绕均值抽预算并把均值调到精确值，这正是 `tools/rhema_difficulty.py set` 原来在外部做的事。工具的 `report` 和 `levels` 仍用于测量一个文法；它的 `set` 子命令为 `--targets` 形式保留，其余功能已被取代。
 

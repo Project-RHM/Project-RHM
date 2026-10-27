@@ -1,0 +1,108 @@
+# ==========================================================================
+#  Limits
+#
+#  Limits a first course computes by algebra or by the standard limits
+#  sin(x)/x -> 1, (e^x - 1)/x -> 1 and (1 - cos x)/x^2 -> 1/2. Every
+#  question is built from its answer: a removable discontinuity is made by
+#  multiplying numerator and denominator by the same factor (x - a), a limit
+#  at infinity by choosing the leading coefficients, and a trigonometric
+#  limit by choosing the constants that scale the standard one. Polynomials
+#  are shown expanded, so the factor has to be found.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  (x - a)(p x + q) / (x - a) at x -> a, a ratio of quadratics at infinity
+#    2  (x - a)(p x + q) / ((x - a)(r x + s)) at x -> a, sin(k x)/(m x),
+#       (e^{k x} - 1)/(m x)
+#    3  sin(k x)/sin(m x), (1 - cos(k x))/(m x^2)
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+start Q
+
+# ---- Price 1 --------------------------------------------------------------
+
+Q -> "removable" nonzero_integer_between(-6, 6) integer_between(1, 5) nonzero_integer_between(-9, 9) when cost = 1 weight 2 {
+  cost = -1
+  kind = "removable"
+  require $3.value * $2.value + $4.value != 0
+  text = "Find [`\displaystyle\lim_{x \to " ++ str($2.value) ++ "} \frac{"
+         ++ polynomial_latex(polynomial_multiply(polynomial_linear(1, 0 - $2.value, "x"), polynomial_linear($3.value, $4.value, "x")))
+         ++ "}{" ++ polynomial_latex(polynomial_linear(1, 0 - $2.value, "x")) ++ "}`]."
+  answer_value = $3.value * $2.value + $4.value
+}
+
+Q -> "at_infinity" nonzero_integer_between(-9, 9) integer_between(-9, 9) integer_between(-9, 9) integer_between(1, 9) integer_between(-9, 9) integer_between(-9, 9) when cost = 1 {
+  cost = -1
+  kind = "at_infinity"
+  require abs($2.value) != $5.value
+  text = "Find [`\displaystyle\lim_{x \to \infty} \frac{"
+         ++ polynomial_latex(polynomial_quadratic($2.value, $3.value, $4.value, "x")) ++ "}{"
+         ++ polynomial_latex(polynomial_quadratic($5.value, $6.value, $7.value, "x")) ++ "}`]."
+  answer_value = $2.value / $5.value
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The factor (x - a) cancels; what is left must not vanish at a, and the two
+# remaining factors must differ, or the whole function would be constant.
+Q -> "removable_both" nonzero_integer_between(-5, 5) integer_between(1, 4) nonzero_integer_between(-9, 9) integer_between(1, 4) nonzero_integer_between(-9, 9) when cost = 2 weight 2 {
+  cost = -2
+  kind = "removable_both"
+  require $3.value * $2.value + $4.value != 0
+  require $5.value * $2.value + $6.value != 0
+  require $3.value * $6.value != $4.value * $5.value
+  text = "Find [`\displaystyle\lim_{x \to " ++ str($2.value) ++ "} \frac{"
+         ++ polynomial_latex(polynomial_multiply(polynomial_linear(1, 0 - $2.value, "x"), polynomial_linear($3.value, $4.value, "x")))
+         ++ "}{"
+         ++ polynomial_latex(polynomial_multiply(polynomial_linear(1, 0 - $2.value, "x"), polynomial_linear($5.value, $6.value, "x")))
+         ++ "}`]."
+  answer_value = ($3.value * $2.value + $4.value) / ($5.value * $2.value + $6.value)
+}
+
+Q -> "sin_linear" integer_between(1, 9) integer_between(1, 9) when cost = 2 weight 2 {
+  cost = -2
+  kind = "sin_linear"
+  require $2.value != $3.value
+  text = "Find [`\displaystyle\lim_{x \to 0} \frac{\sin(" ++ cond($2.value = 1, "", str($2.value))
+         ++ "x)}{" ++ cond($3.value = 1, "", str($3.value)) ++ "x}`]."
+  answer_value = $2.value / $3.value
+}
+
+Q -> "exp_linear" integer_between(1, 9) integer_between(1, 9) when cost = 2 {
+  cost = -2
+  kind = "exp_linear"
+  require $2.value != $3.value
+  text = "Find [`\displaystyle\lim_{x \to 0} \frac{e^{" ++ cond($2.value = 1, "", str($2.value))
+         ++ "x} - 1}{" ++ cond($3.value = 1, "", str($3.value)) ++ "x}`]."
+  answer_value = $2.value / $3.value
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+Q -> "sin_ratio" integer_between(1, 9) integer_between(1, 9) when cost = 3 weight 2 {
+  cost = -3
+  kind = "sin_ratio"
+  require $2.value != $3.value
+  text = "Find [`\displaystyle\lim_{x \to 0} \frac{\sin(" ++ cond($2.value = 1, "", str($2.value))
+         ++ "x)}{\sin(" ++ cond($3.value = 1, "", str($3.value)) ++ "x)}`]."
+  answer_value = $2.value / $3.value
+}
+
+# 1 - cos(k x) behaves like (k x)^2 / 2.
+Q -> "cos_quadratic" integer_between(1, 6) integer_between(1, 9) when cost = 3 weight 2 {
+  cost = -3
+  kind = "cos_quadratic"
+  text = "Find [`\displaystyle\lim_{x \to 0} \frac{1 - \cos(" ++ cond($2.value = 1, "", str($2.value))
+         ++ "x)}{" ++ cond($3.value = 1, "", str($3.value)) ++ "x^{2}}`]."
+  answer_value = $2.value ^ 2 / (2 * $3.value)
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

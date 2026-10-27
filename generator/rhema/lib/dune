@@ -2,7 +2,7 @@
  (name rhema)
  (package rhema)
  (wrapped false)
- (modules rhema_ast rhema_lexer rhema_parser rhema_check rhema_load rhema_number rhema_formula rhema_boolean rhema_polynomial rhema_equation rhema_matrix rhema_set rhema_vector rhema_engine rhema_pgml rhema_sets rhema_cli rhema_version rhema_visualization)
+ (modules rhema_ast rhema_lexer rhema_parser rhema_check rhema_load rhema_number rhema_integers rhema_formula rhema_boolean rhema_polynomial rhema_equation rhema_matrix rhema_set rhema_vector rhema_engine rhema_pgml rhema_sets rhema_cli rhema_version rhema_visualization)
  (libraries menhirLib))
 
 (menhir

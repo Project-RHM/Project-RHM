@@ -1,0 +1,162 @@
+# ==========================================================================
+#  Counting and probability
+#
+#  Arrangements, selections and probabilities of the first-year kind. Each
+#  form draws its numbers, and the answer is computed from them with the
+#  whole-number functions (factorial, permutations, choose); a probability
+#  is an exact fraction.
+#
+#  Two named questions ask one family only:
+#
+#    rhema run counting.rhm                          either family
+#    rhema run counting.rhm --question counting      arrangements and selections
+#    rhema run counting.rhm --question probability   probabilities
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  a row of people, ranked places, a committee
+#    2  arrangements of a word with repeated letters, a committee with a
+#       condition, the sum of two dice
+#    3  drawing without replacement, at least one six, exactly j heads
+#
+#  A set drawn with `cost in {1, 2, 3}` or `allowed {1, 2, 3}` mixes them.
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+synth kind on C
+synth text on C
+synth answer_value on C
+synth kind on P
+synth text on P
+synth answer_value on P
+
+start Q
+
+# ---- Which family -----------------------------------------------------------
+
+# Selections cost 1 or 2 and probabilities 2 or 3; each family is offered
+# only where the budget buys one of its forms.
+Q -> C when cost <= 2 weight 1 { kind = $1.kind  text = $1.text  answer_value = $1.answer_value }
+Q -> P when cost >= 2 weight 1 { kind = $1.kind  text = $1.text  answer_value = $1.answer_value }
+
+# ---- Arrangements and selections -------------------------------------------
+
+C -> "row" integer_between(4, 8) when cost = 1 {
+  cost = -1
+  kind = "row"
+  text = "In how many ways can [`" ++ str($2.value) ++ "`] people stand in a row?"
+  answer_value = factorial($2.value)
+}
+
+C -> "ranked" integer_between(6, 12) integer_between(2, 3) when cost = 1 {
+  cost = -1
+  kind = "ranked"
+  text = "[`" ++ str($2.value) ++ "`] runners enter a race. In how many ways can the first [`"
+         ++ str($3.value) ++ "`] places be filled, if there are no ties?"
+  answer_value = permutations($2.value, $3.value)
+}
+
+C -> "committee" integer_between(6, 14) integer_between(2, 5) when cost = 1 {
+  cost = -1
+  kind = "committee"
+  require $3.value < $2.value
+  text = "In how many ways can a committee of [`" ++ str($3.value) ++ "`] be chosen from [`"
+         ++ str($2.value) ++ "`] people?"
+  answer_value = choose($2.value, $3.value)
+}
+
+# A word, by its index, with the number of arrangements of its letters
+# written out as factorials, so the formula is visible in the grammar.
+C -> "word" integer_between(1, 6) when cost = 2 weight 2 {
+  cost = -2
+  kind = "word"
+  text = "How many different arrangements are there of the letters of the word [`\text{"
+         ++ cond($2.value = 1, "BANANA", cond($2.value = 2, "LETTER", cond($2.value = 3, "PEPPER",
+            cond($2.value = 4, "COMMITTEE", cond($2.value = 5, "STATISTICS", "MISSISSIPPI")))))
+         ++ "}`]?"
+  answer_value = cond($2.value = 1, factorial(6) / (factorial(3) * factorial(2)),
+                 cond($2.value = 2, factorial(6) / (factorial(2) * factorial(2)),
+                 cond($2.value = 3, factorial(6) / (factorial(3) * factorial(2)),
+                 cond($2.value = 4, factorial(9) / (factorial(2) * factorial(2) * factorial(2)),
+                 cond($2.value = 5, factorial(10) / (factorial(3) * factorial(3) * factorial(2)),
+                      factorial(11) / (factorial(4) * factorial(4) * factorial(2)))))))
+}
+
+# At least one of a group: all selections minus those with none of it.
+C -> "at_least_one" integer_between(4, 8) integer_between(3, 7) integer_between(3, 5) when cost = 2 weight 2 {
+  cost = -2
+  kind = "at_least_one"
+  text = "A committee of [`" ++ str($4.value) ++ "`] is to be chosen from [`" ++ str($2.value)
+         ++ "`] men and [`" ++ str($3.value) ++ "`] women. In how many ways can this be done if
+the committee must include at least one woman?"
+  answer_value = choose($2.value + $3.value, $4.value) - choose($2.value, $4.value)
+}
+
+# Two people who refuse to serve together: all selections minus those with both.
+C -> "not_together" integer_between(7, 12) integer_between(3, 5) when cost = 2 weight 2 {
+  cost = -2
+  kind = "not_together"
+  require $3.value < $2.value
+  text = "A team of [`" ++ str($3.value) ++ "`] is chosen from [`" ++ str($2.value)
+         ++ "`] students, two of whom refuse to be on the team together. How many teams are possible?"
+  answer_value = choose($2.value, $3.value) - choose($2.value - 2, $3.value - 2)
+}
+
+# ---- Probabilities ---------------------------------------------------------
+
+# Two fair dice: the number of ways to make s is 6 - |s - 7|.
+P -> "dice_sum" integer_between(3, 11) when cost = 2 weight 2 {
+  cost = -2
+  kind = "dice_sum"
+  text = "Two fair six-sided dice are rolled. What is the probability that the sum is [`"
+         ++ str($2.value) ++ "`]? Give your answer as a fraction."
+  answer_value = (6 - abs($2.value - 7)) / 36
+}
+
+P -> "draw_all" integer_between(3, 8) integer_between(2, 7) integer_between(2, 3) when cost = 3 {
+  cost = -3
+  kind = "draw_all"
+  require $4.value <= $2.value
+  text = "A bag contains [`" ++ str($2.value) ++ "`] red and [`" ++ str($3.value)
+         ++ "`] blue balls. [`" ++ str($4.value) ++ "`] balls are drawn at random without replacement.
+What is the probability that they are all red? Give your answer as a fraction."
+  answer_value = choose($2.value, $4.value) / choose($2.value + $3.value, $4.value)
+}
+
+P -> "at_least_one_six" integer_between(2, 4) when cost = 3 {
+  cost = -3
+  kind = "at_least_one_six"
+  text = "A fair six-sided die is rolled [`" ++ str($2.value)
+         ++ "`] times. What is the probability of getting at least one six? Give your answer as a fraction."
+  answer_value = 1 - (5 / 6) ^ $2.value
+}
+
+P -> "heads" integer_between(4, 8) integer_between(1, 7) when cost = 3 {
+  cost = -3
+  kind = "heads"
+  require $3.value < $2.value
+  text = "A fair coin is tossed [`" ++ str($2.value) ++ "`] times. What is the probability of getting
+exactly [`" ++ str($3.value) ++ "`] heads? Give your answer as a fraction."
+  answer_value = choose($2.value, $3.value) / 2 ^ $2.value
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
+
+question counting {
+  start C
+  prompt "{C.text}"
+  answer C.answer_value
+}
+
+question probability {
+  start P
+  prompt "{P.text}"
+  answer P.answer_value
+  cost = 3
+}

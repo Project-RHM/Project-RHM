@@ -16,7 +16,7 @@ The tables give, for each grammar, what it asks, what its difficulty budget
 Prices are per production: a sum that costs 1 and a product that costs 3
 make `x + 2x \cdot \sin x` cost at least 4.
 
---8<-- "QUESTION_TYPES.md:15:47"
+--8<-- "QUESTION_TYPES.md:tables"
 
 ## Libraries and examples
 

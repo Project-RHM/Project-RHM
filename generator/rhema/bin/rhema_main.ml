@@ -402,7 +402,11 @@ let doc options =
     with
     | Some "set_" -> "set"
     | Some prefix -> prefix
-    | None -> if name = "differentiate" then "formula" else "general"
+    | None ->
+        if name = "differentiate" then "formula"
+        else if List.mem name [ "factorial"; "choose"; "permutations"; "gcd"; "lcm"; "pow_mod"; "mod_inverse" ]
+        then "integers"
+        else "general"
   in
   let entries =
     List.map (fun (name, arity) -> (group name, name, arity, "expression")) Rhema_check.expression_builtins

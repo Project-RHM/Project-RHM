@@ -47,6 +47,8 @@ attributes, constraints, wording, and answers. The shipped specifications are:
 - `logic_forms.rhm`, three more questions on the Boolean grammars
 - `matrix_expr.rhm`, `determinant.rhm`, `matrix_inverse.rhm`, `linear_system.rhm`, on the
   library `matrix_core.rhm` and the Matrix value type (`rhema_matrix.ml`)
+- `counting.rhm`, `number_theory.rhm`, `series.rhm`, `limits.rhm`, `eigen.rhm`,
+  `inequality.rhm`, each built from its answer
   (see `QUESTION_TYPES.md` for every grammar, its prices and its context)
 
 ### The `rhema` command

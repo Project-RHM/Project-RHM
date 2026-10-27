@@ -1,0 +1,111 @@
+# ==========================================================================
+#  Eigenvalues and eigenvectors
+#
+#  Every matrix is built from its eigen-decomposition: integer eigenvalues
+#  D and an integer matrix P whose inverse is also integer (determinant 1),
+#  so A = P D P^{-1} has whole entries, its eigenvalues are D's, and the
+#  columns of P are eigenvectors. Nothing is solved; the question is the
+#  decomposition read backwards.
+#
+#  Answers are given one per question: the eigenvalues as a set (graded in
+#  the Interval context, so their order does not matter), the characteristic
+#  polynomial as a formula in x, an eigenvector as any vector parallel to
+#  the right one (Vector context).
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the eigenvalues of a triangular 2 by 2 matrix
+#    2  the eigenvalues of a 2 by 2 matrix, its characteristic polynomial
+#    3  an eigenvector of a 2 by 2 matrix, the eigenvalues of a 3 by 3 matrix
+# ==========================================================================
+
+attribute cost = 2 split
+
+random l1 = integer_between(-6, 6)
+random l2 = integer_between(-6, 6)
+random l3 = integer_between(-6, 6)
+random p = nonzero_integer_between(-3, 3)
+random q = nonzero_integer_between(-3, 3)
+random b = nonzero_integer_between(-9, 9)
+random u1 = integer_between(-2, 2)
+random u2 = integer_between(-2, 2)
+random u3 = integer_between(-2, 2)
+random v1 = integer_between(-2, 2)
+random v2 = integer_between(-2, 2)
+random v3 = integer_between(-2, 2)
+
+# 2 by 2: P = [1 q; p pq+1] has determinant 1; its columns (1, p) and
+# (q, pq+1) are eigenvectors for l1 and l2.
+let p2 = matrix2(1, q, p, p * q + 1)
+let a2 = matrix_multiply(matrix_multiply(p2, matrix2(l1, 0, 0, l2)), matrix_inverse(p2))
+
+# 3 by 3: P = L U with unit diagonals has determinant 1.
+let p3 = matrix_multiply(matrix3(1, 0, 0, u1, 1, 0, u2, u3, 1), matrix3(1, v1, v2, 0, 1, v3, 0, 0, 1))
+let a3 = matrix_multiply(matrix_multiply(p3, matrix3(l1, 0, 0, 0, l2, 0, 0, 0, l3)), matrix_inverse(p3))
+
+let values2 = set_insert(set_insert(set_empty(), l1), l2)
+let values3 = set_insert(values2, l3)
+
+let as_set = "Enter the eigenvalues as a set, such as [`\{-1, 4\}`]."
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+synth pg_context on Q
+
+start Q
+
+Q -> "triangular" when cost = 1 {
+  cost = -1
+  kind = "triangular"
+  require l1 != l2
+  pg_context = "Interval"
+  text = "Find the eigenvalues of [`A = " ++ matrix_latex(matrix2(l1, b, 0, l2)) ++ "`]. " ++ as_set
+  answer_value = values2
+}
+
+# Not already triangular, so the eigenvalues cannot be read off the diagonal.
+Q -> "eigenvalues2" when cost = 2 weight 2 {
+  cost = -2
+  kind = "eigenvalues2"
+  require l1 != l2
+  require matrix_entry(a2, 1, 2) != 0 and matrix_entry(a2, 2, 1) != 0
+  pg_context = "Interval"
+  text = "Find the eigenvalues of [`A = " ++ matrix_latex(a2) ++ "`]. " ++ as_set
+  answer_value = values2
+}
+
+Q -> "characteristic" when cost = 2 {
+  cost = -2
+  kind = "characteristic"
+  require matrix_entry(a2, 1, 2) != 0 and matrix_entry(a2, 2, 1) != 0
+  pg_context = "Numeric"
+  text = "Find the characteristic polynomial [`\det(A - xI)`] of [`A = " ++ matrix_latex(a2) ++ "`]."
+  answer_value = polynomial_quadratic(1, 0 - (l1 + l2), l1 * l2, "x")
+}
+
+Q -> "eigenvector" when cost = 3 weight 2 {
+  cost = -3
+  kind = "eigenvector"
+  require l1 != l2
+  require matrix_entry(a2, 1, 2) != 0 and matrix_entry(a2, 2, 1) != 0
+  pg_context = "Vector"
+  text = "The matrix [`A = " ++ matrix_latex(a2) ++ "`] has eigenvalue [`\lambda = " ++ str(l1)
+         ++ "`]. Find an eigenvector of [`A`] for this eigenvalue."
+  answer_value = vector_parallel_answer(vector2(1, p))
+}
+
+Q -> "eigenvalues3" when cost = 3 weight 2 {
+  cost = -3
+  kind = "eigenvalues3"
+  require l1 != l2 and l2 != l3 and l1 != l3
+  require matrix_entry(a3, 1, 2) != 0 and matrix_entry(a3, 2, 1) != 0 and matrix_entry(a3, 3, 1) != 0
+  require abs(matrix_entry(a3, 1, 1)) <= 40 and abs(matrix_entry(a3, 2, 2)) <= 40 and abs(matrix_entry(a3, 3, 3)) <= 40
+  pg_context = "Interval"
+  text = "Find the eigenvalues of [`A = " ++ matrix_latex(a3) ++ "`]. " ++ as_set
+  answer_value = values3
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

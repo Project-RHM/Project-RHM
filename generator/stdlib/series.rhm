@@ -1,0 +1,120 @@
+# ==========================================================================
+#  Series
+#
+#  Sums of infinite geometric series, telescoping sums, and finite sums of
+#  polynomials. The terms are built from drawn numbers, and the answer is
+#  the exact value of the sum, from the closed form: a / (1 - r) for a
+#  geometric series, the surviving terms of a telescoping sum, and the
+#  formulas for the sums of k and k^2.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  an infinite geometric series written out, the sum of the squares
+#    2  a geometric series in sigma notation from k = m, the sum of a
+#       quadratic in k, a telescoping sum of 1/((k+c)(k+c+1))
+#    3  a telescoping sum of 1/(k(k+g)), finite or infinite, the sum of two
+#       geometric series
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+synth value on R
+synth latex on R
+
+start Q
+
+# ---- A common ratio p/q with 0 < |p| < q and p/q in lowest terms ----------
+
+R -> nonzero_integer_between(-5, 5) integer_between(2, 7) {
+  require abs($1.value) < $2.value
+  require gcd(abs($1.value), $2.value) = 1
+  value = $1.value / $2.value
+  latex = number_latex($1.value / $2.value)
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+Q -> "geometric_infinite" integer_between(1, 9) R when cost = 1 weight 2 {
+  cost = -1
+  kind = "geometric_infinite"
+  text = "Find the sum of the infinite geometric series [`"
+         ++ number_latex($2.value)
+         ++ cond($2.value * $3.value < 0, " - ", " + ") ++ number_latex(abs($2.value * $3.value))
+         ++ cond($2.value * $3.value ^ 2 < 0, " - ", " + ") ++ number_latex(abs($2.value * $3.value ^ 2))
+         ++ " + \cdots`]."
+  answer_value = $2.value / (1 - $3.value)
+}
+
+Q -> "squares" integer_between(8, 60) when cost = 1 {
+  cost = -1
+  kind = "squares"
+  text = "Find [`\displaystyle\sum_{k=1}^{" ++ str($2.value) ++ "} k^{2}`]."
+  answer_value = $2.value * ($2.value + 1) * (2 * $2.value + 1) / 6
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+Q -> "geometric_sigma" integer_between(0, 3) integer_between(1, 9) R when cost = 2 weight 2 {
+  cost = -2
+  kind = "geometric_sigma"
+  text = "Find [`\displaystyle\sum_{k=" ++ str($2.value) ++ "}^{\infty} " ++ cond($3.value = 1, "", str($3.value))
+         ++ "\left(" ++ $4.latex ++ "\right)^{k}`]."
+  answer_value = $3.value * $4.value ^ $2.value / (1 - $4.value)
+}
+
+Q -> "polynomial_sum" integer_between(1, 5) nonzero_integer_between(-9, 9) integer_between(-9, 9) integer_between(5, 30) when cost = 2 weight 2 {
+  cost = -2
+  kind = "polynomial_sum"
+  text = "Find [`\displaystyle\sum_{k=1}^{" ++ str($5.value) ++ "} \left("
+         ++ polynomial_latex(polynomial_quadratic($2.value, $3.value, $4.value, "k")) ++ "\right)`]."
+  answer_value = $2.value * $5.value * ($5.value + 1) * (2 * $5.value + 1) / 6
+                 + $3.value * $5.value * ($5.value + 1) / 2
+                 + $4.value * $5.value
+}
+
+# 1/((k+c)(k+c+1)) = 1/(k+c) - 1/(k+c+1): all but the first and last cancel.
+Q -> "telescoping" integer_between(0, 4) integer_between(5, 40) when cost = 2 weight 2 {
+  cost = -2
+  kind = "telescoping"
+  text = "Find [`\displaystyle\sum_{k=1}^{" ++ str($3.value) ++ "} \frac{1}{"
+         ++ cond($2.value = 0, "k(k+1)", "(k+" ++ str($2.value) ++ ")(k+" ++ str($2.value + 1) ++ ")")
+         ++ "}`]."
+  answer_value = 1 / ($2.value + 1) - 1 / ($3.value + $2.value + 1)
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# 1/(k(k+g)) = (1/g)(1/k - 1/(k+g)): the first g and the last g terms survive.
+Q -> "telescoping_gap" integer_between(2, 3) integer_between(5, 30) when cost = 3 weight 2 {
+  cost = -3
+  kind = "telescoping_gap"
+  text = "Find [`\displaystyle\sum_{k=1}^{" ++ str($3.value) ++ "} \frac{1}{k(k+" ++ str($2.value) ++ ")}`]."
+  answer_value = cond($2.value = 2,
+                      (1 + 1/2 - 1/($3.value + 1) - 1/($3.value + 2)) / 2,
+                      (1 + 1/2 + 1/3 - 1/($3.value + 1) - 1/($3.value + 2) - 1/($3.value + 3)) / 3)
+}
+
+Q -> "telescoping_infinite" integer_between(2, 4) when cost = 3 {
+  cost = -3
+  kind = "telescoping_infinite"
+  text = "Find [`\displaystyle\sum_{k=1}^{\infty} \frac{1}{k(k+" ++ str($2.value) ++ ")}`]."
+  answer_value = cond($2.value = 2, (1 + 1/2) / 2,
+                 cond($2.value = 3, (1 + 1/2 + 1/3) / 3, (1 + 1/2 + 1/3 + 1/4) / 4))
+}
+
+Q -> "geometric_combined" integer_between(1, 9) R integer_between(1, 9) R when cost = 3 weight 2 {
+  cost = -3
+  kind = "geometric_combined"
+  require $3.value != $5.value
+  text = "Find [`\displaystyle\sum_{k=0}^{\infty} \left(" ++ cond($2.value = 1, "", str($2.value)) ++ "\left(" ++ $3.latex
+         ++ "\right)^{k} + " ++ cond($4.value = 1, "", str($4.value)) ++ "\left(" ++ $5.latex ++ "\right)^{k}\right)`]."
+  answer_value = $2.value / (1 - $3.value) + $4.value / (1 - $5.value)
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

@@ -93,6 +93,12 @@ GROUPS = [
     ("generators", "Generators",
      "Leaves that draw a whole number. They appear on the right of a production, "
      "or after `random NAME =`; their arguments are whole numbers."),
+    ("integers", "Whole numbers",
+     "Counting and number theory on whole numbers: factorials, binomial "
+     "coefficients and permutations, greatest common divisors and least common "
+     "multiples, powers and inverses modulo n. A result too large for a 63-bit "
+     "integer, or an inverse that does not exist, stops generation with a "
+     "message."),
     ("formula", "Formulas",
      "Symbolic expressions in named variables: constants, variables, the four "
      "operations and powers, `sin`, `cos`, `tan`, `exp`, `ln` and `sqrt`, with "
@@ -121,8 +127,8 @@ GROUPS = [
      "row written as a linear equation). A matrix answer is graded in the Matrix "
      "context."),
     ("set", "Sets",
-     "Finite sets and intervals of real numbers, with union, intersection and "
-     "difference, and LaTeX. A set answer is graded in the Interval context."),
+     "Finite sets, intervals and rays of real numbers, with union, intersection "
+     "and difference, and LaTeX. A set answer is graded in the Interval context."),
     ("vector", "Vectors",
      "Vectors with exact entries: sums, multiples, dot and cross products, norms, "
      "unit vectors, parallel and direction tests, and the answer forms WeBWorK's "
@@ -148,6 +154,16 @@ DESCRIPTIONS = {
     "nonzero_integer": "`nonzero_integer(n)`: as `integer`, never 0.",
     "integer_between": "`integer_between(a, b)`: a whole number from `a` to `b` inclusive.",
     "nonzero_integer_between": "`nonzero_integer_between(a, b)`: as `integer_between`, never 0.",
+    "number_latex": "A number in LaTeX: a whole number as it is, a fraction as `\\frac{p}{q}` with its sign in front.",
+    "factorial": "`factorial(n)`: n!, for n from 0 to 20.",
+    "choose": "`choose(n, k)`: the number of ways to choose k of n; 0 when k is out of range.",
+    "permutations": "`permutations(n, k)`: the number of ordered choices of k of n.",
+    "gcd": "The greatest common divisor of two whole numbers.",
+    "lcm": "The least common multiple of two whole numbers.",
+    "pow_mod": "`pow_mod(a, k, n)`: the remainder of a^k on division by n, for k >= 0 and n > 0.",
+    "mod_inverse": "`mod_inverse(a, n)`: the x in 0..n-1 with a x = 1 (mod n); an error unless a and n are coprime.",
+    "set_above": "`set_above(a, closed)`: the numbers above a, `(a, \\infty)`, or from a, `[a, \\infty)`, when `closed` is true.",
+    "set_below": "`set_below(a, closed)`: the numbers below a, `(-\\infty, a)`, or up to a, `(-\\infty, a]`.",
     "differentiate": "`differentiate(f, \"x\")`: the derivative of formula `f` with respect to `x`.",
 }
 

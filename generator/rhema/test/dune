@@ -183,3 +183,58 @@
  ; reads the PG back with the classic parser, a development-only library
  (enabled_if (= %{profile} dev)))
 
+(test
+ (name rhema_integers_test)
+ (modules rhema_integers_test)
+ (package rhema)
+ (libraries rhema)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_counting_test)
+ (modules rhema_counting_test)
+ (package rhema)
+ (libraries rhema str)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_number_theory_test)
+ (modules rhema_number_theory_test)
+ (package rhema)
+ (libraries rhema str)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_series_test)
+ (modules rhema_series_test)
+ (package rhema)
+ (libraries rhema str)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_limits_test)
+ (modules rhema_limits_test)
+ (package rhema)
+ (libraries rhema str)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_eigen_test)
+ (modules rhema_eigen_test)
+ (package rhema)
+ (libraries rhema str)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_inequality_test)
+ (modules rhema_inequality_test)
+ (package rhema)
+ (libraries rhema str)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))

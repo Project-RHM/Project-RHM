@@ -148,7 +148,39 @@ let to_formula polynomial =
   |> List.fold_left Rhema_formula.add Rhema_formula.zero
 
 let to_pg polynomial = Rhema_formula.to_pg (to_formula polynomial)
-let to_latex polynomial = Rhema_formula.to_latex (to_formula polynomial)
+(* Highest degree first, signs between the terms: -5 \cdot x^{2} - 4 \cdot x + 9.
+   Written directly rather than through the formula, whose sums reorder a
+   negative leading term (9 - (5 \cdot x^{2} + 4 \cdot x)). *)
+let to_latex polynomial =
+  let terms =
+    polynomial.coefficients
+    |> List.mapi (fun degree coefficient -> (degree, coefficient))
+    |> List.filter (fun (_, coefficient) -> not (Rhema_number.is_zero coefficient))
+    |> List.rev
+  in
+  let magnitude_text degree magnitude =
+    let one = Rhema_number.equal magnitude (Rhema_number.of_int 1) in
+    let number = Rhema_formula.to_latex (Rhema_formula.constant magnitude) in
+    let power =
+      if degree = 1 then polynomial.variable
+      else Printf.sprintf "%s^{%d}" polynomial.variable degree
+    in
+    if degree = 0 then number else if one then power else number ^ " \\cdot " ^ power
+  in
+  match terms with
+  | [] -> "0"
+  | (degree, coefficient) :: rest ->
+      let negative c = Rhema_number.compare c Rhema_number.zero < 0 in
+      let first =
+        (if negative coefficient then "-" else "")
+        ^ magnitude_text degree (Rhema_number.absolute coefficient)
+      in
+      List.fold_left
+        (fun text (degree, coefficient) ->
+          text
+          ^ (if negative coefficient then " - " else " + ")
+          ^ magnitude_text degree (Rhema_number.absolute coefficient))
+        first rest
 
 let rec of_formula ~variable expression =
   let recurse = of_formula ~variable in

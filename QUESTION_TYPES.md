@@ -12,6 +12,7 @@ forms (`complex.rhm` has four, `vector_expr.rhm` four); each form is a `Q ->`
 rule with its own text, answer and price, selected by weight, by a mode
 attribute, or by the budget.
 
+<!-- --8<-- [start:tables] -->
 ## Expressions: a recursive tree spends the budget
 
 | grammar | asks for | the budget buys | default | context |
@@ -45,6 +46,13 @@ attribute, or by the budget.
 | `library_formula.rhm` | 2 composition; 3 logarithm, radical, tangent; 4 quotient, combined | 3 | Numeric |
 | `matrix_inverse.rhm` | 2 a 2 by 2 with whole inverse; 3 the same scaled (fractions); 5 a 3 by 3; 6 scaled | 2 | Matrix |
 | `linear_system.rhm` | 3 a triangular system in three unknowns; 5 a full one; three answer blanks | 5 | Numeric |
+| `counting.rhm` | 1 a row, a ranked choice, a committee; 2 arrangements of a word, at least one of a kind, two people not together, the probability of a dice sum; 3 drawing all of one colour, at least one six, exactly k heads; the questions `counting` and `probability` ask one family | 2 | Numeric |
+| `number_theory.rhm` | 1 gcd, lcm; 2 the remainder of a power, an inverse modulo n; 3 a linear congruence | 2 | Numeric |
+| `series.rhm` | 1 an infinite geometric series, a sum of squares; 2 a geometric series in sigma notation, the sum of a quadratic, a telescoping sum; 3 a telescoping sum with a gap (finite or infinite), the sum of two geometric series | 2 | Numeric |
+| `limits.rhm` | 1 a removable discontinuity, a ratio of quadratics at infinity; 2 a factor shared above and below, `sin(kx)/(mx)`, `(e^{kx} - 1)/(mx)`; 3 a ratio of two sines, `(1 - cos(kx))/(mx^2)` | 2 | Numeric |
+| `eigen.rhm` | 1 the eigenvalues of a triangular matrix; 2 the eigenvalues of a 2 by 2, its characteristic polynomial; 3 an eigenvector, the eigenvalues of a 3 by 3 | 2 | Interval / Numeric / Vector |
+| `inequality.rhm` | 1 linear; 2 quadratic, the absolute value of `x - a`; 3 the absolute value of `px - q`, rational | 2 | Interval |
+<!-- --8<-- [end:tables] -->
 
 ## The five general types added on this branch
 
@@ -125,6 +133,49 @@ system places three answer blanks in its prompt.
 
 **Complex numbers** gained scalable modulus and power forms, and
 **arithmetic** a fraction leaf in lowest terms.
+
+## The third batch: counting, number theory, series, limits, eigenvalues, inequalities
+
+All six are fixed-form grammars with a default budget of 2, and all six are
+built **answer first**: the answer is drawn, and the question is made from
+it, so nothing is ever solved and every question has the answer it claims.
+
+- **Counting and probability** (`counting.rhm`) computes its answers with
+  the new whole-number builtins `factorial`, `permutations` and `choose`; a
+  probability is an exact fraction. The named questions `counting` and
+  `probability` ask one family only.
+- **Number theory** (`number_theory.rhm`) builds a gcd question from `g m`
+  and `g n` with `m`, `n` coprime, a congruence from its solution, and
+  computes powers and inverses with `pow_mod` and `mod_inverse`.
+- **Series** (`series.rhm`) draws the ratio of a geometric series as a
+  fraction `p/q` with `|p| < q`, so the series converges; a telescoping sum
+  is a sum of `1/((k+c)(k+c+g))`, whose surviving terms are the answer.
+- **Limits** (`limits.rhm`) makes a removable discontinuity by multiplying
+  above and below by the same `x - a` and showing both expanded, and scales
+  the standard limits of `sin x / x`, `(e^x - 1)/x` and `(1 - cos x)/x^2`.
+- **Eigenvalues** (`eigen.rhm`) builds `A = P D P^{-1}` with `P` of
+  determinant 1, so `A` has whole entries, its eigenvalues are `D`'s and
+  the columns of `P` are eigenvectors. The eigenvalues are graded as a set
+  (order does not matter), an eigenvector as any vector parallel to the
+  right one.
+- **Inequalities** (`inequality.rhm`) chooses the roots, then reads the
+  inside or the outside of them, and which ends are closed, from the
+  comparison and the sign of the leading coefficient. Its answers use two
+  new set values, the rays `set_above(a, closed)` and `set_below(a, closed)`.
+
+```
+cost 2   eigenvalues of [[-20, 21], [-14, 15]]   {-6, 1}
+cost 3   |3x - 5| > 1                              (-infinity, 4/3) U (2, infinity)
+cost 3   x / (x - 6) <= 0                          [0, 6)
+```
+
+The engine gained the builtins above, `gcd`, `lcm` and `number_latex` (a
+number in LaTeX, fractions as `\frac`); a polynomial with a negative
+leading term is now printed as `-5x^2 + 4x + 9` rather than as a
+difference. Each grammar has a test that checks its answers independently:
+by brute-force enumeration, by search, by numeric summation or evaluation,
+by `det(A - tI) = 0` and `Av = tv`, or by testing points on either side of
+every end of the interval.
 
 ## What a user can write in one file
 

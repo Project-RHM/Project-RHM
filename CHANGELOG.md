@@ -7,6 +7,23 @@ is announced one version before the removal.
 
 ## Unreleased
 
+- **Six new question types**, all built answer first: `counting.rhm`
+  (arrangements, selections and probabilities, with named questions
+  `counting` and `probability`), `number_theory.rhm`, `series.rhm`,
+  `limits.rhm`, `eigen.rhm` and `inequality.rhm`. Each has a test that
+  checks its answers independently.
+- **Builtins**: `factorial`, `choose`, `permutations`, `gcd`, `lcm`,
+  `pow_mod` and `mod_inverse` on whole numbers (`rhema_integers.ml`, with
+  overflow checks); `number_latex`, a number in LaTeX with fractions as
+  `\frac`; and the rays `set_above` and `set_below`, rendered `(a, \infty)`
+  and `(-infinity, a]`. A union of sets is written `A U B` in PG without
+  brackets around its parts.
+- A leaf (a generator, a literal or a terminal) may be read as `$n.value`
+  without a `synth value` declaration; anything else on a leaf is refused
+  with a hint to write `str($n.value)`.
+- **Fixed**: a polynomial with a negative leading term was printed as a
+  difference, `9 - (5 \cdot x^{2} + 4 \cdot x)`; it is now
+  `-5 \cdot x^{2} + 4 \cdot x + 9`.
 - **Documentation site** (`docs/`, `mkdocs.yml`): a home page, an
   eight-chapter tutorial, the language reference with its grammar in EBNF,
   the command, the builtin functions (generated from `rhema doc`), the

@@ -893,6 +893,11 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
            (Rhema_set.interval lower upper (endpoint "set_interval" left_closed)
               (endpoint "set_interval" right_closed))
        with Invalid_argument message -> error message)
+  | Call (("set_above" | "set_below") as name, [ bound; closed ]) ->
+      (* set_above(3, false) is (3, infinity); set_below(3, true) is (-infinity, 3]. *)
+      let bound = as_number name (recurse bound) in
+      let endpoint = if as_truth name (recurse closed) then Rhema_set.Closed else Rhema_set.Open in
+      Set ((if name = "set_above" then Rhema_set.above else Rhema_set.below) bound endpoint)
   | Call ("set_union", [ left; right ]) ->
       Set
         (Rhema_set.union (as_set "set_union" (recurse left))
@@ -977,6 +982,21 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
            | "bit_and" -> left land right
            | "bit_or" -> left lor right
            | _ -> left lxor right))
+  | Call
+      ( ("factorial" | "choose" | "permutations" | "gcd" | "lcm" | "pow_mod" | "mod_inverse")
+        as name,
+        arguments ) ->
+      let whole value = Rhema_number.require_integer name (as_number name (recurse value)) in
+      Num (Rhema_number.of_int (Rhema_integers.apply name (List.map whole arguments)))
+  | Call ("number_latex", [ body ]) ->
+      (* An exact number as LaTeX: 3, -\frac{6}{25}. *)
+      let n = as_number "number_latex" (recurse body) in
+      if Rhema_number.is_integer n then Text (Rhema_number.to_string n)
+      else
+        let numerator = n.Rhema_number.numerator and denominator = n.Rhema_number.denominator in
+        Text
+          (Printf.sprintf "%s\\frac{%d}{%d}" (if numerator < 0 then "-" else "") (abs numerator)
+             denominator)
   | Call ("abs", [ body ]) -> Num (Rhema_number.absolute (as_number "abs" (recurse body)))
   | Call ("min", [ left; right ]) ->
       let left = as_number "min" (recurse left) and right = as_number "min" (recurse right) in
