@@ -2,22 +2,47 @@
    white. The sidebar is white with an orange title block and orange
    accents; the page uses the full width of the window. */
 
-:root {
-  --rhema-orange: #e77500;       /* Princeton orange */
-  --rhema-orange-dark: #b85d00;
-  --rhema-orange-pale: #fff3e6;
-  --rhema-orange-line: #f2c79a;
-  --rhema-ink: #2b2b2b;
+@font-face {
+  font-family: "Ubuntu Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/ubuntu-mono-400.woff2") format("woff2");
 }
 
-/* Sidebar: white, an orange rule on its right edge. */
+@font-face {
+  font-family: "Ubuntu Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("fonts/ubuntu-mono-700.woff2") format("woff2");
+}
+
+:root {
+  --rhema-orange: #e77500;       /* Princeton orange: accents and rules */
+  --rhema-orange-surface: #b85d00;
+  --rhema-orange-dark: #9e4e00;
+  --rhema-orange-pale: #fff5e9;
+  --rhema-orange-line: #e5c19a;
+  --rhema-page: #fcfbf9;
+  --rhema-code-bg: #f6f3ee;
+  --rhema-ink: #292929;
+  --rhema-muted: #756d65;
+  --rhema-code-font: "Ubuntu Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Sidebar: white. The divider is drawn on the content wrapper below so it
+   follows the full document height instead of ending with the fixed sidebar. */
 .wy-nav-side {
   background: #ffffff;
-  border-right: 1px solid var(--rhema-orange-line);
 }
-.wy-side-nav-search { background-color: var(--rhema-orange); margin-bottom: 0.4em; }
-.wy-side-nav-search > a, .wy-side-nav-search .wy-dropdown > a { color: #fff; font-weight: 700; letter-spacing: 0.01em; }
-.wy-side-nav-search > a:hover { background: transparent; }
+.wy-side-nav-search { background-color: var(--rhema-orange-surface); margin-bottom: 0.4em; }
+.wy-side-nav-search > a, .wy-side-nav-search .wy-dropdown > a {
+  color: #fff !important;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.wy-side-nav-search > a:hover { background: transparent; color: #fff !important; }
 .wy-side-nav-search input[type="text"] { border-color: var(--rhema-orange-dark); border-radius: 2px; }
 
 .wy-menu-vertical header, .wy-menu-vertical p.caption {
@@ -47,7 +72,7 @@
 }
 .wy-menu-vertical li.current a:hover,
 .wy-menu-vertical li.toctree-l2 a:hover, .wy-menu-vertical li.toctree-l3 a:hover {
-  background: #ffe6cc;
+  background: #fce9d7;
   color: var(--rhema-orange-dark);
 }
 .wy-menu-vertical li span.toctree-expand, .wy-menu-vertical li button.toctree-expand { color: var(--rhema-orange); }
@@ -58,12 +83,78 @@
 .rst-versions .rst-current-version a, .rst-versions a { color: var(--rhema-orange-dark) !important; }
 
 /* The page fills the window to the right of the sidebar. */
-.wy-nav-content-wrap { background: #ffffff; }
-.wy-nav-content { max-width: none; padding: 1.8em 3.2em; }
+.wy-nav-content-wrap { background: var(--rhema-page); }
+.wy-nav-content { max-width: none; padding: 1.8em 3.2em; background: transparent; }
+
+/* Keep one uninterrupted divider between the desktop sidebar and content.
+   The content wrapper grows with the document, unlike the fixed sidebar. */
+@media screen and (min-width: 769px) {
+  .wy-nav-content-wrap {
+    min-height: 100vh;
+    border-left: 1px solid var(--rhema-orange-line);
+  }
+}
 
 /* The narrow top bar on small screens. */
-.wy-nav-top { background-color: var(--rhema-orange); }
+.wy-nav-top { background-color: var(--rhema-orange-surface); }
 .wy-nav-top a { color: #fff; }
+
+/* Mobile: keep content comfortable, code readable, and long technical text
+   contained inside its own scroll area instead of widening the page. */
+@media screen and (max-width: 768px) {
+  body { -webkit-text-size-adjust: 100%; }
+
+  .wy-nav-top {
+    padding: 0.65rem 1rem;
+    line-height: 1.5;
+  }
+
+  .wy-nav-content {
+    padding: 1.25rem 1rem;
+  }
+
+  .rst-content h1 { font-size: 1.8em; }
+  .rst-content h2 { font-size: 1.4em; }
+
+  .rst-content div.highlight,
+  div.highlight {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rst-content div.highlight pre,
+  div.highlight pre,
+  .rst-content pre {
+    padding: 12px 14px;
+    font-size: 15.5px !important;
+    line-height: 1.5;
+  }
+
+  .rst-content p code,
+  .rst-content li code,
+  .rst-content dd code,
+  .rst-content td code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .wy-breadcrumbs li.wy-breadcrumbs-aside {
+    float: none;
+    display: block;
+    margin-top: 0.5em;
+  }
+
+  .wy-table-responsive {
+    margin-right: 0;
+    margin-left: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rst-footer-buttons .btn {
+    margin-bottom: 0.75em;
+  }
+}
 
 /* Links and buttons. */
 a, a:visited { color: var(--rhema-orange-dark); }
@@ -72,16 +163,26 @@ a:hover { color: var(--rhema-orange); }
 .btn-neutral:hover { background-color: #fff3e6 !important; }
 
 /* Page body. */
-.rst-content code, .rst-content tt, code { color: #a34700; border-color: #e7e1d8; background: #fbf8f4; }
+code, kbd, pre, samp, tt,
+.rst-content code, .rst-content tt {
+  font-family: var(--rhema-code-font);
+}
+.rst-content code, .rst-content tt, code {
+  color: #a34700;
+  border-color: #e3d8ca;
+  background: var(--rhema-code-bg);
+  font-size: 1em;
+}
 
 /* Code blocks: one flat panel with an orange rule, not a frame in a frame. */
 .rst-content div.highlight, div.highlight {
-  background: #f6f4f0; border: none; border-left: 3px solid var(--rhema-orange);
+  background: var(--rhema-code-bg); border: none; border-left: 3px solid var(--rhema-orange);
+  max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
   padding: 0; margin: 0 0 24px 0; border-radius: 0;
 }
 .rst-content div.highlight pre, div.highlight pre, .rst-content pre {
   background: transparent; border: none; margin: 0; padding: 12px 16px;
-  font-size: 12.5px; line-height: 1.5;
+  font-size: 17px !important; line-height: 1.55;
 }
 .rst-content div.highlight pre code, div.highlight pre code, .rst-content pre code {
   background: transparent; border: none; padding: 0; color: #222; font-size: inherit;
@@ -89,9 +190,9 @@ a:hover { color: var(--rhema-orange); }
 
 /* Notes: a plain orange rule. */
 .rst-content .admonition, .rst-content .note, .admonition {
-  background: #fdf6ee; border-left: 3px solid var(--rhema-orange);
+  background: #fff7ee; border-left: 3px solid var(--rhema-orange);
 }
-.rst-content .admonition-title, .admonition-title { background: #f6dfc4 !important; color: #5a2e00; }
+.rst-content .admonition-title, .admonition-title { background: #f3dfc8 !important; color: #5a2e00; }
 .rst-content .admonition-title::before { display: none; }
 
 /* Definition lists read as small headed paragraphs. */
