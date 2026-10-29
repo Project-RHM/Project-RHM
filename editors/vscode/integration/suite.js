@@ -70,7 +70,7 @@ const tests = {
     await vscode.window.showTextDocument(document);
     const helper = fileUri(path.join("lib", "helper.rhm"));
     await waitFor(() => vscode.languages.getDiagnostics(helper).length === 1, "the module's problem");
-    assert.deepEqual(problems(helper), ["3:12: unknown name 'missing_name'"]);
+    assert.deepEqual(problems(helper), ["3:20: unknown name 'missing_name'"]);
     assert.deepEqual(problems(document.uri, document), [
       '2:1 import: import "lib/helper.rhm" as h: the module has problems of its own',
     ]);

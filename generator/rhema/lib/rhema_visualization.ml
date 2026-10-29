@@ -43,6 +43,7 @@ let rec expression_text = function
         (expression_text right)
   | Call (name, arguments) ->
       name ^ "(" ^ String.concat ", " (List.map expression_text arguments) ^ ")"
+  | At (_, body) -> expression_text body
 
 let symbol_text = function
   | Symbol name -> name

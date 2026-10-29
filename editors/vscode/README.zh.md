@@ -62,8 +62,9 @@
 code --install-extension rhema.rhema-language
 ```
 
-Cursor、VSCodium 等基于 VS Code 的编辑器，可以用同样的方式从
-[Open VSX](https://open-vsx.org/extension/rhema/rhema-language) 安装。
+Cursor、VSCodium 等基于 VS Code 的编辑器使用的是 Open VSX 商店，本扩展没有在那里
+发布。在这些编辑器中，请按下文打包，再用 **Extensions: Install from VSIX...** 命令
+安装。
 
 如果要从源码打包，请在仓库的 `editors/vscode/` 目录中运行：
 

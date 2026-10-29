@@ -1,6 +1,15 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## Unreleased
+
+- The READMEs say the extension is on the Visual Studio Marketplace only,
+  and how to install it in editors that use Open VSX.
+
+## 0.1.0 (2026-10-29)
+
+Published on the Visual Studio Marketplace as `rhema.rhema-language`
+(Rhema Language), as a preview.
+
 
 - Highlighting for `.rhm` files and for `rhema` code blocks in Markdown:
   prompt fill-ins and PGML mathematics, set words inside `set` blocks only,

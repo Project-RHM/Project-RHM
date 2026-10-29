@@ -8,6 +8,9 @@ VS Code 的编辑器使用的 **Open VSX**。扩展有自己独立的版本号�
 `Rhema Language`。Marketplace 要求这两者都在整个商店内唯一，而不仅是在同一
 publisher 之下唯一，而 `rhema` 和 `Rhema` 都已被占用。
 
+目前本扩展只发布在 Marketplace 上。Open VSX 是可选的；下文保留了它的步骤，供
+Cursor 或 VSCodium 的用户需要时使用。
+
 [English](PUBLISHING.md)
 
 ## 首次发布前（只需做一次）

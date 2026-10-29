@@ -351,16 +351,21 @@ let check_known_generator_range report position name arguments =
 (* Walking expressions                                                 *)
 (* ------------------------------------------------------------------ *)
 
-let rec iter_expr f expression =
-  f expression;
+(* Calls [f position node] on every node of [expression]. [position] is
+   where that node was written: the place the nearest [At] around it records,
+   or the given [position] (its declaration's) when there is none. *)
+let rec iter_expr ~position f expression =
   match expression with
-  | Int _ | Str _ | Attr_here _ | Attr_child _ | Attr_child_named _ | Child _ ->
-      ()
-  | Unary (_, body) -> iter_expr f body
-  | Binary (_, left, right) ->
-      iter_expr f left;
-      iter_expr f right
-  | Call (_, arguments) -> List.iter (iter_expr f) arguments
+  | At (here, body) -> iter_expr ~position:here f body
+  | _ -> (
+      f position expression;
+      match expression with
+      | Int _ | Str _ | Attr_here _ | Attr_child _ | Attr_child_named _ | Child _ | At _ -> ()
+      | Unary (_, body) -> iter_expr ~position f body
+      | Binary (_, left, right) ->
+          iter_expr ~position f left;
+          iter_expr ~position f right
+      | Call (_, arguments) -> List.iter (iter_expr ~position f) arguments)
 
 (* ------------------------------------------------------------------ *)
 (* Prompt templates                                                    *)
@@ -766,8 +771,8 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
     | _ -> None
   in
   let check_expr ?(assigned_here = []) ?(rhs = []) ~context ~arity ~position expression =
-    iter_expr
-      (fun node ->
+    iter_expr ~position
+      (fun position node ->
         match node with
         | Attr_here name ->
             if is_question_level name then ()
@@ -871,7 +876,7 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
                        name)
                 else
                   report position (Printf.sprintf "unknown function '%s'" name))
-        | Int _ | Str _ | Unary _ | Binary _ -> ())
+        | Int _ | Str _ | Unary _ | Binary _ | At _ -> ())
       expression
   in
 
@@ -899,8 +904,8 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
                (fun (other, (n, _)) -> other < index && n = candidate)
                (List.mapi (fun i entry -> (i, entry)) lets)
       in
-      iter_expr
-        (fun node ->
+      iter_expr ~position
+        (fun position node ->
           match node with
           | Attr_here referenced ->
               if not (visible referenced) then
@@ -1267,8 +1272,8 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
             report position
               "the prompt already places its answer blanks with {answer ...}; \
                drop the 'answer' declaration";
-          iter_expr
-            (fun node ->
+          iter_expr ~position
+            (fun position node ->
               match node with
               | Attr_child_named (owner, attribute) when module_of owner <> None ->
                   if not (is_question_level_of (Option.get (module_of owner)) attribute) then

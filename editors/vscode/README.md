@@ -71,8 +71,9 @@ In VS Code, search for **Rhema Language** in the Extensions view, or run:
 code --install-extension rhema.rhema-language
 ```
 
-Cursor, VSCodium and other editors built on VS Code install it from
-[Open VSX](https://open-vsx.org/extension/rhema/rhema-language) the same way.
+Cursor, VSCodium and other editors built on VS Code look in Open VSX
+instead, where the extension is not published; in those, build the package
+as below and install it with **Extensions: Install from VSIX...**.
 
 To build the package from source instead, in `editors/vscode/` of the
 repository:

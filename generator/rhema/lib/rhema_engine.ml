@@ -360,8 +360,9 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
           (Printf.sprintf "$%d is out of range: this rule has %d symbols on the right"
              index (List.length children))
   in
-  let node_argument context = function
+  let rec node_argument context = function
     | Child index -> child_at index
+    | At (_, body) -> node_argument context body
     | _ ->
         error
           (Printf.sprintf "%s needs its operands written as $n, for example %s($1, \"+\", $3)"
@@ -370,6 +371,7 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
   match expression with
   | Int number -> Num (Rhema_number.of_int number)
   | Str text -> Text text
+  | At (_, body) -> recurse body
   | Attr_here name -> (
       (* An attribute this rule computed earlier wins, so a rule can build on
          its own work; then a question-level random or let. The checker has
@@ -1354,6 +1356,7 @@ let rec bind_root start expression =
   | Binary (operator, left, right) ->
       Binary (operator, bind_root start left, bind_root start right)
   | Call (name, arguments) -> Call (name, List.map (bind_root start) arguments)
+  | At (position, body) -> At (position, bind_root start body)
   | other -> other
 
 (* Question-level values are fixed before any expression is generated: every
