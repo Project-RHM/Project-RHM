@@ -5,8 +5,9 @@ to two registries: the **Visual Studio Marketplace**, which VS Code uses,
 and **Open VSX**, which Cursor, VSCodium and other editors built on VS Code
 use. Its version is its own (`version` in `package.json`), independent of
 the `rhema` package. Its name is `rhema-language`, so its identifier is
-`rhema.rhema-language`: an extension's name must be unique across the whole
-Marketplace, not only within its publisher, and `rhema` is taken.
+`rhema.rhema-language`, and its display name is `Rhema Language`: both must
+be unique across the whole Marketplace, not only within the publisher, and
+`rhema` and `Rhema` are taken.
 
 [中文](PUBLISHING.zh.md)
 

@@ -1,6 +1,6 @@
 {
   "name": "rhema-language",
-  "displayName": "Rhema",
+  "displayName": "Rhema Language",
   "description": "Rhema (.rhm) support: highlighting, problems from rhema check as you type, Run and Compile commands, folding and snippets.",
   "version": "0.1.0",
   "publisher": "rhema",

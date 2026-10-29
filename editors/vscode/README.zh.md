@@ -56,7 +56,7 @@
 
 ## 安装
 
-在 VS Code 的扩展视图中搜索 **Rhema**，或者运行：
+在 VS Code 的扩展视图中搜索 **Rhema Language**，或者运行：
 
 ```bash
 code --install-extension rhema.rhema-language

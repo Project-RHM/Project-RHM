@@ -65,7 +65,7 @@ temporary file is removed after each check.
 
 ## Installing
 
-In VS Code, search for **Rhema** in the Extensions view, or run:
+In VS Code, search for **Rhema Language** in the Extensions view, or run:
 
 ```bash
 code --install-extension rhema.rhema-language

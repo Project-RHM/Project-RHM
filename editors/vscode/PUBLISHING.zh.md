@@ -4,8 +4,9 @@
 VS Code 使用的 **Visual Studio Marketplace**，以及 Cursor、VSCodium 等基于
 VS Code 的编辑器使用的 **Open VSX**。扩展有自己独立的版本号（`package.json`
 中的 `version`），与 `rhema` 软件包的版本无关。扩展的名称（`name`）是
-`rhema-language`，因此其标识为 `rhema.rhema-language`：Marketplace 要求扩展名称在
-整个商店内唯一，而不仅是在同一 publisher 之下唯一，而 `rhema` 已被占用。
+`rhema-language`，因此其标识为 `rhema.rhema-language`；显示名称（`displayName`）是
+`Rhema Language`。Marketplace 要求这两者都在整个商店内唯一，而不仅是在同一
+publisher 之下唯一，而 `rhema` 和 `Rhema` 都已被占用。
 
 [English](PUBLISHING.md)
 
