@@ -68,11 +68,11 @@ temporary file is removed after each check.
 In VS Code, search for **Rhema** in the Extensions view, or run:
 
 ```bash
-code --install-extension project-rhm.rhema
+code --install-extension rhema.rhema
 ```
 
 Cursor, VSCodium and other editors built on VS Code install it from
-[Open VSX](https://open-vsx.org/extension/project-rhm/rhema) the same way.
+[Open VSX](https://open-vsx.org/extension/rhema/rhema) the same way.
 
 To build the package from source instead, in `editors/vscode/` of the
 repository:

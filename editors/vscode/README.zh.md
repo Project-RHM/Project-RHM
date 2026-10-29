@@ -59,11 +59,11 @@
 在 VS Code 的扩展视图中搜索 **Rhema**，或者运行：
 
 ```bash
-code --install-extension project-rhm.rhema
+code --install-extension rhema.rhema
 ```
 
 Cursor、VSCodium 等基于 VS Code 的编辑器，可以用同样的方式从
-[Open VSX](https://open-vsx.org/extension/project-rhm/rhema) 安装。
+[Open VSX](https://open-vsx.org/extension/rhema/rhema) 安装。
 
 如果要从源码打包，请在仓库的 `editors/vscode/` 目录中运行：
 

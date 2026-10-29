@@ -1,6 +1,6 @@
 # Publishing the VS Code extension
 
-The extension is published under the publisher and namespace `project-rhm`
+The extension is published under the publisher and namespace `rhema`
 to two registries: the **Visual Studio Marketplace**, which VS Code uses,
 and **Open VSX**, which Cursor, VSCodium and other editors built on VS Code
 use. Its version is its own (`version` in `package.json`), independent of
@@ -14,8 +14,8 @@ the `rhema` package.
 
 Sign in at <https://marketplace.visualstudio.com/manage> with the Microsoft
 account that will own the extension, and create a publisher with the ID
-`project-rhm` (it must equal `publisher` in `package.json`) and the name
-`Project RHM`. That is all a release by hand needs: the package is uploaded
+`rhema` (it must equal `publisher` in `package.json`) and the name
+`Rhema`. That is all a release by hand needs: the package is uploaded
 on that page (step 5 below).
 
 Publishing from the command line needs a credential as well. Azure DevOps
@@ -30,7 +30,7 @@ az login --allow-no-subscriptions
 ```
 
 ```bash
-npx --yes @vscode/vsce@3.9.1 verify-pat --azure-credential project-rhm
+npx --yes @vscode/vsce@3.9.1 verify-pat --azure-credential rhema
 ```
 
 ### Open VSX
@@ -45,7 +45,7 @@ npx --yes @vscode/vsce@3.9.1 verify-pat --azure-credential project-rhm
 4. Create the namespace:
 
    ```bash
-   npx --yes ovsx@1.2.0 create-namespace project-rhm -p <token>
+   npx --yes ovsx@1.2.0 create-namespace rhema -p <token>
    ```
 
 5. Ask for ownership of the namespace, so that only its members can
@@ -88,7 +88,7 @@ All commands run in `editors/vscode/`.
    ```
 
 5. Publish to the Marketplace: on
-   <https://marketplace.visualstudio.com/manage/publishers/project-rhm>,
+   <https://marketplace.visualstudio.com/manage/publishers/rhema>,
    choose **New extension > Visual Studio Code** for the first release, or
    **Update** in the extension's menu afterwards, and upload
    `rhema-X.Y.Z.vsix`. From the command line instead, once the check above
@@ -105,8 +105,8 @@ All commands run in `editors/vscode/`.
    ```
 
 7. Check both pages a few minutes later:
-   <https://marketplace.visualstudio.com/items?itemName=project-rhm.rhema>
-   and <https://open-vsx.org/extension/project-rhm/rhema>.
+   <https://marketplace.visualstudio.com/items?itemName=rhema.rhema>
+   and <https://open-vsx.org/extension/rhema/rhema>.
 
 A published version cannot be replaced; a mistake is fixed by publishing
 the next patch version.

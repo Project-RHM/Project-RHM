@@ -1,6 +1,6 @@
 # 发布 VS Code 扩展
 
-本扩展以 publisher（发布者）及命名空间 `project-rhm` 的名义发布到两个扩展商店：
+本扩展以 publisher（发布者）及命名空间 `rhema` 的名义发布到两个扩展商店：
 VS Code 使用的 **Visual Studio Marketplace**，以及 Cursor、VSCodium 等基于
 VS Code 的编辑器使用的 **Open VSX**。扩展有自己独立的版本号（`package.json`
 中的 `version`），与 `rhema` 软件包的版本无关。
@@ -12,8 +12,8 @@ VS Code 的编辑器使用的 **Open VSX**。扩展有自己独立的版本号�
 ### Visual Studio Marketplace
 
 用将来拥有本扩展的微软账号登录 <https://marketplace.visualstudio.com/manage>，
-创建一个 publisher：ID 为 `project-rhm`（必须与 `package.json` 中的 `publisher`
-相同），名称为 `Project RHM`。手动发布只需要这一步：安装包就在该页面上传（见下文
+创建一个 publisher：ID 为 `rhema`（必须与 `package.json` 中的 `publisher`
+相同），名称为 `Rhema`。手动发布只需要这一步：安装包就在该页面上传（见下文
 第 5 步）。
 
 从命令行发布还需要凭据。`vsce` 一直使用的 Azure DevOps 全局个人访问令牌（PAT）
@@ -26,7 +26,7 @@ az login --allow-no-subscriptions
 ```
 
 ```bash
-npx --yes @vscode/vsce@3.9.1 verify-pat --azure-credential project-rhm
+npx --yes @vscode/vsce@3.9.1 verify-pat --azure-credential rhema
 ```
 
 ### Open VSX
@@ -39,7 +39,7 @@ npx --yes @vscode/vsce@3.9.1 verify-pat --azure-credential project-rhm
 4. 创建命名空间：
 
    ```bash
-   npx --yes ovsx@1.2.0 create-namespace project-rhm -p <令牌>
+   npx --yes ovsx@1.2.0 create-namespace rhema -p <令牌>
    ```
 
 5. 按照 Open VSX wiki（<https://github.com/eclipse/openvsx/wiki>）中
@@ -81,7 +81,7 @@ npx --yes @vscode/vsce@3.9.1 verify-pat --azure-credential project-rhm
    ```
 
 5. 发布到 Marketplace：在
-   <https://marketplace.visualstudio.com/manage/publishers/project-rhm> 页面，
+   <https://marketplace.visualstudio.com/manage/publishers/rhema> 页面，
    首次发布选择 **New extension > Visual Studio Code**，以后在扩展的菜单中选择
    **Update**，然后上传 `rhema-X.Y.Z.vsix`。如果上面的验证已经通过，也可以改用
    命令行：
@@ -97,7 +97,7 @@ npx --yes @vscode/vsce@3.9.1 verify-pat --azure-credential project-rhm
    ```
 
 7. 几分钟后检查两个页面：
-   <https://marketplace.visualstudio.com/items?itemName=project-rhm.rhema>
-   和 <https://open-vsx.org/extension/project-rhm/rhema>。
+   <https://marketplace.visualstudio.com/items?itemName=rhema.rhema>
+   和 <https://open-vsx.org/extension/rhema/rhema>。
 
 已发布的版本不能替换；发布有误时，请发布下一个补丁版本来修正。
