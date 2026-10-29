@@ -4,7 +4,9 @@ The extension is published under the publisher and namespace `rhema`
 to two registries: the **Visual Studio Marketplace**, which VS Code uses,
 and **Open VSX**, which Cursor, VSCodium and other editors built on VS Code
 use. Its version is its own (`version` in `package.json`), independent of
-the `rhema` package.
+the `rhema` package. Its name is `rhema-language`, so its identifier is
+`rhema.rhema-language`: an extension's name must be unique across the whole
+Marketplace, not only within its publisher, and `rhema` is taken.
 
 [中文](PUBLISHING.zh.md)
 
@@ -75,7 +77,7 @@ All commands run in `editors/vscode/`.
    ```
 
    ```bash
-   code --install-extension rhema-X.Y.Z.vsix
+   code --install-extension rhema-language-X.Y.Z.vsix
    ```
 
    `npm run package` rewrites the README's relative links to point at
@@ -91,7 +93,7 @@ All commands run in `editors/vscode/`.
    <https://marketplace.visualstudio.com/manage/publishers/rhema>,
    choose **New extension > Visual Studio Code** for the first release, or
    **Update** in the extension's menu afterwards, and upload
-   `rhema-X.Y.Z.vsix`. From the command line instead, once the check above
+   `rhema-language-X.Y.Z.vsix`. From the command line instead, once the check above
    succeeds:
 
    ```bash
@@ -105,8 +107,8 @@ All commands run in `editors/vscode/`.
    ```
 
 7. Check both pages a few minutes later:
-   <https://marketplace.visualstudio.com/items?itemName=rhema.rhema>
-   and <https://open-vsx.org/extension/rhema/rhema>.
+   <https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language>
+   and <https://open-vsx.org/extension/rhema/rhema-language>.
 
 A published version cannot be replaced; a mistake is fixed by publishing
 the next patch version.

@@ -59,11 +59,11 @@
 在 VS Code 的扩展视图中搜索 **Rhema**，或者运行：
 
 ```bash
-code --install-extension rhema.rhema
+code --install-extension rhema.rhema-language
 ```
 
 Cursor、VSCodium 等基于 VS Code 的编辑器，可以用同样的方式从
-[Open VSX](https://open-vsx.org/extension/rhema/rhema) 安装。
+[Open VSX](https://open-vsx.org/extension/rhema/rhema-language) 安装。
 
 如果要从源码打包，请在仓库的 `editors/vscode/` 目录中运行：
 
@@ -72,7 +72,7 @@ npm run package
 ```
 
 ```bash
-code --install-extension rhema-0.1.0.vsix
+code --install-extension rhema-language-0.1.0.vsix
 ```
 
 第一次运行 `npm run package` 时，`npx` 会下载打包工具 `vsce`。发布流程见

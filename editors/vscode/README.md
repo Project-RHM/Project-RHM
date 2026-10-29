@@ -68,11 +68,11 @@ temporary file is removed after each check.
 In VS Code, search for **Rhema** in the Extensions view, or run:
 
 ```bash
-code --install-extension rhema.rhema
+code --install-extension rhema.rhema-language
 ```
 
 Cursor, VSCodium and other editors built on VS Code install it from
-[Open VSX](https://open-vsx.org/extension/rhema/rhema) the same way.
+[Open VSX](https://open-vsx.org/extension/rhema/rhema-language) the same way.
 
 To build the package from source instead, in `editors/vscode/` of the
 repository:
@@ -82,7 +82,7 @@ npm run package
 ```
 
 ```bash
-code --install-extension rhema-0.1.0.vsix
+code --install-extension rhema-language-0.1.0.vsix
 ```
 
 `npm run package` fetches the `vsce` packaging tool with `npx` the first

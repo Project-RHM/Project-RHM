@@ -3,7 +3,9 @@
 本扩展以 publisher（发布者）及命名空间 `rhema` 的名义发布到两个扩展商店：
 VS Code 使用的 **Visual Studio Marketplace**，以及 Cursor、VSCodium 等基于
 VS Code 的编辑器使用的 **Open VSX**。扩展有自己独立的版本号（`package.json`
-中的 `version`），与 `rhema` 软件包的版本无关。
+中的 `version`），与 `rhema` 软件包的版本无关。扩展的名称（`name`）是
+`rhema-language`，因此其标识为 `rhema.rhema-language`：Marketplace 要求扩展名称在
+整个商店内唯一，而不仅是在同一 publisher 之下唯一，而 `rhema` 已被占用。
 
 [English](PUBLISHING.md)
 
@@ -68,7 +70,7 @@ npx --yes @vscode/vsce@3.9.1 verify-pat --azure-credential rhema
    ```
 
    ```bash
-   code --install-extension rhema-X.Y.Z.vsix
+   code --install-extension rhema-language-X.Y.Z.vsix
    ```
 
    `npm run package` 会把 README 中的相对链接改写为指向 GitHub 上 `main`
@@ -83,7 +85,7 @@ npx --yes @vscode/vsce@3.9.1 verify-pat --azure-credential rhema
 5. 发布到 Marketplace：在
    <https://marketplace.visualstudio.com/manage/publishers/rhema> 页面，
    首次发布选择 **New extension > Visual Studio Code**，以后在扩展的菜单中选择
-   **Update**，然后上传 `rhema-X.Y.Z.vsix`。如果上面的验证已经通过，也可以改用
+   **Update**，然后上传 `rhema-language-X.Y.Z.vsix`。如果上面的验证已经通过，也可以改用
    命令行：
 
    ```bash
@@ -97,7 +99,7 @@ npx --yes @vscode/vsce@3.9.1 verify-pat --azure-credential rhema
    ```
 
 7. 几分钟后检查两个页面：
-   <https://marketplace.visualstudio.com/items?itemName=rhema.rhema>
-   和 <https://open-vsx.org/extension/rhema/rhema>。
+   <https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language>
+   和 <https://open-vsx.org/extension/rhema/rhema-language>。
 
 已发布的版本不能替换；发布有误时，请发布下一个补丁版本来修正。
