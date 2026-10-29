@@ -29,6 +29,9 @@ as Rhema.
   too.
 - **Folding** of rule bodies, `question` and `set` blocks, prompts that run
   over several lines, runs of comments, and `# region` ... `# endregion`.
+- **File icon**: `.rhm` files show a small orange derivation tree in the
+  Explorer and on tabs, with any file icon theme that has none of its own
+  for Rhema (the default theme included).
 - **Editing**: `#` comments with the toggle-comment command, bracket
   matching, automatic closing of `{`, `(` and `"`, and indentation after `{`.
 - **Snippets**: `rule`, `rulew`, `attribute`, `synth`, `random`, `let`,
