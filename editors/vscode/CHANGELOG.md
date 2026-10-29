@@ -14,3 +14,4 @@
   the first two are not read from untrusted workspaces.
 - Folding of blocks, multi-line prompts, comment runs and regions; comments,
   brackets, indentation and snippets.
+- Published as a preview, with an icon; `PUBLISHING.md` describes a release.

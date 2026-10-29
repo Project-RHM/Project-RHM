@@ -6,3 +6,5 @@ package-lock.json
 tsconfig.json
 integration/**
 .vscode-test/**
+images/*.svg
+PUBLISHING*.md

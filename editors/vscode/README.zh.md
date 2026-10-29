@@ -56,7 +56,16 @@
 
 ## 安装
 
-扩展发布之前，请在本目录下打包，再安装生成的包文件：
+在 VS Code 的扩展视图中搜索 **Rhema**，或者运行：
+
+```bash
+code --install-extension project-rhm.rhema
+```
+
+Cursor、VSCodium 等基于 VS Code 的编辑器，可以用同样的方式从
+[Open VSX](https://open-vsx.org/extension/project-rhm/rhema) 安装。
+
+如果要从源码打包，请在仓库的 `editors/vscode/` 目录中运行：
 
 ```bash
 npm run package
@@ -66,7 +75,8 @@ npm run package
 code --install-extension rhema-0.1.0.vsix
 ```
 
-第一次运行 `npm run package` 时，`npx` 会下载打包工具 `vsce`。
+第一次运行 `npm run package` 时，`npx` 会下载打包工具 `vsce`。发布流程见
+[PUBLISHING.zh.md](PUBLISHING.zh.md)。
 
 ## 开发
 
