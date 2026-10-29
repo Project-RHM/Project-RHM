@@ -9,6 +9,10 @@ the `rhema` package. Its name is `rhema-language`, so its identifier is
 be unique across the whole Marketplace, not only within the publisher, and
 `rhema` and `Rhema` are taken.
 
+So far the extension is published on the Marketplace only. Open VSX is
+optional; the steps for it are kept below for when users of Cursor or
+VSCodium need it.
+
 [中文](PUBLISHING.zh.md)
 
 ## Once, before the first release

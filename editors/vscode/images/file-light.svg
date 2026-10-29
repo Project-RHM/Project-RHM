@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- A .rhm file: the extension icon's derivation tree, without its tile. -->
+  <g stroke="#c25e00" stroke-width="1.6" stroke-linecap="round">
+    <path d="M8 4.5 L4.2 11.5"/>
+    <path d="M8 4.5 L11.8 11.5"/>
+  </g>
+  <g fill="#c25e00">
+    <circle cx="8" cy="4" r="2.4"/>
+    <circle cx="4" cy="12" r="2.1"/>
+    <circle cx="12" cy="12" r="2.1"/>
+  </g>
+</svg>

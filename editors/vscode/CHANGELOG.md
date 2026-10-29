@@ -1,6 +1,18 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## Unreleased
+
+- `.rhm` files have their own icon in the Explorer and on editor tabs: the
+  derivation tree of the extension's icon, in orange. It shows with any file
+  icon theme that has no icon of its own for Rhema, such as the default.
+- The READMEs say the extension is on the Visual Studio Marketplace only,
+  and how to install it in editors that use Open VSX.
+
+## 0.1.0 (2026-10-29)
+
+Published on the Visual Studio Marketplace as `rhema.rhema-language`
+(Rhema Language), as a preview.
+
 
 - Highlighting for `.rhm` files and for `rhema` code blocks in Markdown:
   prompt fill-ins and PGML mathematics, set words inside `set` blocks only,

@@ -23,6 +23,8 @@
   `rhm` 的围栏代码块也会高亮。
 - **折叠**：规则体、`question` 和 `set` 块、跨多行的题面、连续的注释行，以及
   `# region` 与 `# endregion` 之间的内容。
+- **文件图标**：在资源管理器和编辑器标签上，`.rhm` 文件显示一棵橙色的小推导树。
+  只要当前的文件图标主题没有专门为 Rhema 提供图标（默认主题就是这样），就会显示它。
 - **编辑**：`#` 注释（可用“切换行注释”命令）、括号配对、自动补全 `{`、`(`
   和 `"`，以及在 `{` 之后自动缩进。
 - **代码片段**：`rule`、`rulew`、`attribute`、`synth`、`random`、`let`、
@@ -62,8 +64,9 @@
 code --install-extension rhema.rhema-language
 ```
 
-Cursor、VSCodium 等基于 VS Code 的编辑器，可以用同样的方式从
-[Open VSX](https://open-vsx.org/extension/rhema/rhema-language) 安装。
+Cursor、VSCodium 等基于 VS Code 的编辑器使用的是 Open VSX 商店，本扩展没有在那里
+发布。在这些编辑器中，请按下文打包，再用 **Extensions: Install from VSIX...** 命令
+安装。
 
 如果要从源码打包，请在仓库的 `editors/vscode/` 目录中运行：
 

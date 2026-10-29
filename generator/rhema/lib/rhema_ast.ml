@@ -33,6 +33,11 @@ type expr =
   | Binary of string * expr * expr
   | Call of string * expr list
       (* [infix($1, "+", $3)], [str($1.value)] *)
+  | At of position * expr
+      (* Where the expression inside was written. The parser wraps every
+         name, child reference and call in one, so that a message about it
+         points at it rather than at the start of its equation; evaluation
+         looks straight through it. *)
 
 (* ------------------------------------------------------------------ *)
 (* Clauses inside a rule body.                                         *)
