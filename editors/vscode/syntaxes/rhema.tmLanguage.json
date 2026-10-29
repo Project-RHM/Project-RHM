@@ -1,0 +1,631 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Rhema",
+  "scopeName": "source.rhema",
+  "fileTypes": [
+    "rhm"
+  ],
+  "patterns": [
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#prompt"
+    },
+    {
+      "include": "#string"
+    },
+    {
+      "include": "#question"
+    },
+    {
+      "include": "#set"
+    },
+    {
+      "include": "#production-head"
+    },
+    {
+      "include": "#declaration"
+    },
+    {
+      "include": "#rule-body"
+    },
+    {
+      "include": "#expression"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "match": "(#).*$",
+      "name": "comment.line.number-sign.rhema",
+      "captures": {
+        "1": {
+          "name": "punctuation.definition.comment.rhema"
+        }
+      }
+    },
+    "escape": {
+      "match": "\\\\[\\\\\"]",
+      "name": "constant.character.escape.rhema"
+    },
+    "string": {
+      "begin": "\"",
+      "end": "\"",
+      "name": "string.quoted.double.rhema",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.begin.rhema"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.rhema"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#escape"
+        }
+      ]
+    },
+    "prompt": {
+      "begin": "\\b(prompt)\\s*(\")",
+      "end": "\"",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.other.declaration.rhema"
+        },
+        "2": {
+          "name": "string.quoted.double.prompt.rhema punctuation.definition.string.begin.rhema"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.rhema"
+        }
+      },
+      "contentName": "string.quoted.double.prompt.rhema",
+      "patterns": [
+        {
+          "include": "#prompt-content"
+        }
+      ]
+    },
+    "prompt-content": {
+      "patterns": [
+        {
+          "include": "#escape"
+        },
+        {
+          "match": "\\{\\{|\\}\\}",
+          "name": "constant.character.escape.brace.rhema"
+        },
+        {
+          "include": "#hole"
+        },
+        {
+          "begin": "\\[(`+)",
+          "end": "(\\1)\\]|(?=\\\")",
+          "name": "meta.embedded.math.pgml.rhema",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.math.begin.pgml.rhema"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.math.end.pgml.rhema"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#escape"
+            },
+            {
+              "match": "\\{\\{|\\}\\}",
+              "name": "constant.character.escape.brace.rhema"
+            },
+            {
+              "include": "#hole"
+            },
+            {
+              "match": "\\\\\\\\?[A-Za-z]+",
+              "name": "support.function.latex.rhema"
+            }
+          ]
+        }
+      ]
+    },
+    "hole": {
+      "match": "(\\{)\\s*(?:(answer)\\s+)?(?:([A-Za-z_][A-Za-z0-9_]*)(\\.))?([A-Za-z_][A-Za-z0-9_]*)\\s*(\\})",
+      "name": "meta.interpolation.rhema",
+      "captures": {
+        "1": {
+          "name": "punctuation.section.interpolation.begin.rhema"
+        },
+        "2": {
+          "name": "keyword.other.answer.rhema"
+        },
+        "3": {
+          "patterns": [
+            {
+              "match": "\\b[A-Z][A-Za-z0-9_]*\\b",
+              "name": "entity.name.type.nonterminal.rhema"
+            },
+            {
+              "match": ".+",
+              "name": "entity.name.namespace.rhema"
+            }
+          ]
+        },
+        "4": {
+          "name": "punctuation.accessor.rhema"
+        },
+        "5": {
+          "name": "variable.other.rhema"
+        },
+        "6": {
+          "name": "punctuation.section.interpolation.end.rhema"
+        }
+      }
+    },
+    "question": {
+      "begin": "\\b(question)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(\\{)",
+      "end": "\\}",
+      "name": "meta.question.rhema",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.other.declaration.rhema"
+        },
+        "2": {
+          "name": "entity.name.function.question.rhema"
+        },
+        "3": {
+          "name": "punctuation.section.block.begin.rhema"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.block.end.rhema"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#prompt"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "include": "#declaration"
+        },
+        {
+          "include": "#expression"
+        }
+      ]
+    },
+    "set": {
+      "begin": "\\b(set)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(\\{)",
+      "end": "\\}",
+      "name": "meta.set.rhema",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.other.declaration.rhema"
+        },
+        "2": {
+          "name": "entity.name.function.set.rhema"
+        },
+        "3": {
+          "name": "punctuation.section.block.begin.rhema"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.block.end.rhema"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "match": "\\b(part|distinct|balanced|ordered)\\b",
+          "name": "keyword.other.set.rhema"
+        },
+        {
+          "match": "\\b(of|any|in|spread|low|allowed)\\b",
+          "name": "keyword.other.set.rhema"
+        },
+        {
+          "begin": "\\{",
+          "end": "\\}",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.braces.begin.rhema"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.braces.end.rhema"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "include": "#number"
+            },
+            {
+              "match": "-",
+              "name": "keyword.operator.arithmetic.rhema"
+            },
+            {
+              "match": ",",
+              "name": "punctuation.separator.comma.rhema"
+            },
+            {
+              "include": "#invalid"
+            }
+          ]
+        },
+        {
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)(\\.)([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "entity.name.namespace.rhema"
+            },
+            "2": {
+              "name": "punctuation.accessor.rhema"
+            },
+            "3": {
+              "name": "entity.name.function.question.rhema"
+            }
+          }
+        },
+        {
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()",
+          "captures": {
+            "1": {
+              "name": "entity.name.function.question.rhema"
+            }
+          }
+        },
+        {
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?=[=~]|\\s+in\\b)",
+          "captures": {
+            "1": {
+              "name": "variable.other.property.rhema"
+            }
+          }
+        },
+        {
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\b",
+          "name": "entity.name.function.question.rhema"
+        },
+        {
+          "include": "#number"
+        },
+        {
+          "match": "~",
+          "name": "keyword.operator.around.rhema"
+        },
+        {
+          "match": "=",
+          "name": "keyword.operator.assignment.rhema"
+        },
+        {
+          "match": "-",
+          "name": "keyword.operator.arithmetic.rhema"
+        },
+        {
+          "include": "#punctuation"
+        },
+        {
+          "include": "#invalid"
+        }
+      ]
+    },
+    "production-head": {
+      "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(->)",
+      "captures": {
+        "1": {
+          "name": "entity.name.type.nonterminal.rhema"
+        },
+        "2": {
+          "name": "keyword.operator.arrow.rhema"
+        }
+      }
+    },
+    "declaration": {
+      "patterns": [
+        {
+          "match": "\\b(attribute)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.other.declaration.rhema"
+            },
+            "2": {
+              "name": "variable.other.property.rhema"
+            }
+          }
+        },
+        {
+          "match": "\\b(random|let)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.other.declaration.rhema"
+            },
+            "2": {
+              "name": "variable.other.constant.rhema"
+            }
+          }
+        },
+        {
+          "match": "\\b(synth)\\s+([A-Za-z_][A-Za-z0-9_]*)(?:\\s+(on)\\s+([A-Za-z_][A-Za-z0-9_]*))?",
+          "captures": {
+            "1": {
+              "name": "keyword.other.declaration.rhema"
+            },
+            "2": {
+              "name": "variable.other.property.rhema"
+            },
+            "3": {
+              "name": "keyword.other.rhema"
+            },
+            "4": {
+              "name": "entity.name.type.nonterminal.rhema"
+            }
+          }
+        },
+        {
+          "match": "\\b(start)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.other.declaration.rhema"
+            },
+            "2": {
+              "name": "entity.name.type.nonterminal.rhema"
+            }
+          }
+        },
+        {
+          "match": "\\b(as)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.other.rhema"
+            },
+            "2": {
+              "name": "entity.name.namespace.rhema"
+            }
+          }
+        },
+        {
+          "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(=)(?!=)",
+          "captures": {
+            "1": {
+              "name": "variable.other.property.rhema"
+            },
+            "2": {
+              "name": "keyword.operator.assignment.rhema"
+            }
+          }
+        }
+      ]
+    },
+    "rule-body": {
+      "begin": "\\{",
+      "end": "\\}",
+      "name": "meta.rule-body.rhema",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.block.begin.rhema"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.block.end.rhema"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "match": "(?:^|(?<=[{,]))\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(=)(?!=)",
+          "captures": {
+            "1": {
+              "name": "variable.other.property.rhema"
+            },
+            "2": {
+              "name": "keyword.operator.assignment.rhema"
+            }
+          }
+        },
+        {
+          "include": "#expression"
+        }
+      ]
+    },
+    "expression": {
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "include": "#keyword"
+        },
+        {
+          "match": "(\\$[0-9]+)(?:(\\.)([A-Za-z_][A-Za-z0-9_]*))?",
+          "captures": {
+            "1": {
+              "name": "variable.language.child.rhema"
+            },
+            "2": {
+              "name": "punctuation.accessor.rhema"
+            },
+            "3": {
+              "name": "variable.other.property.rhema"
+            }
+          }
+        },
+        {
+          "include": "#number"
+        },
+        {
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)(\\.)([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "patterns": [
+                {
+                  "match": "\\b[A-Z][A-Za-z0-9_]*\\b",
+                  "name": "entity.name.type.nonterminal.rhema"
+                },
+                {
+                  "match": ".+",
+                  "name": "entity.name.namespace.rhema"
+                }
+              ]
+            },
+            "2": {
+              "name": "punctuation.accessor.rhema"
+            },
+            "3": {
+              "patterns": [
+                {
+                  "match": "\\b[A-Z][A-Za-z0-9_]*\\b",
+                  "name": "entity.name.type.nonterminal.rhema"
+                },
+                {
+                  "match": ".+",
+                  "name": "variable.other.property.rhema"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()",
+          "captures": {
+            "1": {
+              "name": "support.function.builtin.rhema"
+            }
+          }
+        },
+        {
+          "match": "\\b[A-Z][A-Za-z0-9_]*\\b",
+          "name": "entity.name.type.nonterminal.rhema"
+        },
+        {
+          "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+          "name": "variable.other.rhema"
+        },
+        {
+          "include": "#operator"
+        },
+        {
+          "include": "#punctuation"
+        },
+        {
+          "include": "#invalid"
+        }
+      ]
+    },
+    "keyword": {
+      "patterns": [
+        {
+          "match": "\\b(attribute|random|let|synth|start|context|precedence|prompt|answer|width|include|import|question|set)\\b",
+          "name": "keyword.other.declaration.rhema"
+        },
+        {
+          "match": "\\b(when|weight|require)\\b",
+          "name": "keyword.control.rhema"
+        },
+        {
+          "match": "\\b(copy|split|left|right|nonassoc)\\b",
+          "name": "storage.modifier.rhema"
+        },
+        {
+          "match": "\\b(on|as)\\b",
+          "name": "keyword.other.rhema"
+        },
+        {
+          "match": "\\b(and|or|not)\\b",
+          "name": "keyword.operator.wordlike.logical.rhema"
+        },
+        {
+          "match": "\\b(boolean)\\b",
+          "name": "storage.type.boolean.rhema"
+        }
+      ]
+    },
+    "number": {
+      "match": "\\b[0-9]+\\b",
+      "name": "constant.numeric.integer.decimal.rhema"
+    },
+    "operator": {
+      "patterns": [
+        {
+          "match": "->",
+          "name": "keyword.operator.arrow.rhema"
+        },
+        {
+          "match": "\\+\\+",
+          "name": "keyword.operator.concatenation.rhema"
+        },
+        {
+          "match": "!=|<=|>=|<|>",
+          "name": "keyword.operator.comparison.rhema"
+        },
+        {
+          "match": "=",
+          "name": "keyword.operator.assignment.rhema"
+        },
+        {
+          "match": "[+\\-*/%^]",
+          "name": "keyword.operator.arithmetic.rhema"
+        },
+        {
+          "match": "~",
+          "name": "keyword.operator.around.rhema"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "match": ",",
+          "name": "punctuation.separator.comma.rhema"
+        },
+        {
+          "match": "\\.",
+          "name": "punctuation.accessor.rhema"
+        },
+        {
+          "match": "\\(",
+          "name": "punctuation.section.parens.begin.rhema"
+        },
+        {
+          "match": "\\)",
+          "name": "punctuation.section.parens.end.rhema"
+        }
+      ]
+    },
+    "invalid": {
+      "match": "[^\\s\\w\\\"#$(){},.=<>!+\\-*/%^~]|!(?!=)|\\$(?![0-9])",
+      "name": "invalid.illegal.character.rhema"
+    }
+  }
+}

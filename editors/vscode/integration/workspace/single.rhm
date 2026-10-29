@@ -1,0 +1,7 @@
+# One question, so Run and Compile need not ask which.
+random n = integer_between(2, 9)
+synth value on E
+start E
+E -> "a" { value = n }
+prompt "What is [`{n}`]?"
+answer E.value

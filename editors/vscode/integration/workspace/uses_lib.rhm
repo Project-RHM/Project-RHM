@@ -1,0 +1,7 @@
+# Imports a module that has a problem of its own.
+import "lib/helper.rhm" as h
+synth value on Q
+start Q
+Q -> h.E { value = $1.value }
+prompt "What is it?"
+answer Q.value

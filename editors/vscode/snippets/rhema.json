@@ -1,0 +1,100 @@
+{
+  "Production": {
+    "prefix": "rule",
+    "description": "A production with its attribute equations",
+    "body": [
+      "${1:E} -> ${2:symbols} {",
+      "\t${3:value} = ${4:\\$1.value}",
+      "}"
+    ]
+  },
+  "Production with condition": {
+    "prefix": "rulew",
+    "description": "A production used only when a condition holds, with a weight",
+    "body": [
+      "${1:E} -> ${2:symbols}   when ${3:cost >= 1}   weight ${4:1} {",
+      "\t${5:cost} = ${6:-1}",
+      "\t${7:value} = ${8:\\$1.value}",
+      "}"
+    ]
+  },
+  "Attribute": {
+    "prefix": "attribute",
+    "description": "An inherited attribute, passed down whole (copy) or divided among children (split)",
+    "body": ["attribute ${1:cost} = ${2:4} ${3|split,copy|}"]
+  },
+  "Synthesized attribute": {
+    "prefix": "synth",
+    "description": "An attribute computed from the children",
+    "body": ["synth ${1:value} on ${2:E}"]
+  },
+  "Random value": {
+    "prefix": "random",
+    "description": "A value drawn once per question",
+    "body": ["random ${1:n} = ${2:integer_between}(${3:2}, ${4:9})"]
+  },
+  "Let": {
+    "prefix": "let",
+    "description": "A value computed from randoms and other lets",
+    "body": ["let ${1:name} = ${2:expression}"]
+  },
+  "Precedence": {
+    "prefix": "precedence",
+    "description": "Operator precedence and associativity",
+    "body": ["precedence ${1:1} ${2|left,right,nonassoc|} ${3:+ -}"]
+  },
+  "Import": {
+    "prefix": "import",
+    "description": "Use another file's nonterminals, values and questions under an alias",
+    "body": ["import \"${1:calculus}.rhm\" as ${2:calc}"]
+  },
+  "Prompt and answer": {
+    "prefix": "prompt",
+    "description": "The question text and the value it is graded against",
+    "body": [
+      "prompt \"${1:What is the value of [`{${2:E}.latex\\}`]?}\"",
+      "answer ${2:E}.${3:value}"
+    ]
+  },
+  "Answer blank": {
+    "prefix": "{answer",
+    "description": "An answer blank inside a prompt",
+    "body": ["{answer ${1:name}}"]
+  },
+  "Mathematics": {
+    "prefix": "[`",
+    "description": "PGML mathematics inside a prompt",
+    "body": ["[`$1`]$0"]
+  },
+  "Question": {
+    "prefix": "question",
+    "description": "A named question in this file",
+    "body": [
+      "question ${1:name} {",
+      "\tstart ${2:E}",
+      "\tprompt \"${3:Find {answer ${4:value}\\}.}\"",
+      "}"
+    ]
+  },
+  "Set": {
+    "prefix": "set",
+    "description": "A whole assignment built from questions",
+    "body": [
+      "set ${1:week1} {",
+      "\tpart \"${2:Heading}\"",
+      "\t\t${3:3} of ${4:alias}.${5:question}(cost ~ ${6:6} spread ${7:2})",
+      "\tdistinct",
+      "\tbalanced",
+      "\tordered",
+      "}"
+    ]
+  },
+  "Set part": {
+    "prefix": "part",
+    "description": "A headed part of a set",
+    "body": [
+      "part \"${1:Heading}\"",
+      "\t${2:1} of ${3:alias}.${4:question}"
+    ]
+  }
+}

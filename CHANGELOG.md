@@ -7,6 +7,11 @@ is announced one version before the removal.
 
 ## Unreleased
 
+- **VS Code extension** in `editors/vscode`: highlighting, problems from
+  `rhema check` as you type, Run and Compile commands, folding and snippets
+  for `.rhm` files. Its tests check the grammar against the compiler's
+  keywords and every `.rhm` file in the repository (CI job `editor`), and
+  drive the extension in VS Code against a real `rhema`.
 - **Six new question types**, all built answer first: `counting.rhm`
   (arrangements, selections and probabilities, with named questions
   `counting` and `probability`), `number_theory.rhm`, `series.rhm`,

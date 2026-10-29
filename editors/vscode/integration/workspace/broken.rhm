@@ -1,0 +1,7 @@
+# Three problems: an unknown name, an undeclared attribute, a missing equation.
+synth value on E
+start E
+E -> "a" { value = foo }
+E -> "b" { latex = "b" }
+prompt "What is {E.value}?"
+answer E.value

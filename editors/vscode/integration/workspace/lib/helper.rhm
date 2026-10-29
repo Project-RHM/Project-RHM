@@ -1,0 +1,5 @@
+synth value on E
+start E
+E -> "a" { value = missing_name }
+prompt "x"
+answer E.value

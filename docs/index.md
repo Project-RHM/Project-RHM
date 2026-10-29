@@ -39,6 +39,12 @@ eigenvalues, counting and probability, and number theory. Until the package reac
 opam pin add rhema https://github.com/Project-RHM/Project-RHM.git#v0.1.1 --subpath generator
 ```
 
+For VS Code, the repository's
+[`editors/vscode`](https://github.com/Project-RHM/Project-RHM/tree/main/editors/vscode)
+directory holds an extension for `.rhm` files: highlighting, problems from
+`rhema check` as you type, and commands to run and compile; its README says
+how to install it.
+
 ## Where to go next
 
 [The tutorial](tutorial/index.md)
