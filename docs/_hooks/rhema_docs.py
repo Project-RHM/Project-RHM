@@ -214,6 +214,11 @@ def _builtins_markdown():
         "error the checker reports. A function given the wrong kind of value stops",
         "generation with a message naming both.",
         "",
+        "The site is built from the repository, which is ahead of the 0.1.1 release:",
+        "`choose`, `factorial`, `gcd`, `lcm`, `mod_inverse`, `number_latex`,",
+        "`permutations`, `pow_mod`, `set_above` and `set_below` are not in that",
+        "package.",
+        "",
     ]
     known = [key for key, _, _ in GROUPS]
     for key, title, intro in GROUPS + [(g, g.capitalize(), "") for g in entries if g not in known]:

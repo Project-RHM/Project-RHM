@@ -12,7 +12,7 @@ is announced one version before the removal.
   for `.rhm` files. Its tests check the grammar against the compiler's
   keywords and every `.rhm` file in the repository (CI job `editor`), and
   drive the extension in VS Code against a real `rhema`. Published on the
-  Visual Studio Marketplace as `rhema.rhema-language` (0.1.0, preview).
+  Visual Studio Marketplace as `rhema.rhema-language` (0.1.1, preview).
 - **Fixed**: a problem with a name, a child reference or a call was reported
   at the start of the equation or declaration holding it, so
   `value = foo` gave the column of `value` for "unknown name 'foo'". Every
