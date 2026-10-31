@@ -102,6 +102,39 @@ class TeacherBuilderTests(unittest.TestCase):
         self.assertEqual(edited.status_code, 400)
         self.assertIn('source mode', edited.get_json()['error'])
 
+    def test_located_ast_guards_and_root_references_are_preserved(self):
+        sequence = self.client.get('/teacher/schema?grammar=sequence.rhm').get_json()['schema']
+        cost = next(field for field in sequence['fields'] if field['id'] == 'root:a:cost')
+        self.assertEqual(cost['allowed'], [1, 2, 3])
+        vector = self.client.get('/teacher/schema?grammar=vector.rhm').get_json()['schema']
+        mode = next(field for field in vector['fields'] if field['id'] == 'root:a:vector_mode')
+        self.assertEqual(mode['allowed'], [0, 1, 2, 3, 4, 5, 6])
+        result = self.generate('sequence.rhm', {'values': {
+            'root:a:cost': 5,
+            'root:rule:0:cost': 5, 'root:r:first': [2, 2],
+            'root:r:difference': [3, 3], 'root:r:index': [4, 4]}})
+        self.assertTrue(all(question['answer'] == '11' for question in result['preview']))
+
+        # Q.value references are wrapped in At by the parser. A length wrapper
+        # must rename them as well as the prompt's {Q.latex} reference.
+        grammar = self.root / 'generator/grammars/located.rhm'
+        grammar.parent.mkdir(exist_ok=True)
+        grammar.write_text('''attribute cost = 1 split
+synth value on Q
+synth latex on Q
+start Q
+Q -> integer_between(2, 9) "+" integer_between(2, 9) when cost = 1 {
+  cost = -1
+  value = $1.value + $3.value
+  latex = str($1.value) ++ "+" ++ str($3.value)
+}
+prompt "Evaluate [`{Q.latex}`]."
+answer Q.value
+''')
+        result = self.generate('located.rhm', {'min_length': 1, 'max_length': 1})
+        self.assertIn('answer Teacher_Q.value', result['source'])
+        self.assertEqual([question['operator_count'] for question in result['preview']], [1, 1])
+
     def test_invalid_or_impossible_settings_are_rejected(self):
         for config in [
             {'min_length':5, 'max_length':2}, {'width':0},

@@ -7,6 +7,17 @@ is announced one version before the removal.
 
 ## Unreleased
 
+- **VS Code extension** in `editors/vscode`: highlighting, problems from
+  `rhema check` as you type, Run and Compile commands, folding and snippets
+  for `.rhm` files. Its tests check the grammar against the compiler's
+  keywords and every `.rhm` file in the repository (CI job `editor`), and
+  drive the extension in VS Code against a real `rhema`. Published on the
+  Visual Studio Marketplace as `rhema.rhema-language` (0.1.1, preview).
+- **Fixed**: a problem with a name, a child reference or a call was reported
+  at the start of the equation or declaration holding it, so
+  `value = foo` gave the column of `value` for "unknown name 'foo'". Every
+  such message now points at the name itself. The parser records where each
+  one is written (`At` in `rhema_ast.ml`); generation is unchanged.
 - **Six new question types**, all built answer first: `counting.rhm`
   (arrangements, selections and probabilities, with named questions
   `counting` and `probability`), `number_theory.rhm`, `series.rhm`,

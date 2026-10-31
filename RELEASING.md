@@ -80,3 +80,10 @@ opam pin add rhema ./Project-RHM/generator
 ```
 
 `opam upgrade rhema` after a `git pull` picks up new commits.
+
+## The VS Code extension
+
+The extension in `editors/vscode` has its own version and is released
+separately, to the Visual Studio Marketplace and Open VSX, with tags named
+`vscode-vX.Y.Z`; `editors/vscode/PUBLISHING.md` (Chinese:
+`PUBLISHING.zh.md`) gives the steps.

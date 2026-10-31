@@ -16,6 +16,12 @@ The tables give, for each grammar, what it asks, what its difficulty budget
 Prices are per production: a sum that costs 1 and a product that costs 3
 make `x + 2x \cdot \sin x` cost at least 4.
 
+!!! note
+    `counting.rhm`, `number_theory.rhm`, `series.rhm`, `limits.rhm`,
+    `eigen.rhm` and `inequality.rhm` are in the repository, not in the 0.1.1
+    package. To use them before the next release, build `rhema` from a
+    clone of the repository.
+
 --8<-- "QUESTION_TYPES.md:tables"
 
 ## Libraries and examples

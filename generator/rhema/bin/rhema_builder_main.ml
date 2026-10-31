@@ -25,6 +25,7 @@ let rhm_string text =
     (List.init (String.length text) (String.get text))) ^ "\""
 
 let rec expression = function
+  | At (_,body) -> expression body
   | Int n -> int n | Str s -> rhm_string s | Attr_here s -> s
   | Attr_child (n,a) -> Printf.sprintf "$%d.%s" n a
   | Attr_child_named (n,a) -> n ^ "." ^ a | Child n -> "$" ^ int n
@@ -76,7 +77,10 @@ let declaration = function
       (match r.guard with None -> "" | Some e -> " when " ^ expression e) ^
       " weight " ^ int r.weight ^ " {\n" ^ String.concat "\n" (List.map equation r.equations) ^ "\n}"
 
-let number = function Int n -> Some n | Unary ("-",Int n) -> Some (-n) | _ -> None
+let rec unlocated = function At (_,body) -> unlocated body | expression -> expression
+let rec number = function
+  | At (_,body) -> number body
+  | Int n -> Some n | Unary ("-",Int n) -> Some (-n) | _ -> None
 let numbers args =
   let ns = List.filter_map number args in if List.length ns = List.length args then Some ns else None
 let operators = ["+";"-";"*";"/";"\\cdot";"\\div";"\\land";"\\lor";"\\neg";"\\to";
@@ -109,11 +113,11 @@ let fields u =
   let field id name kind value extra = obj (["id",quote (u.key ^ ":" ^ id);"name",quote name;
     "module",quote u.key;"kind",quote kind;"value",value] @ extra) in
   let rule_index = ref 0 in
-  let rec equal_values name = function
-    | Binary ("=",Attr_here n,e) when n=name -> (match number e with Some n -> [n] | None -> [])
+  let rec equal_values name expression = match unlocated expression with
+    | Binary ("=",left,e) when unlocated left = Attr_here name -> (match number e with Some n -> [n] | None -> [])
     | Binary (_,a,b) -> equal_values name a @ equal_values name b | _ -> [] in
-  let rec mode_values name = function
-    | Binary (("="|"!="),Attr_here n,e) when n=name -> (match number e with Some n -> [n] | None -> [])
+  let rec mode_values name expression = match unlocated expression with
+    | Binary (("="|"!="),left,e) when unlocated left = Attr_here name -> (match number e with Some n -> [n] | None -> [])
     | Binary (_,a,b) -> mode_values name a @ mode_values name b | _ -> [] in
   let cost_values =
     let rs = List.filter (fun r -> r.lhs=u.spec.Rhema_check.start) u.spec.rules in
@@ -171,6 +175,7 @@ let wrap_length minimum maximum declarations =
   let roots = starts declarations in
   let rename name = if List.mem name roots then "Teacher_" ^ name else name in
   let rec rename_expr = function
+    | At (p,e) -> At (p,rename_expr e)
     | Attr_child_named (s,a) -> Attr_child_named (rename s,a)
     | Unary (op,e) -> Unary (op,rename_expr e)
     | Binary (op,a,b) -> Binary (op,rename_expr a,rename_expr b)
@@ -249,8 +254,9 @@ let () =
       let with_instruction text = if index<>0 || !instruction="" then text else
         replace_all "}" "}}" (replace_all "{" "{{" !instruction) ^ "\n" ^ text in
       let rec adjust_guard old_price new_price = function
-        | Binary (op,Attr_here "cost",e) when List.mem op ["=";">=";">";"<=";"<"] ->
-            (match number e with Some n -> Binary (op,Attr_here "cost",Int (max 0 (n + new_price - old_price))) | None -> Binary(op,Attr_here "cost",e))
+        | At (p,e) -> At (p,adjust_guard old_price new_price e)
+        | Binary (op,left,e) when unlocated left = Attr_here "cost" && List.mem op ["=";">=";">";"<=";"<"] ->
+            (match number e with Some n -> Binary (op,left,Int (max 0 (n + new_price - old_price))) | None -> Binary(op,left,e))
         | Binary (op,a,b) -> Binary (op,adjust_guard old_price new_price a,adjust_guard old_price new_price b)
         | e -> e in
       let declarations = List.filter_map (function

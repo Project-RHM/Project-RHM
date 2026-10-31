@@ -1,0 +1,212 @@
+{
+  "name": "rhema-language",
+  "displayName": "Rhema Language",
+  "description": "Rhema (.rhm) support: highlighting, problems from rhema check as you type, Run and Compile commands, folding and snippets.",
+  "version": "0.1.1",
+  "publisher": "rhema",
+  "license": "MIT",
+  "author": "Jingming Zhang",
+  "homepage": "https://project-rhm.github.io/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Project-RHM/Project-RHM.git",
+    "directory": "editors/vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/Project-RHM/Project-RHM/issues"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "keywords": [
+    "rhema",
+    "rhm",
+    "webwork",
+    "attribute grammar",
+    "question generation"
+  ],
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#e77500",
+    "theme": "dark"
+  },
+  "preview": true,
+  "main": "./src/extension.js",
+  "activationEvents": [
+    "onLanguage:rhema"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In an untrusted workspace, rhema.path and rhema.includePaths are read from your user settings only, never from the workspace.",
+      "restrictedConfigurations": [
+        "rhema.path",
+        "rhema.includePaths"
+      ]
+    }
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "rhema",
+        "aliases": [
+          "Rhema",
+          "rhema"
+        ],
+        "extensions": [
+          ".rhm"
+        ],
+        "icon": {
+          "light": "./images/file-light.svg",
+          "dark": "./images/file-dark.svg"
+        },
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "rhema",
+        "scopeName": "source.rhema",
+        "path": "./syntaxes/rhema.tmLanguage.json"
+      },
+      {
+        "scopeName": "markdown.rhema.codeblock",
+        "path": "./syntaxes/rhema.markdown.tmLanguage.json",
+        "injectTo": [
+          "text.html.markdown"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.rhema": "rhema"
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "rhema",
+        "path": "./snippets/rhema.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "rhema.run",
+        "title": "Run Question",
+        "category": "Rhema",
+        "icon": "$(play)"
+      },
+      {
+        "command": "rhema.compile",
+        "title": "Compile to PG",
+        "category": "Rhema",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "rhema.check",
+        "title": "Check File",
+        "category": "Rhema"
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "rhema.run",
+          "when": "resourceLangId == rhema",
+          "group": "navigation@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "rhema.run",
+          "when": "resourceLangId == rhema",
+          "group": "rhema@1"
+        },
+        {
+          "command": "rhema.compile",
+          "when": "resourceLangId == rhema",
+          "group": "rhema@2"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "rhema.run",
+          "when": "resourceExtname == .rhm",
+          "group": "rhema@1"
+        },
+        {
+          "command": "rhema.compile",
+          "when": "resourceExtname == .rhm",
+          "group": "rhema@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "rhema.run",
+          "when": "editorLangId == rhema"
+        },
+        {
+          "command": "rhema.compile",
+          "when": "editorLangId == rhema"
+        },
+        {
+          "command": "rhema.check",
+          "when": "editorLangId == rhema"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Rhema",
+      "properties": {
+        "rhema.path": {
+          "type": "string",
+          "default": "rhema",
+          "scope": "machine-overridable",
+          "markdownDescription": "The `rhema` command. A bare name is looked up on `PATH`; a path with a separator is relative to the workspace folder, so a development build can be named as `generator/_build/install/default/bin/rhema`."
+        },
+        "rhema.includePaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "resource",
+          "markdownDescription": "Extra directories to search for imported and included files, passed to `rhema` as `-I`. Relative paths are relative to the workspace folder."
+        },
+        "rhema.check.trigger": {
+          "type": "string",
+          "enum": [
+            "onType",
+            "onSave",
+            "off"
+          ],
+          "default": "onType",
+          "scope": "resource",
+          "enumDescriptions": [
+            "Check as you type, after a short pause, and when a file is opened or saved.",
+            "Check when a file is opened or saved.",
+            "Do not run rhema check."
+          ],
+          "markdownDescription": "When to run `rhema check` and show its problems."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "test:integration": "node integration/run.js",
+    "check": "tsc -p .",
+    "package": "npx --yes @vscode/vsce@3.9.1 package --baseContentUrl https://github.com/Project-RHM/Project-RHM/blob/main/editors/vscode --baseImagesUrl https://raw.githubusercontent.com/Project-RHM/Project-RHM/main/editors/vscode",
+    "publish:marketplace": "npx --yes @vscode/vsce@3.9.1 publish --packagePath $npm_package_name-$npm_package_version.vsix",
+    "publish:openvsx": "npx --yes ovsx@1.2.0 publish $npm_package_name-$npm_package_version.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "@types/vscode": "1.75.0",
+    "@vscode/test-electron": "3.1.0",
+    "typescript": "5.9.3",
+    "vscode-oniguruma": "2.0.1",
+    "vscode-textmate": "9.3.2"
+  }
+}

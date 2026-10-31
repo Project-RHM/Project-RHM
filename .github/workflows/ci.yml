@@ -7,6 +7,9 @@
 #   development  the whole tree as a developer builds it: the classic
 #                generator too, every test, and the Python checks that drive
 #                the rhema command through the web app and the tools.
+#   editor       the VS Code extension: a type check, and unit tests of its
+#                grammar (against the compiler's keywords and every .rhm
+#                file), its reading of rhema's output and its folding.
 
 name: CI
 
@@ -94,6 +97,7 @@ jobs:
         run: |
           opam exec -- dune build
           opam exec -- dune build @rhema/test/runtest --force
+          opam exec -- dune exec ./vector_context_test.exe
 
       - name: Check and run every library grammar with rhema
         working-directory: generator
@@ -119,6 +123,8 @@ jobs:
       - name: Python checks that drive rhema
         run: |
           python tools/test_grammar_creation.py
+          python tools/test_teacher_builder.py
+          python tools/test_webwork_preview.py
           python tools/rhema_difficulty.py report generator/stdlib/boolean.rhm --at 6 --count 50
           python tools/rhema_stats.py generator/stdlib/boolean.rhm --count 20
 
@@ -156,3 +162,27 @@ jobs:
             commit -q -m "Site from Project-RHM/Project-RHM@${GITHUB_SHA::7}"
           git push -q origin main
           echo "Published https://project-rhm.github.io/"
+
+  editor:
+    name: editor (VS Code extension)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: editors/vscode
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+
+      - name: Install the test dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run check
+
+      - name: Grammar, output parsing and folding
+        run: npm test

@@ -294,12 +294,12 @@ named_argument:
 expr:
   | value = INT                       { Int value }
   | text = STRING                     { Str text }
-  | name = IDENT                      { Attr_here name }
-  | owner = IDENT; DOT; name = IDENT  { Attr_child_named (owner, name) }
-  | index = DOLLAR                    { Child index }
-  | index = DOLLAR; DOT; name = IDENT { Attr_child (index, name) }
+  | name = IDENT                      { At (position $startpos, Attr_here name) }
+  | owner = IDENT; DOT; name = IDENT  { At (position $startpos, Attr_child_named (owner, name)) }
+  | index = DOLLAR                    { At (position $startpos, Child index) }
+  | index = DOLLAR; DOT; name = IDENT { At (position $startpos, Attr_child (index, name)) }
 
-  | name = IDENT; LPAREN; args = arguments; RPAREN { Call (name, args) }
+  | name = IDENT; LPAREN; args = arguments; RPAREN { At (position $startpos, Call (name, args)) }
 
   | LPAREN; body = expr; RPAREN       { body }
 

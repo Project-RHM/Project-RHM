@@ -80,6 +80,7 @@ let () =
             collect right
         | Rhema_ast.Unary (_, body) -> collect body
         | Rhema_ast.Call (_, arguments) -> List.iter collect arguments
+        | Rhema_ast.At (_, body) -> collect body
         | _ -> ()
       in
       List.iter
@@ -265,6 +266,85 @@ let () =
                 (Printf.sprintf "%s: no message carried a line number. Got: %s"
                    label joined))
     broken_cases
+
+(* A problem with a name, a child reference or a call is reported where that
+   name is written, not at the start of the equation or declaration that
+   holds it. Each case: a label, the source, the text the message must
+   mention, and the text the report must point at (it occurs once). *)
+let located_cases =
+  [
+    ( "unknown name in an equation",
+      preamble
+      ^ "E -> num when len = 0 { value = nosuchname latex = $1.latex }\n\
+         num -> integer(digit) { value = $1.value latex = str($1.value) }\n"
+      ^ question,
+      "unknown name 'nosuchname'",
+      "nosuchname" );
+    ( "child out of range",
+      preamble
+      ^ "E -> num when len = 0 { value = $1.value latex = $7.latex }\n\
+         num -> integer(digit) { value = $1.value latex = str($1.value) }\n"
+      ^ question,
+      "$7 is out of range",
+      "$7" );
+    ( "unknown function",
+      preamble
+      ^ "E -> num when len = 0 { value = $1.value latex = nosuchfn($1.value) }\n\
+         num -> integer(digit) { value = $1.value latex = str($1.value) }\n"
+      ^ question,
+      "unknown function 'nosuchfn'",
+      "nosuchfn" );
+    ( "let that refers to an unknown name",
+      "random a = integer_between(1, 9)\nlet total = a + undefinedthing\n" ^ preamble
+      ^ terminator,
+      "refers to 'undefinedthing'",
+      "undefinedthing" );
+    ( "bare name in an answer",
+      preamble ^ terminating_rules
+      ^ "prompt \"Value of [`{E.latex}`]?\"\nanswer 1 + barevalue\n",
+      "'barevalue' on its own is ambiguous",
+      "barevalue" );
+  ]
+
+(* case.rhm:LINE:COLUMN of the one occurrence of [needle] in [source]. *)
+let location_of source needle =
+  let length = String.length needle in
+  let rec find index =
+    if index + length > String.length source then
+      failwith ("located case without " ^ needle)
+    else if String.sub source index length = needle then index
+    else find (index + 1)
+  in
+  let index = find 0 in
+  let line = ref 1 and line_start = ref 0 in
+  String.iteri
+    (fun position character ->
+      if position < index && character = '\n' then (
+        incr line;
+        line_start := position + 1))
+    source;
+  Printf.sprintf "case.rhm:%d:%d" !line (index - !line_start + 1)
+
+let () =
+  List.iter
+    (fun (label, source, expected, needle) ->
+      let where = location_of source needle in
+      match Rhema_load.parse_string ~filename:"case.rhm" source with
+      | Ok _ -> fail (label ^ ": expected an error, but the grammar was accepted")
+      | Error errors ->
+          let matching =
+            List.filter (fun (error : Rhema_load.failure) -> contains error.what expected) errors
+          in
+          if matching = [] then
+            fail
+              (Printf.sprintf "%s: no message mentioned %S. Got: %s" label expected
+                 (String.concat " | " (List.map Rhema_load.string_of_failure errors)))
+          else if not (List.exists (fun (error : Rhema_load.failure) -> error.where = where) matching)
+          then
+            fail
+              (Printf.sprintf "%s: expected the message at %s. Got: %s" label where
+                 (String.concat " | " (List.map Rhema_load.string_of_failure matching))))
+    located_cases
 
 let () =
   if !failures = 0 then print_endline "Ag front-end tests passed."

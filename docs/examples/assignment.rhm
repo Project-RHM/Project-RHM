@@ -6,8 +6,7 @@ import "boolean.rhm" as bool
 
 set week3 {
   part "Sequences"
-    1 of seq.nth
-    1 of seq.sum
+    1 of seq.main
   part "Differentiation"
     3 of calc.derivative(cost ~ 6 spread 2 low 2)
     1 of calc.integral(cost in {5, 7})

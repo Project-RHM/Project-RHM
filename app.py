@@ -12,14 +12,14 @@ import shutil
 import tempfile
 from threading import Thread
 
-from webwork_client import WebworkClient, WebworkClientError
-from teacher_builder import TITLES, register_teacher_routes
-
 # 获取当前文件所在的绝对路径
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # 将项目根目录添加到Python路径
 sys.path.insert(0, BASE_DIR)
+
+from webwork_client import WebworkClient, WebworkClientError
+from teacher_builder import TITLES, register_teacher_routes
 
 app = Flask(__name__)
 WEBWORK_CLIENT = WebworkClient()

@@ -1,414 +1,291 @@
-# Project-RHM
+# RHM — Reversible Hierarchical Mathesis
+
+**Math Question Generation** · *Regula · Hierarchia · Mathesis*
 
 [![CI](https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml/badge.svg)](https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml)
 
-Project-RHM is a mathematical question generator implemented in OCaml, with a
-Flask web interface.
+[Documentation](https://project-rhm.github.io/) ·
+[opam package](https://opam.ocaml.org/packages/rhema/) ·
+[VS Code extension](https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language) ·
+[Changelog](CHANGELOG.md) ·
+[中文说明](README.zh.md)
 
-## AST and DCST
+RHM generates mathematics questions for [WeBWorK](https://openwebwork.org/).
+It has three parts:
 
-An **Abstract Syntax Tree (AST)** represents the meaning and structure of a
-problem after parsing. It removes concrete punctuation and formatting details.
-For example, `1 + 2 * 3` is represented using nodes such as `ME_Add`, `T_Mul`,
-and `F_Int`, so operator precedence is explicit in the tree.
+- **Rhema**, a language that describes a kind of question as an attribute
+  grammar: what shapes it may take, how hard it is, what its answer is and
+  how it reads.
+- **`rhema`**, the compiler, with a library of grammars from arithmetic to
+  linear algebra.
+- A **Flask web application** for generating, editing and browsing question
+  sets.
 
-A **Disjunctive Concrete Syntax Tree (DCST)** is Menhir's intermediate
-unparsing representation. In this project, `describe.ml` converts the AST into
-a DCST by selecting grammar productions such as `doc_no_sol`, `qitem1`, and
-`madd`. A DCST can contain alternative concrete forms. `Parser.Settle.main`
-chooses a valid alternative and produces a Concrete Syntax Tree (CST), which
-`print_pprint.ml` renders as PG code.
+The question and its answer come from the same tree, so they cannot disagree.
+Difficulty is a budget the grammar spends exactly, and a file can describe a
+whole assignment, which compiles to the same paper every time.
 
-The complete pipeline is:
+## A first question
+
+Save this as `first.rhm`:
+
+```text
+# The smallest useful question: the sum of two numbers.
+
+synth value on E
+synth latex on E
+
+start E
+
+E -> integer_between(10, 99) "+" integer_between(10, 99) {
+  value = $1.value + $3.value
+  latex = str($1.value) ++ " + " ++ str($3.value)
+}
+
+prompt "What is [`{E.latex}`]?"
+answer E.value
+```
+
+```text
+$ rhema run first.rhm --count 2
+ 1. What is [`82 + 40`]?
+    answer: 122
+ 2. What is [`83 + 52`]?
+    answer: 135
+```
+
+Grammars import one another, so an assignment can draw on the library
+without copying it. This file, saved as `quiz.rhm` in any directory, asks for
+four calculus questions, three of them at a mean cost of 6:
+
+```text
+import "calculus.rhm" as calc
+
+set quiz {
+  3 of calc.derivative(cost ~ 6 spread 2)
+  1 of calc.integral(cost = 5)
+}
+```
+
+```bash
+rhema quiz.rhm --run quiz
+```
+
+That writes `quiz.pg`, ready for WeBWorK.
+
+## Install
+
+The compiler and its library, on OCaml 4.14 or later:
+
+```bash
+opam install rhema
+```
+
+This installs 0.1.1, the current release. The repository is ahead of it: the
+Unreleased section of the [changelog](CHANGELOG.md) lists what is newer.
+
+For VS Code, install **Rhema Language** from the
+[Marketplace](https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language).
+It runs `rhema check` as you type, and adds highlighting and commands to run
+and compile; see [`editors/vscode`](editors/vscode/README.md).
+
+To work from a clone, which the web application and the newest grammars
+need:
+
+```bash
+git clone https://github.com/Project-RHM/Project-RHM.git
+cd Project-RHM/generator
+opam install dune menhir menhirCST pprint
+dune build
+```
+
+The command is then at `generator/_build/install/default/bin/rhema`.
+
+## The `rhema` command
+
+These lines run in `generator/stdlib`, where the library lives. `rhema` takes
+a file by its path; the search below applies to the files it imports.
+
+```bash
+rhema check calculus.rhm                  # file:line:col: error: ... or OK
+rhema calculus.rhm -o calculus.pg         # compile to WeBWorK PG
+rhema homework_set.rhm --run homework     # a whole assignment -> homework.pg
+rhema run boolean.rhm --set cost=6        # questions and answers in the terminal
+rhema run calculus.rhm --question integral  # one named question of the file
+rhema list calculus.rhm                   # questions, budgets, sets, imports
+rhema doc                                 # the builtin functions
+```
+
+One assignment is one paper, the same every time it is generated;
+`--student ID` gives a student a paper of their own. Imported files are found
+beside the importing file, then in `-I` directories, `RHEMA_PATH` and the
+installed library (`share/rhema`).
+
+## The question library
+
+The 0.1.1 package installs 27 grammar files. `generator/stdlib/` holds those
+and the six marked †, which will reach opam with the next release; until
+then they need a clone. [`QUESTION_TYPES.md`](QUESTION_TYPES.md) gives each
+grammar's questions, prices and WeBWorK context.
+
+| Area | Grammars |
+| --- | --- |
+| Arithmetic | `arithmetic` |
+| Algebra | `polynomial_expand`, `factoring`, `polynomial_forms`, `linear_equation`, `inequality`†, `library_linear`, `library_quadratic`, `library_polynomial` |
+| Sequences and series | `sequence`, `sequence_parts`, `series`† |
+| Calculus | `calculus`, `limits`†, `library_formula` |
+| Logic | `boolean`, `boolean_equiv`, `logic_forms` |
+| Sets | `set` |
+| Vectors | `vector`, `vector_expr` |
+| Complex numbers | `complex` |
+| Linear algebra | `matrix_expr`, `determinant`, `matrix_inverse`, `linear_system`, `eigen`† |
+| Counting and number theory | `counting`†, `number_theory`† |
+| Combined | `derivative_or_boolean` (one question, two imported grammars), `homework_set` (a whole assignment) |
+| Shared rules, no questions of their own | `polynomial_core`, `matrix_core` |
+
+A new question type is a new `.rhm` file, not a change to the engine. Your
+own files belong in `generator/grammars/`.
+
+## Difficulty
+
+Difficulty is a budget the grammar spends. `boolean.rhm` prices each
+connective (conjunction 2, conditional 4, biconditional 6 and so on),
+`calculus.rhm` prices the differentiation rules a function calls for, and
+grammars of fixed forms offer each form at its price. Every grammar spends
+its budget exactly, so `--set cost=6` and `--set cost=14` ask for an easy and
+a hard question of the same type.
+
+A set can fix a budget (`cost = 6`), use a list evenly
+(`cost in {8, 10, 12}`), or hold a mean (`cost ~ 6 spread 2`).
+`tools/rhema_difficulty.py` reports what each budget buys and suggests
+levels. See [`DIFFICULTY_BUDGET.md`](DIFFICULTY_BUDGET.md).
+
+## Web application
+
+From a clone, after `dune build`:
+
+```bash
+python3 -m pip install -r requirements.txt
+python3 app.py
+```
+
+Then open <http://127.0.0.1:5001>. The application generates question sets,
+keeps their history, and has an editor for grammars, which checks a file with
+`rhema check` before saving it. Above each result, the
+`AST / DCST Trees` switch shows the trees behind the questions. For Rhema
+grammars these are the applied production tree and the attributed derivation
+tree. With a DeepSeek API key, the optional Add Context feature puts
+arithmetic questions into a context written by an LLM.
+
+The teacher workspace adds a **Configure** form for existing question types,
+alongside the **Rhema source** editor and Classic generator. It supports saved
+presets, English/Chinese interface switching, and resizable settings/preview
+panels. Generated PG can be rendered by the official WeBWorK Renderer, with
+**Check answers** for feedback on student inputs. This checks submissions
+against the PG evaluators, not an independent proof of the standard answers.
+
+For Docker setup, local ports, form controls, preview isolation and tests, see
+[`TEACHER_MODE.md`](TEACHER_MODE.md). Start Docker Desktop, then start the
+renderer with `docker compose up -d --wait webwork-renderer`. The renderer is
+optional for generation and PGML export; WeBWorK preview and grading need it.
+
+## Repository layout
+
+| Path | Contents |
+| --- | --- |
+| `generator/rhema/` | The compiler: `lib`, `bin`, `test` |
+| `generator/stdlib/` | The library of grammars, installed with the package |
+| `generator/grammars/` | Your own grammars |
+| `generator/*.ml`, `*.mly` | The classic PG generator, described below |
+| `docs/`, `mkdocs.yml` | The documentation site |
+| `editors/vscode/` | The VS Code extension |
+| `tools/` | Difficulty, statistics and set tools; test scripts |
+| `app.py`, `templates/`, `static/`, `llm_context/` | The web application |
+
+## Testing
+
+```bash
+cd generator
+dune build
+dune runtest --force
+cd ..
+python3 tools/test_grammar_creation.py
+python3 tools/test_teacher_builder.py
+python3 tools/test_webwork_preview.py
+tools/check_doc_examples.sh generator/_build/install/default/bin/rhema
+```
+
+Several suites read a generated question back and recompute its answer
+independently of the grammar. CI runs these, and builds the package from a
+clean export on OCaml 4.14 and 5, on Linux and macOS.
+
+## The classic pipeline
+
+RHM began by running a parser backwards, and that generator is still in
+`generator/`. It parses PG source and reprints it through Menhir's unparsing
+API:
 
 ```text
 PG source -> Lexer -> Parser -> AST -> Describe -> DCST -> Settle -> CST -> PG source
 ```
 
-## Rhema: the attribute-grammar generator
+An **Abstract Syntax Tree (AST)** represents the meaning and structure of a
+problem, without punctuation or formatting. `1 + 2 * 3` becomes nodes such as
+`ME_Add`, `T_Mul` and `F_Int`, so operator precedence is explicit in the tree.
 
-The library of grammars lives in `generator/stdlib/`, the user's own files in
-`generator/grammars/`, and the compiler in `generator/rhema/` (`lib`, `bin`,
-`test`). The language, Rhema (`.rhm` files),
-defines production rules, random parameters, inherited and synthesized
-attributes, constraints, wording, and answers. The shipped specifications are:
+A **Disjunctive Concrete Syntax Tree (DCST)** is Menhir's intermediate
+unparsing representation, which can hold alternative concrete forms.
+`describe.ml` turns the AST into a DCST by selecting grammar productions,
+`Parser.Settle.main` chooses a valid alternative to give a Concrete Syntax
+Tree (CST), and `print_pprint.ml` renders the CST as PG.
 
-- `arithmetic.rhm`
-- `boolean.rhm`
-- `boolean_equiv.rhm`
-- `sequence.rhm`
-- `complex.rhm`
-- `calculus.rhm`
-- `set.rhm`
-- `vector.rhm`
-- `factoring.rhm`, `polynomial_expand.rhm`, `vector_expr.rhm`, `linear_equation.rhm`
-- `polynomial_forms.rhm`, `sequence_parts.rhm`, on the library `polynomial_core.rhm`
-- `derivative_or_boolean.rhm`, which imports `calculus.rhm` and `boolean.rhm` as modules
-- `logic_forms.rhm`, three more questions on the Boolean grammars
-- `matrix_expr.rhm`, `determinant.rhm`, `matrix_inverse.rhm`, `linear_system.rhm`, on the
-  library `matrix_core.rhm` and the Matrix value type (`rhema_matrix.ml`)
-- `counting.rhm`, `number_theory.rhm`, `series.rhm`, `limits.rhm`, `eigen.rhm`,
-  `inequality.rhm`, each built from its answer
-  (see `QUESTION_TYPES.md` for every grammar, its prices and its context)
-
-### The `rhema` command
+To see these trees for a PG file, run this in `generator/`:
 
 ```bash
-cd generator && dune build && dune install --prefix ~/.local rhema
-
-rhema check calculus.rhm                 # file:line:col: error: ... or OK
-rhema calculus.rhm -o calculus.pg        # compile: generate, write WeBWorK PG
-rhema homework_set.rhm --run homework    # a whole assignment -> homework.pg
-rhema run boolean.rhm --set cost=6       # see questions and answers in the terminal
-rhema list calculus.rhm                  # questions, budgets, sets, imports
-rhema doc                                # the builtin functions
-```
-
-One assignment is one paper, the same every time it is generated;
-`--student ID` gives a student a paper of their own. Imported files are
-found beside the importer, then in `-I` directories, `RHEMA_PATH` and the
-installed library (`share/rhema`). `rhema` and `rhema check` remain as
-the entry points the web app and the Python tools drive. Versions follow
-`CHANGELOG.md`; `rhema --version` prints the one built.
-
-Propositions are a value type of their own (`rhema_boolean.ml`, the `bool_*`
-builtins): the engine renders, evaluates and compares them, so a Boolean
-grammar writes formulas, not truth tables.
-
-A grammar may `include` another file to extend it, `import` other files as
-modules (`import "calculus.rhm" as calc`, then `calc.F(cost = cost)`), declare
-several named questions over one set of rules (`question integral { ... }`,
-run with `rhema run calculus.rhm --question integral`), describe a whole assignment as a
-`set` (`3 of calc.derivative(cost ~ 6 spread 2)`, run with
-`rhema homework_set.rhm --run homework`; see `homework_set.rhm`), give each question form
-its own WeBWorK context, and place several answer blanks in one prompt; see
-`RHEMA_LANGUAGE_EXTENSIONS.md`.
-
-`sequence.rhm` covers arithmetic/geometric nth-term and finite-sum questions.
-It also exercises the signed inclusive range generators `integer_between` and
-`nonzero_integer_between`. `complex.rhm` uses recursive expression productions
-for arithmetic, together with conjugate, modulus, and powers of `i`; typed
-complex answers are rendered in WeBWorK's `Complex` context. See
-`RHEMA_LANGUAGE_GUIDE.md` for the language and CLI. `calculus.rhm` shares a typed
-symbolic Formula AST between derivative questions and reverse-generated
-indefinite integrals, with mixed and single-question modes.
-`set.rhm` recursively composes union, intersection, and difference over stable
-finite-set or interval definitions. `vector.rhm` covers dot product, cross
-product, norm, unit-vector, parallel-vector, and same-direction questions with
-typed Vector answers and comparators.
-
-Difficulty is a budget the grammar spends. `boolean.rhm` prices each
-connective (conjunction 2, conditional 4, biconditional 6, and so on) and
-`arithmetic.rhm` prices its operations and the digits of its numbers;
-`calculus.rhm` prices the differentiation rules a function calls for;
-`complex.rhm` and `set.rhm` price their expressions, `boolean_equiv.rhm` its
-laws, and the grammars of fixed forms (`vector.rhm`, `sequence.rhm`, the
-`library_*.rhm` files) offer each form at its price. Every grammar spends
-an operator-cost budget exactly, so `--set cost=6` and
-`--set cost=14` ask for an easy and a hard question of the same type.
-`tools/rhema_difficulty.py` reports what each budget buys, suggests levels, and
-builds a set whose mean budget is a chosen value. See `DIFFICULTY_BUDGET.md`
-(English) and `DIFFICULTY_BUDGET.zh.md` (Chinese).
-
-Attribute Grammar generation also writes a native visualization. Its applied
-production tree shows which weighted rule was selected at each nonterminal;
-its attributed derivation tree shows question-level values plus inherited and
-synthesized attributes. The Flask UI exposes these views for newly generated
-and historical Attribute Grammar question sets.
-
-## Classic Arithmetic Attribute Grammar
-
-Arithmetic expressions are generated by a small attribute-grammar engine in
-`generator/attribute_grammar.ml`. Its default declarative grammar is
-`generator/arithmetic.rhm`.
-
-For the implementation rationale, migration details, testing record, known
-limitations, and team handoff notes, see
-[`ATTRIBUTE_GRAMMAR_IMPROVEMENT.md`](ATTRIBUTE_GRAMMAR_IMPROVEMENT.md).
-
-```text
-attribute len = 2 split
-attribute digit = 2 copy
-
-start E
-
-E -> E + E { len = -1 } when len > 0 weight 3
-E -> E - E { len = -1 } when len > 0 weight 3
-E -> E * E { len = -1 } when len > 0 weight 2
-E -> E / E { len = -1 } when len > 0 weight 1
-E -> num { len = -0 } when len = 0 weight 1
-num -> integer { digit = -0 } when digit > 0 weight 1
-```
-
-`len` is a split inherited attribute: every operator consumes one unit and the
-remaining budget is divided between its child expressions. Therefore an input
-budget of `n` produces exactly `n` arithmetic operators and generation must
-terminate. `digit` is copied to every number leaf and controls the number of
-digits in generated integers. Rule weights choose among rules that satisfy the
-current guard; they do not override attribute constraints.
-
-The existing `max_expr_depth` configuration currently supplies the initial
-`len` budget. The initial `digit` value and rule weights can be edited in
-`generator/arithmetic.rhm`. Set `ATTRIBUTE_GRAMMAR_FILE` to load a different
-grammar file.
-
-Run the focused tests with:
-
-```powershell
-cd generator
-dune runtest
-```
-
-These tests verify exact operator budgets, digit limits, termination, valid
-evaluation, and one paper per assignment, the same every time it is generated.
-
-## Visualize the AST and DCST
-
-Requirements:
-
-- OCaml
-- Dune 3.5 or later
-- The project dependencies: `menhir`, `menhirCST`, and `pprint`
-
-Build the OCaml tools:
-
-```powershell
-cd generator
-dune build
-```
-
-If Dune is installed in an OPAM switch but is not on `PATH`, use:
-
-```powershell
-opam exec -- dune build
-```
-
-Visualize an existing PG file:
-
-```powershell
 dune exec ./visualize.exe -- examples/sample.pg ast_dcst_visualization.html
 ```
 
-The equivalent OPAM command is:
+The result is a self-contained HTML page with an interactive AST and DCST for
+each question, the original PG, and the PG reprinted from the CST. The file
+argument may be `-` for standard input, and the output path is optional.
 
-```powershell
-opam exec -- dune exec ./visualize.exe -- examples/sample.pg ast_dcst_visualization.html
-```
+Arithmetic expressions in this pipeline come from a small attribute-grammar
+engine, `generator/attribute_grammar.ml`, whose default grammar is
+`generator/arithmetic.ag`. Set `ATTRIBUTE_GRAMMAR_FILE` to load another. This
+is the ancestor of Rhema and uses its own, simpler format; see
+[`ATTRIBUTE_GRAMMAR_IMPROVEMENT.md`](ATTRIBUTE_GRAMMAR_IMPROVEMENT.md).
 
-The output path is optional. When omitted, the tool writes
-`ast_dcst_visualization.html`:
+## Documentation
 
-```powershell
-dune exec ./visualize.exe -- examples/sample.pg
-```
+- [The documentation site](https://project-rhm.github.io/): an eight-chapter
+  tutorial and the language reference
+- [`RHEMA_LANGUAGE_GUIDE.md`](RHEMA_LANGUAGE_GUIDE.md): the language and the
+  command
+- [`RHEMA_LANGUAGE_EXTENSIONS.md`](RHEMA_LANGUAGE_EXTENSIONS.md): `include`,
+  `import`, named questions, sets, per-question contexts and multiple answer
+  blanks
+- [`RHEMA_MODULES_DESIGN.md`](RHEMA_MODULES_DESIGN.md): the design of the
+  module layer
+- [`QUESTION_TYPES.md`](QUESTION_TYPES.md): every grammar in the library
+- [`DIFFICULTY_BUDGET.md`](DIFFICULTY_BUDGET.md): prices, budgets and sets
+- [`RELEASING.md`](RELEASING.md): how a version is released
 
-The tool also accepts PG source from standard input:
+## The name
 
-```powershell
-Get-Content -Raw examples/sample.pg | dune exec ./visualize.exe -- - ast_dcst_visualization.html
-```
+- **Reversible**: a parser reads text into a tree. RHM runs that direction
+  backwards, building the tree first and writing the question from it.
+- **Hierarchical**: questions are trees of productions. Difficulty is passed
+  down the tree, results are computed back up it, and grammars compose into
+  assignments.
+- **Mathesis**: after Leibniz's *mathesis universalis*, a universal method of
+  reasoning by calculation.
 
-Open the generated self-contained HTML file in a browser:
+The letters are also *Menhir* read backwards without its vowels, and
+Rheinmetall's stock ticker. **Rhema** (Greek ῥῆμα, *an utterance*) sits
+inside RHM and names what a grammar does: it says a question.
 
-```powershell
-Start-Process .\ast_dcst_visualization.html
-```
+## Authors and licence
 
-The page displays:
-
-- A separate semantic AST constructor tree for every generated question.
-- The actual Menhir DCST, including nonterminal production IDs, concrete
-  terminal tokens, and any `Choice` alternatives for every question.
-- Interactive D3 horizontal tree diagrams with pan, zoom, node folding,
-  fit-to-view controls, and question navigation.
-- The original PG input.
-- The PG source reprinted after settling the DCST into a CST. This may differ
-  from the input because `print_pprint.ml` applies the project's output format.
-
-## Web Application
-
-### Docker: Flask, Rhema and WeBWorK together (recommended)
-
-#### macOS / teacher workspace
-
-On Apple Silicon, install and open [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/)
-first. Both Compose services explicitly use `linux/amd64`: the pinned
-renderer image and its bundled opam installer target x86_64. Docker Desktop
-runs them using emulation. The published ports remain local to this computer.
-
-For a quick development loop with the existing local OCaml toolchain, start
-only the real renderer and run Flask natively:
-
-```sh
-docker compose -p rhema-workspace-local up -d --wait webwork-renderer
-python3 -m venv .venv                  # once, not a venv copied from another machine
-.venv/bin/python -m pip install -r requirements.txt
-cd generator
-dune build
-cd ..
-APP_PORT=5003 .venv/bin/python app.py
-```
-
-Open <http://127.0.0.1:5003>. Port 5003 avoids an older checkout on 5001.
-The default host-native renderer address is `http://127.0.0.1:3000/render-api`.
-To check every shipped teacher grammar and named question against the live
-renderer from this host-native setup, run:
-
-```sh
-.venv/bin/python tools/validate_webwork_renderer.py --renderer-url http://127.0.0.1:3000/render-api
-```
-
-The alternative full-container stack is:
-
-```sh
-APP_PORT=5003 docker compose -p rhema-workspace-local up --build -d
-```
-
-The workspace opens in English. Its header language button switches the
-interface between English and Chinese and remembers the choice locally;
-question wording, mathematical content, answers, grammar source and the
-isolated WeBWorK document are not machine-translated. Choose a type from
-the library, configure parameters in the middle and inspect questions,
-PGML or production trees on the right. Classic and Rhema source modes
-remain available. Budget controls keep their original semantics; they are
-not renamed as educational difficulty levels.
-
-The Questions tab renders the complete PG document using WeBWorK, not a
-reconstruction of its HTML in the application. Renderer HTML runs inside
-a sandboxed iframe. Service failures and PG translator errors are reported
-instead of being labelled successful. For teacher-form results, **Local
-preview** is an explicitly labelled fallback, and **Standard answers** are
-collapsed by default. Enter answers in the WeBWorK inputs and use **Check
-answers** to see per-answer feedback and the total score. Changing an answer
-invalidates the displayed grade. Local preview cannot grade answers.
-
-The checker evaluates student submissions against the PG answer evaluators;
-it does not independently prove that the generated standard answers are correct.
-Previously saved Classic mixed files with context-dependent vector answers
-should be regenerated to use the corrected evaluators.
-
-The renderer client connects directly to its configured service rather than
-inheriting workstation proxy variables. Static iframe previews omit the
-renderer's optional parent-frame interaction tracker and MathQuill editor
-initializer, which require same-origin access or localStorage. MathJax,
-ordinary answer inputs and the `sandbox="allow-scripts"` isolation remain.
-An answer-only `postMessage` bridge connects these inputs to
-`POST /api/webwork/check`. The parent checks the frame identity and a per-render
-token; it does not enable same-origin iframe access or native form submission.
-The server validates answer field names and sizes. Its internal grading request
-uses the renderer's answer hash, but only scores and plain feedback are returned,
-not correct-answer objects, renderer HTML, or session JWTs.
-
-Stop the renderer without deleting data with
-`docker compose -p rhema-workspace-local stop webwork-renderer`.
-
-Start Docker Desktop in Linux/WSL2 mode, then run in PowerShell:
-
-```powershell
-cd F:\Project-RHM_latest\Project-RHM_latest
-docker compose up --build -d
-docker compose ps
-```
-
-Open <http://127.0.0.1:5001> after both services show `healthy`. Python,
-OCaml, opam, Dune, Menhir and PPrint are installed inside the application
-image; no host installation or host `dune build` is needed. The first build
-downloads the toolchain; subsequent starts reuse the image:
-
-```powershell
-docker compose up -d
-docker compose logs -f app
-docker compose down
-```
-
-The application image builds the current Rhema CLI, its installed standard
-library and the teacher-mode bridge. `generator/rhema/`, `generator/stdlib/`,
-`generator/grammars/`, `config_setting/` and the three `generator/generated_*`
-directories are mounted from this checkout. Generated files, saved grammars
-and teacher presets survive container replacement. The Linux `_build` stays
-inside the container and does not use Windows build artifacts. Keys saved
-in Docker mode live in the ignored `.project-rhm-data/` directory; existing
-host-mode keys are not copied into the image.
-
-New question definitions go in `generator/grammars/*.rhm` and new library
-modules in `generator/stdlib/`. They are read at run time; reload the grammar
-list/page after adding a file. After changing the OCaml implementation in
-`generator/rhema/`, run `docker compose restart app` to trigger its incremental
-build. Changes to Python, templates, CSS, `generator/dune-project`, other
-OCaml sources or dependencies require `docker compose up --build -d`.
-
-If the earlier checkout is still running on ports 5001/3000, stop it from
-that checkout with `docker compose down` before starting this one. To run
-both checkouts at once, choose different published ports here:
-
-```powershell
-$env:APP_PORT = '5002'
-$env:WEBWORK_PORT = '3001'
-docker compose up --build -d
-```
-
-In that case open <http://127.0.0.1:5002>. The browser-visible Renderer asset
-URL follows `WEBWORK_PORT`. Stop with `docker compose down`; generated files
-and saved definitions remain on the host. This is a local development stack,
-with both published ports bound to `127.0.0.1`.
-
-### Rendered Preview and API
-
-Classic, Rhema source and teacher form generation share the same `Question
-preview` cards above the result tabs. Classic/source previews use WeBWorK to
-resolve PG variables and functions before rendering the math with KaTeX.
-Teacher form previews retain their supplied standard answers. The PGML,
-tree and full WeBWorK tabs remain available below the common preview.
-
-Generated results and History each have a `Rendered Preview` tab. It sends
-the current complete `.pg` document to Flask, which calls the official,
-digest-pinned WeBWorK Renderer over the Compose network. The HTML is shown in
-a sandboxed iframe with MathJax. Requests use static, non-instructor output
-without solutions or hints. Errors, timeouts and unavailable services appear
-in the preview panel. Editing the source marks the preview as stale.
-
-Flask uses `http://webwork-renderer:3000/render-api` inside Compose; the
-browser loads CSS/JS from `http://127.0.0.1:3000/`. For host-native Flask,
-the defaults and optional environment settings are listed in `.env.example`.
-That file is a configuration reference: export the variables in your shell
-when using host-native Flask. `GET /api/webwork/status` checks a real render.
-
-Generate and render a Rhema definition through Flask (use your selected app
-port if different):
-
-```powershell
-$paper = Invoke-RestMethod -Uri http://127.0.0.1:5001/run_rhema -Method Post `
-  -Body @{ grammar = 'arithmetic.rhm'; count = 2; student_id = 'demo' }
-$body = @{ pg_source = $paper.pgml_code; problem_seed = 1 } | ConvertTo-Json
-$preview = Invoke-RestMethod -Uri http://127.0.0.1:5001/api/webwork/render `
-  -Method Post -ContentType application/json -Body $body
-# $preview.html contains the rendered document.
-```
-
-Run preview tests and live validation inside the application container:
-
-```powershell
-docker compose exec -T app python3 -m unittest tools.test_webwork_preview -v
-docker compose exec -T app python3 -m unittest discover -s tools -p test_teacher_builder.py -v
-docker compose exec -T app python3 tools/validate_webwork_renderer.py
-docker compose exec -T app python3 tools/test_webwork_grading_live.py
-```
-
-### Host-native Flask (requires a local OCaml toolchain)
-
-Install the Python dependencies:
-
-```powershell
-python -m pip install -r requirements.txt
-```
-
-Start the Flask application from the project root:
-
-```powershell
-python app.py
-```
-
-Open `http://127.0.0.1:5001`. After generating a question set, use the
-`PGML / Tree View / Rendered Preview` switch above the result. Tree View contains one AST/DCST
-pair for each generated question. The same switch is available when opening a
-question set from History.
+Jingming Zhang, Jiaming Lei, Xiaobo Huang, Jiesen Long and Zhiyuan Li, at
+[Beijing Normal-Hong Kong Baptist University](https://www.bnbu.edu.cn/en/).
+Released under the [MIT licence](LICENSE).
