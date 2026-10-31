@@ -30,20 +30,18 @@ a whole assignment, which compiles to the same paper every time.
 opam install rhema
 ```
 
-This installs the `rhema` command and a library of grammars for arithmetic,
-algebra, calculus, limits, series, propositional logic, sets and
-inequalities, vectors, complex numbers, sequences, linear algebra and
-eigenvalues, counting and probability, and number theory. Until the package reaches the opam repository:
+This installs version 0.1.1: the `rhema` command and a library of grammars
+for arithmetic, algebra, calculus, propositional logic, sets, vectors,
+complex numbers, sequences and linear algebra. The repository is ahead of
+this release, with [six more grammars](reference/library.md) and ten more
+[builtin functions](reference/builtins.md), which the next release will
+include.
 
-```text
-opam pin add rhema https://github.com/Project-RHM/Project-RHM.git#v0.1.1 --subpath generator
-```
-
-For VS Code, the repository's
-[`editors/vscode`](https://github.com/Project-RHM/Project-RHM/tree/main/editors/vscode)
-directory holds an extension for `.rhm` files: highlighting, problems from
-`rhema check` as you type, and commands to run and compile; its README says
-how to install it.
+For VS Code, install
+[Rhema Language](https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language)
+from the Marketplace. It gives `.rhm` files highlighting, problems from
+`rhema check` as you type, and commands to run and compile; the source is in
+[`editors/vscode`](https://github.com/Project-RHM/Project-RHM/tree/main/editors/vscode).
 
 ## Where to go next
 

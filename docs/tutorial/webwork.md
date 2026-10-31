@@ -24,7 +24,7 @@ $ rhema questions.rhm --question sum --count 5 -o sums.pg
 ## What the file contains
 
 ```text
-$ rhema assignment.rhm --run week3 -o - | head
+$ rhema assignment.rhm --run week3 -o - | head -13
 DOCUMENT();
 loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
 Context("Numeric");
@@ -32,8 +32,12 @@ Context("Numeric");
 BEGIN_PGML
 Sequences
 
-1(a). An arithmetic sequence has first term [`a_1 = 0`] and common
-difference [`d = 5`]. Find [`a_{14}`]. [_____]{65}
+1. An arithmetic sequence has first term [`a_1 = 0`] and common
+difference [`d = 5`].
+
+(a) Find [`a_{14}`]. [_____]{65}
+
+(b) Find the sum of its first [`14`] terms. [_____]{455}
 ```
 
 It is ordinary PG: the macros it needs, the context, and the questions in

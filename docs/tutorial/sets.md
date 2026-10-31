@@ -8,28 +8,29 @@ file, and `rhema` turns it into one paper.
 --8<-- "assignment.rhm"
 ```
 
-The file has no question of its own. It imports the sequence questions of
+The file has no question of its own. It imports the sequence question of
 chapter 5 and two library grammars, and declares a set:
 
 ```text
 $ rhema run assignment.rhm --run week3
-week3: 9 questions in 3 parts
+week3: 8 questions in 3 parts
 
 1. Sequences
-  1(a)  [seq.nth]
+
+1  [seq.main; ]
 An arithmetic sequence has first term [`a_1 = 0`] and common
-difference [`d = 5`]. Find [`a_{14}`]. [___]
-    answer: 65
-  1(b)  [seq.sum]
-An arithmetic sequence has first term [`a_1 = -5`] and common
-difference [`d = -5`]. Find the sum of its first [`14`] terms. [___]
-    answer: -525
+difference [`d = 5`].
+
+(a) Find [`a_{14}`]. [___]
+
+(b) Find the sum of its first [`14`] terms. [___]
+    answers: 65; 455
 
 2. Differentiation
   2(a)  [calc.derivative; cost 5]
 Differentiate the function with respect to x:
-[`f(x) = x^{5} - \sqrt{6 \cdot x} + x`].
-    answer: Formula(5*x^4-6/(2*sqrt(6*x))+1)
+[`f(x) = \tan\left(\ln\left(x\right) + x\right)`].
+    answer: Formula((1/x+1)/cos(ln(x)+x)^2)
   ...
 
 budget means:
@@ -83,7 +84,10 @@ question on its own: `1`, `2`, `3`.
 `distinct`
 :   No two questions have the same shape: the same productions, in the same
     places, with only the numbers different. `3 + 4` and `7 + 2` are one
-    shape. Questions of different types are never repeats of each other.
+    shape. Questions of different types are never repeats of each other,
+    with one exception in the 0.1.1 release: two named questions on the same
+    rule, such as `seq.nth` and `seq.sum`, count as repeats there. The
+    repository has the fix.
 
 `balanced`
 :   No three questions in a row with the same coded answer, for questions
