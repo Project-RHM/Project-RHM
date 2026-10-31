@@ -1,0 +1,56 @@
+name: project-rhm-latest
+
+services:
+  webwork-renderer:
+    # The digest-pinned renderer and bundled opam binary target x86_64.
+    # Docker Desktop uses emulation on Apple Silicon.
+    platform: linux/amd64
+    image: ghcr.io/openwebwork/ww-renderer:main@sha256:fc301fd5fd05bc2bc8573b2f7004c303c42aa19a25de0b88123bdb79774d861b
+    ports:
+      - "127.0.0.1:${WEBWORK_PORT:-3000}:3000"
+    environment:
+      MOJO_MODE: development
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  app:
+    platform: linux/amd64
+    image: project-rhm/latest-app:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:${APP_PORT:-5001}:5001"
+    environment:
+      WEBWORK_RENDERER_URL: http://webwork-renderer:3000/render-api
+      WEBWORK_RENDERER_PUBLIC_BASE_URL: http://127.0.0.1:${WEBWORK_PORT:-3000}/
+      USER_API_KEYS_FILE: /app/runtime/user_api_keys.json
+      RHEMA_PATH: /app/generator/stdlib:/app/generator/grammars
+    volumes:
+      - ./config_setting:/app/config_setting
+      - ./generator/rhema:/app/generator/rhema
+      - ./generator/stdlib:/app/generator/stdlib
+      - ./generator/grammars:/app/generator/grammars
+      - ./generator/generated_questions:/app/generator/generated_questions
+      - ./generator/generated_asts:/app/generator/generated_asts
+      - ./generator/generated_visualizations:/app/generator/generated_visualizations
+      - ./.project-rhm-data:/app/runtime
+    depends_on:
+      webwork-renderer:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:5001/', timeout=5)
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped

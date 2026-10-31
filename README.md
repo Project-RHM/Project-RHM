@@ -177,6 +177,18 @@ grammars these are the applied production tree and the attributed derivation
 tree. With a DeepSeek API key, the optional Add Context feature puts
 arithmetic questions into a context written by an LLM.
 
+The teacher workspace adds a **Configure** form for existing question types,
+alongside the **Rhema source** editor and Classic generator. It supports saved
+presets, English/Chinese interface switching, and resizable settings/preview
+panels. Generated PG can be rendered by the official WeBWorK Renderer, with
+**Check answers** for feedback on student inputs. This checks submissions
+against the PG evaluators, not an independent proof of the standard answers.
+
+For Docker setup, local ports, form controls, preview isolation and tests, see
+[`TEACHER_MODE.md`](TEACHER_MODE.md). Start Docker Desktop, then start the
+renderer with `docker compose up -d --wait webwork-renderer`. The renderer is
+optional for generation and PGML export; WeBWorK preview and grading need it.
+
 ## Repository layout
 
 | Path | Contents |
@@ -198,6 +210,8 @@ dune build
 dune runtest --force
 cd ..
 python3 tools/test_grammar_creation.py
+python3 tools/test_teacher_builder.py
+python3 tools/test_webwork_preview.py
 tools/check_doc_examples.sh generator/_build/install/default/bin/rhema
 ```
 

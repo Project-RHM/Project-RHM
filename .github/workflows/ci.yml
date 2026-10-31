@@ -97,6 +97,7 @@ jobs:
         run: |
           opam exec -- dune build
           opam exec -- dune build @rhema/test/runtest --force
+          opam exec -- dune exec ./vector_context_test.exe
 
       - name: Check and run every library grammar with rhema
         working-directory: generator
@@ -122,6 +123,8 @@ jobs:
       - name: Python checks that drive rhema
         run: |
           python tools/test_grammar_creation.py
+          python tools/test_teacher_builder.py
+          python tools/test_webwork_preview.py
           python tools/rhema_difficulty.py report generator/stdlib/boolean.rhm --at 6 --count 50
           python tools/rhema_stats.py generator/stdlib/boolean.rhm --count 20
 

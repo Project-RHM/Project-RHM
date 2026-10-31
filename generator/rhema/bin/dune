@@ -4,3 +4,8 @@
  (package rhema)
  (modules rhema_main)
  (libraries rhema))
+
+(executable
+ (name rhema_builder_main)
+ (modules rhema_builder_main)
+ (libraries rhema))

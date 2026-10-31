@@ -13,6 +13,8 @@ __pycache__/
 env/
 venv/
 .venv/
+.project-rhm-data/
+.services/
 build/
 develop-eggs/
 dist/

@@ -469,17 +469,17 @@ and describe_vector_prob vec_prob =
   if print_describe then prerr_endline "→ describe_vector_prob";
   match vec_prob with
   | Dot_Product (var1, var2, vec1, vec2) ->
-      DCST.vec_prob_1 var1 var2 (describe_set_enum vec1) (describe_set_enum vec2)
+      DCST.vec_prob_1_typed var1 var2 (describe_set_enum vec1) (describe_set_enum vec2)
   | Cross_Product (var1, var2, vec1, vec2) ->
-      DCST.vec_prob_2 var1 var2 (describe_set_enum vec1) (describe_set_enum vec2)
+      DCST.vec_prob_2_typed var1 var2 (describe_set_enum vec1) (describe_set_enum vec2)
   | Vector_Norm (var, vec) ->
-      DCST.vec_prob_3 var (describe_set_enum vec)
+      DCST.vec_prob_3_typed var (describe_set_enum vec)
   | Unit_Vector (var, vec) ->
-      DCST.vec_prob_4 var (describe_set_enum vec)
+      DCST.vec_prob_4_typed var (describe_set_enum vec)
   | Parallel_Vectors (var, vec) ->
-      DCST.vec_prob_5 var (describe_set_enum vec)
+      DCST.vec_prob_5_typed var (describe_set_enum vec)
   | Same_Dir_Vectors (var, vec) ->
-      DCST.vec_prob_6 var (describe_set_enum vec)
+      DCST.vec_prob_6_typed var (describe_set_enum vec)
 
 (* ------------------- NEW CODE START ------------------- *)
 and describe_function_expr func_expr = 

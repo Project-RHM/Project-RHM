@@ -6,7 +6,7 @@
     <title>Project RHM — Math Question Generator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body class="workspace-app">
     <div class="container_index">
         <!-- 左侧边栏 -->
         <div class="sidebar" id="sidebar">
@@ -19,22 +19,34 @@
             <div class="sidebar-content" id="sidebarContent">
                 <div class="sidebar-brand">
                     <div class="brand-copy">
-                        <strong>Project RHM</strong>
+                        <strong>Rhema</strong>
                         <span>Question workspace</span>
                     </div>
                 </div>
                 <div class="sidebar-header">
                     <button id="newQuestionBtn" class="new-question-btn">
-                        <span aria-hidden="true">＋</span> New generation
+                        <i data-lucide="plus" aria-hidden="true"></i><span>New question</span>
                     </button>
-                    <button id="configSettingsBtn" class="btn btn-secondary config-link-btn">Generator settings</button>
+                    <nav class="workspace-nav" aria-label="Workspace">
+                        <button type="button" id="questionLibraryBtn" class="workspace-nav-item active"><i data-lucide="library" aria-hidden="true"></i><span>Question library</span></button>
+                        <button type="button" id="presetLibraryBtn" class="workspace-nav-item"><i data-lucide="folder" aria-hidden="true"></i><span>My presets</span></button>
+                        <button type="button" id="generationHistoryBtn" class="workspace-nav-item"><i data-lucide="history" aria-hidden="true"></i><span>Recent generations</span></button>
+                        <button type="button" id="classicWorkspaceBtn" class="workspace-nav-item"><i data-lucide="settings-2" aria-hidden="true"></i><span>Classic generator</span></button>
+                    </nav>
+                    <button id="configSettingsBtn" class="btn btn-secondary config-link-btn">Classic settings</button>
                 </div>
+                <section id="grammarLibrary" class="grammar-library">
+                    <label class="catalog-search"><i data-lucide="search" aria-hidden="true"></i><input id="grammarSearch" type="search" placeholder="Search question types" aria-label="Search question types"></label>
+                    <div id="grammarCatalog" class="grammar-catalog" aria-label="Question types"></div>
+                </section>
+                <div id="sidebarHistory">
                 <div class="history-heading">
                     <span>Recent generations</span>
                     <span class="history-count" id="historyCount">0</span>
                 </div>
                 <div class="history-list" id="historyList">
                     <div class="loading-history"><span class="mini-spinner"></span> Loading history…</div>
+                </div>
                 </div>
             </div>
         </div>
@@ -44,10 +56,10 @@
             <!-- 生成新题目界面 -->
             <div id="generateContent" class="content-area active">
                 <header class="page-hero">
-                    <h1>Math Question Generator</h1>
-                    <p>Build reproducible WeBWorK question sets with the classic generator or an editable attribute grammar.</p>
+                    <div><h1>Question workspace</h1><span id="workspaceSelection">Arithmetic</span></div>
+                    <div class="workspace-header-actions"><span id="rendererConnection" class="renderer-connection" role="status">Checking renderer</span><button type="button" id="languageToggle" class="btn btn-secondary" aria-label="Switch language">中文</button></div>
                 </header>
-                
+                <div class="authoring-layout">
                 <form id="studentForm">
                     <!-- 添加API密钥模态窗口 -->
                     <div id="apiKeyModal" class="modal">
@@ -75,54 +87,87 @@
                     </div>
 
                     <section class="generator-workspace">
+                    <div class="settings-scroll">
                         <div class="workspace-heading">
-                            <span class="section-eyebrow">Generation method</span>
-                            <h2>Choose a workflow</h2>
+                            <h2>Question settings</h2>
                         </div>
 
                     <!-- 生成方式：经典生成器 vs 属性文法 -->
                     <div class="generator-mode">
                         <label class="mode-option">
-                            <input type="radio" name="generatorMode" value="classic" checked>
+                            <input type="radio" name="generatorMode" value="classic">
                             <span class="mode-label"><span class="mode-icon">C</span> Classic</span>
                             <span class="mode-hint">all seven question types, built into OCaml</span>
                         </label>
                         <label class="mode-option">
-                            <input type="radio" name="generatorMode" value="ag">
+                            <input type="radio" name="generatorMode" value="ag" checked>
                             <span class="mode-label"><span class="mode-icon">AG</span> Attribute Grammar</span>
                             <span class="mode-hint">editable grammars for every Stage 1 question family</span>
                         </label>
                     </div>
 
                     <div class="rhema-controls" id="rhemaControls" style="display: none;">
+                        <div class="teacher-mode-tabs" role="tablist" aria-label="Question authoring">
+                            <button type="button" id="teacherFormMode" role="tab" aria-selected="true">Configure</button>
+                            <button type="button" id="teacherSourceMode" role="tab" aria-selected="false">Rhema source</button>
+                        </div>
                         <div class="rhema-controls-row">
-                            <label for="rhemaGrammarSelect">Grammar file</label>
-                            <select id="rhemaGrammarSelect"></select>
-                            <label for="rhemaQuestionSelect" id="rhemaQuestionLabel" hidden>Question</label>
-                            <select id="rhemaQuestionSelect" hidden></select>
-                            <label for="rhemaCount">Questions</label>
-                            <input type="number" id="rhemaCount" min="1" max="50" value="6">
+                            <div class="rhema-field rhema-grammar-field">
+                                <label for="rhemaGrammarSelect">Question type</label>
+                                <select id="rhemaGrammarSelect"></select>
+                            </div>
+                            <div class="rhema-field rhema-question-field">
+                                <label for="rhemaQuestionSelect" id="rhemaQuestionLabel" hidden>Question form</label>
+                                <select id="rhemaQuestionSelect" hidden></select>
+                            </div>
+                            <div class="rhema-source-actions">
+                            <div class="rhema-field rhema-count-field">
+                                <label for="rhemaCount">Number of questions</label>
+                                <input type="number" id="rhemaCount" min="1" max="50" value="6">
+                            </div>
+                            <div class="rhema-button-group">
                             <button type="button" id="rhemaEditToggleBtn" class="btn btn-secondary">
                                 Edit Grammar
                             </button>
                             <button type="button" id="rhemaNewBtn" class="btn btn-secondary">New Grammar</button>
+                            </div>
+                            </div>
                         </div>
                         <div id="rhemaNewPanel" hidden>
                             <div class="rhema-controls-row rhema-new-row">
+                                <div class="rhema-field rhema-filename-field">
                                 <label for="rhemaNewName">File name</label>
                                 <input id="rhemaNewName" type="text" placeholder="linear_equation.rhm" maxlength="83" autocomplete="off">
+                                </div>
+                                <div class="rhema-button-group">
                                 <button type="button" id="rhemaCreateDraftBtn" class="btn btn-primary">Create Draft</button>
                                 <button type="button" id="rhemaCancelNewBtn" class="btn btn-secondary">Cancel</button>
+                                </div>
                                 <span id="rhemaNewError" role="alert"></span>
                             </div>
                         </div>
-                        <p class="rhema-note">
-                            The grammar file defines the generated structure, random
-                            parameters, constraints, answer, wording, and difficulty.
-                            Editing it takes effect immediately — no rebuild.
-                        </p>
                     </div>
 
+                    <section id="teacherBuilder" class="teacher-builder" hidden aria-label="Question settings">
+                        <div class="teacher-heading"><h3 id="teacherTitle">Question settings</h3><span id="teacherState" role="status"></span></div>
+                        <div id="teacherMessage" class="teacher-message" role="alert" hidden></div>
+                        <div id="teacherFields"></div>
+                        <details class="teacher-output-settings"><summary>Output settings</summary>
+                        <fieldset class="teacher-fieldset">
+                            <legend>Output</legend>
+                            <div class="teacher-grid">
+                                <label>Answer box width<input type="number" id="teacherWidth" min="1" max="100" value="16"></label>
+                                <label>Save as<input type="text" id="teacherPresetName" placeholder="my_questions.rhm" autocomplete="off"></label>
+                                <label>Additional instruction<input type="text" id="teacherInstruction" maxlength="500" autocomplete="off"></label>
+                            </div>
+                            <div class="teacher-actions">
+                                <button type="button" class="btn btn-secondary" id="teacherReset">Reset settings</button>
+                                <button type="button" class="btn btn-secondary" id="teacherExport">Export specification</button>
+                            </div>
+                        </fieldset>
+                        </details>
+                        <details id="teacherGeneratedSource"><summary>Generated Rhema</summary><textarea id="teacherSource" readonly aria-label="Generated Rhema source" spellcheck="false"></textarea></details>
+                    </section>
                     <div class="rhema-editor" id="rhemaEditor" style="display: none;">
                         <div class="rhema-editor-head">
                             <div class="rhema-file-identity">
@@ -171,18 +216,22 @@
                         <pre id="rhemaGrammarMessage" class="rhema-message" aria-live="polite" style="display: none;"></pre>
                     </div>
 
-                    <!-- 修改：将Add Context整合到输入框中 -->
+                    </div>
+                    <!-- Generation actions stay visible while the settings scroll. -->
                     <div class="input-with-context generation-launch">
+                        <div class="generation-launch-row">
+                        <div class="launch-field">
                         <div class="launch-heading">
                             <div>
-                                <label for="studentId">Student ID (optional for grammars)</label>
-                                <span>An assignment is one paper, the same every time. Enter a student number only for a paper of that student's own.</span>
+                                <label for="studentId">Student ID (optional for Rhema)</label>
                             </div>
                         </div>
                         <div class="input-group">
                             <input type="text" id="studentId" name="student_id"
-                                placeholder="e.g. 2230026100" autocomplete="off">
-                            <button type="submit"><span>Generate questions</span><span aria-hidden="true">→</span></button>
+                                placeholder="Optional student ID" autocomplete="off">
+                        </div>
+                        </div>
+                        <div class="generation-actions"><button type="button" class="btn btn-secondary" id="teacherSave"><i data-lucide="save" aria-hidden="true"></i><span>Save preset</span></button><button type="submit" id="generateQuestionsBtn" class="btn btn-primary"><i data-lucide="play" aria-hidden="true"></i><span>Generate questions</span></button></div>
                         </div>
                         <div class="context-option">
                             <label class="context-checkbox">
@@ -198,16 +247,21 @@
                     </div>
                     </section>
                 </form>
-                
+                <div id="workspaceDivider" class="workspace-divider" role="separator" aria-orientation="vertical" aria-label="Resize settings and preview" aria-controls="studentForm previewWorkspace" tabindex="0" title="Resize panels">
+                    <span class="workspace-divider-handle" aria-hidden="true"><i data-lucide="grip-vertical"></i></span>
+                </div>
+                <section id="previewWorkspace" class="preview-workspace" aria-label="Question preview">
+                <div id="previewPlaceholder" class="preview-placeholder"><h2>Question preview</h2><div class="preview-paper-placeholder" aria-hidden="true"><i data-lucide="file-text"></i><span></span><span></span><span></span></div><p>No questions generated</p></div>
                 <div id="result" class="result-container" style="display: none;">
                     <div class="result-header">
                         <div>
-                            <span class="section-eyebrow">Generated output</span>
-                            <h2>Question set</h2>
+                            <h2>Question preview</h2>
+                            <span id="previewQuestionCount" class="preview-count"></span>
                         </div>
                         <div class="result-view-switch" id="generateViewSwitch">
-                            <button type="button" class="view-switch-btn active" data-view="pgml">PGML</button>
-                            <button type="button" class="view-switch-btn" data-view="trees">AST / DCST Trees</button>
+                            <button type="button" class="view-switch-btn active" data-view="rendered">Questions</button>
+                            <button type="button" class="view-switch-btn" data-view="pgml">PGML</button>
+                            <button type="button" class="view-switch-btn" data-view="trees">Generation tree</button>
                         </div>
                     </div>
                     <div id="contextStatus" class="loading" style="display: none; text-align: left; background: #e8f4fd; padding: 10px; border-radius: 4px; margin: 10px 0;">
@@ -222,6 +276,17 @@
                         <span>Read-only until edit mode is enabled</span>
                     </div>
                     <textarea id="output" class="output-textarea" readonly></textarea>
+
+                    <div id="generatedRenderedView" class="rendered-view-panel" hidden>
+                        <div class="rendered-preview-toolbar">
+                            <span id="generatedRenderedStatus" class="rendered-preview-status" role="status" aria-live="polite">Select this tab to render the PG source.</span>
+                            <div class="preview-tools"><button type="button" class="btn btn-primary" id="generatedCheckAnswers" onclick="checkPreviewAnswers('generate')" disabled><i data-lucide="check-check" aria-hidden="true"></i><span>Check answers</span></button><button type="button" class="btn btn-secondary" id="generatedLocalToggle" hidden>Local preview</button><button type="button" class="btn icon-button" onclick="renderProblemPreview('generate', true)" title="Refresh preview" aria-label="Refresh preview"><i data-lucide="refresh-cw" aria-hidden="true"></i></button></div>
+                        </div>
+                        <section id="generatedAnswerFeedback" class="answer-feedback" aria-live="polite" aria-label="Answer results" hidden></section>
+                        <iframe id="generatedRenderedFrame" class="rendered-view-frame" title="WeBWorK question preview" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>
+                        <section id="generatedLocalPreview" class="local-question-preview" hidden></section>
+                        <details id="generatedAnswers" class="preview-answers" hidden><summary>Standard answers</summary><div id="generatedAnswerList" data-no-translate></div></details>
+                    </div>
 
                     <div id="generatedTreeView" class="tree-view-panel" style="display: none;">
                         <iframe id="generatedTreeFrame" class="tree-view-frame" title="Generated question AST and DCST"></iframe>
@@ -276,6 +341,8 @@
                     <div class="status-spinner" aria-hidden="true"></div>
                     <div><strong>Generating your question set</strong><span>Building PGML and validating the output…</span></div>
                 </div>
+                </section>
+                </div>
             </div>
             
             <!-- 查看历史记录界面 -->
@@ -295,6 +362,7 @@
                         <div class="result-view-switch" id="historyViewSwitch">
                             <button type="button" class="view-switch-btn active" data-view="pgml">PGML</button>
                             <button type="button" class="view-switch-btn" data-view="trees">AST / DCST Trees</button>
+                            <button type="button" class="view-switch-btn" data-view="rendered">Rendered Preview</button>
                         </div>
                     </div>
 
@@ -303,6 +371,15 @@
                         <span>Open edit mode to make changes</span>
                     </div>
                     <textarea id="historyOutput" class="output-textarea"></textarea>
+
+                    <div id="historyRenderedView" class="rendered-view-panel" hidden>
+                        <div class="rendered-preview-toolbar">
+                            <span id="historyRenderedStatus" class="rendered-preview-status" role="status" aria-live="polite">Select this tab to render the PG source.</span>
+                            <div class="preview-tools"><button type="button" class="btn btn-primary" id="historyCheckAnswers" onclick="checkPreviewAnswers('history')" disabled><i data-lucide="check-check" aria-hidden="true"></i><span>Check answers</span></button><button type="button" class="btn icon-button" onclick="renderProblemPreview('history', true)" title="Refresh preview" aria-label="Refresh preview"><i data-lucide="refresh-cw" aria-hidden="true"></i></button></div>
+                        </div>
+                        <section id="historyAnswerFeedback" class="answer-feedback" aria-live="polite" aria-label="Answer results" hidden></section>
+                        <iframe id="historyRenderedFrame" class="rendered-view-frame" title="WeBWorK historical question preview" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>
+                    </div>
 
                     <div id="historyTreeView" class="tree-view-panel" style="display: none;">
                         <iframe id="historyTreeFrame" class="tree-view-frame" title="Historical question AST and DCST"></iframe>
@@ -651,6 +728,7 @@
                         if (data.pgml_code) {
                             outputTextarea.value = data.pgml_code; // 现在这是完整文件内容
                             originalContent = data.pgml_code;
+                            window.questionPreview.show({pgml_code: data.pgml_code});
                         }
                         
                         // 更新文件信息
@@ -711,6 +789,7 @@
             // 恢复原始内容
             outputTextarea.value = originalPgmlContent;
             originalContent = originalPgmlContent;
+            window.questionPreview.show({pgml_code: originalPgmlContent});
             
             // 恢复按钮状态
             showAstBtn.style.display = 'inline-block';
@@ -912,14 +991,17 @@
                 isGenerate ? 'generateViewSwitch' : 'historyViewSwitch'
             );
             const showingTrees = view === 'trees';
+            const showingRendered = view === 'rendered';
+            const showingPgml = view === 'pgml';
 
-            heading.style.display = showingTrees ? 'none' : 'flex';
-            output.style.display = showingTrees ? 'none' : 'block';
-            actionButtons.style.display = showingTrees ? 'none' : 'flex';
+            heading.style.display = showingPgml ? 'flex' : 'none';
+            output.style.display = showingPgml ? 'block' : 'none';
+            actionButtons.style.display = showingPgml ? 'flex' : 'none';
             treePanel.style.display = showingTrees ? 'block' : 'none';
+            document.getElementById(`${prefix}RenderedView`).hidden = !showingRendered;
 
             if (isGenerate) {
-                if (showingTrees) {
+                if (!showingPgml) {
                     document.getElementById('fileInfo').style.display = 'none';
                 }
                 document.getElementById('originalContentContainer').style.display = 'none';
@@ -936,6 +1018,7 @@
             if (showingTrees) {
                 treeFrame.src = `/tree_visualization?filename=${encodeURIComponent(filename)}`;
             }
+            if (showingRendered) renderProblemPreview(area);
         }
 
         function setTreeViewLabels(area, visualizationKind) {
@@ -1038,7 +1121,7 @@
                                 historyOutput.value = originalPgmlContent;
                                 originalContent = originalPgmlContent;
                                 historyShowAstBtn.style.display = 'inline-block';
-                            });
+                            }).finally(() => switchResultView('history', 'rendered'));
                     } else {
                         historyOutput.value = 'Failed to load content: ' + originalData.error;
                         originalContent = '';
@@ -1296,7 +1379,7 @@
             
             // 显示原文件按钮（生成界面）
             document.getElementById('showOriginalBtn').addEventListener('click', function() {
-                if (this.textContent === 'Show PGML Code Without Context') {
+                if (document.getElementById('originalContentContainer').style.display === 'none') {
                     showOriginalFile('generate');
                 } else {
                     hideOriginalFile('generate');
@@ -1305,7 +1388,7 @@
             
             // 显示原文件按钮（历史界面）
             document.getElementById('historyShowOriginalBtn').addEventListener('click', function() {
-                if (this.textContent === 'Show PGML Code Without Context') {
+                if (document.getElementById('historyOriginalContentContainer').style.display === 'none') {
                     showOriginalFile('history');
                 } else {
                     hideOriginalFile('history');
@@ -1630,6 +1713,8 @@
                             rhemaGrammarSelect.appendChild(option);
                         });
                         rhemaQuestions = data.questions || {};
+                        window.rhemaCatalog = data.catalog || [];
+                        document.dispatchEvent(new CustomEvent('rhema:catalog', {detail: window.rhemaCatalog}));
                         rhemaGrammarsLoaded = true;
                         showRhemaQuestions();
                     })
@@ -1891,7 +1976,12 @@
             document.getElementById('studentForm').addEventListener('submit', function(e) {
                 e.preventDefault();
 
-                if (currentGeneratorMode() === 'ag' && rhemaDirty) {
+                let teacherRequest = null;
+                if (currentGeneratorMode() === 'ag' && window.teacherBuilder?.active()) {
+                    try { teacherRequest = window.teacherBuilder.request(); }
+                    catch (error) { window.teacherBuilder.message(error.message); return; }
+                }
+                if (currentGeneratorMode() === 'ag' && !teacherRequest && rhemaDirty) {
                     rhemaEditor.style.display = 'block';
                     rhemaEditToggleBtn.textContent = 'Hide Grammar';
                     showRhemaMessage('Save the grammar before generating so the new rules are used.', 'error');
@@ -1922,6 +2012,7 @@
                 currentVisualizationFilename = '';
                 switchResultView('generate', 'pgml');
                 resultDiv.style.display = 'none';
+                window.questionPreview.clear();
                 errorDiv.style.display = 'none';
                 astContainer.style.display = 'none';
                 fileInfo.style.display = 'none';
@@ -1938,7 +2029,7 @@
 
                 // 按生成方式分流：属性文法走 /run_rhema，经典生成器走 /run
                 const useAttributeGrammar = currentGeneratorMode() === 'ag';
-                const endpoint = useAttributeGrammar ? '/run_rhema' : '/run';
+                const endpoint = teacherRequest ? '/teacher/generate' : (useAttributeGrammar ? '/run_rhema' : '/run');
                 setTreeViewLabels(
                     'generate',
                     useAttributeGrammar ? 'attribute_grammar' : 'ast_dcst'
@@ -1954,15 +2045,16 @@
                 fetch(endpoint, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Content-Type': teacherRequest ? 'application/json' : 'application/x-www-form-urlencoded',
                     },
-                    body: body
+                    body: teacherRequest ? JSON.stringify(teacherRequest) : body
                 })
                 .then(response => response.json())
                 .then(data => {
                     loadingDiv.style.display = 'none';
                     
                     if (data.success) {
+                        if (teacherRequest) window.teacherBuilder.receive(data);
                         // 保存原始PGML内容
                         currentVisualizationFilename = data.visualization_path
                             ? data.visualization_path.split('/').pop()
@@ -1991,6 +2083,7 @@
                             // 正常显示结果
                             outputTextarea.value = originalPgmlContent;
                             originalContent = originalPgmlContent;
+                            window.questionPreview.show(data);
                             
                             // 显示文件信息
                             if (data.pgml_path || data.ast_path) {
@@ -2004,6 +2097,8 @@
                             
                             // 重新加载历史记录列表
                             loadHistory();
+                            switchResultView('generate', 'rendered');
+                            window.workspaceUI?.generated(data);
                         }
                     } else {
                         errorMessage.textContent = data.error;
@@ -2257,6 +2352,8 @@
                 }
             });
 
+            window.rhemaEditorState = () => ({ dirty: rhemaDirty, isNew: rhemaIsNew });
+
             // 侧边栏折叠功能
             const sidebar = document.getElementById('sidebar');
             const sidebarCollapseBtn = document.getElementById('sidebarCollapseBtn');
@@ -2278,22 +2375,33 @@
             
             // 检查本地存储的折叠状态
             const isSidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            setSidebarCollapsed(isSidebarCollapsed, false);
+            setSidebarCollapsed(window.innerWidth <= 768 || isSidebarCollapsed, false);
             
             // 折叠按钮点击事件
             sidebarCollapseBtn.addEventListener('click', function(e) {
                 e.stopPropagation(); // 防止事件冒泡
-                setSidebarCollapsed(!sidebar.classList.contains('collapsed'));
+                setSidebarCollapsed(!sidebar.classList.contains('collapsed'), window.innerWidth > 768);
             });
             
             // 在移动设备上，点击主内容区域可以关闭侧边栏
             mainContent.addEventListener('click', function() {
                 if (window.innerWidth <= 768 && !sidebar.classList.contains('collapsed')) {
-                    setSidebarCollapsed(true);
+                    setSidebarCollapsed(true, false);
                 }
             });
             
         });
     </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='teacher_builder.css') }}">
+    <script src="{{ url_for('static', filename='vendor/katex/katex.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/katex/katex.min.css') }}">
+    <script src="{{ url_for('static', filename='webwork_preview.js') }}"></script>
+    <script src="{{ url_for('static', filename='question_preview.js') }}"></script>
+    <script src="{{ url_for('static', filename='teacher_builder.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}">
+    <script src="{{ url_for('static', filename='vendor/lucide/lucide.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+    <script src="{{ url_for('static', filename='workspace.js') }}"></script>
+    <script src="{{ url_for('static', filename='workspace_splitter.js') }}"></script>
 </body>
 </html>

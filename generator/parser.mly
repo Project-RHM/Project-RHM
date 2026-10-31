@@ -31,6 +31,7 @@
 %token WITH_METH      (* for the word "with" *)
 %token SET_DEF_METH   (* for the word "Set" *)
 %token COMPUTE_METH   (* for the word "Compute" *)
+%token VECTOR_VALUE_OPEN (* explicitly scoped Vector constructor *)
 %token COMPLEX_METH   (* for the word "Complex" *)
 %token INTERSECT_METH (* for the word "intersect" *)
 %token NORM_METH UNIT_METH CMP_1 CMP_2
@@ -981,6 +982,30 @@ vector_prob_list:
     [@name vec_prob_list_last]
 
 vector_prob:
+  | IT_MATH_OPEN; VEC_LATEX; LBRACE; vec_var_1 = ID; RBRACE; CDOT_LATEX; VEC_LATEX; LBRACE; vec_var_2 = ID; RBRACE; EQ; IT_MATH_CLOSE; BLANK; LBRACE; VECTOR_VALUE_OPEN; vec_enum_1 = set_enum; RPAREN; PERIOD; VECTOR_VALUE_OPEN; vec_enum_2 = set_enum; RPAREN; RBRACE
+      { Dot_Product (vec_var_1, vec_var_2, vec_enum_1, vec_enum_2) }
+    [@name vec_prob_1_typed]
+
+  | IT_MATH_OPEN; VEC_LATEX; LBRACE; vec_var_1 = ID; RBRACE; TIMES_LATEX; VEC_LATEX; LBRACE; vec_var_2 = ID; RBRACE; EQ; IT_MATH_CLOSE; BLANK; LBRACE; VECTOR_VALUE_OPEN; vec_enum_1 = set_enum; RPAREN; X_VAR; VECTOR_VALUE_OPEN; vec_enum_2 = set_enum; RPAREN; RBRACE
+      { Cross_Product (vec_var_1, vec_var_2, vec_enum_1, vec_enum_2) }
+    [@name vec_prob_2_typed]
+
+  | IT_MATH_OPEN; LEFT_NORM_LATEX; VEC_LATEX; LBRACE; vec_var = ID; RBRACE; RIGHT_NORM_LATEX; EQ; IT_MATH_CLOSE; BLANK; LBRACE; VECTOR_VALUE_OPEN; vec_enum = set_enum; RPAREN; ARROW; NORM_METH; LPAREN; RPAREN; RBRACE
+      { Vector_Norm (vec_var, vec_enum) }
+    [@name vec_prob_3_typed]
+
+  | VECTOR_UNIT_PROB; IT_MATH_OPEN; VEC_LATEX; LBRACE; vec_var = ID; RBRACE; IT_MATH_CLOSE; PERIOD; BLANK; LBRACE; VECTOR_VALUE_OPEN; vec_enum = set_enum; RPAREN; ARROW; UNIT_METH; LPAREN; RPAREN; RBRACE
+      { Unit_Vector (vec_var, vec_enum) }
+    [@name vec_prob_4_typed]
+
+  | VECTOR_PARA_PROB; IT_MATH_OPEN; VEC_LATEX; LBRACE; vec_var = ID; RBRACE; IT_MATH_CLOSE; PERIOD; BLANK; LBRACE; VECTOR_VALUE_OPEN; vec_enum = set_enum; RPAREN; ARROW; CMP_1; RBRACE
+      { Parallel_Vectors (vec_var, vec_enum) }
+    [@name vec_prob_5_typed]
+
+  | VECTOR_SAME_PROB; IT_MATH_OPEN; VEC_LATEX; LBRACE; vec_var = ID; RBRACE; IT_MATH_CLOSE; PERIOD; BLANK; LBRACE; VECTOR_VALUE_OPEN; vec_enum = set_enum; RPAREN; ARROW; CMP_2; RBRACE
+      { Same_Dir_Vectors (vec_var, vec_enum) }
+    [@name vec_prob_6_typed]
+
   | IT_MATH_OPEN; VEC_LATEX; LBRACE; vec_var_1 = ID; RBRACE; CDOT_LATEX; VEC_LATEX; LBRACE; vec_var_2 = ID; RBRACE; EQ; IT_MATH_CLOSE; BLANK; LBRACE; COMPUTE_METH; LPAREN; DOUBLE_QUOTE; LT; vec_enum_1 = set_enum; GT; DOUBLE_QUOTE; RPAREN; PERIOD; COMPUTE_METH; LPAREN; DOUBLE_QUOTE; LT; vec_enum_2 = set_enum; GT; DOUBLE_QUOTE; RPAREN; RBRACE
       { Dot_Product (vec_var_1, vec_var_2, vec_enum_1, vec_enum_2) }
     [@name vec_prob_1]

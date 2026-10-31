@@ -18,7 +18,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # 将项目根目录添加到Python路径
 sys.path.insert(0, BASE_DIR)
 
+from webwork_client import WebworkClient, WebworkClientError
+from teacher_builder import TITLES, register_teacher_routes
+
 app = Flask(__name__)
+WEBWORK_CLIENT = WebworkClient()
 
 # 配置OCaml程序路径 - 使用绝对路径
 OCAML_PROJECT_DIR = os.path.join(BASE_DIR, "generator")
@@ -42,7 +46,9 @@ LLM_CONTEXT_SCRIPT = os.path.join(LLM_CONTEXT_DIR, "llm_context.py")
 API_CALL_SCRIPT = os.path.join(LLM_CONTEXT_DIR, "api_call.py")
 
 # 添加用户API密钥存储
-USER_API_KEYS_FILE = os.path.join(BASE_DIR, "user_api_keys.json")
+USER_API_KEYS_FILE = os.environ.get(
+    "USER_API_KEYS_FILE", os.path.join(BASE_DIR, "user_api_keys.json")
+)
 
 # 设置工作目录
 os.chdir(BASE_DIR)
@@ -571,6 +577,41 @@ def index():
     config = read_config()
     return render_template('index.html', config=config)
 
+@app.route('/api/webwork/status')
+def webwork_status():
+    status = WEBWORK_CLIENT.status()
+    return jsonify(status), 200 if status.get('available') else 503
+
+
+@app.route('/api/webwork/render', methods=['POST'])
+def webwork_render():
+    payload = request.get_json(silent=True)
+    if payload is None:
+        payload = request.form
+    if not hasattr(payload, 'get'):
+        return jsonify(success=False, error='Request body must be a JSON object or form data.',
+                       code='invalid_request'), 400
+    try:
+        html = WEBWORK_CLIENT.render(payload.get('pg_source', ''), payload.get('problem_seed', 1))
+    except WebworkClientError as error:
+        return jsonify(success=False, error=str(error), code=error.code), error.http_status
+    return jsonify(success=True, html=html)
+
+
+@app.route('/api/webwork/check', methods=['POST'])
+def webwork_check():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify(success=False, error='Request body must be a JSON object.',
+                       code='invalid_request'), 400
+    try:
+        grade = WEBWORK_CLIENT.check(payload.get('pg_source', ''), payload.get('answers'),
+                                     payload.get('problem_seed', 1))
+    except WebworkClientError as error:
+        return jsonify(success=False, error=str(error), code=error.code), error.http_status
+    return jsonify(success=True, **grade)
+
+
 @app.route('/config', methods=['GET', 'POST'])
 def config():
     if request.method == 'POST':
@@ -905,6 +946,11 @@ def rhema_grammars():
     return jsonify({
         'success': True,
         'grammars': grammars,
+        'catalog': [{
+            'name': name,
+            'title': TITLES.get(name[:-4], name[:-4].replace('_', ' ').title()),
+            'custom': os.path.isfile(os.path.join(RHEMA_GRAMMAR_DIR, name)),
+        } for name in grammars],
         # file -> its named questions, for the files that have more than main
         'questions': {name: questions for name in grammars
                       for questions in [list_rhema_questions(name)] if questions},
@@ -1256,10 +1302,11 @@ def get_history():
                         formatted_time = f"{date_str}_{time_str}"
                     
                     # 检查是否存在对应的AST文件
-                    ast_filename = f"{student_id}_{date_str}_{time_str}_ast.txt"
+                    stem = filename[:-3]
+                    ast_filename = f"{stem}_ast.txt"
                     ast_path = os.path.join(OCAML_PROJECT_DIR, "generated_asts", ast_filename)
                     has_ast = os.path.exists(ast_path)
-                    visualization_filename = f"{student_id}_{date_str}_{time_str}_trees.html"
+                    visualization_filename = f"{stem}_trees.html"
                     visualization_path = os.path.join(
                         OCAML_PROJECT_DIR,
                         "generated_visualizations",
@@ -1350,6 +1397,9 @@ def get_history_content():
     except Exception as e:
         return jsonify({'success': False, 'error': f'Failed to load content: {str(e)}'})
 
+register_teacher_routes(app, BASE_DIR)
+
+
 def open_browser_when_ready(url):
     """Open the local UI after Flask has had time to start listening."""
     time.sleep(1)
@@ -1358,7 +1408,7 @@ def open_browser_when_ready(url):
 
 if __name__ == '__main__':
     host = '0.0.0.0'
-    port = 5001
+    port = int(os.environ.get('APP_PORT', '5001'))
     browser_url = f'http://127.0.0.1:{port}'
 
     # Werkzeug starts this file twice in debug mode. Only the reloader parent
