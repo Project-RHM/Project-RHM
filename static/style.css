@@ -3501,3 +3501,11 @@ textarea { font-family: inherit; }
     .generator-mode { grid-template-columns: 1fr; }
     .input-group button { border-radius: 0 0 2px 2px; }
 }
+.rendered-view-panel { width: 100%; border: 1px solid #d8dde3; background: #fff; }
+.rendered-preview-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px; border-bottom: 1px solid #d8dde3; }
+.rendered-preview-status { font-size: 13px; color: #526272; }
+.rendered-preview-status.loading, .rendered-preview-status.stale { color: #8a611c; }
+.rendered-preview-status.ready { color: #24713d; }
+.rendered-preview-status.error { color: #a22e2e; }
+.rendered-view-frame { display: block; width: 100%; min-height: 620px; height: 72vh; border: 0; background: #fff; }
+

@@ -44,6 +44,7 @@ rule read =
   | "PGML.pl"                       { PGML }
 
   | "Context"                       { CONTEXT }
+  | "Vector(Parser::Context->getCopy(\"Vector\")," { VECTOR_VALUE_OPEN }
   | "add"                           { ADD_METH }
   | "set"                           { SET_METH }
   | "are"                           { ARE_METH }

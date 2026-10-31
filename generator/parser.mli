@@ -9,6 +9,7 @@ type token =
   | WHEN_WORD
   | WHAT_WORD
   | VEC_LATEX
+  | VECTOR_VALUE_OPEN
   | VECTOR_UNIT_PROB
   | VECTOR_SAME_PROB
   | VECTOR_PARA_PROB
@@ -155,6 +156,7 @@ module MenhirInterpreter : sig
     | T_WHEN_WORD : unit terminal
     | T_WHAT_WORD : unit terminal
     | T_VEC_LATEX : unit terminal
+    | T_VECTOR_VALUE_OPEN : unit terminal
     | T_VECTOR_UNIT_PROB : unit terminal
     | T_VECTOR_SAME_PROB : unit terminal
     | T_VECTOR_PARA_PROB : unit terminal
@@ -654,6 +656,30 @@ module DCST : sig
   (* The binary choice constructor at type [vector_prob]. *)
   
   val vector_prob_choice: vector_prob -> vector_prob -> vector_prob
+  
+  (* vector_prob -> IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE CDOT_LATEX VEC_LATEX LBRACE ID RBRACE EQ IT_MATH_CLOSE BLANK LBRACE VECTOR_VALUE_OPEN set_enum RPAREN PERIOD VECTOR_VALUE_OPEN set_enum RPAREN RBRACE *)
+  
+  val vec_prob_1_typed: (string) -> (string) -> set_enum -> set_enum -> vector_prob
+  
+  (* vector_prob -> IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE TIMES_LATEX VEC_LATEX LBRACE ID RBRACE EQ IT_MATH_CLOSE BLANK LBRACE VECTOR_VALUE_OPEN set_enum RPAREN X_VAR VECTOR_VALUE_OPEN set_enum RPAREN RBRACE *)
+  
+  val vec_prob_2_typed: (string) -> (string) -> set_enum -> set_enum -> vector_prob
+  
+  (* vector_prob -> IT_MATH_OPEN LEFT_NORM_LATEX VEC_LATEX LBRACE ID RBRACE RIGHT_NORM_LATEX EQ IT_MATH_CLOSE BLANK LBRACE VECTOR_VALUE_OPEN set_enum RPAREN ARROW NORM_METH LPAREN RPAREN RBRACE *)
+  
+  val vec_prob_3_typed: (string) -> set_enum -> vector_prob
+  
+  (* vector_prob -> VECTOR_UNIT_PROB IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE IT_MATH_CLOSE PERIOD BLANK LBRACE VECTOR_VALUE_OPEN set_enum RPAREN ARROW UNIT_METH LPAREN RPAREN RBRACE *)
+  
+  val vec_prob_4_typed: (string) -> set_enum -> vector_prob
+  
+  (* vector_prob -> VECTOR_PARA_PROB IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE IT_MATH_CLOSE PERIOD BLANK LBRACE VECTOR_VALUE_OPEN set_enum RPAREN ARROW CMP_1 RBRACE *)
+  
+  val vec_prob_5_typed: (string) -> set_enum -> vector_prob
+  
+  (* vector_prob -> VECTOR_SAME_PROB IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE IT_MATH_CLOSE PERIOD BLANK LBRACE VECTOR_VALUE_OPEN set_enum RPAREN ARROW CMP_2 RBRACE *)
+  
+  val vec_prob_6_typed: (string) -> set_enum -> vector_prob
   
   (* vector_prob -> IT_MATH_OPEN VEC_LATEX LBRACE ID RBRACE CDOT_LATEX VEC_LATEX LBRACE ID RBRACE EQ IT_MATH_CLOSE BLANK LBRACE COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN PERIOD COMPUTE_METH LPAREN DOUBLE_QUOTE LT set_enum GT DOUBLE_QUOTE RPAREN RBRACE *)
   
@@ -2049,6 +2075,8 @@ module CST : sig
     
     method virtual visit_VEC_LATEX : 'r
     
+    method virtual visit_VECTOR_VALUE_OPEN : 'r
+    
     method virtual visit_VECTOR_UNIT_PROB : 'r
     
     method virtual visit_VECTOR_SAME_PROB : 'r
@@ -2428,6 +2456,18 @@ module CST : sig
     method case_vec_prob_list_cons : vector_prob -> vector_prob_list -> 'r
     
     method case_vec_prob_list_last : vector_prob -> 'r
+    
+    method case_vec_prob_1_typed : (string) -> (string) -> set_enum -> set_enum -> 'r
+    
+    method case_vec_prob_2_typed : (string) -> (string) -> set_enum -> set_enum -> 'r
+    
+    method case_vec_prob_3_typed : (string) -> set_enum -> 'r
+    
+    method case_vec_prob_4_typed : (string) -> set_enum -> 'r
+    
+    method case_vec_prob_5_typed : (string) -> set_enum -> 'r
+    
+    method case_vec_prob_6_typed : (string) -> set_enum -> 'r
     
     method case_vec_prob_1 : (string) -> (string) -> set_enum -> set_enum -> 'r
     

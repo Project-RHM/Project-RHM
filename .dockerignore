@@ -1,0 +1,21 @@
+.git
+.github
+.venv
+.services
+.project-rhm-data
+__pycache__
+*.py[cod]
+
+# Build the OCaml artifacts inside the Linux image.
+generator/_build
+generator/config.ml
+generator/generated_questions
+generator/generated_asts
+generator/generated_visualizations
+generator/*visualization.html
+
+# Never bake local credentials into an image.
+user_api_keys.json
+config_setting/*.json
+.env
+

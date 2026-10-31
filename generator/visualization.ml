@@ -198,6 +198,7 @@ let token_name = function
   | CONTEXT -> "Context"
   | COMPUTE_PROB -> "Compute:"
   | COMPUTE_METH -> "Compute"
+  | VECTOR_VALUE_OPEN -> "Vector(Parser::Context->getCopy(\"Vector\"),"
   | COMPLEX_POWER_I_PROB -> "Simplify the power of i:"
   | COMPLEX_MOD_PROB -> "Find the modulus of:"
   | COMPLEX_METH -> "Complex"

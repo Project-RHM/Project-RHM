@@ -74,6 +74,8 @@ class print = object (self)
   method visit_WITH_METH           = string "with"
   method visit_SET_DEF_METH        = string "Set"
   method visit_COMPUTE_METH        = string "Compute"
+  (* Preserve the vector's student-answer parser even after a mixed Context switch. *)
+  method visit_VECTOR_VALUE_OPEN  = string "Vector(Parser::Context->getCopy(\"Vector\"),"
   method visit_COMPLEX_METH        = string "Complex"
   method visit_INTERSECT_METH      = string "intersect"
   method visit_NORM_METH      = string "norm"
@@ -1041,9 +1043,9 @@ class print = object (self)
     ^^ string var1 
     ^^ string "} \\cdot \\vec{" 
     ^^ string var2 
-    ^^ string "} = `] [_____]{Compute(\"<" 
-    ^^ super#visit_set_enum vec1 ^^ string ">\") . Compute(\"<" 
-    ^^ super#visit_set_enum vec2 ^^ string ">\")}"
+    ^^ string "} = `] [_____]{" ^^ self#visit_VECTOR_VALUE_OPEN
+    ^^ super#visit_set_enum vec1 ^^ string ") . " ^^ self#visit_VECTOR_VALUE_OPEN
+    ^^ super#visit_set_enum vec2 ^^ string ")}"
 
   method! case_vec_prob_2
       var1 var2 vec1 vec2 =
@@ -1051,41 +1053,48 @@ class print = object (self)
     ^^ string var1 
     ^^ string "} \\times \\vec{" 
     ^^ string var2 
-    ^^ string "} = `] [_____]{Compute(\"<" 
-    ^^ super#visit_set_enum vec1 ^^ string ">\") x Compute(\"<" 
-    ^^ super#visit_set_enum vec2 ^^ string ">\")}"
+    ^^ string "} = `] [_____]{" ^^ self#visit_VECTOR_VALUE_OPEN
+    ^^ super#visit_set_enum vec1 ^^ string ") x " ^^ self#visit_VECTOR_VALUE_OPEN
+    ^^ super#visit_set_enum vec2 ^^ string ")}"
 
   method! case_vec_prob_3
       var vec =
     string "[` \\left\\| \\vec{" 
     ^^ string var 
-    ^^ string "} \\right\\| = `] [_____]{norm(Compute(\"<" 
+    ^^ string "} \\right\\| = `] [_____]{" ^^ self#visit_VECTOR_VALUE_OPEN
     ^^ super#visit_set_enum vec 
-    ^^ string ">\"))}"
+    ^^ string ")->norm()}"
 
   method! case_vec_prob_4
       var vec =
     string "Enter a unit vector in the direction of [` \\vec{" 
     ^^ string var 
-    ^^ string "} `]. [_____]{unit(Compute(\"<" 
+    ^^ string "} `]. [_____]{" ^^ self#visit_VECTOR_VALUE_OPEN
     ^^ super#visit_set_enum vec 
-    ^^ string ">\"))}"
+    ^^ string ")->unit()}"
 
   method! case_vec_prob_5
       var vec =
     string "Enter a vector parallel to [` \\vec{" 
     ^^ string var 
-    ^^ string "} `]. [_____]{Compute(\"<" 
+    ^^ string "} `]. [_____]{" ^^ self#visit_VECTOR_VALUE_OPEN
     ^^ super#visit_set_enum vec  
-    ^^ string ">\")->cmp(parallel=>1)}"
+    ^^ string ")->cmp(parallel=>1)}"
   
   method! case_vec_prob_6
       var vec =
     string "Enter a vector in the same direction as [` \\vec{" 
     ^^ string var 
-    ^^ string "} `]. [_____]{Compute(\"<" 
+    ^^ string "} `]. [_____]{" ^^ self#visit_VECTOR_VALUE_OPEN
     ^^ super#visit_set_enum vec  
-    ^^ string ">\")->cmp(parallel=>1,sameDirection=>1)}"
+    ^^ string ")->cmp(parallel=>1,sameDirection=>1)}"
+
+  method! case_vec_prob_1_typed = self#case_vec_prob_1
+  method! case_vec_prob_2_typed = self#case_vec_prob_2
+  method! case_vec_prob_3_typed = self#case_vec_prob_3
+  method! case_vec_prob_4_typed = self#case_vec_prob_4
+  method! case_vec_prob_5_typed = self#case_vec_prob_5
+  method! case_vec_prob_6_typed = self#case_vec_prob_6
 
   method! case_negative_int
       i = string (string_of_int i)

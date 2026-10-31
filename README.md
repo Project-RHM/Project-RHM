@@ -227,6 +227,175 @@ The page displays:
 
 ## Web Application
 
+### Docker: Flask, Rhema and WeBWorK together (recommended)
+
+#### macOS / teacher workspace
+
+On Apple Silicon, install and open [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/)
+first. Both Compose services explicitly use `linux/amd64`: the pinned
+renderer image and its bundled opam installer target x86_64. Docker Desktop
+runs them using emulation. The published ports remain local to this computer.
+
+For a quick development loop with the existing local OCaml toolchain, start
+only the real renderer and run Flask natively:
+
+```sh
+docker compose -p rhema-workspace-local up -d --wait webwork-renderer
+python3 -m venv .venv                  # once, not a venv copied from another machine
+.venv/bin/python -m pip install -r requirements.txt
+cd generator
+dune build
+cd ..
+APP_PORT=5003 .venv/bin/python app.py
+```
+
+Open <http://127.0.0.1:5003>. Port 5003 avoids an older checkout on 5001.
+The default host-native renderer address is `http://127.0.0.1:3000/render-api`.
+To check every shipped teacher grammar and named question against the live
+renderer from this host-native setup, run:
+
+```sh
+.venv/bin/python tools/validate_webwork_renderer.py --renderer-url http://127.0.0.1:3000/render-api
+```
+
+The alternative full-container stack is:
+
+```sh
+APP_PORT=5003 docker compose -p rhema-workspace-local up --build -d
+```
+
+The workspace opens in English. Its header language button switches the
+interface between English and Chinese and remembers the choice locally;
+question wording, mathematical content, answers, grammar source and the
+isolated WeBWorK document are not machine-translated. Choose a type from
+the library, configure parameters in the middle and inspect questions,
+PGML or production trees on the right. Classic and Rhema source modes
+remain available. Budget controls keep their original semantics; they are
+not renamed as educational difficulty levels.
+
+The Questions tab renders the complete PG document using WeBWorK, not a
+reconstruction of its HTML in the application. Renderer HTML runs inside
+a sandboxed iframe. Service failures and PG translator errors are reported
+instead of being labelled successful. For teacher-form results, **Local
+preview** is an explicitly labelled fallback, and **Standard answers** are
+collapsed by default. Enter answers in the WeBWorK inputs and use **Check
+answers** to see per-answer feedback and the total score. Changing an answer
+invalidates the displayed grade. Local preview cannot grade answers.
+
+The checker evaluates student submissions against the PG answer evaluators;
+it does not independently prove that the generated standard answers are correct.
+Previously saved Classic mixed files with context-dependent vector answers
+should be regenerated to use the corrected evaluators.
+
+The renderer client connects directly to its configured service rather than
+inheriting workstation proxy variables. Static iframe previews omit the
+renderer's optional parent-frame interaction tracker and MathQuill editor
+initializer, which require same-origin access or localStorage. MathJax,
+ordinary answer inputs and the `sandbox="allow-scripts"` isolation remain.
+An answer-only `postMessage` bridge connects these inputs to
+`POST /api/webwork/check`. The parent checks the frame identity and a per-render
+token; it does not enable same-origin iframe access or native form submission.
+The server validates answer field names and sizes. Its internal grading request
+uses the renderer's answer hash, but only scores and plain feedback are returned,
+not correct-answer objects, renderer HTML, or session JWTs.
+
+Stop the renderer without deleting data with
+`docker compose -p rhema-workspace-local stop webwork-renderer`.
+
+Start Docker Desktop in Linux/WSL2 mode, then run in PowerShell:
+
+```powershell
+cd F:\Project-RHM_latest\Project-RHM_latest
+docker compose up --build -d
+docker compose ps
+```
+
+Open <http://127.0.0.1:5001> after both services show `healthy`. Python,
+OCaml, opam, Dune, Menhir and PPrint are installed inside the application
+image; no host installation or host `dune build` is needed. The first build
+downloads the toolchain; subsequent starts reuse the image:
+
+```powershell
+docker compose up -d
+docker compose logs -f app
+docker compose down
+```
+
+The application image builds the current Rhema CLI, its installed standard
+library and the teacher-mode bridge. `generator/rhema/`, `generator/stdlib/`,
+`generator/grammars/`, `config_setting/` and the three `generator/generated_*`
+directories are mounted from this checkout. Generated files, saved grammars
+and teacher presets survive container replacement. The Linux `_build` stays
+inside the container and does not use Windows build artifacts. Keys saved
+in Docker mode live in the ignored `.project-rhm-data/` directory; existing
+host-mode keys are not copied into the image.
+
+New question definitions go in `generator/grammars/*.rhm` and new library
+modules in `generator/stdlib/`. They are read at run time; reload the grammar
+list/page after adding a file. After changing the OCaml implementation in
+`generator/rhema/`, run `docker compose restart app` to trigger its incremental
+build. Changes to Python, templates, CSS, `generator/dune-project`, other
+OCaml sources or dependencies require `docker compose up --build -d`.
+
+If the earlier checkout is still running on ports 5001/3000, stop it from
+that checkout with `docker compose down` before starting this one. To run
+both checkouts at once, choose different published ports here:
+
+```powershell
+$env:APP_PORT = '5002'
+$env:WEBWORK_PORT = '3001'
+docker compose up --build -d
+```
+
+In that case open <http://127.0.0.1:5002>. The browser-visible Renderer asset
+URL follows `WEBWORK_PORT`. Stop with `docker compose down`; generated files
+and saved definitions remain on the host. This is a local development stack,
+with both published ports bound to `127.0.0.1`.
+
+### Rendered Preview and API
+
+Classic, Rhema source and teacher form generation share the same `Question
+preview` cards above the result tabs. Classic/source previews use WeBWorK to
+resolve PG variables and functions before rendering the math with KaTeX.
+Teacher form previews retain their supplied standard answers. The PGML,
+tree and full WeBWorK tabs remain available below the common preview.
+
+Generated results and History each have a `Rendered Preview` tab. It sends
+the current complete `.pg` document to Flask, which calls the official,
+digest-pinned WeBWorK Renderer over the Compose network. The HTML is shown in
+a sandboxed iframe with MathJax. Requests use static, non-instructor output
+without solutions or hints. Errors, timeouts and unavailable services appear
+in the preview panel. Editing the source marks the preview as stale.
+
+Flask uses `http://webwork-renderer:3000/render-api` inside Compose; the
+browser loads CSS/JS from `http://127.0.0.1:3000/`. For host-native Flask,
+the defaults and optional environment settings are listed in `.env.example`.
+That file is a configuration reference: export the variables in your shell
+when using host-native Flask. `GET /api/webwork/status` checks a real render.
+
+Generate and render a Rhema definition through Flask (use your selected app
+port if different):
+
+```powershell
+$paper = Invoke-RestMethod -Uri http://127.0.0.1:5001/run_rhema -Method Post `
+  -Body @{ grammar = 'arithmetic.rhm'; count = 2; student_id = 'demo' }
+$body = @{ pg_source = $paper.pgml_code; problem_seed = 1 } | ConvertTo-Json
+$preview = Invoke-RestMethod -Uri http://127.0.0.1:5001/api/webwork/render `
+  -Method Post -ContentType application/json -Body $body
+# $preview.html contains the rendered document.
+```
+
+Run preview tests and live validation inside the application container:
+
+```powershell
+docker compose exec -T app python3 -m unittest tools.test_webwork_preview -v
+docker compose exec -T app python3 -m unittest discover -s tools -p test_teacher_builder.py -v
+docker compose exec -T app python3 tools/validate_webwork_renderer.py
+docker compose exec -T app python3 tools/test_webwork_grading_live.py
+```
+
+### Host-native Flask (requires a local OCaml toolchain)
+
 Install the Python dependencies:
 
 ```powershell
@@ -239,7 +408,7 @@ Start the Flask application from the project root:
 python app.py
 ```
 
-Open `http://127.0.0.1:5000`. After generating a question set, use the
-`PGML / Tree View` switch above the result. Tree View contains one AST/DCST
+Open `http://127.0.0.1:5001`. After generating a question set, use the
+`PGML / Tree View / Rendered Preview` switch above the result. Tree View contains one AST/DCST
 pair for each generated question. The same switch is available when opening a
 question set from History.

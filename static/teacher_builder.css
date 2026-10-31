@@ -1,0 +1,43 @@
+.teacher-mode-tabs { display: flex; gap: 0; margin: 0 0 20px; border-bottom: 1px solid #d3d9de; }
+.teacher-mode-tabs button { border: 0; background: transparent; padding: 10px 16px; color: #46515b; font: inherit; cursor: pointer; border-bottom: 3px solid transparent; }
+.teacher-mode-tabs button[aria-selected="true"] { color: #146746; border-bottom-color: #19835c; font-weight: 700; }
+.teacher-builder { margin: 12px 0 22px; padding: 0 0 18px; border-bottom: 1px solid #d3d9de; }
+.teacher-heading { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; justify-content: space-between; }
+.teacher-heading h3, .teacher-preview h3 { font-size: 18px; margin: 8px 0 16px; }
+#teacherState { color: #52605b; font-size: 13px; }
+.teacher-fieldset { border: 0; border-top: 1px solid #e0e4e7; margin: 12px 0 0; padding: 16px 0; min-width: 0; }
+.teacher-fieldset legend { font-size: 14px; font-weight: 700; color: #34434c; padding: 0 10px 0 0; }
+.teacher-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,210px),1fr)); gap: 14px 20px; }
+.teacher-grid > label, .teacher-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 14px; }
+.teacher-builder input, .teacher-builder select { box-sizing: border-box; width: 100%; min-width: 0; height: 38px; border: 1px solid #b9c4cc; border-radius: 4px; background: #fff; color: #202b34; padding: 7px 9px; font: inherit; }
+.teacher-builder input[type="checkbox"] { width: 18px; height: 18px; padding: 0; flex: 0 0 18px; }
+.teacher-builder input:focus-visible, .teacher-builder select:focus-visible, .teacher-mode-tabs button:focus-visible { outline: 2px solid #19835c; outline-offset: 2px; }
+.teacher-range { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.teacher-range label { display: flex; flex-direction: column; gap: 3px; color: #56616b; font-size: 12px; min-width: 0; }
+.teacher-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.teacher-message { white-space: pre-wrap; overflow-wrap: anywhere; color: #9d2630; background: #fff3f3; border-left: 3px solid #b5333d; padding: 10px 12px; margin: 10px 0; font-size: 14px; }
+.teacher-message[data-kind="ok"] { color: #14583e; background: #eef8f1; border-left-color: #19835c; }
+.teacher-builder details { padding: 12px 0; border-top: 1px solid #e0e4e7; }
+.teacher-builder summary { font-size: 14px; font-weight: 700; cursor: pointer; margin-bottom: 12px; }
+.teacher-rule { display: grid; grid-template-columns: minmax(0,1fr) 84px 84px; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #edf0f2; }
+.teacher-rule-name { display: flex; align-items: center; gap: 9px; min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
+.teacher-rule label:not(.teacher-rule-name) { display: flex; flex-direction: column; gap: 4px; color: #56616b; font-size: 12px; }
+.teacher-rule-group { margin-top: 16px; }
+.teacher-rule-group h4 { font-size: 14px; margin: 12px 0 6px; }
+#teacherSource { box-sizing: border-box; width: 100%; min-height: 260px; font: 13px/1.55 monospace; padding: 12px; border: 1px solid #b9c4cc; border-radius: 4px; resize: vertical; }
+.teacher-form-mode #rhemaEditor, .teacher-form-mode #rhemaEditToggleBtn, .teacher-form-mode #rhemaNewBtn { display: none !important; }
+.teacher-preview { margin: 0 0 20px; padding: 0 0 16px; border-bottom: 1px solid #d3d9de; }
+.question-preview-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.question-preview-heading h3 { margin-bottom: 8px; }
+.question-preview-inline { display: inline; }
+.teacher-question-text.question-preview-rendered { white-space: normal; }
+.question-preview-instructions { color: #526272; font-size: 14px; }
+.teacher-question-text > div:not(.question-preview-inline) { white-space: normal; }
+.teacher-preview article { padding: 14px 0; border-bottom: 1px solid #e5e9ec; overflow-wrap: anywhere; }
+.teacher-question-text { white-space: pre-wrap; font-size: 16px; line-height: 1.8; }
+.teacher-answer-blank { display: inline-block; width: 80px; height: 20px; border-bottom: 1px solid #61717d; vertical-align: baseline; margin: 0 7px; }
+.teacher-preview details { margin-top: 10px; font-size: 13px; color: #42544a; }
+.teacher-preview details pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+.teacher-preview .katex { font-size: 1.1em; }
+.teacher-question-text > span:not(.teacher-answer-blank) { display: inline-block; max-width: 100%; overflow-x: auto; vertical-align: middle; }
+@media (max-width:640px) { .teacher-rule { grid-template-columns: minmax(0,1fr) 64px 64px; gap: 8px; } .teacher-mode-tabs button { padding: 10px 12px; } }
