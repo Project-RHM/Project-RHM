@@ -2,7 +2,7 @@
   "name": "rhema-language",
   "displayName": "Rhema Language",
   "description": "Rhema (.rhm) support: highlighting, problems from rhema check as you type, Run and Compile commands, folding and snippets.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "rhema",
   "license": "MIT",
   "author": "Jingming Zhang",
