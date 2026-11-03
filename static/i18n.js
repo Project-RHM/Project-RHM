@@ -1,6 +1,38 @@
 /* Interface-only translations: grammar source, generated math and answers stay intact. */
 (() => {
     const zh = {
+        'PG file preview':'PG 文件预览', 'PG file':'PG 文件', 'Drop a .pg file':'拖入 .pg 文件',
+        'Choose PG file':'选择 PG 文件', 'Trusted PG files only.':'仅导入可信的 PG 文件。',
+        'No file selected':'未选择文件', 'No PG file loaded':'尚未载入 PG 文件',
+        'Render':'渲染', 'Rendering...':'正在渲染...', 'Clear':'清空', 'PG source':'PG 源码',
+        'PG problem seed':'PG 题目种子', 'Imported PG source':'导入的 PG 源码',
+        'Imported PG question preview':'导入的 PG 题目预览', 'Resize file and preview':'调整文件区和预览区宽度',
+        'Reading PG file...':'正在读取 PG 文件...', 'Ready to render':'可以开始渲染',
+        'Seed changed. Render again.':'种子已更改，请重新渲染。',
+        'Choose one .pg file at a time.':'每次请选择一个 .pg 文件。', 'Choose a .pg file.':'请选择 .pg 文件。',
+        'The selected file is empty.':'所选文件为空。',
+        'The selected file exceeds the PG preview size limit.':'所选文件超过 PG 预览大小限制。',
+        'Choose a UTF-8 text PG file.':'请选择 UTF-8 文本格式的 PG 文件。',
+        'Choose a complete PG document with DOCUMENT(); and ENDDOCUMENT();.':'请选择包含 DOCUMENT(); 和 ENDDOCUMENT(); 的完整 PG 文件。',
+        'PG problem seed must be an integer between 1 and 2147483647.':'PG 题目种子必须是 1 至 2147483647 之间的整数。',
+        'Rendered by WeBWorK. No answer fields found.':'已由 WeBWorK 渲染，但未找到答案框。',
+        'Create question type':'创建新题型', 'Start from':'创建起点',
+        'Basic template':'基础模板', 'Blank':'空白', 'From existing question type':'基于已有题型',
+        'Existing question type':'已有题型', 'Standard library - read-only':'标准库，只读',
+        'Validate and save':'验证并保存', 'Validating...':'正在验证...', 'Remove API key':'移除 API key',
+        'API key verified':'API key 已验证', 'Saved key needs validation':'已保存的密钥需要验证',
+        'Verified key: insufficient balance':'密钥已验证，但余额不足', 'API key not configured':'未配置 API key',
+        'Saved API key removed.':'已移除保存的 API key。', 'Validating with DeepSeek...':'正在向 DeepSeek 验证...',
+        'API key verified and saved.':'API key 已验证并保存。',
+        'API key verified and saved, but the account has insufficient balance.':'API key 已验证并保存，但账户余额不足。',
+        'Enter a DeepSeek API key.':'请输入 DeepSeek API key。',
+        'Enter a complete DeepSeek API key without spaces.':'请输入完整且不含空格的 DeepSeek API key。',
+        'Enter your DeepSeek API key':'输入 DeepSeek API key',
+        'Validation contacts DeepSeek to check authentication and balance. It does not generate text or send your questions.':'验证会连接 DeepSeek 检查密钥和余额，不生成文本，也不发送题目。',
+        'DeepSeek rejected this API key. Your saved key has not been changed.':'DeepSeek 拒绝了这个 API key，原有密钥未被更改。',
+        'Could not reach DeepSeek. Your saved key has not been changed.':'无法连接 DeepSeek，原有密钥未被更改。',
+        'DeepSeek is rate limiting requests. Try again later.':'DeepSeek 请求过于频繁，请稍后重试。',
+        'DeepSeek validation is temporarily unavailable. Your saved key has not been changed.':'DeepSeek 验证暂时不可用，原有密钥未被更改。',
         'Question workspace':'出题工作台', 'New question':'新建题目', 'Question library':'题型库',
         'My presets':'我的预设', 'Recent generations':'生成记录', 'Classic generator':'经典生成器',
         'Classic settings':'经典生成器设置', 'Search question types':'搜索题型',
@@ -134,8 +166,9 @@
             originalAttrs.set(element, attrs);
         });
         document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
-        const button = document.getElementById('languageToggle');
-        if (button && button.textContent !== (language === 'en' ? '中文' : 'English')) button.textContent = language === 'en' ? '中文' : 'English';
+        for (const button of document.querySelectorAll('#languageToggle, [data-language-toggle]')) {
+            if (button.textContent !== (language === 'en' ? '中文' : 'English')) button.textContent = language === 'en' ? '中文' : 'English';
+        }
     }
     let scheduled = false;
     function schedule() {
@@ -143,7 +176,7 @@
         scheduled = true; requestAnimationFrame(() => {scheduled = false; apply();});
     }
     document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('languageToggle').addEventListener('click', () => {
+        for (const button of document.querySelectorAll('#languageToggle, [data-language-toggle]')) button.addEventListener('click', () => {
             language = language === 'en' ? 'zh' : 'en';
             try {localStorage.setItem('rhema.language', language);} catch {}
             apply(); document.dispatchEvent(new Event('rhema:language'));

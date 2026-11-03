@@ -48,8 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.className = 'catalog-item'; button.textContent = item.title;
                 button.dataset.grammar = item.name; button.title = item.name;
                 button.addEventListener('click', () => {
-                    byId('newQuestionBtn').click(); setGenerator('ag');
-                    select.value = item.name; select.dispatchEvent(new Event('change', {bubbles:true}));
+                    if(!window.rhemaAuthoring.openExisting(item.name))return;
+                    setGenerator('ag');
                     updateSelection();
                     closeMobileSidebar();
                 }); container.append(button);
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     function navigation(active) {
         for (const button of document.querySelectorAll('.workspace-nav-item')) button.classList.toggle('active', button.id === active);
-        byId('grammarLibrary').hidden = active === 'generationHistoryBtn' || active === 'classicWorkspaceBtn';
+        byId('grammarLibrary').hidden = ['generationHistoryBtn','classicWorkspaceBtn','pgImportBtn'].includes(active);
         byId('sidebarHistory').hidden = active !== 'generationHistoryBtn';
     }
     function closeMobileSidebar() {
@@ -84,10 +84,14 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCatalog();
     });
     byId('grammarSearch').addEventListener('input', renderCatalog);
-    byId('questionLibraryBtn').addEventListener('click', () => {library = 'all'; navigation('questionLibraryBtn'); byId('newQuestionBtn').click(); setGenerator('ag'); renderCatalog();});
-    byId('presetLibraryBtn').addEventListener('click', () => {library = 'presets'; navigation('presetLibraryBtn'); byId('newQuestionBtn').click(); setGenerator('ag'); renderCatalog();});
+    byId('questionLibraryBtn').addEventListener('click', () => {if(!window.rhemaAuthoring.openExisting())return;library = 'all'; navigation('questionLibraryBtn'); setGenerator('ag'); renderCatalog();});
+    byId('presetLibraryBtn').addEventListener('click', () => {if(!window.rhemaAuthoring.openExisting())return;library = 'presets'; navigation('presetLibraryBtn'); setGenerator('ag'); renderCatalog();});
     byId('generationHistoryBtn').addEventListener('click', () => navigation('generationHistoryBtn'));
-    byId('classicWorkspaceBtn').addEventListener('click', () => {navigation('classicWorkspaceBtn'); byId('newQuestionBtn').click(); setGenerator('classic'); closeMobileSidebar();});
+    byId('classicWorkspaceBtn').addEventListener('click', () => {if(!window.rhemaAuthoring.openClassic())return;navigation('classicWorkspaceBtn'); setGenerator('classic'); closeMobileSidebar();});
+    byId('pgImportBtn').addEventListener('click', () => {
+        if (!window.rhemaAuthoring.canOpenPreview()) return;
+        showContent('pgImportContent'); navigation('pgImportBtn'); closeMobileSidebar();
+    });
     byId('historyList').addEventListener('click', event => {if(event.target.closest('.history-item')) closeMobileSidebar();});
     select.addEventListener('change', () => {updateSelection(); stale();});
     for (const id of ['rhemaCount','studentId','rhemaQuestionSelect']) byId(id).addEventListener('input', stale);
@@ -98,8 +102,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.addEventListener('workspace:settings', stale);
     function rendererState(ready) {
-        const status = byId('rendererConnection'); status.dataset.ready = String(ready);
-        status.textContent = ready ? 'WeBWorK connected' : 'WeBWorK offline';
+        for (const status of document.querySelectorAll('#rendererConnection, [data-renderer-connection]')) {
+            status.dataset.ready = String(ready);
+            status.textContent = ready ? 'WeBWorK connected' : 'WeBWorK offline';
+        }
     }
     async function checkRenderer() {
         try {const response = await fetch('/api/webwork/status'); const data = await response.json(); rendererState(Boolean(data.available));}
@@ -114,6 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('rhema:language', () => {renderCatalog();});
     new MutationObserver(updateSelection).observe(document.body, {attributes:true, attributeFilter:['class']});
     window.workspaceUI = {
+        refreshSelection:updateSelection,
+        enterCreation(){showContent('generateContent');navigation('');setGenerator('ag');closeMobileSidebar();},
         rendererState,
         generated(data) {
             const isRhema = document.querySelector('input[name="generatorMode"]:checked').value === 'ag';

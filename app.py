@@ -20,9 +20,11 @@ sys.path.insert(0, BASE_DIR)
 
 from webwork_client import WebworkClient, WebworkClientError
 from teacher_builder import TITLES, register_teacher_routes
+from api_keys import ApiKeyError, DeepSeekKeyValidator, key_status, read_keys, save_verified, remove_key
 
 app = Flask(__name__)
 WEBWORK_CLIENT = WebworkClient()
+API_KEY_VALIDATOR = DeepSeekKeyValidator()
 
 # 配置OCaml程序路径 - 使用绝对路径
 OCAML_PROJECT_DIR = os.path.join(BASE_DIR, "generator")
@@ -575,7 +577,8 @@ def read_ast_file(ast_path):
 @app.route('/')
 def index():
     config = read_config()
-    return render_template('index.html', config=config)
+    return render_template('index.html', config=config,
+                           pg_preview_max_bytes=WEBWORK_CLIENT.config.max_source_bytes)
 
 @app.route('/api/webwork/status')
 def webwork_status():
@@ -689,8 +692,7 @@ def read_user_api_keys():
     """读取用户API密钥"""
     try:
         if os.path.exists(USER_API_KEYS_FILE):
-            with open(USER_API_KEYS_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            return read_keys(USER_API_KEYS_FILE)
         return {}
     except Exception as e:
         print(f"Fail to read user API keys: {e}")
@@ -770,25 +772,32 @@ def save_api_key():
         if not api_key:
             return jsonify({'success': False, 'error': 'API key cannot be empty'})
         
-        # 读取现有密钥
-        api_keys = read_user_api_keys()
-        # 这里可以添加用户识别，目前先简单存储
-        api_keys['default_user'] = api_key
-        
-        if write_user_api_keys(api_keys):
-            return jsonify({'success': True, 'message': 'API key saved successfully'})
-        else:
-            return jsonify({'success': False, 'error': 'Failed to save API key'})
+        validation = API_KEY_VALIDATOR.validate(api_key)
+        status = save_verified(USER_API_KEYS_FILE, api_key, validation)
+        message = ('API key verified and saved.' if status['available'] else
+                   'API key verified and saved, but the account has insufficient balance.')
+        return jsonify(success=True, message=message, **status)
+    except ApiKeyError as error:
+        return jsonify(success=False, error=str(error), code=error.code), error.status
             
     except Exception as e:
-        return jsonify({'success': False, 'error': f'Error saving API key: {str(e)}'})
+        return jsonify(success=False, error='Could not save the API key.'), 500
 
 @app.route('/api_key_status')
 def api_key_status():
     """检查API密钥状态"""
     api_keys = read_user_api_keys()
-    has_api_key = bool(api_keys.get('default_user'))
-    return jsonify({'has_api_key': has_api_key})
+    response = jsonify(key_status(api_keys))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+@app.route('/api_key', methods=['DELETE'])
+def delete_api_key():
+    try:
+        return jsonify(success=True, **remove_key(USER_API_KEYS_FILE))
+    except OSError:
+        return jsonify(success=False, error='Could not remove the saved API key.'), 500
 
 @app.route('/generate_context', methods=['POST'])
 def generate_context():
@@ -803,6 +812,9 @@ def generate_context():
         # 检查API密钥
         api_keys = read_user_api_keys()
         api_key = api_keys.get('default_user', '')
+        status = key_status(api_keys)
+        if not status['verified'] or not status['available']:
+            return jsonify(success=False, error='Validate an available DeepSeek API key before generating context.'), 400
         
         if not api_key:
             return jsonify({'success': False, 'error': 'No API key found. Please set your DeepSeek API key first.'})
@@ -1037,6 +1049,8 @@ def rhema_grammar_save():
     os.makedirs(RHEMA_GRAMMAR_DIR, exist_ok=True)
     # A new file is the user's; an existing one is saved where it lives.
     target = (rhema_grammar_path(name) if not create else None) or os.path.join(RHEMA_GRAMMAR_DIR, name)
+    if not create and os.path.realpath(os.path.dirname(target)) == os.path.realpath(RHEMA_STDLIB_DIR):
+        return jsonify(success=False, error='Standard-library specifications are read-only. Create a new question type from this file.'), 403
     if os.path.islink(target):
         return jsonify({'success': False, 'error': 'Cannot save a symbolic link.'}), 400
     if create and os.path.lexists(target):

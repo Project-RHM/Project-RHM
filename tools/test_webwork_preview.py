@@ -314,19 +314,31 @@ class WebworkRouteTests(unittest.TestCase):
         self.assertNotIn('allow-same-origin', page)
         self.assertNotIn('allow-forms', page)
 
-    def test_main_page_contains_sandboxed_preview_for_both_result_areas(self):
+    def test_main_page_contains_sandboxed_preview_for_all_result_areas(self):
         result = self.client.get("/")
         page = result.get_data(as_text=True)
         self.assertEqual(result.status_code, 200)
         self.assertEqual(page.count('data-view="rendered"'), 2)
         self.assertIn('id="generatedRenderedFrame"', page)
         self.assertIn('id="historyRenderedFrame"', page)
-        self.assertEqual(page.count('sandbox="allow-scripts"'), 2)
+        self.assertEqual(page.count('sandbox="allow-scripts"'), 3)
+        self.assertIn('id="importRenderedFrame"', page)
         self.assertIn('webwork_preview.js', page)
         self.assertIn('id="generatedCheckAnswers"', page)
         self.assertIn('id="historyCheckAnswers"', page)
         script = (PROJECT / 'static/webwork_preview.js').read_text(encoding='utf-8')
         self.assertIn("fetch('/api/webwork/render'", script)
+
+    def test_import_workspace_reuses_preview_without_server_upload_paths(self):
+        with patch.object(web.WEBWORK_CLIENT, 'config', WebworkConfig(max_source_bytes=123456)):
+            page = self.client.get('/').get_data(as_text=True)
+        self.assertIn('id="pgImportContent" class="content-area" data-max-source-bytes="123456"', page)
+        for name in ('pgImportBtn', 'pgImportFile', 'pgImportSource', 'pgImportSeed', 'importCheckAnswers', 'pgImportDivider'):
+            self.assertIn(f'id="{name}"', page)
+        self.assertIn('pg_import.js', page)
+        self.assertIn('accept=".pg"', page)
+        self.assertIn('Trusted PG files only.', page)
+        self.assertNotIn('action="/upload', page)
 
 
 if __name__ == "__main__":

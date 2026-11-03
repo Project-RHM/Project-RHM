@@ -71,6 +71,27 @@ docker compose -p rhema-workspace-local stop webwork-renderer
 
 ## Answer checking and isolation
 
+### Importing CLI-generated PG files
+
+Select **PG file preview** below **Classic generator** in the sidebar. Choose
+or drop one trusted UTF-8 `.pg` file, then press **Render**. The independent
+preview uses the same WeBWorK renderer and **Check answers** as generated
+questions. **PG source** is read-only. **Clear** removes the imported content
+from the page; imports do not create grammars, presets or history entries.
+
+The file is read in the browser, not stored in the project. Only pressing
+Render sends its PG source to the configured renderer through the existing
+backend. Empty, oversized and malformed input is rejected; the size limit is
+the backend's `WEBWORK_RENDER_MAX_BYTES` value (256 KiB by default).
+
+**Advanced settings > PG problem seed** defaults to 1. Render and grading
+always use the same seed, including for PG files with internal randomness.
+Changing the file or seed clears the previous preview and grades. Files with
+no answer fields can render but cannot be graded. PG is executable Perl: this
+local tool is for trusted source files, not unrestricted public uploads.
+
+### Generated and imported previews
+
 Enter answers in the real WeBWorK inputs and select **Check answers**. The UI
 shows the total score and per-answer feedback. Editing an answer invalidates the
 old result. History previews support the same checks. A broken PG answer
@@ -101,6 +122,7 @@ cd ..
 python -m unittest discover -s tools -p test_teacher_builder.py -v
 python tools/test_webwork_preview.py
 node --check static/teacher_builder.js
+node --test tools/test_pg_preview.js
 ```
 
 The Python suite uses disposable folders and the real built Rhema executables. It covers every shipped grammar and named question, actual parameter effects, exact length constraints, module export and reload, deterministic generation, invalid combinations, and detection of subsequent source edits. It verifies that standard-library files remain unchanged.

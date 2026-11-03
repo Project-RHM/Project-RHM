@@ -24,14 +24,15 @@
                     </div>
                 </div>
                 <div class="sidebar-header">
-                    <button id="newQuestionBtn" class="new-question-btn">
-                        <i data-lucide="plus" aria-hidden="true"></i><span>New question</span>
+                    <button type="button" id="newQuestionBtn" class="new-question-btn">
+                        <i data-lucide="plus" aria-hidden="true"></i><span>Create question type</span>
                     </button>
                     <nav class="workspace-nav" aria-label="Workspace">
                         <button type="button" id="questionLibraryBtn" class="workspace-nav-item active"><i data-lucide="library" aria-hidden="true"></i><span>Question library</span></button>
                         <button type="button" id="presetLibraryBtn" class="workspace-nav-item"><i data-lucide="folder" aria-hidden="true"></i><span>My presets</span></button>
                         <button type="button" id="generationHistoryBtn" class="workspace-nav-item"><i data-lucide="history" aria-hidden="true"></i><span>Recent generations</span></button>
                         <button type="button" id="classicWorkspaceBtn" class="workspace-nav-item"><i data-lucide="settings-2" aria-hidden="true"></i><span>Classic generator</span></button>
+                        <button type="button" id="pgImportBtn" class="workspace-nav-item"><i data-lucide="file-up" aria-hidden="true"></i><span>PG file preview</span></button>
                     </nav>
                     <button id="configSettingsBtn" class="btn btn-secondary config-link-btn">Classic settings</button>
                 </div>
@@ -71,16 +72,17 @@
                             <div class="modal-body">
                                 <div class="form-group">
                                     <label for="apiKeyInput" style="margin-top: 15px; margin-bottom: 15px;">API Key (DeepSeek):</label>
-                                    <input type="text" id="apiKeyInput" placeholder="Enter your DeepSeek API key (e.g., sk-xxxxxxxxxxxxxxx)" class="form-control">
+                                    <input type="password" id="apiKeyInput" placeholder="Enter your DeepSeek API key" autocomplete="off" class="form-control">
                                     <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                                        Your API key will be stored locally and used only for generating context for arithmetic questions.
+                                        Validation contacts DeepSeek to check authentication and balance. It does not generate text or send your questions.
                                     </p>
                                 </div>
                                 <div class="config-actions">
-                                    <button type="button" id="saveApiKeyBtn" class="btn btn-primary">Save API Key</button>
+                                    <button type="button" id="saveApiKeyBtn" class="btn btn-primary">Validate and save</button>
+                                    <button type="button" id="removeApiKeyBtn" class="btn btn-secondary" hidden>Remove API key</button>
                                     <button type="button" id="cancelApiKeyBtn" class="btn btn-secondary">Cancel</button>
                                 </div>
-                                <br>
+                                <p id="apiKeyVerifiedAt" class="api-key-verification" role="status"></p>
                                 <div id="apiKeyMessage" class="message" style="margin-top: 15px;"></div>
                             </div>
                         </div>
@@ -129,15 +131,27 @@
                             <button type="button" id="rhemaEditToggleBtn" class="btn btn-secondary">
                                 Edit Grammar
                             </button>
-                            <button type="button" id="rhemaNewBtn" class="btn btn-secondary">New Grammar</button>
                             </div>
                             </div>
                         </div>
-                        <div id="rhemaNewPanel" hidden>
+                        <dialog id="rhemaNewPanel" class="creation-dialog" aria-labelledby="rhemaCreateTitle">
+                            <h2 id="rhemaCreateTitle">Create question type</h2>
                             <div class="rhema-controls-row rhema-new-row">
                                 <div class="rhema-field rhema-filename-field">
                                 <label for="rhemaNewName">File name</label>
                                 <input id="rhemaNewName" type="text" placeholder="linear_equation.rhm" maxlength="83" autocomplete="off">
+                                </div>
+                                <div class="rhema-field">
+                                    <label for="rhemaDraftStart">Start from</label>
+                                    <select id="rhemaDraftStart">
+                                        <option value="basic">Basic template</option>
+                                        <option value="blank">Blank</option>
+                                        <option value="existing">From existing question type</option>
+                                    </select>
+                                </div>
+                                <div class="rhema-field" id="rhemaCopyField" hidden>
+                                    <label for="rhemaCopySource">Existing question type</label>
+                                    <select id="rhemaCopySource"></select>
                                 </div>
                                 <div class="rhema-button-group">
                                 <button type="button" id="rhemaCreateDraftBtn" class="btn btn-primary">Create Draft</button>
@@ -145,7 +159,7 @@
                                 </div>
                                 <span id="rhemaNewError" role="alert"></span>
                             </div>
-                        </div>
+                        </dialog>
                     </div>
 
                     <section id="teacherBuilder" class="teacher-builder" hidden aria-label="Question settings">
@@ -171,19 +185,13 @@
                     <div class="rhema-editor" id="rhemaEditor" style="display: none;">
                         <div class="rhema-editor-head">
                             <div class="rhema-file-identity">
-                                <span class="rhema-file-mark">AG</span>
-                                <div>
-                                    <span id="rhemaEditorName">arithmetic.rhm</span>
-                                    <span class="rhema-save-state" id="rhemaSaveState" data-state="saved">
-                                        <span class="rhema-save-dot"></span>
-                                        <span id="rhemaSaveStateText">Saved</span>
-                                    </span>
-                                </div>
+                                <i data-lucide="file-code-2" aria-hidden="true"></i>
+                                <span id="rhemaEditorName">arithmetic.rhm</span>
                             </div>
                             <div class="rhema-editor-actions">
-                                <button type="button" id="rhemaReloadBtn" class="btn rhema-btn rhema-btn-quiet" title="Reload from disk">Reload</button>
-                                <button type="button" id="rhemaCheckBtn" class="btn rhema-btn rhema-btn-check">Check</button>
-                                <button type="button" id="rhemaSaveBtn" class="btn rhema-btn rhema-btn-save" title="Save grammar (Ctrl/Command + S)">Save</button>
+                                <button type="button" id="rhemaReloadBtn" class="btn rhema-btn rhema-btn-quiet" title="Reload from disk"><i data-lucide="rotate-cw" aria-hidden="true"></i><span>Reload</span></button>
+                                <button type="button" id="rhemaCheckBtn" class="btn rhema-btn rhema-btn-check" title="Check grammar"><i data-lucide="check" aria-hidden="true"></i><span>Check</span></button>
+                                <button type="button" id="rhemaSaveBtn" class="btn rhema-btn rhema-btn-save" title="Save grammar (Ctrl/Command + S)"><i data-lucide="save" aria-hidden="true"></i><span>Save</span></button>
                             </div>
                         </div>
                         <div class="rhema-editor-shell" id="rhemaEditorShell">
@@ -199,17 +207,14 @@
                             </div>
                         </div>
                         <div class="rhema-editor-status" id="rhemaEditorHelp">
-                            <div class="rhema-syntax-legend" aria-label="Syntax highlight legend">
-                                <span><i class="rhema-legend-keyword"></i>keyword</span>
-                                <span><i class="rhema-legend-attribute"></i>attribute</span>
-                                <span><i class="rhema-legend-string"></i>string</span>
-                                <span><i class="rhema-legend-comment"></i>comment</span>
-                            </div>
+                            <span class="rhema-save-state" id="rhemaSaveState" data-state="saved" role="status">
+                                <span class="rhema-save-dot" aria-hidden="true"></span>
+                                <span id="rhemaSaveStateText">Saved</span>
+                            </span>
                             <div class="rhema-cursor-status">
-                                <span>Tab inserts spaces</span>
-                                <span aria-hidden="true">·</span>
+                                <span>Rhema</span>
+                                <span>UTF-8</span>
                                 <span id="rhemaCursorPosition">Ln 1, Col 1</span>
-                                <span aria-hidden="true">·</span>
                                 <span id="rhemaDocumentStats">0 lines</span>
                             </div>
                         </div>
@@ -345,6 +350,40 @@
                 </div>
             </div>
             
+            <div id="pgImportContent" class="content-area" data-max-source-bytes="{{ pg_preview_max_bytes }}">
+                <header class="page-hero">
+                    <div><h1>PG file preview</h1><span id="pgImportTitle" class="pg-import-subtitle">No file selected</span></div>
+                    <div class="workspace-header-actions"><span class="renderer-connection" data-renderer-connection role="status">Checking renderer</span><button type="button" class="btn btn-secondary language-toggle" data-language-toggle aria-label="Switch language">中文</button></div>
+                </header>
+                <div class="authoring-layout" data-splitter="pgImportDivider" data-settings="pgImportSettings" data-split-storage="rhema.pgImportSplit" data-settings-label="PG file">
+                    <section id="pgImportSettings" class="pg-import-settings" aria-label="PG file">
+                        <h2>PG file</h2>
+                        <div id="pgImportDropzone" class="pg-import-dropzone">
+                            <i data-lucide="file-up" aria-hidden="true"></i>
+                            <span>Drop a .pg file</span>
+                            <button type="button" id="pgChooseFile" class="btn btn-secondary"><i data-lucide="folder-open" aria-hidden="true"></i><span>Choose PG file</span></button>
+                            <input type="file" id="pgImportFile" accept=".pg" hidden aria-label="Choose PG file">
+                        </div>
+                        <p class="pg-import-trust">Trusted PG files only.</p>
+                        <div id="pgImportFileInfo" class="pg-import-file-info" hidden><strong id="pgImportFilename" data-no-translate></strong><span id="pgImportFilesize" data-no-translate></span></div>
+                        <p id="pgImportMessage" class="pg-import-message" role="alert" hidden></p>
+                        <div class="pg-import-actions">
+                            <button type="button" id="pgImportRender" class="btn btn-primary" disabled><i data-lucide="play" aria-hidden="true"></i><span>Render</span></button>
+                            <button type="button" id="pgImportClear" class="btn btn-secondary" disabled><i data-lucide="x" aria-hidden="true"></i><span>Clear</span></button>
+                        </div>
+                        <details class="pg-import-options"><summary>Advanced settings</summary><label for="pgImportSeed">PG problem seed</label><input type="number" id="pgImportSeed" min="1" max="2147483647" step="1" value="1"></details>
+                        <details id="pgImportSourcePanel" class="pg-import-source"><summary>PG source</summary><textarea id="pgImportSource" readonly spellcheck="false" aria-label="Imported PG source"></textarea></details>
+                    </section>
+                    <div id="pgImportDivider" class="workspace-divider" role="separator" aria-orientation="vertical" aria-label="Resize file and preview" aria-controls="pgImportSettings pgImportPreview" tabindex="0" title="Resize panels"><span class="workspace-divider-handle" aria-hidden="true"><i data-lucide="grip-vertical"></i></span></div>
+                    <section id="pgImportPreview" class="preview-workspace" aria-label="Question preview">
+                        <h2>Question preview</h2>
+                        <div class="rendered-preview-toolbar"><span id="importRenderedStatus" class="rendered-preview-status" role="status" aria-live="polite">No PG file loaded</span><div class="preview-tools"><button type="button" class="btn btn-primary" id="importCheckAnswers" disabled><i data-lucide="check-check" aria-hidden="true"></i><span>Check answers</span></button></div></div>
+                        <section id="importAnswerFeedback" class="answer-feedback" aria-live="polite" aria-label="Answer results" hidden></section>
+                        <iframe id="importRenderedFrame" class="rendered-view-frame" title="Imported PG question preview" sandbox="allow-scripts" referrerpolicy="no-referrer" hidden></iframe>
+                    </section>
+                </div>
+            </div>
+
             <!-- 查看历史记录界面 -->
             <div id="historyContent" class="content-area">
                 <header class="page-hero history-hero">
@@ -477,138 +516,8 @@
         let originalOriginalContent = ''; // 原始PGML代码的原始内容
         let currentOriginalEditingArea = ''; // 'generate' or 'history'
 
-        // 获取当前API密钥（从localStorage）
-        function getCurrentApiKey() {
-            return localStorage.getItem('lastApiKey') || '';
-        }
+        // API key controls are implemented in static/api_keys.js.
 
-        // 检查API密钥状态
-        function checkApiKeyStatus() {
-            fetch('/api_key_status')
-                .then(response => response.json())
-                .then(data => {
-                    hasApiKey = data.has_api_key;
-                    updateAddContextUI();
-                })
-                .catch(error => {
-                    console.error('Error checking API key status:', error);
-                    hasApiKey = false;
-                    updateAddContextUI();
-                });
-        }
-
-        // 更新Add Context UI状态
-        function updateAddContextUI() {
-            const checkbox = document.getElementById('addContextCheckbox');
-            const apiKeyInfo = document.getElementById('apiKeyInfo');
-            const apiKeyStatusText = document.getElementById('apiKeyStatusText');
-            const editApiKeyBtn = document.getElementById('editApiKeyBtn');
-            
-            if (hasApiKey) {
-                apiKeyInfo.style.display = 'flex';
-                apiKeyInfo.style.alignItems = 'center';
-                apiKeyInfo.style.gap = '10px';
-                apiKeyStatusText.textContent = 'API key connected';
-                apiKeyStatusText.style.color = '#315c46';
-                editApiKeyBtn.style.display = 'inline-block';
-                // 有API密钥时允许勾选
-                checkbox.disabled = false;
-            } else {
-                apiKeyInfo.style.display = 'flex';
-                apiKeyInfo.style.alignItems = 'center';
-                apiKeyInfo.style.gap = '10px';
-                apiKeyStatusText.textContent = 'API key not configured';
-                apiKeyStatusText.style.color = '#7a343b';
-                editApiKeyBtn.style.display = 'none';
-                checkbox.checked = false;
-                // 无API密钥时不允许勾选
-                checkbox.disabled = false; // 允许点击触发弹窗
-            }
-        }
-
-        // 显示API密钥模态窗口（用于编辑）
-        function showEditApiKeyModal() {
-            document.getElementById('apiKeyModal').style.display = 'block';
-            // 获取当前API密钥并填入输入框
-            const currentApiKey = getCurrentApiKey();
-            document.getElementById('apiKeyInput').value = currentApiKey;
-            document.getElementById('apiKeyMessage').style.display = 'none';
-            document.getElementById('apiKeyInput').focus();
-            
-            // 更新模态窗口标题
-            document.querySelector('#apiKeyModal .modal-header h2').textContent = 'Edit API Key';
-        }
-
-        // 显示API密钥模态窗口（用于首次设置）
-        function showApiKeyModal() {
-            document.getElementById('apiKeyModal').style.display = 'block';
-            // 从localStorage获取上次输入的API密钥
-            const lastApiKey = getCurrentApiKey();
-            document.getElementById('apiKeyInput').value = lastApiKey;
-            document.getElementById('apiKeyMessage').style.display = 'none';
-            document.getElementById('apiKeyInput').focus();
-            
-            // 更新模态窗口标题
-            document.querySelector('#apiKeyModal .modal-header h2').textContent = 'Set Your API Key';
-        }
-
-        // 保存API密钥
-        function saveApiKey() {
-            const apiKey = document.getElementById('apiKeyInput').value.trim();
-            const messageDiv = document.getElementById('apiKeyMessage');
-            
-            if (!apiKey) {
-                messageDiv.textContent = 'Please enter an API key';
-                messageDiv.className = 'message error';
-                messageDiv.style.display = 'block';
-                return;
-            }
-            
-            // 保存到localStorage
-            localStorage.setItem('lastApiKey', apiKey);
-            
-            fetch('/save_api_key', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'api_key=' + encodeURIComponent(apiKey)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    messageDiv.textContent = data.message;
-                    messageDiv.className = 'message success';
-                    messageDiv.style.display = 'block';
-                    
-                    hasApiKey = true;
-                    updateAddContextUI();
-                    
-                    setTimeout(() => {
-                        document.getElementById('apiKeyModal').style.display = 'none';
-                        // 如果是首次设置，成功保存后自动勾选Add Context
-                        if (!document.getElementById('addContextCheckbox').checked) {
-                            document.getElementById('addContextCheckbox').checked = true;
-                        }
-                    }, 1000);
-                } else {
-                    messageDiv.textContent = data.error;
-                    messageDiv.className = 'message error';
-                    messageDiv.style.display = 'block';
-                    // 保存失败，取消勾选
-                    document.getElementById('addContextCheckbox').checked = false;
-                }
-            })
-            .catch(error => {
-                console.error('Error saving API key:', error);
-                messageDiv.textContent = 'Network error: ' + error.message;
-                messageDiv.className = 'message error';
-                messageDiv.style.display = 'block';
-                // 网络错误，取消勾选
-                document.getElementById('addContextCheckbox').checked = false;
-            });
-        }
-        
         // 生成语境
         function generateContext(studentId, originalPgPath) {
             contextGenerationInProgress = true;
@@ -1316,6 +1225,7 @@
 
         // 显示内容区域
         function showContent(contentId) {
+            document.body.classList.toggle('pg-import-workspace', contentId === 'pgImportContent');
             document.querySelectorAll('.content-area').forEach(content => {
                 content.classList.remove('active');
             });
@@ -1400,11 +1310,7 @@
                 if (!checkUnsavedChanges(currentEditingArea)) {
                     return;
                 }
-                showContent('generateContent');
-                document.querySelectorAll('.history-item').forEach(item => {
-                    item.classList.remove('active');
-                });
-                resetEditState('generate');
+                openCreateQuestionType();
             });
             
             // 返回生成界面按钮 - 修复事件绑定
@@ -1463,18 +1369,22 @@
             const rhemaCheckBtn = document.getElementById('rhemaCheckBtn');
             const rhemaSaveBtn = document.getElementById('rhemaSaveBtn');
             const rhemaReloadBtn = document.getElementById('rhemaReloadBtn');
-            const rhemaNewBtn = document.getElementById('rhemaNewBtn');
             const rhemaNewPanel = document.getElementById('rhemaNewPanel');
+            document.body.append(rhemaNewPanel);
             const rhemaNewName = document.getElementById('rhemaNewName');
             const rhemaNewError = document.getElementById('rhemaNewError');
             let rhemaIsNew = false;
             let rhemaBusy = false;
+            let rhemaSourceReadOnly = false;
+            let rhemaPreviousGrammar = '';
+            let rhemaLoadVersion = 0;
             function setRhemaBusy(busy) {
                 rhemaBusy = busy;
-                [rhemaGrammarSelect, rhemaNewBtn, rhemaReloadBtn, rhemaCheckBtn, rhemaSaveBtn,
+                [rhemaGrammarSelect, document.getElementById('newQuestionBtn'), rhemaReloadBtn, rhemaCheckBtn, rhemaSaveBtn,
                  document.getElementById('rhemaCreateDraftBtn'), rhemaEditToggleBtn]
                     .forEach(control => { control.disabled = busy; });
-                rhemaGrammarText.readOnly = busy;
+                rhemaGrammarText.readOnly = busy || rhemaSourceReadOnly;
+                rhemaSaveBtn.disabled = busy || rhemaSourceReadOnly;
             }
             let rhemaGrammarsLoaded = false;
             let rhemaOriginalText = '';
@@ -1725,21 +1635,25 @@
             function loadRhemaGrammarText(requestedName) {
                 const name = requestedName || rhemaGrammarSelect.value;
                 if (!name) return;
+                const version = ++rhemaLoadVersion;
                 setRhemaBusy(true);
                 showRhemaMessage('', '');
                 setRhemaState('checking', 'Loading…');
-                fetch('/rhema_grammar?name=' + encodeURIComponent(name))
+                return fetch('/rhema_grammar?name=' + encodeURIComponent(name))
                     .then(r => r.json())
                     .then(data => {
+                        if (version !== rhemaLoadVersion) return;
                         if (data.success) {
                             rhemaIsNew = false;
                             rhemaGrammarText.value = data.content;
                             rhemaEditorName.textContent = data.name;
                             rhemaCurrentGrammar = data.name;
+                            rhemaPreviousGrammar = data.name;
+                            rhemaSourceReadOnly = !window.rhemaCatalog?.find(item => item.name === data.name)?.custom;
                             rhemaGrammarSelect.value = data.name;
                             rhemaOriginalText = data.content;
                             rhemaDirty = false;
-                            setRhemaState('saved', 'Saved');
+                            setRhemaState('saved', rhemaSourceReadOnly ? 'Standard library - read-only' : 'Saved');
                             updateRhemaEditor(false);
                         } else {
                             showRhemaMessage(data.error || 'Could not load the grammar.', 'error');
@@ -1750,7 +1664,7 @@
                         showRhemaMessage('Network error: ' + e.message, 'error');
                         setRhemaState('dirty', 'Load failed');
                     })
-                    .finally(() => setRhemaBusy(false));
+                    .finally(() => { if (version === rhemaLoadVersion) setRhemaBusy(false); });
             }
 
             document.querySelectorAll('input[name="generatorMode"]').forEach(radio => {
@@ -1766,61 +1680,116 @@
                 });
             });
 
-            rhemaNewBtn.addEventListener('click', function() {
-                rhemaNewPanel.hidden = false;
-                rhemaNewError.textContent = '';
-                rhemaNewName.focus();
+            function clearGeneratedQuestion() {
+                currentVisualizationFilename = ''; currentAstPath = ''; originalPgmlContent = ''; originalContent = '';
+                document.getElementById('output').value = '';
+                document.getElementById('output').dispatchEvent(new Event('input'));
+                for (const id of ['result','error','astContainer','fileInfo','originalContentContainer','contextStatus']) document.getElementById(id).style.display = 'none';
+                document.getElementById('generatedTreeFrame').src = 'about:blank';
+                document.getElementById('generatedRenderedFrame').srcdoc = '';
+                document.getElementById('generatedAnswerFeedback').hidden = true;
+                window.questionPreview?.clear();
+                switchResultView('generate', 'rendered');
+            }
+            function canLeaveSource() {
+                if (rhemaBusy || document.getElementById('loading').style.display !== 'none' || contextGenerationInProgress) {
+                    showToast('Wait for the current operation to finish.', 'error'); return false;
+                }
+                return checkUnsavedChanges(currentEditingArea) && (!rhemaDirty || confirm('Discard the unsaved specification changes?'));
+            }
+            async function openCreateQuestionType() {
+                if (rhemaBusy) return;
+                await loadRhemaGrammarList();
+                rhemaNewError.textContent = ''; rhemaNewName.value = '';
+                document.getElementById('rhemaDraftStart').value = 'basic';
+                const copies = document.getElementById('rhemaCopySource');
+                copies.replaceChildren(...Array.from(rhemaGrammarSelect.options).filter(o => !o.dataset.draft).map(o => new Option(o.value,o.value)));
+                copies.value = rhemaIsNew ? copies.options[0]?.value || '' : rhemaGrammarSelect.value;
+                document.getElementById('rhemaCopyField').hidden = true;
+                rhemaNewPanel.showModal(); rhemaNewName.focus();
+            }
+            document.getElementById('rhemaDraftStart').addEventListener('change', e => {
+                document.getElementById('rhemaCopyField').hidden = e.target.value !== 'existing';
             });
-            document.getElementById('rhemaCancelNewBtn').addEventListener('click', function() {
-                rhemaNewPanel.hidden = true;
-            });
-            document.getElementById('rhemaCreateDraftBtn').addEventListener('click', function() {
+            document.getElementById('rhemaCancelNewBtn').addEventListener('click', () => rhemaNewPanel.close());
+            document.getElementById('rhemaCreateDraftBtn').addEventListener('click', async function() {
                 let name = rhemaNewName.value.trim();
                 if (name && !name.endsWith('.rhm')) name += '.rhm';
                 if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}\.rhm$/.test(name)) {
-                    rhemaNewError.textContent = 'Use letters, numbers, underscores or hyphens; start with a letter or number.';
-                    return;
+                    rhemaNewError.textContent = 'Use letters, numbers, underscores or hyphens; start with a letter or number.'; return;
                 }
-                if (Array.from(rhemaGrammarSelect.options).some(option => option.value === name)) {
-                    rhemaNewError.textContent = 'This name already exists. Choose another name.';
-                    return;
+                if (Array.from(rhemaGrammarSelect.options).some(o => o.value === name)) {
+                    rhemaNewError.textContent = 'This name already exists. Choose another name.'; return;
                 }
-                if (rhemaDirty && !confirm('Discard unsaved changes and create a new grammar?')) return;
-                rhemaGrammarSelect.querySelectorAll('[data-draft]').forEach(option => option.remove());
-                const option = new Option(name + ' (new)', name, false, true);
-                option.dataset.draft = 'true';
+                if (!canLeaveSource()) return;
+                const start = document.getElementById('rhemaDraftStart').value;
+                let content = '';
+                if (start === 'basic') content = 'context "Numeric"\n\nrandom a = integer_between(2, 9)\nrandom b = integer_between(2, 9)\n\nsynth text on Q\nsynth value on Q\nstart Q\n\nQ -> "addition" {\n  text = str(a) ++ " + " ++ str(b)\n  value = a + b\n}\n\nprompt "Calculate [`{Q.text}`]."\nanswer Q.value\nwidth 10\n';
+                if (start === 'existing') {
+                    setRhemaBusy(true);
+                    try {
+                        const response = await fetch('/rhema_grammar?name=' + encodeURIComponent(document.getElementById('rhemaCopySource').value));
+                        const data = await response.json();
+                        if (!response.ok || !data.success) throw new Error(data.error || 'Could not load the specification.');
+                        content = data.content;
+                    } catch (error) { rhemaNewError.textContent = error.message; return; }
+                    finally { setRhemaBusy(false); }
+                }
+                if (!rhemaIsNew) rhemaPreviousGrammar = rhemaGrammarSelect.value;
+                rhemaLoadVersion++; rhemaDirty = false;
+                window.workspaceUI.enterCreation(); window.teacherBuilder.setMode('source');
+                rhemaGrammarSelect.querySelectorAll('[data-draft]').forEach(o => o.remove());
+                const option = new Option(name + ' (draft)',name,false,true); option.dataset.draft = 'true';
                 rhemaGrammarSelect.add(option);
-                rhemaCurrentGrammar = name;
-                rhemaIsNew = true;
-                rhemaOriginalText = '';
-                rhemaEditorName.textContent = name;
-                rhemaGrammarText.value = 'context "Numeric"\n\nrandom a = integer_between(2, 9)\nrandom b = integer_between(2, 9)\n\nsynth text on Q\nsynth value on Q\n\nstart Q\n\nQ -> "addition" {\n  text = str(a) ++ " + " ++ str(b)\n  value = a + b\n}\n\nprompt "Calculate [`{Q.text}`]."\nanswer Q.value\nwidth 10\n';
-                rhemaEditor.style.display = 'block';
-                rhemaEditToggleBtn.textContent = 'Hide Grammar';
-                rhemaNewPanel.hidden = true;
-                rhemaNewName.value = '';
-                showRhemaMessage('', '');
-                updateRhemaEditor(true);
-                rhemaGrammarText.focus();
+                rhemaCurrentGrammar = name; rhemaIsNew = true; rhemaSourceReadOnly = false; rhemaOriginalText = '';
+                rhemaEditorName.textContent = name; rhemaGrammarText.value = content; rhemaGrammarText.readOnly = false;
+                rhemaEditor.style.display = 'block'; rhemaEditToggleBtn.textContent = 'Hide Grammar';
+                rhemaNewPanel.close(); showRhemaQuestions(); clearGeneratedQuestion(); showRhemaMessage('', '');
+                updateRhemaEditor(true); document.getElementById('teacherFormMode').disabled = true;
+                rhemaGrammarText.focus(); window.workspaceUI.refreshSelection();
             });
-            rhemaNewName.addEventListener('keydown', function(event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    document.getElementById('rhemaCreateDraftBtn').click();
-                }
+            rhemaNewName.addEventListener('keydown', e => {
+                if (e.key === 'Enter') { e.preventDefault(); document.getElementById('rhemaCreateDraftBtn').click(); }
             });
+            window.rhemaAuthoring = {
+                canOpenPreview() {
+                    if (rhemaBusy || document.getElementById('loading').style.display !== 'none' || contextGenerationInProgress) {
+                        showToast('Wait for the current operation to finish.', 'error'); return false;
+                    }
+                    return true;
+                },
+                openCreate: openCreateQuestionType,
+                openExisting(name) {
+                    if (!canLeaveSource()) return false;
+                    const next = name || (rhemaIsNew ? rhemaPreviousGrammar : rhemaGrammarSelect.value);
+                    rhemaLoadVersion++; rhemaDirty = false; rhemaIsNew = false;
+                    rhemaGrammarSelect.querySelectorAll('[data-draft]').forEach(o => o.remove());
+                    rhemaGrammarSelect.value = next;
+                    if (!rhemaGrammarSelect.value) rhemaGrammarSelect.selectedIndex = 0;
+                    document.getElementById('teacherFormMode').disabled = false;
+                    showContent('generateContent'); clearGeneratedQuestion();
+                    rhemaGrammarSelect.dispatchEvent(new Event('change', {bubbles:true}));
+                    window.teacherBuilder.setMode('form'); return true;
+                },
+                openClassic() {
+                    if (!canLeaveSource()) return false;
+                    rhemaDirty = false; showContent('generateContent'); clearGeneratedQuestion(); return true;
+                },
+                clearPreview: clearGeneratedQuestion
+            };
 
-            rhemaGrammarSelect.addEventListener('change', function() {
+            rhemaGrammarSelect.addEventListener('change', function(event) {
                 const requested = this.value;
                 if (rhemaDirty && !confirm('This grammar has unsaved changes. Discard them and open another file?')) {
                     this.value = rhemaCurrentGrammar;
+                    event.stopImmediatePropagation();
                     return;
                 }
                 rhemaGrammarSelect.querySelectorAll('[data-draft]').forEach(option => option.remove());
                 rhemaIsNew = false;
                 rhemaDirty = false;
                 if (rhemaEditor.style.display !== 'none') loadRhemaGrammarText(requested);
-            });
+            }, true);
 
             rhemaEditToggleBtn.addEventListener('click', function() {
                 const opening = rhemaEditor.style.display === 'none';
@@ -1854,6 +1823,7 @@
                 rhemaGrammarText.addEventListener(eventName, updateRhemaCursor));
 
             rhemaGrammarText.addEventListener('keydown', function(event) {
+                if (this.readOnly && event.key === 'Tab') return;
                 if (event.key === 'Tab') {
                     event.preventDefault();
                     const start = this.selectionStart;
@@ -1930,6 +1900,7 @@
 
             rhemaSaveBtn.addEventListener('click', function() {
                 if (rhemaBusy) return;
+                if (rhemaSourceReadOnly) { showRhemaMessage('Standard-library specifications are read-only. Create a new question type from this file.', 'error'); return; }
                 setRhemaBusy(true);
                 setRhemaState('checking', 'Saving…');
                 showRhemaMessage('Saving...', '');
@@ -1952,6 +1923,13 @@
                             delete option.dataset.draft;
                             rhemaOriginalText = rhemaGrammarText.value;
                             rhemaDirty = false;
+                            document.getElementById('teacherFormMode').disabled = false;
+                            fetch('/rhema_grammars').then(r => r.json()).then(list => {
+                                rhemaQuestions = list.questions || {};
+                                window.rhemaCatalog = list.catalog || [];
+                                document.dispatchEvent(new CustomEvent('rhema:catalog', {detail:window.rhemaCatalog}));
+                                showRhemaQuestions();
+                            }).catch(() => showRhemaMessage('Saved. Refresh the page to reload the question library.', 'ok'));
                             setRhemaState('saved', 'Valid · saved');
                             showRhemaMessage('Saved. Generate again to see the change.\n\n'
                                 + data.message, 'ok');
@@ -2396,9 +2374,12 @@
     <script src="{{ url_for('static', filename='vendor/katex/katex.min.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/katex/katex.min.css') }}">
     <script src="{{ url_for('static', filename='webwork_preview.js') }}"></script>
+    <script src="{{ url_for('static', filename='pg_import.js') }}"></script>
     <script src="{{ url_for('static', filename='question_preview.js') }}"></script>
     <script src="{{ url_for('static', filename='teacher_builder.js') }}"></script>
+    <script src="{{ url_for('static', filename='api_keys.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='code_editor.css') }}">
     <script src="{{ url_for('static', filename='vendor/lucide/lucide.min.js') }}"></script>
     <script src="{{ url_for('static', filename='i18n.js') }}"></script>
     <script src="{{ url_for('static', filename='workspace.js') }}"></script>

@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     byId('teacherSourceMode').addEventListener('click',()=>{
         mode='source';sync();if(byId('rhemaEditor').style.display==='none')byId('rhemaEditToggleBtn').click();
     });
-    select.addEventListener('change',()=>{load(true);});
+    select.addEventListener('change',()=>{if(!select.selectedOptions[0]?.dataset.draft)load(true);});
     questionSelect.addEventListener('change',()=>{
         if(!schema||!config)return;
         const q=schema.questions.find(q=>q.name===(questionSelect.value||'main'));
@@ -235,6 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
     byId('teacherSave').addEventListener('click',()=>perform('save'));
     byId('teacherExport').addEventListener('click',()=>perform('export'));
     byId('teacherReset').addEventListener('click',()=>{if(schema){config=defaults();render();changed();}});
-    window.teacherBuilder={active:()=>mode==='form',request:requestData,receive,message};
+    window.teacherBuilder={active:()=>mode==='form',request:requestData,receive,message,
+        setMode(value){mode=value;sync();}};
     sync();
 });
