@@ -14,6 +14,14 @@
 .workspace-app .sidebar-collapse-btn { top:24px; right:12px; height:30px; width:26px; }
 .workspace-app .sidebar-header { padding:16px 12px 8px; border:0; background:transparent; }
 .workspace-app .new-question-btn { justify-content:center; gap:8px; min-height:38px; font-size:14px; border:1px solid #d5dade; border-radius:4px; }
+.workspace-app .new-question-btn { white-space:normal; padding:9px; line-height:1.35; }
+.workspace-app .creation-dialog { width:min(480px,calc(100vw - 32px)); max-height:calc(100dvh - 40px); overflow:auto; margin:auto; padding:24px; border:1px solid var(--line); border-radius:6px; color:var(--ink); background:#fff; }
+.workspace-app .creation-dialog::backdrop { background:rgb(0 0 0 / .35); }
+.workspace-app .creation-dialog h2 { font-size:19px; margin:0 0 20px; }
+.workspace-app .creation-dialog .rhema-field { flex:1 0 100%; }
+.workspace-app .creation-dialog input, .workspace-app .creation-dialog select { width:100%; min-width:0; }
+.workspace-app .creation-dialog .rhema-button-group { display:flex; flex-wrap:wrap; gap:8px; }
+.api-key-verification { font-size:12px; color:var(--muted); overflow-wrap:anywhere; }
 .workspace-app svg.lucide { width:17px; height:17px; flex:0 0 17px; stroke-width:1.7px; }
 .workspace-nav { display:grid; gap:3px; margin-top:15px; }
 .workspace-nav-item { display:flex; align-items:center; gap:10px; width:100%; min-height:38px; border:0; border-radius:4px; background:transparent; color:#d6dbde; text-align:left; padding:8px 10px; font-size:13px !important; }
@@ -177,6 +185,26 @@
 .workspace-app .rhema-cursor-status { gap:8px; font-size:10px; }
 .workspace-app .history-hero { flex-wrap:wrap; justify-content:flex-start; }
 .workspace-app .history-hero h1 { width:100%; }
+.workspace-app.pg-import-workspace #configSettingsBtn { display:none; }
+.pg-import-subtitle { color:var(--muted); font-size:13px; overflow-wrap:anywhere; }
+.pg-import-settings { min-width:0; padding:24px 24px 0 0; }
+.workspace-app .pg-import-settings h2, .workspace-app #pgImportPreview h2 { font-size:18px; margin:0 0 18px; }
+.pg-import-dropzone { display:flex; flex-direction:column; align-items:center; gap:14px; padding:28px 14px; border:1px dashed #a8b3bb; border-radius:4px; font-size:13px; color:var(--muted); }
+.workspace-app .pg-import-dropzone>svg { width:28px; height:28px; }
+.pg-import-dropzone.dragging { border-color:var(--accent); background:#fff8f3; }
+.pg-import-dropzone .btn { max-width:100%; white-space:normal; }
+.pg-import-trust { font-size:11px; color:var(--muted); margin:10px 0 20px; }
+.pg-import-file-info { display:flex; flex-direction:column; gap:6px; margin-bottom:18px; font-size:12px; overflow-wrap:anywhere; }
+.pg-import-file-info span { color:var(--muted); font-size:11px; }
+.pg-import-message { font-size:12px; line-height:1.6; color:#a13632; overflow-wrap:anywhere; }
+.pg-import-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.pg-import-options, .pg-import-source { margin-top:24px; padding-top:16px; border-top:1px solid var(--line); }
+.pg-import-options summary, .pg-import-source summary { cursor:pointer; font-size:13px; }
+.pg-import-options label { display:block; margin:16px 0 8px; font-size:12px; color:var(--muted); }
+.pg-import-options input { width:100%; max-width:200px; height:36px; border:1px solid #bbc4cb; border-radius:4px; padding:6px 8px; }
+.pg-import-source textarea { width:100%; height:380px; resize:vertical; margin-top:14px; padding:12px; border:1px solid var(--line); border-radius:4px; font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; }
+.workspace-app .language-toggle { min-height:32px; font-size:12px; padding:5px 10px; }
+@media (max-width:960px) { .pg-import-settings { padding:24px 0; } }
 .workspace-app .sidebar.collapsed { width:54px; }
 .workspace-app .sidebar.collapsed+.main-content { margin-left:54px; }
 .workspace-app .sidebar.collapsed .grammar-library, .workspace-app .sidebar.collapsed #sidebarHistory { display:none; }

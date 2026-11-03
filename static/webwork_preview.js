@@ -1,15 +1,17 @@
 /* Returned PG HTML runs only inside a script-enabled, opaque-origin iframe. */
 const webworkPreviews = {
     generate: {source: null, requestId: 0, checkId: 0, ready: false, checking: false},
-    history: {source: null, requestId: 0, checkId: 0, ready: false, checking: false}
+    history: {source: null, requestId: 0, checkId: 0, ready: false, checking: false},
+    import: {source: null, requestId: 0, checkId: 0, ready: false, checking: false}
 };
 const renderedPgCache = new Map();
-window.fetchRenderedPg = function(source, force = false) {
-    if (force) renderedPgCache.delete(source);
-    if (renderedPgCache.has(source)) return renderedPgCache.get(source);
+window.fetchRenderedPg = function(source, force = false, seed = 1) {
+    const key = JSON.stringify([source, seed]);
+    if (force) renderedPgCache.delete(key);
+    if (renderedPgCache.has(key)) return renderedPgCache.get(key);
     const pending = fetch('/api/webwork/render', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({pg_source: source, problem_seed: 1})
+        body: JSON.stringify({pg_source: source, problem_seed: seed})
     }).then(async response => {
         const data = await response.json();
         if (!response.ok || !data.success) {
@@ -19,22 +21,26 @@ window.fetchRenderedPg = function(source, force = false) {
         }
         return data.html;
     }).catch(error => {
-        if (renderedPgCache.get(source) === pending) renderedPgCache.delete(source);
+        if (renderedPgCache.get(key) === pending) renderedPgCache.delete(key);
         throw error;
     });
-    renderedPgCache.set(source, pending);
+    renderedPgCache.set(key, pending);
     if (renderedPgCache.size > 4) renderedPgCache.delete(renderedPgCache.keys().next().value);
     return pending;
 };
 function previewElements(area) {
-    const prefix = area === 'generate' ? 'generated' : 'history';
+    const prefix = {generate:'generated', history:'history', import:'import'}[area];
     return {
-        source: document.getElementById(area === 'generate' ? 'output' : 'historyOutput'),
+        source: document.getElementById({generate:'output', history:'historyOutput', import:'pgImportSource'}[area]),
+        seed: area === 'import' ? document.getElementById('pgImportSeed') : null,
         frame: document.getElementById(`${prefix}RenderedFrame`),
         status: document.getElementById(`${prefix}RenderedStatus`),
         check: document.getElementById(`${prefix}CheckAnswers`),
         feedback: document.getElementById(`${prefix}AnswerFeedback`)
     };
+}
+function previewSeed(area) {
+    return Number(previewElements(area).seed?.value ?? 1);
 }
 function previewStatus(elements, message, kind) {
     elements.status.textContent = message;
@@ -44,7 +50,7 @@ function updateCheckButton(area) {
     const state = webworkPreviews[area];
     const elements = previewElements(area);
     elements.check.disabled = !state.ready || state.checking || elements.frame.hidden
-        || state.source !== elements.source.value;
+        || state.source !== elements.source.value || state.seed !== previewSeed(area);
     elements.check.querySelector('span').textContent = state.checking ? 'Checking answers...' : 'Check answers';
 }
 function resetAnswerCheck(area) {
@@ -59,6 +65,17 @@ function resetAnswerCheck(area) {
     feedback.replaceChildren();
     feedback.hidden = true;
     updateCheckButton(area);
+}
+function invalidateProblemPreview(area, message = 'Source changed. Refresh the preview.', kind = 'stale') {
+    const state = webworkPreviews[area];
+    const elements = previewElements(area);
+    state.requestId++;
+    resetAnswerCheck(area);
+    state.source = null;
+    state.seed = null;
+    elements.frame.hidden = true;
+    elements.frame.removeAttribute('srcdoc');
+    previewStatus(elements, message, kind);
 }
 // The iframe cannot read the parent DOM or storage. This bridge sends only
 // named answer controls; it never submits hidden session tokens or PG options.
@@ -95,6 +112,7 @@ function staticPreviewDocument(html, token) {
     for (const script of document.querySelectorAll('script[src]')) {
         const path = new URL(script.getAttribute('src'), document.baseURI).pathname;
         if (/^\/js\/apps\/Problem\/problem(?:\.[a-f0-9]+\.min)?\.js$/.test(path)
+            || /^\/js\/apps\/CSSMessage\/css-message(?:\.[a-f0-9]+\.min)?\.js$/.test(path)
             || /^\/pg_files\/js\/MathQuill\/mqeditor(?:\.[a-f0-9]+\.min)?\.js$/.test(path)) {
             script.remove();
         }
@@ -108,15 +126,18 @@ async function renderProblemPreview(area, force = false) {
     const state = webworkPreviews[area];
     const elements = previewElements(area);
     const source = elements.source.value;
+    const seed = previewSeed(area);
     const requestId = ++state.requestId;
     if (area === 'generate') window.questionPreview?.useLocal(false);
-    if (!source.trim()) {
-        resetAnswerCheck(area);
-        elements.frame.removeAttribute('srcdoc');
-        previewStatus(elements, 'No questions generated', 'empty');
+    if (!Number.isInteger(seed) || seed < 1 || seed > 2147483647) {
+        invalidateProblemPreview(area, 'PG problem seed must be an integer between 1 and 2147483647.', 'error');
         return;
     }
-    if (!force && state.source === source && elements.frame.srcdoc) {
+    if (!source.trim()) {
+        invalidateProblemPreview(area, area === 'import' ? 'No PG file loaded' : 'No questions generated', 'empty');
+        return;
+    }
+    if (!force && state.source === source && state.seed === seed && elements.frame.srcdoc) {
         elements.frame.hidden = false;
         previewStatus(elements, 'Rendered by WeBWorK', 'ready');
         updateCheckButton(area);
@@ -127,15 +148,16 @@ async function renderProblemPreview(area, force = false) {
     elements.frame.hidden = true;
     previewStatus(elements, 'Rendering with WeBWorK...', 'loading');
     try {
-        const html = await window.fetchRenderedPg(source, force);
+        const html = await window.fetchRenderedPg(source, force, seed);
         if (state.requestId !== requestId) return;
-        if (elements.source.value !== source) {
+        if (elements.source.value !== source || previewSeed(area) !== seed) {
             previewStatus(elements, 'Source changed. Refresh the preview.', 'stale');
             return;
         }
         const token = [...crypto.getRandomValues(new Uint8Array(24))].map(n => n.toString(16).padStart(2, '0')).join('');
         state.token = token;
         state.source = source;
+        state.seed = seed;
         elements.frame.srcdoc = staticPreviewDocument(html, token);
         elements.frame.hidden = false;
         previewStatus(elements, 'Rendered by WeBWorK', 'ready');
@@ -179,9 +201,10 @@ window.addEventListener('message', event => {
         const state = webworkPreviews[area];
         const elements = previewElements(area);
         if (!state.token || event.source !== elements.frame.contentWindow || message.token !== state.token
-            || state.source !== elements.source.value) continue;
+            || state.source !== elements.source.value || state.seed !== previewSeed(area)) continue;
         if (message.type === 'ready') {
             state.ready = Number.isInteger(message.answerCount) && message.answerCount > 0;
+            if (!state.ready) previewStatus(elements, 'Rendered by WeBWorK. No answer fields found.', 'empty');
             updateCheckButton(area);
         } else if (message.type === 'answers' && state.pending?.id === message.requestId) {
             state.pending.resolve(message.answers);
@@ -197,9 +220,11 @@ window.addEventListener('message', event => {
 async function checkPreviewAnswers(area) {
     const state = webworkPreviews[area];
     const elements = previewElements(area);
-    if (!state.ready || state.checking || elements.frame.hidden || state.source !== elements.source.value) return;
+    if (!state.ready || state.checking || elements.frame.hidden || state.source !== elements.source.value
+        || state.seed !== previewSeed(area)) return;
     const checkId = ++state.checkId;
     const source = state.source;
+    const seed = state.seed;
     const token = state.token;
     state.checking = true;
     updateCheckButton(area);
@@ -213,13 +238,14 @@ async function checkPreviewAnswers(area) {
                 type: 'collect', requestId: checkId}, '*');
         });
         state.pending = null;
-        if (state.checkId !== checkId) return;
+        if (state.checkId !== checkId || previewSeed(area) !== seed) return;
         const response = await fetch('/api/webwork/check', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({pg_source: source, problem_seed: 1, answers})
+            body: JSON.stringify({pg_source: source, problem_seed: seed, answers})
         });
         const grade = await response.json();
-        if (state.token !== token || state.checkId !== checkId || elements.source.value !== source) return;
+        if (state.token !== token || state.checkId !== checkId || elements.source.value !== source
+            || previewSeed(area) !== seed) return;
         if (!response.ok || !grade.success) throw new Error(grade.error || 'Answer checking failed.');
         showAnswerFeedback(area, `Score: ${Math.round(grade.score * 100)}% (${grade.correct_count}/${grade.answer_count} correct)`, grade);
     } catch (error) {
@@ -234,12 +260,8 @@ async function checkPreviewAnswers(area) {
 }
 for (const area of Object.keys(webworkPreviews)) {
     const elements = previewElements(area);
-    elements.source.addEventListener('input', () => {
-        webworkPreviews[area].requestId++;
-        resetAnswerCheck(area);
-        elements.frame.hidden = true;
-        previewStatus(elements, 'Source changed. Refresh the preview.', 'stale');
-    });
+    elements.source.addEventListener('input', () => invalidateProblemPreview(area));
+    elements.seed?.addEventListener('input', () => invalidateProblemPreview(area, 'Seed changed. Render again.'));
 }
 document.addEventListener('webwork:local-preview', event => {
     if (event.detail.active) previewElements('generate').feedback.hidden = true;

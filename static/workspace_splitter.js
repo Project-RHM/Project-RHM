@@ -1,9 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const layout = document.querySelector('.authoring-layout');
-    const divider = document.getElementById('workspaceDivider');
+    for (const layout of document.querySelectorAll('.authoring-layout')) setupWorkspaceSplitter(layout);
+});
+
+function setupWorkspaceSplitter(layout) {
+    const divider = document.getElementById(layout.dataset.splitter || 'workspaceDivider');
     if (!layout || !divider) return;
 
-    const storageKey = 'rhema.workspaceSplit';
+    const storageKey = layout.dataset.splitStorage || 'rhema.workspaceSplit';
     const desktop = matchMedia('(min-width: 961px)');
     const gutter = 12, minimumSettings = 280, minimumPreview = 320;
     let ratio = null, drag = null;
@@ -19,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return {available, minimum, maximum:Math.max(minimum, available - minimumPreview)};
     }
     function currentWidth() {
-        return document.getElementById('studentForm').getBoundingClientRect().width;
+        return document.getElementById(layout.dataset.settings || 'studentForm').getBoundingClientRect().width;
     }
     function apply() {
         divider.hidden = !desktop.matches;
@@ -35,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         divider.setAttribute('aria-valuenow', String(Math.round(width)));
         const t = text => window.RhemaI18n?.t(text) || text;
         const percent = Math.round(width / available * 100);
-        divider.setAttribute('aria-valuetext', `${t('Question settings')} ${percent}%, ${t('Question preview')} ${100 - percent}%`);
+        divider.setAttribute('aria-valuetext', `${t(layout.dataset.settingsLabel || 'Question settings')} ${percent}%, ${t('Question preview')} ${100 - percent}%`);
     }
     function persist() {
         try {
@@ -88,4 +91,4 @@ document.addEventListener('DOMContentLoaded', () => {
     new ResizeObserver(apply).observe(layout);
     document.addEventListener('rhema:language', apply);
     apply();
-});
+}

@@ -33,7 +33,9 @@ class GrammarCreationTests(unittest.TestCase):
         self.directory_patch = patch.object(web, 'RHEMA_GRAMMAR_DIR', self.directory.name)
         self.directory_patch.start()
         self.addCleanup(self.directory_patch.stop)
-        self.stdlib_patch = patch.object(web, 'RHEMA_STDLIB_DIR', self.directory.name)
+        self.stdlib = tempfile.TemporaryDirectory()
+        self.addCleanup(self.stdlib.cleanup)
+        self.stdlib_patch = patch.object(web, 'RHEMA_STDLIB_DIR', self.stdlib.name)
         self.stdlib_patch.start()
         self.addCleanup(self.stdlib_patch.stop)
         self.client = web.app.test_client()
@@ -89,6 +91,14 @@ class GrammarCreationTests(unittest.TestCase):
         (self.root / 'new_example.rhm').symlink_to(original)
         self.assertEqual(self.save(create='false').status_code, 400)
         self.assertEqual(original.read_text(), 'original')
+
+    def test_standard_library_is_read_only_but_copy_can_be_saved(self):
+        source = Path(self.stdlib.name) / 'original.rhm'
+        source.write_text(SOURCE)
+        self.assertEqual(self.save(name='original.rhm',create='false').status_code,403)
+        self.assertEqual(source.read_text(),SOURCE)
+        self.assertTrue(self.save(name='my_copy.rhm').json['success'])
+        self.assertEqual(source.read_text(),SOURCE)
 
 
 if __name__ == '__main__':
