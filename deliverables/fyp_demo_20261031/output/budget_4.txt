@@ -1,0 +1,4 @@
+ 1. Evaluate [`3 + 9 + (4 + 3 + 8)`].
+    answer: 27
+ 2. Evaluate [`6 \cdot (8 + 6)`].
+    answer: 84

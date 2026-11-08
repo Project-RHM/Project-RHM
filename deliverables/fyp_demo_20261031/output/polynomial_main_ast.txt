@@ -1,0 +1,126 @@
+Attribute Grammar Generated Derivations
+
+Question 1
+Prompt: Let [`P(x) = (x + 6)^{2}(x - 5)`].
+(a) Expand and collect like terms: [___]
+(b) Find [`P(-3)`]: [___]
+Expected answer: Polynomial(x^3+7*x^2-24*x-180); -72
+Question values:
+  point = -3
+Derivation:
+  Q
+    production: Q -> E [line 13]
+    equation: require ($1.factors >= 2)
+    equation: latex = $1.latex
+    equation: expanded = $1.poly
+    equation: at_point = polynomial_evaluate($1.poly, point)
+    inherited:
+      cost = 3
+    synthesized:
+      latex = (x + 6)^{2}(x - 5)
+      expanded = Polynomial(x^3+7*x^2-24*x-180)
+      at_point = -72
+    E
+      production: E -> E "\\cdot" E [line 40]
+      equation: cost = - 2
+      equation: require ($1.latex != $3.latex)
+      equation: require (bit_and($1.mask, $3.mask) = 0)
+      equation: poly = polynomial_multiply($1.poly, $3.poly)
+      equation: factored = formula_multiply($1.factored, $3.factored)
+      equation: latex = ($1.latex ++ $3.latex)
+      equation: factors = ($1.factors + $3.factors)
+      equation: mask = bit_or($1.mask, $3.mask)
+      inherited:
+        cost = 3
+      synthesized:
+        poly = Polynomial(x^3+7*x^2-24*x-180)
+        factored = Formula((x+6)^2*(x-5))
+        latex = (x + 6)^{2}(x - 5)
+        factors = 3
+        mask = 4098
+      E
+        production: E -> L "square" [line 51]
+        equation: cost = - 1
+        equation: poly = polynomial_power($1.poly, 2)
+        equation: factored = formula_power($1.factored, 2)
+        equation: latex = ("(" ++ ($1.latex ++ ")^{2}"))
+        equation: factors = 2
+        equation: mask = $1.mask
+        inherited:
+          cost = 1
+        synthesized:
+          poly = Polynomial(x^2+12*x+36)
+          factored = Formula((x+6)^2)
+          latex = (x + 6)^{2}
+          factors = 2
+          mask = 4096
+        L
+          production: L -> "monic" nonzero_integer_between(- 6, 6) [line 83]
+          equation: poly = polynomial_linear(1, $2.value, "x")
+          equation: factored = polynomial_formula(poly)
+          equation: latex = polynomial_latex(poly)
+          equation: value = poly
+          equation: mask = (2 ^ ($2.value + 6))
+          inherited:
+            cost = 0
+          synthesized:
+            poly = Polynomial(x+6)
+            factored = Formula(x+6)
+            latex = x + 6
+            value = Polynomial(x+6)
+            mask = 4096
+          monic
+            inherited: (none)
+            synthesized:
+              value = monic
+          nonzero_integer_between
+            inherited: (none)
+            synthesized:
+              value = 6
+        square
+          inherited: (none)
+          synthesized:
+            value = square
+      \cdot
+        inherited: (none)
+        synthesized:
+          value = \cdot
+      E
+        production: E -> L [line 69]
+        equation: poly = $1.poly
+        equation: factored = $1.factored
+        equation: latex = ("(" ++ ($1.latex ++ ")"))
+        equation: factors = 1
+        equation: mask = $1.mask
+        inherited:
+          cost = 0
+        synthesized:
+          poly = Polynomial(x-5)
+          factored = Formula(x-5)
+          latex = (x - 5)
+          factors = 1
+          mask = 2
+        L
+          production: L -> "monic" nonzero_integer_between(- 6, 6) [line 83]
+          equation: poly = polynomial_linear(1, $2.value, "x")
+          equation: factored = polynomial_formula(poly)
+          equation: latex = polynomial_latex(poly)
+          equation: value = poly
+          equation: mask = (2 ^ ($2.value + 6))
+          inherited:
+            cost = 0
+          synthesized:
+            poly = Polynomial(x-5)
+            factored = Formula(x-5)
+            latex = x - 5
+            value = Polynomial(x-5)
+            mask = 2
+          monic
+            inherited: (none)
+            synthesized:
+              value = monic
+          nonzero_integer_between
+            inherited: (none)
+            synthesized:
+              value = -5
+

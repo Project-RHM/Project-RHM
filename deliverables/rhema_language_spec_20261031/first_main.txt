@@ -1,0 +1,10 @@
+ 1. Compute [`14 + 92`].
+    answer: 106
+ 2. Compute [`18 + 84`].
+    answer: 102
+ 3. Compute [`36 + 82`].
+    answer: 118
+ 4. Compute [`82 + 19`].
+    answer: 101
+ 5. Compute [`79 + 86`].
+    answer: 165

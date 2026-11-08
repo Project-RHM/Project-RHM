@@ -1,0 +1,10 @@
+ 1. Are [`A \lor (A \land B)`] and [`\neg A`] equivalent? Enter 1 for yes and 0 for no.
+    answer: false
+ 2. Are [`A \lor (A \land B)`] and [`A`] equivalent? Enter 1 for yes and 0 for no.
+    answer: true
+ 3. Are [`A \lor (A \land B)`] and [`\neg A`] equivalent? Enter 1 for yes and 0 for no.
+    answer: false
+ 4. Are [`A \lor (A \land B)`] and [`A`] equivalent? Enter 1 for yes and 0 for no.
+    answer: true
+ 5. Are [`A \lor (A \land B)`] and [`\neg A`] equivalent? Enter 1 for yes and 0 for no.
+    answer: false

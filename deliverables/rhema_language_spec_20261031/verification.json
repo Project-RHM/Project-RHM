@@ -1,0 +1,692 @@
+{
+  "status": "passed",
+  "time_utc": "2026-10-31T09:21:15.206241+00:00",
+  "commit": "5545aa182494797ce7d2859bacd15353a620d921",
+  "builtin_count": 134,
+  "keyword_count": 28,
+  "cases": [
+    {
+      "file": "first.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/first.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start E, context Numeric\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "6135f5beec914793b1fdd9bb4be27f2d2e4108c95a696b112e76763a2fc06147",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "81521ad782ef272cb2359bf0b03fd4e6d2dd40f786cd959d672de32717b0e85f",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "1ce5c7f785aef8591868d5db3c656d7bb67d3bf972a693f954c1e9042b61eeda",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "recursive_arithmetic.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/recursive_arithmetic.rhm: OK (5 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start E, context Numeric\nbudgets: cost = 4\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "75a0c4ea91552dc3e1035b132c73189d9e59e2ad1cc06aa1a9c2d408f64b9140",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "0e981717565845c0799238faf54151f4bf89f1879d0037242c308ed04b1c9b08",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "2bac8f5fb2b0d04d96b04dc32013ae5a303d09d983baa6de29049f0a12e90354",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "sequence_two_parts.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/sequence_two_parts.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Numeric\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "4374cb506b416f2ddb246910380efe73ee8d9ef4a010d7ab9c4f3742cd1e7865",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "a81d40147f7d7a46b7420b53732894d84fc4d703fe29657490571c0685fde8c9",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "4d7361b283bba9bc3d274f4315d0e099f6c648224aab2abc97b76cc65f41acf8",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "boolean_evaluation.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/boolean_evaluation.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Numeric\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "df04556a0d32a4678abfbc31e794c8ce3d8a15ab23c22ba383aa6bcd386b0a56",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "c1cd40782596db626e350f8c6630dea2bf1118d71845d020a3f4489b858435ad",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "188f43fdd19af48a4fa861721bf7180e20fa6bdf808944b5df085599c5933f43",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "boolean_equivalence.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/boolean_equivalence.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Numeric\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "144b70568b057817d9967e4969d5acd884d538bff8852f6d3244097593542b5e",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "56a26a9a0c42c6f8249a79feb1ed9958d20801f3fc2b5365142b85b8f639536e",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "49a1319d29cc848c1a8574a9d00aec90917f7eb6731ec770dd142b74772a6c6f",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "boolean_transformation.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/boolean_transformation.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Boolean\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "966d2b8935d72fea3fedad0b7fdb3447372248b88ac5ad1437bb43398239a7dc",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "966d2b8935d72fea3fedad0b7fdb3447372248b88ac5ad1437bb43398239a7dc",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "966d2b8935d72fea3fedad0b7fdb3447372248b88ac5ad1437bb43398239a7dc",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "complex_product.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/complex_product.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Complex\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "6986f289863e0a71bc5798939b06061963b23e302031f4661efb83bc39a7fdaf",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "8e631afc62aca32e8e8ceb5f466539ef96972eb0ab7f3d7ef367b6f137a70a87",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "171f2a9198045bc39e305a143190d18be36fe496351f8bdea15a22751d5f841f",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "formula_derivative.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/formula_derivative.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Numeric\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "2f54ef5055e07004e70eb7350d2f9d5d2ec0a4f68e0073dc7019b15cd84bd2b7",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "605f6094f59920c80d4aeb4843e882c47200dbfcda0355fffb5de8f3f821a8b6",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "34b9d3a797fe2a15bc9d6aeba5013b63a6f54bd09af8978871ca05a1ab516b5e",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "reverse_integral.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/reverse_integral.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Numeric\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "ca37ad1b51cd45830440f633f7b40f3dd35324a96659f2fcd3d18b80cf9006e6",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "345a2141a543be9a00a71e79a1c7951ba9a4f70df7e8c9449d7a65e310f0dacf",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "f3da35b3729c5075cf31d880f952cd293b983066dea21c954bb741692878d2dc",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "polynomial_composition.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/polynomial_composition.rhm: OK (8 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Numeric\nbudgets: cost = 3\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "e3335292e261692b38168bf139f1eddc8b67dd34fdd78518ca8a19926116cff1",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "9bbde04db0f1fe9f6fc29880e7a83db8edb6c2b9fc93c631a473fe869ca900f9",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "2e64a981de9c9473ed6d801d6a2e850ad247a0b11254fd5a436a75bd22f595d0",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "linear_equation.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/linear_equation.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Numeric\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "d8f7da6e787d109381c9858f57ba5deb3f53ab2401b7b09d83279bc31ead5c30",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "6c944545dab0a0bc243a9da740446df3c477b3b95bfab45283f157f6cc44752c",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "f812d09929a08671de93ce2805bd33bb2341f346c8685f6de4859141defac05a",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "set_union.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/set_union.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Interval\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "1b2848e0e96e4fa4b8b8fc01637db159c34115bb0f794b7b3bcbe273cdb029b3",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "cd554dab43ac2be17b3afa245d3dc6f8b52e284b55850338f0aa4d9e4e39f272",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "7c72109a7e7d87f6537ccf61725896bc6788632f2f5ba4567db78e3ffb854fde",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "vector_products.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/vector_products.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Vector\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "0d7ce21a0775a5885a0a1fb625867cad52898e2d03e891e09cefa56772420d58",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "9731fe518636ab32e868ebb8843563038906446d815cb6dc5ab97b116252c151",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "49d1b1ff0a937a4e44c4b5f70df75838d3f9656ad06833afba97c5c2afb84d47",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "matrix_inverse.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/matrix_inverse.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Matrix\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "4f33292396fb4348f93a4a111aa649bc943be9e07c3c0b2e1dedda13f7656bc1",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "de324b97b8d4c670c880a1670c15bdee31b561084c8df2a3e5343a92eea2a92b",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "6df54284f56f613fab10d6783a311b9acc1cd3bb698eb055a43772d5b473b809",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "named_questions.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/named_questions.rhm: OK (1 rules; questions: main, multiplication; sets: none)",
+      "listing": "questions:\n  main           start Q, context Numeric\n  multiplication start Q, context Numeric\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "3b6a62b44521d4f720329c546f6b1e6ff5d27537339edce1971baadd93bdf6b0",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "cf3b0e423dbf0b897bfac6a0e8f4004b353b109496e68789b635a24adb419b85",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "79ceb979407c5cf59d4032109d6bf36b41e46ec652701f05234d3601b7267fb4",
+          "replay_identical": true
+        },
+        {
+          "question": "multiplication",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "0f7a524a5a6d68ee44ff739b15d8a86985ec636ce154e36064106d5b7d410fbd",
+          "replay_identical": true
+        },
+        {
+          "question": "multiplication",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "814230214e6c3c16df42bdadadac592aaa3920df2fc2a5ff85d2f0d72ff7d151",
+          "replay_identical": true
+        },
+        {
+          "question": "multiplication",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "656631855a8599978b4092eab7ef4778bb1c754096bf1ef9f545f9067c2515d4",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "import_second_derivative.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/import_second_derivative.rhm: OK (1 rules; questions: main; sets: none)",
+      "listing": "imports:\n  calc = /Users/ray/Desktop/Project-RHM_latest 2/generator/stdlib/calculus.rhm\nquestions:\n  main           start Q, context Numeric\nbudgets: cost = 4\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "3cf75864637e9c5d9fff28b9a0f4f8bba955767e242c8520839feee3a683cce1",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "236a366de160cb6fab8aa71201f0a564eae5788d2e743cbaf338eb5ad5f921cd",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "0c9bcdd77dc8b6234e15079dcb5b2c3a3f191543334c2306dc12130846bab802",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "dynamic_context.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/dynamic_context.rhm: OK (2 rules; questions: main; sets: none)",
+      "listing": "questions:\n  main           start Q, context Numeric\n",
+      "runs": [
+        {
+          "question": "main",
+          "seed": 1,
+          "count": 5,
+          "pg_sha256": "71fb46e8e76696819001603bcd831a22261be07ce8137eed2a91f8791ddde3eb",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 17,
+          "count": 5,
+          "pg_sha256": "dddecf7d5fd039d22b55fb26e629e99741b13977e4a0276f6df74eda0a1d4987",
+          "replay_identical": true
+        },
+        {
+          "question": "main",
+          "seed": 20261031,
+          "count": 5,
+          "pg_sha256": "03cbbead1df18a8c1617985cbea3b856c0302a10d50823f14f7a4d7050c6174c",
+          "replay_identical": true
+        }
+      ]
+    },
+    {
+      "file": "assignment.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/assignment.rhm: OK (0 rules; questions: none; sets: practice)",
+      "listing": "imports:\n  pairs = /Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/examples/named_questions.rhm\n  calc = /Users/ray/Desktop/Project-RHM_latest 2/generator/stdlib/calculus.rhm\n  logic = /Users/ray/Desktop/Project-RHM_latest 2/generator/stdlib/boolean.rhm\nquestions: none (a library)\nsets:\n  practice       6 questions\n",
+      "runs": [
+        {
+          "set": "practice",
+          "seed": 1,
+          "listing": "practice: 6 questions in 3 parts\n\n1. Warm-up\n  1(a)  [pairs.main]\nFind the sum of 5 and 6.\n    answer: 11\n  1(b)  [pairs.multiplication]\nFind the product of 2 and 8.\n    answer: 16\n\n2. Differentiation\n  2(a)  [calc.derivative; cost 4]\nDifferentiate the function with respect to x:\n[`f(x) = \\ln\\left(6 \\cdot x\\right) + \\ln\\left(x\\right)`].\n    answer: Formula(6/(6*x)+1/x)\n  2(b)  [calc.derivative; cost 6]\nDifferentiate the function with respect to x:\n[`f(x) = \\cos\\left(x + 4 + \\sqrt{x}\\right)`].\n    answer: Formula(-(sin(x+4+sqrt(x))*(1+1/(2*sqrt(x)))))\n\n3. Logic\n  3(a)  [logic.main; cost 8]\nLet [`p = \\mathsf{F},\\; q = \\mathsf{T},\\; r = \\mathsf{T}`]. Is the proposition [`\\neg q \\leftrightarrow \\neg r`] true or false?\nEnter 1 for true and 0 for false.\n    answer: true\n  3(b)  [logic.main; cost 10]\nLet [`p = \\mathsf{F},\\; q = \\mathsf{T},\\; r = \\mathsf{T}`]. Is the proposition [`(r \\land \\neg q) \\oplus \\neg p`] true or false?\nEnter 1 for true and 0 for false.\n    answer: true\n\nbudget means:\n  part 1 Warm-up:\n  part 2 Differentiation: cost 5.00 over 2\n  part 3 Logic: cost 9.00 over 2\n"
+        },
+        {
+          "set": "practice",
+          "seed": 17,
+          "listing": "practice: 6 questions in 3 parts\n\n1. Warm-up\n  1(a)  [pairs.main]\nFind the sum of 3 and 6.\n    answer: 9\n  1(b)  [pairs.multiplication]\nFind the product of 5 and 3.\n    answer: 15\n\n2. Differentiation\n  2(a)  [calc.derivative; cost 4]\nDifferentiate the function with respect to x:\n[`f(x) = (x - 3) \\cdot x`].\n    answer: Formula(x+x-3)\n  2(b)  [calc.derivative; cost 6]\nDifferentiate the function with respect to x:\n[`f(x) = e^{\\ln\\left(3 \\cdot x\\right)} + x`].\n    answer: Formula(exp(ln(3*x))*3/(3*x)+1)\n\n3. Logic\n  3(a)  [logic.main; cost 8]\nSuppose [`p = \\mathsf{F}`], [`q = \\mathsf{T}`] and [`r = \\mathsf{T}`]. What is the truth value of [`\\neg q \\leftrightarrow \\neg p`]?\nEnter 1 for true and 0 for false.\n    answer: false\n  3(b)  [logic.main; cost 10]\nLet [`p = \\mathsf{T},\\; q = \\mathsf{F},\\; r = \\mathsf{T}`]. Is the proposition [`(\\neg r \\lor p) \\to (r \\land \\neg q)`] true or false?\nEnter 1 for true and 0 for false.\n    answer: true\n\nbudget means:\n  part 1 Warm-up:\n  part 2 Differentiation: cost 5.00 over 2\n  part 3 Logic: cost 9.00 over 2\n"
+        },
+        {
+          "set": "practice",
+          "seed": 20261031,
+          "listing": "practice: 6 questions in 3 parts\n\n1. Warm-up\n  1(a)  [pairs.main]\nFind the sum of 3 and 3.\n    answer: 6\n  1(b)  [pairs.multiplication]\nFind the product of 3 and 2.\n    answer: 6\n\n2. Differentiation\n  2(a)  [calc.derivative; cost 4]\nDifferentiate the function with respect to x:\n[`f(x) = (3 \\cdot x)^{2} + 6 + x`].\n    answer: Formula(2*3*x*3+1)\n  2(b)  [calc.derivative; cost 6]\nDifferentiate the function with respect to x:\n[`f(x) = \\sqrt{x} \\cdot \\sin\\left(-2 \\cdot x\\right)`].\n    answer: Formula(1/(2*sqrt(x))*sin(-(2*x))-sqrt(x)*cos(-(2*x))*2)\n\n3. Logic\n  3(a)  [logic.main; cost 8]\nSuppose [`p = \\mathsf{F}`], [`q = \\mathsf{T}`] and [`r = \\mathsf{T}`]. What is the truth value of [`\\neg q \\leftrightarrow \\neg p`]?\nEnter 1 for true and 0 for false.\n    answer: false\n  3(b)  [logic.main; cost 10]\nEvaluate [`(q \\leftrightarrow p) \\land (r \\lor p)`] when [`p = \\mathsf{F}`], [`q = \\mathsf{F}`] and [`r = \\mathsf{T}`].\nEnter 1 for true and 0 for false.\n    answer: true\n\nbudget means:\n  part 1 Warm-up:\n  part 2 Differentiation: cost 5.00 over 2\n  part 3 Logic: cost 9.00 over 2\n"
+        }
+      ]
+    }
+  ],
+  "scope": "Complete manual examples and signature coverage; not all project tests.",
+  "example_count": 18,
+  "generation_scenario_count": 57,
+  "runtime_caveat_probes": [
+    {
+      "case": "reserved_left",
+      "expected_success": false,
+      "expected_message": "unexpected left",
+      "actual": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/probes/reserved_left.rhm:1:5: error: unexpected left\n",
+      "passed": true
+    },
+    {
+      "case": "no_truth_literal",
+      "expected_success": false,
+      "expected_message": "unknown name 'true'",
+      "actual": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/probes/no_truth_literal.rhm:5:9: error: unknown name 'true'\n",
+      "passed": true
+    },
+    {
+      "case": "bare_answer_global",
+      "expected_success": false,
+      "expected_message": "ambiguous",
+      "actual": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/probes/bare_answer_global.rhm:8:8: error: 'total' on its own is ambiguous here; write Q.total\n",
+      "passed": true
+    },
+    {
+      "case": "random_needs_literal",
+      "expected_success": false,
+      "expected_message": "integer literals",
+      "actual": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/probes/random_needs_literal.rhm:2:1: error: random integer_between arguments must be integer literals\n",
+      "passed": true
+    },
+    {
+      "case": "paren_node_not_text",
+      "expected_success": false,
+      "expected_message": "is a node",
+      "actual": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/probes/paren_node_not_text.rhm: error: $1 is a node, not a value; write $1.value, or pass it to infix()\n",
+      "passed": true
+    },
+    {
+      "case": "str_truth_not_text",
+      "expected_success": false,
+      "expected_message": "expected text",
+      "actual": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/probes/str_truth_not_text.rhm: error: str expected text but received a non-text value\n",
+      "passed": true
+    },
+    {
+      "case": "unary_minus_precedence",
+      "expected_success": true,
+      "expected_message": "answer: 4",
+      "actual": " 1. Answer the question.\n    answer: 4\n",
+      "passed": true
+    },
+    {
+      "case": "formula_equality_structural",
+      "expected_success": true,
+      "expected_message": "answer: false",
+      "actual": " 1. Answer the question.\n    answer: false\n",
+      "passed": true
+    },
+    {
+      "case": "set_equality_structural",
+      "expected_success": true,
+      "expected_message": "answer: false",
+      "actual": " 1. Answer the question.\n    answer: false\n",
+      "passed": true
+    },
+    {
+      "case": "split_not_exact_by_itself",
+      "expected_success": true,
+      "expected_message": "answer: 10",
+      "actual": " 1. Answer the question.\n    answer: 10\n",
+      "passed": true
+    },
+    {
+      "case": "scalar_arithmetic_not_complex",
+      "expected_success": false,
+      "expected_message": "expected a number",
+      "actual": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/rhema_language_spec_20261031/probes/scalar_arithmetic_not_complex.rhm: error: + expected a number but received \"Complex(3,4)\"\n",
+      "passed": true
+    }
+  ],
+  "webwork_rendering": {
+    "status": "passed",
+    "scope": "Local Docker renderer; rendering only, not student submission grading or mathematical proof.",
+    "cases": [
+      {
+        "pg_file": "assignment_practice.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "boolean_equivalence_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "boolean_evaluation_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "boolean_transformation_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "complex_product_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "dynamic_context_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "first_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "formula_derivative_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "import_second_derivative_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "linear_equation_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "matrix_inverse_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "named_questions_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "named_questions_multiplication.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "polynomial_composition_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "recursive_arithmetic_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "reverse_integral_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "sequence_two_parts_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "set_union_main.pg",
+        "rendered": true
+      },
+      {
+        "pg_file": "vector_products_main.pg",
+        "rendered": true
+      }
+    ]
+  }
+}

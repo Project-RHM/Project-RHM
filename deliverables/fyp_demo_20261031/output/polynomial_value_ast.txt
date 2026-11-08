@@ -1,0 +1,121 @@
+Attribute Grammar Generated Derivations
+
+Question 1
+Prompt: Let [`P(x) = (2 \cdot x + 3)(x + 5)`]. Find [`P(1)`]: [___]
+Expected answer: 30
+Question values:
+  point = 1
+Derivation:
+  Q
+    production: Q -> E [line 13]
+    equation: require ($1.factors >= 2)
+    equation: latex = $1.latex
+    equation: expanded = $1.poly
+    equation: at_point = polynomial_evaluate($1.poly, point)
+    inherited:
+      cost = 3
+    synthesized:
+      latex = (2 \cdot x + 3)(x + 5)
+      expanded = Polynomial(2*x^2+13*x+15)
+      at_point = 30
+    E
+      production: E -> E "\\cdot" E [line 40]
+      equation: cost = - 2
+      equation: require ($1.latex != $3.latex)
+      equation: require (bit_and($1.mask, $3.mask) = 0)
+      equation: poly = polynomial_multiply($1.poly, $3.poly)
+      equation: factored = formula_multiply($1.factored, $3.factored)
+      equation: latex = ($1.latex ++ $3.latex)
+      equation: factors = ($1.factors + $3.factors)
+      equation: mask = bit_or($1.mask, $3.mask)
+      inherited:
+        cost = 3
+      synthesized:
+        poly = Polynomial(2*x^2+13*x+15)
+        factored = Formula((2*x+3)*(x+5))
+        latex = (2 \cdot x + 3)(x + 5)
+        factors = 2
+        mask = 4196352
+      E
+        production: E -> L [line 69]
+        equation: poly = $1.poly
+        equation: factored = $1.factored
+        equation: latex = ("(" ++ ($1.latex ++ ")"))
+        equation: factors = 1
+        equation: mask = $1.mask
+        inherited:
+          cost = 1
+        synthesized:
+          poly = Polynomial(2*x+3)
+          factored = Formula(2*x+3)
+          latex = (2 \cdot x + 3)
+          factors = 1
+          mask = 4194304
+        L
+          production: L -> integer_between(2, 3) nonzero_integer_between(- 5, 5) [line 93]
+          equation: cost = - 1
+          equation: require (($2.value % $1.value) != 0)
+          equation: poly = polynomial_linear($1.value, $2.value, "x")
+          equation: factored = polynomial_formula(poly)
+          equation: latex = polynomial_latex(poly)
+          equation: value = poly
+          equation: mask = (2 ^ (((($1.value - 1) * 13) + $2.value) + 6))
+          inherited:
+            cost = 1
+          synthesized:
+            poly = Polynomial(2*x+3)
+            factored = Formula(2*x+3)
+            latex = 2 \cdot x + 3
+            value = Polynomial(2*x+3)
+            mask = 4194304
+          integer_between
+            inherited: (none)
+            synthesized:
+              value = 2
+          nonzero_integer_between
+            inherited: (none)
+            synthesized:
+              value = 3
+      \cdot
+        inherited: (none)
+        synthesized:
+          value = \cdot
+      E
+        production: E -> L [line 69]
+        equation: poly = $1.poly
+        equation: factored = $1.factored
+        equation: latex = ("(" ++ ($1.latex ++ ")"))
+        equation: factors = 1
+        equation: mask = $1.mask
+        inherited:
+          cost = 0
+        synthesized:
+          poly = Polynomial(x+5)
+          factored = Formula(x+5)
+          latex = (x + 5)
+          factors = 1
+          mask = 2048
+        L
+          production: L -> "monic" nonzero_integer_between(- 6, 6) [line 83]
+          equation: poly = polynomial_linear(1, $2.value, "x")
+          equation: factored = polynomial_formula(poly)
+          equation: latex = polynomial_latex(poly)
+          equation: value = poly
+          equation: mask = (2 ^ ($2.value + 6))
+          inherited:
+            cost = 0
+          synthesized:
+            poly = Polynomial(x+5)
+            factored = Formula(x+5)
+            latex = x + 5
+            value = Polynomial(x+5)
+            mask = 2048
+          monic
+            inherited: (none)
+            synthesized:
+              value = monic
+          nonzero_integer_between
+            inherited: (none)
+            synthesized:
+              value = 5
+

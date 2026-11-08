@@ -1,0 +1,36 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+An arithmetic sequence has [`a_1 = -1`] and [`d = 1`].
+
+(a) Find [`a_{7}`]: [_____]{answer=>5,width=>12}
+
+(b) Find [`S_{7}`]: [_____]{answer=>14,width=>12}
+
+An arithmetic sequence has [`a_1 = 1`] and [`d = -2`].
+
+(a) Find [`a_{6}`]: [_____]{answer=>-9,width=>12}
+
+(b) Find [`S_{6}`]: [_____]{answer=>-24,width=>12}
+
+An arithmetic sequence has [`a_1 = -1`] and [`d = -3`].
+
+(a) Find [`a_{3}`]: [_____]{answer=>-7,width=>12}
+
+(b) Find [`S_{3}`]: [_____]{answer=>-12,width=>12}
+
+An arithmetic sequence has [`a_1 = 2`] and [`d = 3`].
+
+(a) Find [`a_{7}`]: [_____]{answer=>20,width=>12}
+
+(b) Find [`S_{7}`]: [_____]{answer=>77,width=>12}
+
+An arithmetic sequence has [`a_1 = -2`] and [`d = 4`].
+
+(a) Find [`a_{5}`]: [_____]{answer=>14,width=>12}
+
+(b) Find [`S_{5}`]: [_____]{answer=>30,width=>12}
+END_PGML
+ENDDOCUMENT();

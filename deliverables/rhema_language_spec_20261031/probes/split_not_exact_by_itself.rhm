@@ -1,0 +1,8 @@
+attribute cost = 10 split
+synth value on Q
+start Q
+Q -> "marker" {
+value = cost
+}
+prompt "Answer the question."
+answer Q.value

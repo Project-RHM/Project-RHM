@@ -1,0 +1,396 @@
+Attribute Grammar Generated Derivations
+
+Question 1
+Prompt: Evaluate [`3 + 9 + (4 - (8 + 6)) \cdot (9 - 8)`].
+Expected answer: 2
+Question values: (none)
+Derivation:
+  E
+    production: E -> E + E [line 12]
+    equation: cost = - 1
+    equation: value = ($1.value + $3.value)
+    equation: latex = infix($1, "+", $3)
+    inherited:
+      cost = 10
+    synthesized:
+      value = 2
+      latex = 3 + 9 + (4 - (8 + 6)) \cdot (9 - 8)
+    E
+      production: E -> E + E [line 12]
+      equation: cost = - 1
+      equation: value = ($1.value + $3.value)
+      equation: latex = infix($1, "+", $3)
+      inherited:
+        cost = 1
+      synthesized:
+        value = 12
+        latex = 3 + 9
+      E
+        production: E -> integer_between(2, 9) [line 31]
+        equation: value = $1.value
+        equation: latex = str($1.value)
+        inherited:
+          cost = 0
+        synthesized:
+          value = 3
+          latex = 3
+        integer_between
+          inherited: (none)
+          synthesized:
+            value = 3
+      +
+        inherited: (none)
+        synthesized:
+          value = +
+      E
+        production: E -> integer_between(2, 9) [line 31]
+        equation: value = $1.value
+        equation: latex = str($1.value)
+        inherited:
+          cost = 0
+        synthesized:
+          value = 9
+          latex = 9
+        integer_between
+          inherited: (none)
+          synthesized:
+            value = 9
+    +
+      inherited: (none)
+      synthesized:
+        value = +
+    E
+      production: E -> E * E [line 25]
+      equation: cost = - 3
+      equation: value = ($1.value * $3.value)
+      equation: latex = infix($1, "\\cdot", $3)
+      inherited:
+        cost = 8
+      synthesized:
+        value = -10
+        latex = (4 - (8 + 6)) \cdot (9 - 8)
+      E
+        production: E -> E - E [line 18]
+        equation: cost = - 2
+        equation: require ($1.value != $3.value)
+        equation: value = ($1.value - $3.value)
+        equation: latex = infix($1, "-", $3)
+        inherited:
+          cost = 3
+        synthesized:
+          value = -10
+          latex = 4 - (8 + 6)
+        E
+          production: E -> integer_between(2, 9) [line 31]
+          equation: value = $1.value
+          equation: latex = str($1.value)
+          inherited:
+            cost = 0
+          synthesized:
+            value = 4
+            latex = 4
+          integer_between
+            inherited: (none)
+            synthesized:
+              value = 4
+        -
+          inherited: (none)
+          synthesized:
+            value = -
+        E
+          production: E -> E + E [line 12]
+          equation: cost = - 1
+          equation: value = ($1.value + $3.value)
+          equation: latex = infix($1, "+", $3)
+          inherited:
+            cost = 1
+          synthesized:
+            value = 14
+            latex = 8 + 6
+          E
+            production: E -> integer_between(2, 9) [line 31]
+            equation: value = $1.value
+            equation: latex = str($1.value)
+            inherited:
+              cost = 0
+            synthesized:
+              value = 8
+              latex = 8
+            integer_between
+              inherited: (none)
+              synthesized:
+                value = 8
+          +
+            inherited: (none)
+            synthesized:
+              value = +
+          E
+            production: E -> integer_between(2, 9) [line 31]
+            equation: value = $1.value
+            equation: latex = str($1.value)
+            inherited:
+              cost = 0
+            synthesized:
+              value = 6
+              latex = 6
+            integer_between
+              inherited: (none)
+              synthesized:
+                value = 6
+      *
+        inherited: (none)
+        synthesized:
+          value = *
+      E
+        production: E -> E - E [line 18]
+        equation: cost = - 2
+        equation: require ($1.value != $3.value)
+        equation: value = ($1.value - $3.value)
+        equation: latex = infix($1, "-", $3)
+        inherited:
+          cost = 2
+        synthesized:
+          value = 1
+          latex = 9 - 8
+        E
+          production: E -> integer_between(2, 9) [line 31]
+          equation: value = $1.value
+          equation: latex = str($1.value)
+          inherited:
+            cost = 0
+          synthesized:
+            value = 9
+            latex = 9
+          integer_between
+            inherited: (none)
+            synthesized:
+              value = 9
+        -
+          inherited: (none)
+          synthesized:
+            value = -
+        E
+          production: E -> integer_between(2, 9) [line 31]
+          equation: value = $1.value
+          equation: latex = str($1.value)
+          inherited:
+            cost = 0
+          synthesized:
+            value = 8
+            latex = 8
+          integer_between
+            inherited: (none)
+            synthesized:
+              value = 8
+
+Question 2
+Prompt: Evaluate [`2 + 7 + (7 - (2 - 3 + 7)) - (2 + 7)`].
+Expected answer: 1
+Question values: (none)
+Derivation:
+  E
+    production: E -> E - E [line 18]
+    equation: cost = - 2
+    equation: require ($1.value != $3.value)
+    equation: value = ($1.value - $3.value)
+    equation: latex = infix($1, "-", $3)
+    inherited:
+      cost = 10
+    synthesized:
+      value = 1
+      latex = 2 + 7 + (7 - (2 - 3 + 7)) - (2 + 7)
+    E
+      production: E -> E + E [line 12]
+      equation: cost = - 1
+      equation: value = ($1.value + $3.value)
+      equation: latex = infix($1, "+", $3)
+      inherited:
+        cost = 7
+      synthesized:
+        value = 10
+        latex = 2 + 7 + (7 - (2 - 3 + 7))
+      E
+        production: E -> E + E [line 12]
+        equation: cost = - 1
+        equation: value = ($1.value + $3.value)
+        equation: latex = infix($1, "+", $3)
+        inherited:
+          cost = 1
+        synthesized:
+          value = 9
+          latex = 2 + 7
+        E
+          production: E -> integer_between(2, 9) [line 31]
+          equation: value = $1.value
+          equation: latex = str($1.value)
+          inherited:
+            cost = 0
+          synthesized:
+            value = 2
+            latex = 2
+          integer_between
+            inherited: (none)
+            synthesized:
+              value = 2
+        +
+          inherited: (none)
+          synthesized:
+            value = +
+        E
+          production: E -> integer_between(2, 9) [line 31]
+          equation: value = $1.value
+          equation: latex = str($1.value)
+          inherited:
+            cost = 0
+          synthesized:
+            value = 7
+            latex = 7
+          integer_between
+            inherited: (none)
+            synthesized:
+              value = 7
+      +
+        inherited: (none)
+        synthesized:
+          value = +
+      E
+        production: E -> E - E [line 18]
+        equation: cost = - 2
+        equation: require ($1.value != $3.value)
+        equation: value = ($1.value - $3.value)
+        equation: latex = infix($1, "-", $3)
+        inherited:
+          cost = 5
+        synthesized:
+          value = 1
+          latex = 7 - (2 - 3 + 7)
+        E
+          production: E -> integer_between(2, 9) [line 31]
+          equation: value = $1.value
+          equation: latex = str($1.value)
+          inherited:
+            cost = 0
+          synthesized:
+            value = 7
+            latex = 7
+          integer_between
+            inherited: (none)
+            synthesized:
+              value = 7
+        -
+          inherited: (none)
+          synthesized:
+            value = -
+        E
+          production: E -> E + E [line 12]
+          equation: cost = - 1
+          equation: value = ($1.value + $3.value)
+          equation: latex = infix($1, "+", $3)
+          inherited:
+            cost = 3
+          synthesized:
+            value = 6
+            latex = 2 - 3 + 7
+          E
+            production: E -> E - E [line 18]
+            equation: cost = - 2
+            equation: require ($1.value != $3.value)
+            equation: value = ($1.value - $3.value)
+            equation: latex = infix($1, "-", $3)
+            inherited:
+              cost = 2
+            synthesized:
+              value = -1
+              latex = 2 - 3
+            E
+              production: E -> integer_between(2, 9) [line 31]
+              equation: value = $1.value
+              equation: latex = str($1.value)
+              inherited:
+                cost = 0
+              synthesized:
+                value = 2
+                latex = 2
+              integer_between
+                inherited: (none)
+                synthesized:
+                  value = 2
+            -
+              inherited: (none)
+              synthesized:
+                value = -
+            E
+              production: E -> integer_between(2, 9) [line 31]
+              equation: value = $1.value
+              equation: latex = str($1.value)
+              inherited:
+                cost = 0
+              synthesized:
+                value = 3
+                latex = 3
+              integer_between
+                inherited: (none)
+                synthesized:
+                  value = 3
+          +
+            inherited: (none)
+            synthesized:
+              value = +
+          E
+            production: E -> integer_between(2, 9) [line 31]
+            equation: value = $1.value
+            equation: latex = str($1.value)
+            inherited:
+              cost = 0
+            synthesized:
+              value = 7
+              latex = 7
+            integer_between
+              inherited: (none)
+              synthesized:
+                value = 7
+    -
+      inherited: (none)
+      synthesized:
+        value = -
+    E
+      production: E -> E + E [line 12]
+      equation: cost = - 1
+      equation: value = ($1.value + $3.value)
+      equation: latex = infix($1, "+", $3)
+      inherited:
+        cost = 1
+      synthesized:
+        value = 9
+        latex = 2 + 7
+      E
+        production: E -> integer_between(2, 9) [line 31]
+        equation: value = $1.value
+        equation: latex = str($1.value)
+        inherited:
+          cost = 0
+        synthesized:
+          value = 2
+          latex = 2
+        integer_between
+          inherited: (none)
+          synthesized:
+            value = 2
+      +
+        inherited: (none)
+        synthesized:
+          value = +
+      E
+        production: E -> integer_between(2, 9) [line 31]
+        equation: value = $1.value
+        equation: latex = str($1.value)
+        inherited:
+          cost = 0
+        synthesized:
+          value = 7
+          latex = 7
+        integer_between
+          inherited: (none)
+          synthesized:
+            value = 7
+

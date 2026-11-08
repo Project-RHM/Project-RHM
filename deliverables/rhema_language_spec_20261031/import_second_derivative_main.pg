@@ -1,0 +1,16 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+Find the second derivative of [`f(x) = (-4 \cdot x)^{5} - \sqrt{x}`].[_____]{answer=>Formula('5*4*(-(4*x))^3*4*4+2*1/(2*sqrt(x))/(2*sqrt(x))^2'),width=>24}
+
+Find the second derivative of [`f(x) = \cos\left(x\right) + (4 \cdot x)^{2}`].[_____]{answer=>Formula('32-cos(x)'),width=>24}
+
+Find the second derivative of [`f(x) = x - x^{4} + x^{3}`].[_____]{answer=>Formula('3*2*x-4*3*x^2'),width=>24}
+
+Find the second derivative of [`f(x) = (-5 \cdot x)^{4} - \sin\left(x\right)`].[_____]{answer=>Formula('4*3*(-(5*x))^2*5*5+sin(x)'),width=>24}
+
+Find the second derivative of [`f(x) = \ln\left(x\right) + (3 \cdot x)^{5}`].[_____]{answer=>Formula('-1/x^2+5*4*(3*x)^3*3*3'),width=>24}
+END_PGML
+ENDDOCUMENT();

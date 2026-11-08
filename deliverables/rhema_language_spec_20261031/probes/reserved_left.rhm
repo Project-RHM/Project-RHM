@@ -1,0 +1,8 @@
+let left = 3
+synth value on Q
+start Q
+Q -> "marker" {
+value = 1
+}
+prompt "Answer the question."
+answer Q.value

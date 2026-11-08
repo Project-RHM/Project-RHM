@@ -1,0 +1,20 @@
+random coefficient = nonzero_integer_between(-5, 5)
+random exponent = integer_between(2, 5)
+
+let x = formula_variable("x")
+let function_expr = formula_add(
+  formula_multiply(formula_constant(coefficient), formula_power(x, exponent)),
+  formula_sin(x)
+)
+
+synth text on Q
+synth value on Q
+start Q
+Q -> "derivative" {
+  text = formula_latex(function_expr)
+  value = differentiate(function_expr, "x")
+}
+
+prompt "Differentiate [`f(x) = {Q.text}`] with respect to x."
+answer Q.value
+width 24

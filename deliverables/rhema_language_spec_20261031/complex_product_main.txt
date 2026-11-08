@@ -1,0 +1,10 @@
+ 1. Compute [`(4 - 2i)(-3 - i)`].
+    answer: Complex(-14,2)
+ 2. Compute [`(-2 - i)(4 - 2i)`].
+    answer: Complex(-10,0)
+ 3. Compute [`(-4 + 2i)(2 - 3i)`].
+    answer: Complex(-2,16)
+ 4. Compute [`(1 - i)(3 - 4i)`].
+    answer: Complex(-1,-7)
+ 5. Compute [`(-2 + i)(-3 + 4i)`].
+    answer: Complex(2,-11)

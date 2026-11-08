@@ -10,12 +10,38 @@ from threading import RLock
 import requests
 
 LOCK = RLock()
+DEFAULT_MODEL = 'deepseek-flash'
+MODELS = (DEFAULT_MODEL, 'deepseek-v4-pro')
 
 
 class ApiKeyError(ValueError):
     def __init__(self, message, code, status=400):
         super().__init__(message)
         self.code, self.status = code, status
+
+
+def parse_key_config(raw):
+    if not raw or len(raw) > 8192:
+        raise ApiKeyError('Choose a JSON configuration file of at most 8 KB.', 'invalid_config')
+    def unique(pairs):
+        result = {}
+        for name, value in pairs:
+            if name in result:
+                raise ValueError()
+            result[name] = value
+        return result
+    try:
+        data = json.loads(raw.decode('utf-8-sig'), object_pairs_hook=unique)
+    except (ValueError, UnicodeError):
+        raise ApiKeyError('Choose a valid UTF-8 JSON configuration file.', 'invalid_config') from None
+    if not isinstance(data, dict) or set(data) - {'provider', 'api_key', 'model'} or data.get('provider', 'DeepSeek') != 'DeepSeek':
+        raise ApiKeyError('Use the DeepSeek configuration template without extra fields.', 'invalid_config')
+    key, model = data.get('api_key'), data.get('model', DEFAULT_MODEL)
+    if not isinstance(model, str) or model not in MODELS:
+        raise ApiKeyError('Choose deepseek-flash or deepseek-v4-pro.', 'invalid_model')
+    if not isinstance(key, str) or key == 'PASTE_YOUR_KEY_HERE':
+        raise ApiKeyError('Replace the API key placeholder in your configuration file.', 'invalid_key_format')
+    return key, model
 
 
 class DeepSeekKeyValidator:
@@ -79,16 +105,23 @@ def key_status(data):
                 and record.get("provider") == "DeepSeek"
                 and record.get("fingerprint") == hashlib.sha256(key.encode()).hexdigest()
                 and type(record.get("available")) is bool and bool(record.get("verified_at")))
+    model = data.get('default_user_model', DEFAULT_MODEL)
+    if not isinstance(model, str) or model not in MODELS:
+        model = DEFAULT_MODEL
     return {"has_api_key": bool(key), "verified": bool(verified),
             "available": record["available"] if verified else False,
             "verified_at": record["verified_at"] if verified else None,
-            "provider": "DeepSeek"}
+            "provider": "DeepSeek", "model": model}
 
 
-def save_verified(filename, key, validation):
+def save_verified(filename, key, validation, model=None):
     with LOCK:
         data = read_keys(filename)
         data["default_user"] = key
+        if model is not None:
+            if model not in MODELS:
+                raise ApiKeyError('Choose deepseek-flash or deepseek-v4-pro.', 'invalid_model')
+            data['default_user_model'] = model
         data["default_user_validation"] = {**validation, "fingerprint": hashlib.sha256(key.encode()).hexdigest()}
         write_keys(filename, data)
         return key_status(data)
@@ -99,5 +132,6 @@ def remove_key(filename):
         data = read_keys(filename)
         data.pop("default_user", None)
         data.pop("default_user_validation", None)
+        data.pop('default_user_model', None)
         write_keys(filename, data)
         return key_status(data)

@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "base": "calculus.rhm",
+  "configuration": {
+    "values": {
+      "root:a:cost": 10,
+      "root:a:calculus_mode": 0,
+      "root:a:constants": 1,
+      "root:a:advanced": 1,
+      "root:rule:0:weight": 1,
+      "root:rule:1:weight": 1,
+      "root:rule:2:weight": 1,
+      "root:rule:3:weight": 1,
+      "root:rule:3:cost": 2,
+      "root:rule:4:weight": 3,
+      "root:rule:4:cost": 1,
+      "root:rule:5:weight": 3,
+      "root:rule:5:cost": 1,
+      "root:rule:6:weight": 2,
+      "root:rule:6:cost": 3,
+      "root:rule:7:weight": 3,
+      "root:rule:7:cost": 1,
+      "root:rule:7:leaf:2": [
+        2,
+        5
+      ],
+      "root:rule:8:weight": 3,
+      "root:rule:8:cost": 3,
+      "root:rule:8:leaf:2": [
+        2,
+        5
+      ],
+      "root:rule:9:weight": 2,
+      "root:rule:9:cost": 1,
+      "root:rule:10:weight": 2,
+      "root:rule:10:cost": 3,
+      "root:rule:11:weight": 2,
+      "root:rule:11:cost": 1,
+      "root:rule:12:weight": 2,
+      "root:rule:12:cost": 3,
+      "root:rule:13:weight": 1,
+      "root:rule:13:cost": 1,
+      "root:rule:14:weight": 1,
+      "root:rule:14:cost": 3,
+      "root:rule:15:weight": 2,
+      "root:rule:15:cost": 1,
+      "root:rule:16:weight": 2,
+      "root:rule:16:cost": 3,
+      "root:rule:17:weight": 2,
+      "root:rule:17:cost": 1,
+      "root:rule:18:weight": 2,
+      "root:rule:18:cost": 3,
+      "root:rule:19:weight": 1,
+      "root:rule:19:cost": 1,
+      "root:rule:20:weight": 1,
+      "root:rule:20:cost": 3,
+      "root:rule:21:weight": 2,
+      "root:rule:21:cost": 4,
+      "root:rule:22:weight": 1,
+      "root:rule:23:weight": 4,
+      "root:rule:24:weight": 4,
+      "root:rule:24:cost": 1,
+      "root:rule:24:leaf:0": [
+        -6,
+        6
+      ],
+      "root:rule:25:weight": 1,
+      "root:rule:25:leaf:0": [
+        -8,
+        8
+      ]
+    },
+    "width": 24,
+    "min_length": null,
+    "max_length": null,
+    "instruction": ""
+  },
+  "hashes": {
+    "calculus_custom.rhm": "a1c1dff7aac555da35c0e473efba66969e3e6bf6d10aa1fc16b4903cf16342ef"
+  }
+}

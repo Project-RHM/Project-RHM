@@ -1,0 +1,10 @@
+ 1. Give a formula equivalent to [`p \to q`] using only NOT, AND and OR.
+    answer: Boolean(\neg p \lor q)
+ 2. Give a formula equivalent to [`p \to q`] using only NOT, AND and OR.
+    answer: Boolean(\neg p \lor q)
+ 3. Give a formula equivalent to [`p \to q`] using only NOT, AND and OR.
+    answer: Boolean(\neg p \lor q)
+ 4. Give a formula equivalent to [`p \to q`] using only NOT, AND and OR.
+    answer: Boolean(\neg p \lor q)
+ 5. Give a formula equivalent to [`p \to q`] using only NOT, AND and OR.
+    answer: Boolean(\neg p \lor q)

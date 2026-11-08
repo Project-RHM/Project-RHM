@@ -1,5 +1,6 @@
 """All provider traffic is mocked; tests never use real keys or paid generation."""
 import importlib.util
+import io
 import json
 from pathlib import Path
 import stat
@@ -114,6 +115,54 @@ class ApiKeyTests(unittest.TestCase):
     def test_unverified_credentials_cannot_trigger_generation(self):
         response=self.client.post('/generate_context',data={'student_id':'TEST','original_pg_path':'none.pg'})
         self.assertEqual(response.status_code,400)
+        self.session.get.assert_not_called()
+
+    def import_config(self, raw, **headers):
+        return self.client.post('/import_api_key', headers={'X-Rhema-Request':'1', **headers},
+            data={'config':(io.BytesIO(raw),'../../untrusted.json')})
+
+    def test_template_is_public_and_contains_no_saved_key(self):
+        response=self.client.get('/api_key_template')
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(json.loads(response.data)['api_key'],'PASTE_YOUR_KEY_HERE')
+        self.assertIn('attachment',response.headers['Content-Disposition'])
+        response.close()
+        self.session.get.assert_not_called()
+
+    def test_import_validates_key_and_model_without_exposing_secret(self):
+        self.response()
+        response=self.import_config(json.dumps({'provider':'DeepSeek','api_key':KEY,'model':'deepseek-v4-pro'}).encode())
+        self.assertEqual(response.status_code,200,response.json)
+        self.assertTrue(response.json['verified'])
+        self.assertEqual(response.json['model'],'deepseek-v4-pro')
+        self.assertNotIn(KEY,response.get_data(as_text=True))
+        self.assertEqual(json.loads(self.path.read_text())['other_setting'],42)
+        self.assertEqual(stat.S_IMODE(self.path.stat().st_mode),0o600)
+        self.assertEqual([p.name for p in self.path.parent.iterdir()],['keys.json'])
+        self.client.delete('/api_key')
+        self.assertNotIn('default_user_model',json.loads(self.path.read_text()))
+
+    def test_invalid_imports_do_not_contact_provider_or_change_key(self):
+        cases=[b'',b'x'*8193,b'\xff',b'[]',b'{}',b'{"api_key":"PASTE_YOUR_KEY_HERE"}',
+            b'{"api_key":"1"}',b'{"api_key":"abc123456","api_key":"duplicate"}',
+            json.dumps({'api_key':KEY,'base_url':'https://untrusted.invalid'}).encode(),
+            json.dumps({'api_key':KEY,'model':'unknown'}).encode(),
+            json.dumps({'api_key':KEY,'provider':'Other'}).encode()]
+        for raw in cases:
+            with self.subTest(length=len(raw)):
+                self.assertFalse(self.import_config(raw).json['success'])
+                self.assertEqual(self.path.read_bytes(),self.original)
+        self.session.get.assert_not_called()
+
+    def test_rejected_import_preserves_saved_key(self):
+        self.response(401)
+        response=self.import_config(json.dumps({'api_key':KEY}).encode())
+        self.assertEqual(response.json['code'],'invalid_api_key')
+        self.assertEqual(self.path.read_bytes(),self.original)
+
+    def test_cross_origin_import_is_rejected(self):
+        response=self.import_config(json.dumps({'api_key':KEY}).encode(),Origin='https://untrusted.invalid')
+        self.assertEqual(response.status_code,403)
         self.session.get.assert_not_called()
 
 

@@ -1,6 +1,20 @@
 /* Interface-only translations: grammar source, generated math and answers stay intact. */
 (() => {
     const zh = {
+        'Shared worksheet':'公共练习卷', 'Legacy worksheet':'旧记录（学号未保存）',
+        'Student ID:':'学生编号：', 'Loading record...':'正在载入记录...',
+        'Download config template':'下载配置模板', 'Import and validate JSON':'导入并验证 JSON',
+        'Model':'模型', 'DeepSeek settings':'DeepSeek 设置', 'AI completion':'AI 代码补全',
+        'AI off':'AI 已关闭', 'AI ready':'AI 已就绪', 'Requesting suggestion...':'正在请求建议...',
+        'Suggestion available':'有可用建议', 'Import and validate a key first.':'请先导入并验证密钥。',
+        'Configuration verified and imported.':'配置已验证并导入。',
+        'Configuration imported, but the account has insufficient balance.':'配置已导入，但账户余额不足。',
+        'Replace the API key placeholder in your configuration file.':'请替换配置文件中的密钥占位内容。',
+        'Choose a valid UTF-8 JSON configuration file.':'请选择有效的 UTF-8 JSON 配置文件。',
+        'Choose a JSON configuration file of at most 8 KB.':'请选择不超过 8 KB 的 JSON 配置文件。',
+        'My question types':'我的题型', 'Available variables':'可用变量', 'Maximum negations':'最多否定数',
+        'Question quality':'题目质量', 'Allow constant answers':'允许恒定答案', 'Exclude constant answers':'排除恒定答案',
+        'Boolean Demo Flexible':'布尔求值：灵活演示',
         'PG file preview':'PG 文件预览', 'PG file':'PG 文件', 'Drop a .pg file':'拖入 .pg 文件',
         'Choose PG file':'选择 PG 文件', 'Trusted PG files only.':'仅导入可信的 PG 文件。',
         'No file selected':'未选择文件', 'No PG file loaded':'尚未载入 PG 文件',

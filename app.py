@@ -19,8 +19,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
 from webwork_client import WebworkClient, WebworkClientError
-from teacher_builder import TITLES, register_teacher_routes
-from api_keys import ApiKeyError, DeepSeekKeyValidator, key_status, read_keys, save_verified, remove_key
+from teacher_builder import TITLES, register_teacher_routes, is_form_preset, refresh_source_configuration
+from api_keys import ApiKeyError, DeepSeekKeyValidator, key_status, read_keys, save_verified, remove_key, parse_key_config, DEFAULT_MODEL, MODELS
+from rhema_ai import register_ai_routes, same_origin
+from generation_history import output_stem, write_record, list_records, record_for
 
 app = Flask(__name__)
 WEBWORK_CLIENT = WebworkClient()
@@ -51,6 +53,7 @@ API_CALL_SCRIPT = os.path.join(LLM_CONTEXT_DIR, "api_call.py")
 USER_API_KEYS_FILE = os.environ.get(
     "USER_API_KEYS_FILE", os.path.join(BASE_DIR, "user_api_keys.json")
 )
+AI_COMPLETION_CLIENT = register_ai_routes(app, BASE_DIR, lambda: USER_API_KEYS_FILE)
 
 # 设置工作目录
 os.chdir(BASE_DIR)
@@ -771,9 +774,11 @@ def save_api_key():
         
         if not api_key:
             return jsonify({'success': False, 'error': 'API key cannot be empty'})
-        
+        model = request.form.get('model', DEFAULT_MODEL)
+        if model not in MODELS:
+            raise ApiKeyError('Choose deepseek-flash or deepseek-v4-pro.', 'invalid_model')
         validation = API_KEY_VALIDATOR.validate(api_key)
-        status = save_verified(USER_API_KEYS_FILE, api_key, validation)
+        status = save_verified(USER_API_KEYS_FILE, api_key, validation, model=model)
         message = ('API key verified and saved.' if status['available'] else
                    'API key verified and saved, but the account has insufficient balance.')
         return jsonify(success=True, message=message, **status)
@@ -790,6 +795,36 @@ def api_key_status():
     response = jsonify(key_status(api_keys))
     response.headers['Cache-Control'] = 'no-store'
     return response
+
+
+@app.get('/api_key_template')
+def api_key_template():
+    response = jsonify(provider='DeepSeek', api_key='PASTE_YOUR_KEY_HERE', model=DEFAULT_MODEL)
+    response.headers['Content-Disposition'] = 'attachment; filename="deepseek.config.json"'
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+@app.post('/import_api_key')
+def import_api_key():
+    try:
+        if not same_origin() or request.headers.get('X-Rhema-Request') != '1':
+            raise ApiKeyError('Use the configuration import button.', 'invalid_origin', 403)
+        if request.content_length is not None and request.content_length > 16384:
+            raise ApiKeyError('Choose a JSON configuration file of at most 8 KB.', 'invalid_config', 413)
+        uploaded = request.files.get('config')
+        if uploaded is None:
+            raise ApiKeyError('Choose a JSON configuration file.', 'invalid_config')
+        key, model = parse_key_config(uploaded.stream.read(8193))
+        validation = API_KEY_VALIDATOR.validate(key)
+        status = save_verified(USER_API_KEYS_FILE, key, validation, model=model)
+        message = ('Configuration verified and imported.' if status['available'] else
+                   'Configuration imported, but the account has insufficient balance.')
+        return jsonify(success=True, message=message, **status)
+    except ApiKeyError as error:
+        return jsonify(success=False, error=str(error), code=error.code), error.status
+    except OSError:
+        return jsonify(success=False, error='Could not save the configuration.'), 500
 
 
 @app.route('/api_key', methods=['DELETE'])
@@ -962,6 +997,7 @@ def rhema_grammars():
             'name': name,
             'title': TITLES.get(name[:-4], name[:-4].replace('_', ' ').title()),
             'custom': os.path.isfile(os.path.join(RHEMA_GRAMMAR_DIR, name)),
+            'preset': is_form_preset(RHEMA_GRAMMAR_DIR, name),
         } for name in grammars],
         # file -> its named questions, for the files that have more than main
         'questions': {name: questions for name in grammars
@@ -1077,13 +1113,18 @@ def rhema_grammar_save():
                 shutil.copyfile(target, target + '.bak')
             shutil.move(temporary, target)
             temporary = None
+            try:
+                refresh_source_configuration(RHEMA_GRAMMAR_DIR, name)
+            except (OSError, ValueError, AttributeError):
+                shutil.copyfile(target + '.bak', target)
+                return jsonify(success=False, error='Could not refresh Configure. The previous source has been restored.'), 500
     except OSError as error:
         return jsonify({'success': False, 'error': str(error)}), 500
     finally:
         if temporary and os.path.exists(temporary):
             os.remove(temporary)
 
-    return jsonify({'success': True, 'name': name, 'message': message})
+    return jsonify({'success': True, 'name': name, 'message': message, 'configure_ready': True})
 
 
 @app.route('/run_rhema', methods=['POST'])
@@ -1125,8 +1166,7 @@ def run_rhema():
         count = 6
     count = max(1, min(count, 50))
 
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    base_name = f"{student_id or 'assignment'}_{timestamp}"
+    base_name = output_stem(student_id)
     relative_output = f"generated_questions/{base_name}.pg"
     relative_ast = f"generated_asts/{base_name}_ast.txt"
     relative_visualization = f"generated_visualizations/{base_name}_trees.html"
@@ -1174,6 +1214,8 @@ def run_rhema():
     try:
         with open(output_path, 'r', encoding='utf-8') as f:
             pgml_code = f.read()
+        write_record(OCAML_PROJECT_DIR, output_path, student_id=student_id,
+                     generator='rhema_source', grammar=grammar, question=question or 'main', count=count)
     except OSError as e:
         return jsonify({'error': f'Could not read the generated file: {e}'}), 500
 
@@ -1294,51 +1336,7 @@ def save_pgml():
 def get_history():
     """获取历史生成记录"""
     try:
-        history = []
-        # 读取所有生成的PG文件
-        pg_files = glob.glob(os.path.join(OCAML_PROJECT_DIR, "generated_questions", "*.pg"))
-        
-        for file_path in pg_files:
-            filename = os.path.basename(file_path)
-            # 解析文件名：学号_年月日_时分秒.pg
-            if '_' in filename:
-                parts = filename.replace('.pg', '').split('_')
-                if len(parts) >= 3:
-                    student_id = parts[0]
-                    date_str = parts[1]
-                    time_str = parts[2]
-                    
-                    # 格式化时间显示
-                    try:
-                        date_obj = datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
-                        formatted_time = date_obj.strftime("%Y-%m-%d %H:%M:%S")
-                    except:
-                        formatted_time = f"{date_str}_{time_str}"
-                    
-                    # 检查是否存在对应的AST文件
-                    stem = filename[:-3]
-                    ast_filename = f"{stem}_ast.txt"
-                    ast_path = os.path.join(OCAML_PROJECT_DIR, "generated_asts", ast_filename)
-                    has_ast = os.path.exists(ast_path)
-                    visualization_filename = f"{stem}_trees.html"
-                    visualization_path = os.path.join(
-                        OCAML_PROJECT_DIR,
-                        "generated_visualizations",
-                        visualization_filename
-                    )
-                    
-                    history.append({
-                        'filename': filename,
-                        'student_id': student_id,
-                        'timestamp': formatted_time,
-                        'has_ast': has_ast,
-                        'has_visualization': os.path.exists(visualization_path),
-                        'visualization_filename': visualization_filename,
-                        'raw_timestamp': f"{date_str}_{time_str}"
-                    })
-        
-        # 按时间倒序排列
-        history.sort(key=lambda x: x.get('raw_timestamp', ''), reverse=True)
+        history = list_records(OCAML_PROJECT_DIR)
         return jsonify({'success': True, 'history': history})
         
     except Exception as e:
@@ -1401,6 +1399,7 @@ def get_history_content():
         return jsonify({
             'success': True,
             'pgml_content': full_content,
+            'history': record_for(OCAML_PROJECT_DIR, os.path.basename(base_name) + '.pg'),
             'ast_content': ast_content,
             'has_ast': bool(ast_content),
             'has_visualization': os.path.exists(visualization_path),

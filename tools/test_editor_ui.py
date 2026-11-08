@@ -70,6 +70,24 @@ class EditorUiTests(unittest.TestCase):
                          '.workspace-app #teacherGeneratedSource textarea', '.workspace-app #pgImportSource'):
             self.assertIn(selector, css)
 
+    def test_library_and_presets_share_a_keyboard_scrollable_region(self):
+        tag, attrs = self.markup.ids['grammarCatalog']
+        self.assertEqual(tag, 'div')
+        self.assertEqual(attrs['role'], 'region')
+        self.assertEqual(attrs['tabindex'], '0')
+        css = (ROOT / 'static/workspace.css').read_text()
+        self.assertRegex(css, r'\.grammar-catalog\s*\{[^}]*min-height:0;[^}]*overflow-y:auto;')
+        self.assertIn('.grammar-catalog::-webkit-scrollbar-thumb', css)
+
+    def test_ai_is_opt_in_and_config_import_never_prefills_a_secret(self):
+        self.assertEqual(self.markup.ids['rhemaAiEnabled'][1]['type'], 'checkbox')
+        self.assertNotIn('checked', self.markup.ids['rhemaAiEnabled'][1])
+        self.assertEqual(self.markup.ids['apiKeyConfigFile'][1]['type'], 'file')
+        self.assertNotIn('value', self.markup.ids['apiKeyInput'][1])
+        self.assertIn('hidden', self.markup.ids['rhemaGhost'][1])
+        for name in ('importApiKeyBtn', 'rhemaAiSettingsBtn'):
+            self.assertEqual(self.markup.ids[name][0], 'button')
+
 
 if __name__ == '__main__':
     unittest.main()

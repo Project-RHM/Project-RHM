@@ -1,0 +1,8 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+An arithmetic sequence satisfies [`a_{{3}} = 3`] and [`a_{{6}} = 6`]. Find its common difference.[_____]{answer=>1,width=>10}
+END_PGML
+ENDDOCUMENT();

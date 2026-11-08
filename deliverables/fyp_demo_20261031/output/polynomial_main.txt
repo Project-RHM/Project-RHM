@@ -1,0 +1,4 @@
+ 1. Let [`P(x) = (x + 6)^{2}(x - 5)`].
+(a) Expand and collect like terms: [___]
+(b) Find [`P(-3)`]: [___]
+    answers: Polynomial(x^3+7*x^2-24*x-180); -72

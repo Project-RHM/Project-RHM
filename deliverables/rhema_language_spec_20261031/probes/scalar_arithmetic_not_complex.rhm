@@ -1,0 +1,8 @@
+
+synth value on Q
+start Q
+Q -> "marker" {
+value = complex(1,2) + complex(3,4)
+}
+prompt "Answer the question."
+answer Q.value

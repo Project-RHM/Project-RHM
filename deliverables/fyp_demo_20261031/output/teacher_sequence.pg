@@ -1,0 +1,8 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+An arithmetic sequence has first term [`a_1 = 2`] and common difference [`d = 3`]. Find [`a_{4}`].[_____]{answer=>11,width=>10}
+END_PGML
+ENDDOCUMENT();

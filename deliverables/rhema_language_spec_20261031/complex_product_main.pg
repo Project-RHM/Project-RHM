@@ -1,0 +1,16 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Complex");
+
+BEGIN_PGML
+Compute [`(4 - 2i)(-3 - i)`].[_____]{answer=>Complex(-14,2),width=>20}
+
+Compute [`(-2 - i)(4 - 2i)`].[_____]{answer=>Complex(-10,0),width=>20}
+
+Compute [`(-4 + 2i)(2 - 3i)`].[_____]{answer=>Complex(-2,16),width=>20}
+
+Compute [`(1 - i)(3 - 4i)`].[_____]{answer=>Complex(-1,-7),width=>20}
+
+Compute [`(-2 + i)(-3 + 4i)`].[_____]{answer=>Complex(2,-11),width=>20}
+END_PGML
+ENDDOCUMENT();

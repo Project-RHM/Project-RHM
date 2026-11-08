@@ -1,0 +1,16 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+Solve [`-2 \cdot (x - 3) = x + 15`] for x.[_____]{-3}
+
+Solve [`-(x + 4) = -(16 + 4 \cdot x)`] for x.[_____]{-4}
+
+Solve [`2 \cdot (x + 2) = 3 \cdot x - 1`] for x.[_____]{5}
+
+Solve [`-(x + 3) = 2 - 2 \cdot x`] for x.[_____]{5}
+
+Solve [`x - 3 = -(1 + x)`] for x.[_____]{1}
+END_PGML
+ENDDOCUMENT();

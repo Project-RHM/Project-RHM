@@ -1,0 +1,8 @@
+let total = 5
+synth value on Q
+start Q
+Q -> "marker" {
+value = total
+}
+prompt "Answer the question."
+answer total

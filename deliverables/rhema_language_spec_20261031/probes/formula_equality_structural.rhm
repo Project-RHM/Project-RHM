@@ -1,0 +1,8 @@
+let x = formula_variable("x")
+synth value on Q
+start Q
+Q -> "marker" {
+value = formula_add(x,x) = formula_multiply(formula_constant(2),x)
+}
+prompt "Answer the question."
+answer Q.value

@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "base": "factoring.rhm",
+  "configuration": {
+    "values": {
+      "root:a:cost": 3,
+      "root:rule:0:weight": 3,
+      "root:rule:0:cost": 2,
+      "root:rule:1:weight": 2,
+      "root:rule:1:cost": 1,
+      "root:rule:2:weight": 1,
+      "root:rule:2:cost": 2,
+      "root:rule:3:weight": 1,
+      "root:rule:4:weight": 3,
+      "root:rule:4:leaf:1": [
+        -6,
+        6
+      ],
+      "root:rule:5:weight": 2,
+      "root:rule:5:cost": 1,
+      "root:rule:5:leaf:0": [
+        2,
+        3
+      ],
+      "root:rule:5:leaf:1": [
+        -5,
+        5
+      ],
+      "root:rule:6:weight": 1,
+      "root:rule:6:cost": 2,
+      "root:rule:6:leaf:1": [
+        1,
+        9
+      ],
+      "root:rule:7:weight": 1
+    },
+    "width": 30,
+    "min_length": null,
+    "max_length": null,
+    "instruction": ""
+  },
+  "hashes": {
+    "factoring_custom_custom.rhm": "b1844b3328f4468a5c49a30f1f9df2788b6e44569933f0a05eb076ecf7186dc9"
+  }
+}

@@ -1,0 +1,22 @@
+random coefficient = nonzero_integer_between(-5, 5)
+random exponent = integer_between(2, 5)
+
+let x = formula_variable("x")
+let antiderivative = formula_add(
+  formula_multiply(formula_constant(coefficient), formula_power(x, exponent)),
+  formula_sin(x)
+)
+let integrand = differentiate(antiderivative, "x")
+
+synth text on Q
+synth value on Q
+start Q
+Q -> "integral" {
+  require not formula_is_zero(integrand)
+  text = formula_latex(integrand)
+  value = antiderivative
+}
+
+prompt "Find an antiderivative of [`{Q.text}`] with respect to x, with C = 0."
+answer Q.value
+width 24

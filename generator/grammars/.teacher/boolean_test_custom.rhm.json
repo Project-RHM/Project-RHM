@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "base": "boolean_test.rhm",
+  "configuration": {
+    "values": {
+      "root:a:cost": 5,
+      "root:b:p_value": "random",
+      "root:b:q_value": "random",
+      "root:rule:0:weight": 1,
+      "root:rule:1:weight": 1,
+      "root:rule:2:weight": 1,
+      "root:rule:3:weight": 2,
+      "root:rule:3:cost": 1,
+      "root:rule:4:weight": 1,
+      "root:rule:4:cost": 1,
+      "root:rule:5:weight": 1,
+      "root:rule:5:cost": 1,
+      "root:rule:6:weight": 2,
+      "root:rule:6:cost": 1
+    },
+    "width": 10,
+    "min_length": null,
+    "max_length": null,
+    "instruction": ""
+  },
+  "hashes": {
+    "boolean_test_custom.rhm": "68691d99242a291abf89cefc38f625eabdbf9ef7e9e54f2c1903e77851585f41"
+  }
+}

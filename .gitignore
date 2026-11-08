@@ -1,5 +1,7 @@
 # --- Sensitive Information ---
 user_api_keys.json
+deepseek*.json
+!deepseek.config.example.json
 .env
 config_setting/*.json
 generator/config.ml

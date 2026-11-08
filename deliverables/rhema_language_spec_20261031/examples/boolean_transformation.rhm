@@ -1,0 +1,16 @@
+context "Boolean"
+let p = bool_var("p")
+let q = bool_var("q")
+let original = bool_imp(p, q)
+let original_text = bool_latex(original)
+
+synth value on Q
+start Q
+Q -> "remove_implication" {
+  value = bool_without_conditionals(original)
+  require bool_equivalent(value, original)
+}
+
+prompt "Give a formula equivalent to [`{original_text}`] using only NOT, AND and OR."
+answer Q.value
+width 24

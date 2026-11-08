@@ -1,0 +1,16 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+Evaluate [`(p \lor q) \land \neg q`] when [`p = F`] and [`q = F`]. Enter 1 for true and 0 for false.[_____]{0}
+
+Evaluate [`(p \lor q) \land \neg q`] when [`p = F`] and [`q = F`]. Enter 1 for true and 0 for false.[_____]{0}
+
+Evaluate [`(p \lor q) \land \neg q`] when [`p = T`] and [`q = F`]. Enter 1 for true and 0 for false.[_____]{1}
+
+Evaluate [`(p \lor q) \land \neg q`] when [`p = F`] and [`q = F`]. Enter 1 for true and 0 for false.[_____]{0}
+
+Evaluate [`(p \lor q) \land \neg q`] when [`p = T`] and [`q = F`]. Enter 1 for true and 0 for false.[_____]{1}
+END_PGML
+ENDDOCUMENT();

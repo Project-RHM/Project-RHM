@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const questionSelect = byId('rhemaQuestionSelect');
     let mode = 'form', schema = null, config = null, loaded = '', sequence = 0, busy = false;
     const friendly = {
-        cost:'Complexity budget', digit:'Maximum digits', dim:'Matrix dimension', first:'First term',
+        cost:'Complexity budget', variables_mode:'Available variables', negation_limit:'Maximum negations', quality_mode:'Question quality', digit:'Maximum digits', dim:'Matrix dimension', first:'First term',
         difference:'Common difference', ratio:'Common ratio', index:'Term index', point:'Evaluation point',
         exponent:'Exponent', question_mode:'Question mode', calculus_mode:'Calculus mode',
         vector_mode:'Vector mode', set_mode:'Set mode', root:'Root', second_root:'Second root',
@@ -62,14 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
             input.addEventListener('change',()=>{config.values[field.id]=input.value;changed();}); label.append(input);
         } else if(field.allowed?.length) {
             const input=element('select');input.setAttribute('aria-label',labelText);
-            const modes = {calculus_mode:['Mixed','Derivative','Integral'],
+            const modes = {variables_mode:{2:'p, q',3:'p, q, r',4:'p, q, r, s'},
+                quality_mode:['Allow constant answers','Exclude constant answers'],calculus_mode:['Mixed','Derivative','Integral'],
                 set_mode:['Mixed','Union','Intersection','Difference'],
                 vector_mode:['Mixed','Dot product','Cross product','Magnitude','Unit vector','Parallel vector','Same direction']};
             for(const n of field.allowed)input.add(new Option(modes[field.name]?.[n] || (field.name.endsWith('mode')?(n===0?'Mixed':'Mode '+n):String(n)),String(n)));
             input.value=String(value);
             input.dataset.setting=field.id;
             input.addEventListener('change',()=>{config.values[field.id]=Number(input.value);changed();});label.append(input);
-        } else label.append(numberInput(value,labelText,v=>{config.values[field.id]=v;},{min:0,max:60}));
+        } else label.append(numberInput(value,labelText,v=>{config.values[field.id]=v;},{min:field.minimum??0,max:field.maximum??60}));
         return label;
     }
     function fieldset(title, items) {
@@ -107,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const control=Array.from(fields.querySelectorAll('select')).find(x=>x.dataset.setting===budget.id);
                         if(control){if(!Array.from(control.options).some(o=>o.value===String(v)))control.add(new Option(String(v),String(v)));control.value=String(v);}
                     }
-                },{min:0,max:30}));row.append(priceLabel);
+                },{min:price.minimum??0,max:30}));row.append(priceLabel);
             } else row.append(element('span'));
             groups.get(group).append(row);
         }
@@ -235,6 +236,12 @@ document.addEventListener('DOMContentLoaded', () => {
     byId('teacherSave').addEventListener('click',()=>perform('save'));
     byId('teacherExport').addEventListener('click',()=>perform('export'));
     byId('teacherReset').addEventListener('click',()=>{if(schema){config=defaults();render();changed();}});
+    document.addEventListener('rhema:source-saved', event => {
+        if (select.value !== event.detail.name) return;
+        sequence++; loaded=''; schema=null; config=null; fields.replaceChildren();
+        byId('teacherSource').value=''; message('');
+        if (mode==='form') load(true);
+    });
     window.teacherBuilder={active:()=>mode==='form',request:requestData,receive,message,
         setMode(value){mode=value;sync();}};
     sync();

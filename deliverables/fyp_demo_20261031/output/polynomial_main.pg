@@ -1,0 +1,10 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+Let [`P(x) = (x + 6)^{2}(x - 5)`].
+(a) Expand and collect like terms: [_____]{Formula('x^3+7*x^2-24*x-180')}
+(b) Find [`P(-3)`]: [_____]{-72}
+END_PGML
+ENDDOCUMENT();

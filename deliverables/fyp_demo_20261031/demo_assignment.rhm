@@ -1,0 +1,16 @@
+# Optional CLI extension. There is no web assignment-set editor yet.
+import "sequence_parts.rhm" as seq
+import "boolean.rhm" as logic
+import "eigen.rhm" as eigen
+
+set defense {
+  part "Sequences"
+    1 of seq.main(cost = 2)
+  part "Logic"
+    3 of logic.main(cost in {8, 10, 12})
+  part "Linear algebra"
+    1 of eigen.main(cost = 2)
+  distinct
+  balanced
+  ordered
+}

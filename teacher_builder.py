@@ -2,17 +2,19 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime
 import io
 import json
+import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 import uuid
 import zipfile
 
 from flask import Blueprint, jsonify, request, send_file
+from generation_history import output_stem, write_record
 
 
 TITLES = {
@@ -36,6 +38,50 @@ TITLES = {
 
 class BuilderError(ValueError):
     pass
+
+
+def is_form_preset(grammar_directory, name):
+    record = Path(grammar_directory) / ".teacher" / (name + ".json")
+    try:
+        return json.loads(record.read_text()).get("kind") != "source"
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def refresh_source_configuration(grammar_directory, name):
+    """An explicit source save starts a new form baseline, never old settings."""
+    directory = Path(grammar_directory)
+    metadata = directory / ".teacher"
+    record = metadata / (name + ".json")
+    if not record.exists():
+        return False
+    if metadata.is_symlink() or record.is_symlink():
+        raise OSError("Cannot replace a linked configuration record.")
+    previous = json.loads(record.read_text())
+    history = metadata / "history" / name / uuid.uuid4().hex
+    history.mkdir(parents=True)
+    shutil.copyfile(record, history / "configuration.json")
+    backup = directory / (name + ".bak")
+    if backup.is_file():
+        shutil.copyfile(backup, history / "source.rhm")
+    hashes = {name: hashlib.sha256((directory / name).read_bytes()).hexdigest()}
+    for dependency in previous.get("hashes", {}):
+        path = directory / dependency
+        if Path(dependency).name == dependency and path.is_file() and not path.is_symlink():
+            hashes[dependency] = hashlib.sha256(path.read_bytes()).hexdigest()
+    current = {"version": 2, "kind": "source", "base": name,
+               "configuration": None, "hashes": hashes}
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=metadata,
+                                         prefix=".source_", delete=False) as handle:
+            temporary = handle.name
+            json.dump(current, handle, indent=2)
+        os.replace(temporary, record)
+    finally:
+        if temporary and os.path.exists(temporary):
+            os.unlink(temporary)
+    return True
 
 
 def register_teacher_routes(app, project_directory):
@@ -132,7 +178,12 @@ def register_teacher_routes(app, project_directory):
                     raise BuilderError("Generated integers must have between 1 and 4 digits.")
             else:
                 upper = 1000 if kind == "weight" else max(60, field["value"])
-                value = integer(value, field["name"], 0, upper)
+                repriced = field["name"] == "cost" and any(
+                    f["kind"] == "price" and f["module"] == field["module"] and values.get(f["id"], f["value"]) != f["value"]
+                    for f in fields.values())
+                lower = 0 if repriced else field.get("minimum", 0)
+                ceiling = upper if repriced else min(upper, field.get("maximum", upper))
+                value = integer(value, field["name"], lower, ceiling)
             normalized[key] = value
         width = config.get("width", schema["width"] or 16)
         integer(width, "Answer width", 1, 100)
@@ -179,7 +230,7 @@ def register_teacher_routes(app, project_directory):
         if not isinstance(student, str) or (student and not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", student)):
             raise BuilderError("Use letters, numbers, underscores or hyphens for the student ID.")
         identity = base + ":" + question + ":" + hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()[:16]
-        token = "teacher_" + datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:10]
+        token = output_stem(student)
         relative = {"pgml_path": f"generated_questions/{token}.pg", "ast_path": f"generated_asts/{token}_ast.txt",
                     "visualization_path": f"generated_visualizations/{token}_trees.html"}
         for path in relative.values():
@@ -194,12 +245,25 @@ def register_teacher_routes(app, project_directory):
             run(command, timeout=25)
             pg = (generator / relative["pgml_path"]).read_text()
         except BuilderError as error:
-            raise BuilderError("The chosen settings are not compatible. Try the default budget, enable more rules, or relax the length limits.\n" + str(error)) from error
+            detail = str(error)
+            location = re.search(r"a 'require' on line (\d+)", detail)
+            if location:
+                lines = specification.read_text().splitlines()
+                line = int(location.group(1))
+                if 0 < line <= len(lines):
+                    detail += "\nConstraint: " + lines[line - 1].strip()
+            raise BuilderError("The chosen settings are not compatible. Enable more rules, lower the budget, or relax the quality and length limits.\n" + detail) from error
         if trial:
             for path in relative.values():
                 (generator / path).unlink(missing_ok=True)
         preview = [] if trial else json.loads(run([str(bridge), "preview", str(specification), str(stdlib),
                                                   str(count), question, identity, student], timeout=25))
+        if not trial:
+            try:
+                write_record(generator, generator / relative['pgml_path'], student_id=student,
+                             generator='rhema_configure', grammar=payload['grammar'], question=question, count=count)
+            except OSError as error:
+                raise BuilderError('Questions were generated, but their history record could not be saved.') from error
         return {"success": True, **relative, "pgml_code": pg, "original_pgml_content": pg,
                 "preview": preview, "visualization_kind": "attribute_grammar"}
 
@@ -223,6 +287,10 @@ def register_teacher_routes(app, project_directory):
         saved = preset(name) if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,79}\.rhm", name) else None
         schema = describe(saved["base"] if saved else name)
         return jsonify(success=True, schema=schema, configuration=saved["configuration"] if saved else None)
+
+    @blueprint.get("/completions")
+    def completion_endpoint():
+        return jsonify(json.loads(run([str(bridge), "completions"])))
 
     @blueprint.post("/generate")
     def generate_endpoint():

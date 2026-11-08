@@ -38,7 +38,7 @@
                 </div>
                 <section id="grammarLibrary" class="grammar-library">
                     <label class="catalog-search"><i data-lucide="search" aria-hidden="true"></i><input id="grammarSearch" type="search" placeholder="Search question types" aria-label="Search question types"></label>
-                    <div id="grammarCatalog" class="grammar-catalog" aria-label="Question types"></div>
+                    <div id="grammarCatalog" class="grammar-catalog" role="region" aria-label="Question types" tabindex="0"></div>
                 </section>
                 <div id="sidebarHistory">
                 <div class="history-heading">
@@ -71,8 +71,15 @@
                             </div>
                             <div class="modal-body">
                                 <div class="form-group">
+                                    <div class="api-config-import">
+                                        <a class="btn btn-secondary" href="/api_key_template" download>Download config template</a>
+                                        <button type="button" id="importApiKeyBtn" class="btn btn-secondary">Import and validate JSON</button>
+                                        <input type="file" id="apiKeyConfigFile" accept=".json,application/json" hidden>
+                                    </div>
                                     <label for="apiKeyInput" style="margin-top: 15px; margin-bottom: 15px;">API Key (DeepSeek):</label>
                                     <input type="password" id="apiKeyInput" placeholder="Enter your DeepSeek API key" autocomplete="off" class="form-control">
+                                    <label for="apiKeyModel">Model</label>
+                                    <select id="apiKeyModel" class="form-control"><option value="deepseek-flash">DeepSeek Flash</option><option value="deepseek-v4-pro">DeepSeek V4 Pro</option></select>
                                     <p style="font-size: 12px; color: #666; margin-top: 5px;">
                                         Validation contacts DeepSeek to check authentication and balance. It does not generate text or send your questions.
                                     </p>
@@ -194,11 +201,17 @@
                                 <button type="button" id="rhemaSaveBtn" class="btn rhema-btn rhema-btn-save" title="Save grammar (Ctrl/Command + S)"><i data-lucide="save" aria-hidden="true"></i><span>Save</span></button>
                             </div>
                         </div>
+                        <div class="rhema-ai-toolbar">
+                            <label><input type="checkbox" id="rhemaAiEnabled"><span>AI completion</span></label>
+                            <span id="rhemaAiStatus" role="status">AI off</span>
+                            <button type="button" id="rhemaAiSettingsBtn" class="btn btn-secondary" title="DeepSeek settings"><i data-lucide="settings-2" aria-hidden="true"></i><span>DeepSeek settings</span></button>
+                        </div>
                         <div class="rhema-editor-shell" id="rhemaEditorShell">
                             <div class="rhema-line-numbers" id="rhemaLineNumbers" aria-hidden="true"></div>
                             <div class="rhema-code-stage" id="rhemaCodeStage">
                                 <div class="rhema-active-line" id="rhemaActiveLine" aria-hidden="true"></div>
                                 <pre id="rhemaHighlight" class="rhema-highlight" aria-hidden="true"></pre>
+                                <pre id="rhemaGhost" class="rhema-highlight rhema-ghost" aria-hidden="true" hidden></pre>
                                 <textarea id="rhemaGrammarText" class="rhema-textarea"
                                     aria-label="Attribute grammar source"
                                     aria-describedby="rhemaEditorHelp"
@@ -947,6 +960,7 @@
                 : 'Open AST / DCST Trees';
         }
 
+        const historyRecordCache = new Map();
         function loadHistoryContent(filename) {
             currentHistoryFile = filename;
             currentHistoryVisualizationFilename = '';
@@ -958,20 +972,8 @@
             const historyShowOriginalBtn = document.getElementById('historyShowOriginalBtn');
             const historyShowAstBtn = document.getElementById('historyShowAstBtn');
             
-            // 解析文件名
-            const baseName = filename.replace('.pg', '');
-            const parts = baseName.split('_');
-            if (parts.length >= 3) {
-                const studentId = parts[0];
-                const dateStr = parts[1];
-                const timeStr = parts[2];
-                const formattedTime = formatTimestamp(dateStr, timeStr);
-                const studentStrong = document.createElement('strong');
-                const timeStrong = document.createElement('strong');
-                studentStrong.textContent = 'Student ID: ' + studentId;
-                timeStrong.textContent = formattedTime;
-                historyTitle.replaceChildren('Viewing question generated for ', studentStrong, ' at ', timeStrong);
-            }
+            const baseName = filename.replace(/\.pg$/, '');
+            window.RhemaHistory.heading(historyTitle, historyRecordCache.get(filename));
             
             // 重置编辑状态
             resetEditState('history');
@@ -993,7 +995,9 @@
             fetch(`/history_content?filename=${encodeURIComponent(filename)}`)
                 .then(response => response.json())
                 .then(originalData => {
+                    if (currentHistoryFile !== filename) return;
                     if (originalData.success) {
+                        window.RhemaHistory.heading(historyTitle, originalData.history || historyRecordCache.get(filename));
                         currentHistoryVisualizationFilename =
                             originalData.has_visualization
                                 ? originalData.visualization_filename
@@ -1013,6 +1017,7 @@
                                 return response.json();
                             })
                             .then(contextData => {
+                                if (currentHistoryFile !== filename) return;
                                 if (contextData.success) {
                                     // 存在语境版本，显示语境内容
                                     console.log('Context version found, displaying contextual content');
@@ -1025,34 +1030,24 @@
                                 }
                             })
                             .catch(error => {
+                                if (currentHistoryFile !== filename) return;
                                 // 不存在语境版本或出错，显示原始内容
                                 console.log('No context version found, displaying original content:', error);
                                 historyOutput.value = originalPgmlContent;
                                 originalContent = originalPgmlContent;
                                 historyShowAstBtn.style.display = 'inline-block';
-                            }).finally(() => switchResultView('history', 'rendered'));
+                            }).finally(() => { if (currentHistoryFile === filename) switchResultView('history', 'rendered'); });
                     } else {
                         historyOutput.value = 'Failed to load content: ' + originalData.error;
                         originalContent = '';
                     }
                 })
                 .catch(error => {
+                    if (currentHistoryFile !== filename) return;
                     console.error('Error loading history content:', error);
                     historyOutput.value = 'Network error: ' + error.message;
                     originalContent = '';
                 });
-        }
-
-        // 格式化时间显示
-        function formatTimestamp(dateStr, timeStr) {
-            const year = dateStr.substring(0, 4);
-            const month = dateStr.substring(4, 6);
-            const day = dateStr.substring(6, 8);
-            const hour = timeStr.substring(0, 2);
-            const minute = timeStr.substring(2, 4);
-            const second = timeStr.substring(4, 6);
-            
-            return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
         }
 
         // 加载历史记录列表
@@ -1066,24 +1061,12 @@
                 .then(data => {
                     if (data.success && data.history.length > 0) {
                         historyList.innerHTML = '';
+                        historyRecordCache.clear();
                         historyCount.textContent = data.history.length;
                         data.history.forEach(item => {
                             const historyItem = document.createElement('button');
-                            const avatar = document.createElement('span');
-                            const student = document.createElement('span');
-                            const timestamp = document.createElement('span');
-
-                            historyItem.type = 'button';
-                            historyItem.className = 'history-item';
-                            historyItem.dataset.filename = item.filename;
-                            historyItem.title = 'Open ' + item.filename;
-                            avatar.className = 'history-avatar';
-                            avatar.textContent = String(item.student_id || '?').slice(0, 2).toUpperCase();
-                            student.className = 'student-id';
-                            student.textContent = item.student_id;
-                            timestamp.className = 'timestamp';
-                            timestamp.textContent = item.timestamp;
-                            historyItem.append(avatar, student, timestamp);
+                            historyRecordCache.set(item.filename, item);
+                            window.RhemaHistory.populate(historyItem, item);
 
                             historyItem.addEventListener('click', function() {
                                 // 检查是否有未保存的更改
@@ -1434,6 +1417,12 @@
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;');
             }
+
+            document.addEventListener('rhema:language-data', event => {
+                rhemaKeywords.clear(); event.detail.keywords.forEach(name => rhemaKeywords.add(name));
+                rhemaBuiltins.clear(); event.detail.functions.forEach(item => rhemaBuiltins.add(item.name));
+                updateRhemaEditor(false);
+            });
 
             function rhemaToken(kind, text) {
                 return '<span class="rhema-token-' + kind + '">' + escapeRhemaHtml(text) + '</span>';
@@ -1924,6 +1913,7 @@
                             rhemaOriginalText = rhemaGrammarText.value;
                             rhemaDirty = false;
                             document.getElementById('teacherFormMode').disabled = false;
+                            document.dispatchEvent(new CustomEvent('rhema:source-saved', {detail:{name:data.name}}));
                             fetch('/rhema_grammars').then(r => r.json()).then(list => {
                                 rhemaQuestions = list.questions || {};
                                 window.rhemaCatalog = list.catalog || [];
@@ -2377,12 +2367,15 @@
     <script src="{{ url_for('static', filename='pg_import.js') }}"></script>
     <script src="{{ url_for('static', filename='question_preview.js') }}"></script>
     <script src="{{ url_for('static', filename='teacher_builder.js') }}"></script>
+    <script src="{{ url_for('static', filename='rhema_completion.js') }}"></script>
+    <script src="{{ url_for('static', filename='rhema_inline_completion.js') }}"></script>
     <script src="{{ url_for('static', filename='api_keys.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='code_editor.css') }}">
     <script src="{{ url_for('static', filename='vendor/lucide/lucide.min.js') }}"></script>
     <script src="{{ url_for('static', filename='i18n.js') }}"></script>
     <script src="{{ url_for('static', filename='workspace.js') }}"></script>
+    <script src="{{ url_for('static', filename='generation_history.js') }}"></script>
     <script src="{{ url_for('static', filename='workspace_splitter.js') }}"></script>
 </body>
 </html>

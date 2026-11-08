@@ -1,0 +1,10 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+Evaluate [`3 + 9 + (4 + 3 + 8)`].[_____]{27}
+
+Evaluate [`6 \cdot (8 + 6)`].[_____]{84}
+END_PGML
+ENDDOCUMENT();

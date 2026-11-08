@@ -7,7 +7,8 @@
 .workspace-app button:disabled { opacity:.55; cursor:wait; }
 .workspace-app :focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
 .workspace-app .sidebar { width:228px; background:#292d30; border-right:1px solid #22272a; }
-.workspace-app .sidebar-content { width:228px; display:flex; flex-direction:column; min-height:100vh; }
+.workspace-app .sidebar-content { width:228px; display:flex; flex-direction:column; height:100dvh; min-height:0; overflow:hidden; }
+.workspace-app .sidebar-brand, .workspace-app .sidebar-header { flex-shrink:0; }
 .workspace-app .sidebar-brand { min-height:80px; background:transparent; padding:20px; border-bottom:1px solid #42474b; }
 .workspace-app .brand-copy strong { font-size:24px; font-weight:650; }
 .workspace-app .brand-copy span { margin-top:3px; font-size:12px; color:#bcc2c6; }
@@ -29,7 +30,19 @@
 .workspace-nav-item.active { background:#46413d; color:#fff; box-shadow:inset 3px 0 0 #df804e; }
 .workspace-app .config-link-btn { display:none; width:100%; margin-top:10px; font-size:13px; }
 .workspace-app.classic-workspace .config-link-btn { display:block; }
-.grammar-library { padding:8px 12px 20px; }
+.grammar-library { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; padding:8px 12px 12px; }
+.grammar-library .catalog-search { flex-shrink:0; }
+.grammar-catalog { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; scrollbar-width:thin; scrollbar-color:#89939a #24282c; padding-bottom:20px; }
+.grammar-catalog::-webkit-scrollbar { width:8px; }
+.grammar-catalog::-webkit-scrollbar-track { background:#24282c; }
+.grammar-catalog::-webkit-scrollbar-thumb { background:#89939a; border:2px solid #24282c; border-radius:4px; }
+.grammar-catalog::-webkit-scrollbar-thumb:hover { background:#b0b8be; }
+.workspace-app #sidebarHistory { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
+.workspace-app #sidebarHistory .history-list { min-height:0; max-height:none; }
+.workspace-app .history-item .student-id { white-space:normal; overflow-wrap:anywhere; }
+.workspace-app .history-topic { grid-column:2; color:#b4bdc3; font-size:10px; line-height:1.35; overflow-wrap:anywhere; }
+.workspace-app .history-item:has(.history-topic) .history-avatar { grid-row:1 / span 3; }
+@media (max-height:520px) { .workspace-app .sidebar-content { overflow-y:auto; } .grammar-library { min-height:150px; flex:1 0 150px; } }
 .catalog-search { display:flex; gap:8px; align-items:center; padding:0 9px; border:1px solid #535a5f; border-radius:4px; color:#c3c9ce; }
 .catalog-search input { width:100%; min-width:0; height:35px; border:0; background:transparent; color:#fff; outline:0; font-size:12px; }
 .catalog-search input::placeholder { color:#b7bec3; }

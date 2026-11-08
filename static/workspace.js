@@ -30,13 +30,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     function renderCatalog() {
         const container = byId('grammarCatalog'); container.replaceChildren();
+        container.setAttribute('aria-label', library === 'presets' ? 'My presets' : 'Question types');
         const query = byId('grammarSearch').value.trim().toLowerCase();
         const groups = new Map();
         for (const item of catalog) {
-            if (library === 'presets' && !item.custom) continue;
-            if (library === 'all' && item.custom) continue;
+            if (library === 'presets' && !item.preset) continue;
+            if (library === 'all' && item.preset) continue;
             if (query && !`${item.title} ${translated(item.title)} ${item.name}`.toLowerCase().includes(query)) continue;
-            const group = item.custom ? 'My presets' : (categories[item.name.slice(0,-4)] || 'Other topics');
+            const group = item.preset ? 'My presets' : (item.custom ? 'My question types' : (categories[item.name.slice(0,-4)] || 'Other topics'));
             if (!groups.has(group)) groups.set(group, []);
             groups.get(group).push(item);
         }
@@ -80,8 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('rhema:catalog', event => {catalog = event.detail; renderCatalog();});
     document.addEventListener('rhema:preset-saved', event => {
         const name = event.detail.name;
-        if (!catalog.some(item => item.name === name)) catalog.push({name, title:name.slice(0,-4).replaceAll('_',' '), custom:true});
+        if (!catalog.some(item => item.name === name)) catalog.push({name, title:name.slice(0,-4).replaceAll('_',' '), custom:true, preset:true});
         renderCatalog();
+    });
+    document.addEventListener('rhema:source-saved', () => {
+        library = 'all'; navigation('questionLibraryBtn'); renderCatalog();
     });
     byId('grammarSearch').addEventListener('input', renderCatalog);
     byId('questionLibraryBtn').addEventListener('click', () => {if(!window.rhemaAuthoring.openExisting())return;library = 'all'; navigation('questionLibraryBtn'); setGenerator('ag'); renderCatalog();});

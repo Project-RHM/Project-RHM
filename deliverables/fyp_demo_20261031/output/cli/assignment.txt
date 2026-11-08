@@ -1,0 +1,34 @@
+demo_assignment.rhm:main for FYP2026: 5 questions in 3 parts
+
+1. Sequences
+
+1  [seq.main; cost 2]
+An arithmetic sequence has first term [`a_1 = -7`] and common difference [`d = -6`].
+(a) Find [`a_{5}`]: [___]
+(b) Find the sum [`S_{5}`]: [___]
+    answers: -31; -95
+
+2. Logic
+  2(a)  [logic.main; cost 8]
+Evaluate [`(r \to p) \to q`] when [`p = \mathsf{F}`], [`q = \mathsf{F}`] and [`r = \mathsf{T}`].
+Enter 1 for true and 0 for false.
+    answer: true
+  2(b)  [logic.main; cost 10]
+Evaluate [`(q \land \neg r) \leftrightarrow \neg p`] when [`p = \mathsf{F}`], [`q = \mathsf{T}`] and [`r = \mathsf{F}`].
+Enter 1 for true and 0 for false.
+    answer: true
+  2(c)  [logic.main; cost 12]
+Suppose [`p = \mathsf{F}`], [`q = \mathsf{T}`] and [`r = \mathsf{T}`]. What is the truth value of [`(q \lor \neg r) \to ((\neg q \lor p) \land r)`]?
+Enter 1 for true and 0 for false.
+    answer: false
+
+3. Linear algebra
+
+3  [eigen.main; cost 2]
+Find the eigenvalues of [`A = \begin{pmatrix} 36 & 12 \\ -120 & -40 \end{pmatrix}`]. Enter the eigenvalues as a set, such as [`\{-1, 4\}`].
+    answer: Set({-4, 0})
+
+budget means:
+  part 1 Sequences: cost 2.00 over 1
+  part 2 Logic: cost 10.00 over 3
+  part 3 Linear algebra: cost 2.00 over 1

@@ -1,0 +1,18 @@
+context "Complex"
+random ar = integer_between(-4, 4)
+random ai = nonzero_integer_between(-4, 4)
+random br = integer_between(-4, 4)
+random bi = nonzero_integer_between(-4, 4)
+
+let a_text = complex_latex(ar, ai)
+let b_text = complex_latex(br, bi)
+
+synth value on Q
+start Q
+Q -> "multiply" {
+  value = complex(ar * br - ai * bi, ar * bi + ai * br)
+}
+
+prompt "Compute [`({a_text})({b_text})`]."
+answer Q.value
+width 20

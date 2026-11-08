@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "base": "sequence.rhm",
+  "configuration": {
+    "values": {
+      "root:a:cost": 1,
+      "root:r:first": [
+        2,
+        2
+      ],
+      "root:r:difference": [
+        3,
+        3
+      ],
+      "root:r:ratio": [
+        -5,
+        5
+      ],
+      "root:r:index": [
+        4,
+        4
+      ],
+      "root:rule:0:weight": 3,
+      "root:rule:0:cost": 1,
+      "root:rule:1:weight": 3,
+      "root:rule:1:cost": 2,
+      "root:rule:2:weight": 2,
+      "root:rule:2:cost": 2,
+      "root:rule:3:weight": 2,
+      "root:rule:3:cost": 3
+    },
+    "width": 10,
+    "min_length": null,
+    "max_length": null,
+    "instruction": "Show your working."
+  },
+  "hashes": {
+    "teacher_sequence_demo.rhm": "232dd080d5c8b424d197fcadd1488e69d4b72b9a2e57515d16b3fb967478ab64"
+  }
+}

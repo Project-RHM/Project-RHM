@@ -83,9 +83,28 @@ let rec number = function
   | Int n -> Some n | Unary ("-",Int n) -> Some (-n) | _ -> None
 let numbers args =
   let ns = List.filter_map number args in if List.length ns = List.length args then Some ns else None
+
+(* Only infer necessary bounds. An unknown part of a guard never excludes a value. *)
+let guard_possible name value guard =
+  let numeric e = match unlocated e with
+    | Attr_here n when n=name -> Some value
+    | e -> number e in
+  let rec truth e = match unlocated e with
+    | Binary ("and",a,b) -> (match truth a,truth b with
+        | Some false,_ | _,Some false -> Some false | Some true,Some true -> Some true | _ -> None)
+    | Binary ("or",a,b) -> (match truth a,truth b with
+        | Some true,_ | _,Some true -> Some true | Some false,Some false -> Some false | _ -> None)
+    | Binary (op,a,b) -> (match numeric a,numeric b with
+        | Some a,Some b -> (match op with
+            | "=" -> Some (a=b) | "!=" -> Some (a<>b) | ">=" -> Some (a>=b)
+            | "<=" -> Some (a<=b) | ">" -> Some (a>b) | "<" -> Some (a<b) | _ -> None)
+        | _ -> None)
+    | _ -> None in
+  truth guard <> Some false
 let operators = ["+";"-";"*";"/";"\\cdot";"\\div";"\\land";"\\lor";"\\neg";"\\to";
   "\\leftrightarrow";"\\oplus";"\\cup";"\\cap";"\\setminus";"power";"sin";"cos";"exp";
-  "ln";"sqrt";"tan";"square";"cube";"dot";"cross";"norm";"transpose";"scale"]
+  "ln";"sqrt";"tan";"square";"cube";"dot";"cross";"norm";"transpose";"scale";
+  "AND";"OR";"NOT";"XOR";"IMPLIES";"IFF"]
 let operator_count rule =
   if List.exists (fun s -> List.mem (symbol_name s) operators) rule.rhs then 1 else 0
 let rule_label rule =
@@ -128,7 +147,13 @@ let fields u =
         let allowed = if n="cost" then cost_values else if Filename.check_suffix n "mode" then
           v :: List.concat_map (fun r -> match r.guard with None -> [] | Some e -> mode_values n e) u.spec.rules |> List.sort_uniq compare
           else [] in
-        [field ("a:" ^ n) n "integer" (int v) ["distribution",quote (distribution d);"allowed",arr (List.map int allowed)]]
+        let roots = List.filter (fun r -> r.lhs=u.spec.Rhema_check.start) u.spec.rules in
+        let possible = List.init 61 Fun.id |> List.filter (fun value ->
+          List.exists (fun r -> match r.guard with None -> true | Some g -> guard_possible n value g) roots) in
+        let bounds = match possible with
+          | first::_ when v<=60 -> ["minimum",int first;"maximum",int (List.hd (List.rev possible))]
+          | _ -> [] in
+        [field ("a:" ^ n) n "integer" (int v) (["distribution",quote (distribution d);"allowed",arr (List.map int allowed)] @ bounds)]
     | Random_decl (n,Draw_boolean,_) -> [field ("b:" ^ n) n "boolean" (quote "random") []]
     | Random_decl (n,Draw_generator (generator,args),_) -> (match numbers args with
         | Some ns -> [field ("r:" ^ n) n "range" (arr (List.map int ns)) ["generator",quote generator]] | None -> [])
@@ -139,7 +164,9 @@ let fields u =
         field (id ^ ":weight") (rule_label r) "weight" (int r.weight) common ::
         List.filter_map (function
           | Assign ("cost",e,_) -> (match number e with Some n when n <= 0 ->
-              Some (field (id ^ ":cost") (rule_label r) "price" (int (-n)) common) | _ -> None)
+              let recursive = List.exists (function Symbol s -> s=r.lhs | _ -> false) r.rhs in
+              Some (field (id ^ ":cost") (rule_label r) "price" (int (-n))
+                (("minimum",int (if recursive && n<0 then 1 else 0))::common)) | _ -> None)
           | _ -> None) r.equations @
         List.concat (List.mapi (fun j -> function
           | Generator (g,args) -> (match numbers args with Some ns ->
@@ -210,6 +237,14 @@ let wrap_length minimum maximum declarations =
   rewritten @ wrappers
 
 let () =
+  if Array.length Sys.argv = 2 && Sys.argv.(1) = "completions" then begin
+    let functions kind entries = List.map (fun (name,arity) ->
+      obj ["name",quote name;"arity",int arity;"kind",quote kind]) entries in
+    print_endline (obj ["keywords",arr (List.map (fun (name,_) -> quote name) Rhema_lexer.keywords);
+      "functions",arr (functions "expression" Rhema_check.expression_builtins @
+                       functions "generator" Rhema_check.generator_builtins)]);
+    exit 0
+  end;
   if Array.length Sys.argv < 4 then fail "usage: rhema_builder describe|build FILE STDLIB [--value ID JSON_SCALAR ...]";
   let mode = Sys.argv.(1) and file = Sys.argv.(2) and stdlib = Sys.argv.(3) in
   Rhema_load.search_path := [stdlib];

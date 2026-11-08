@@ -1,0 +1,16 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl", "contextBoolean.pl");
+Context("Boolean");
+
+BEGIN_PGML
+Give a formula equivalent to [`p \to q`] using only NOT, AND and OR.[_____]{answer=>Compute("(not (p)) or (q)"),width=>24}
+
+Give a formula equivalent to [`p \to q`] using only NOT, AND and OR.[_____]{answer=>Compute("(not (p)) or (q)"),width=>24}
+
+Give a formula equivalent to [`p \to q`] using only NOT, AND and OR.[_____]{answer=>Compute("(not (p)) or (q)"),width=>24}
+
+Give a formula equivalent to [`p \to q`] using only NOT, AND and OR.[_____]{answer=>Compute("(not (p)) or (q)"),width=>24}
+
+Give a formula equivalent to [`p \to q`] using only NOT, AND and OR.[_____]{answer=>Compute("(not (p)) or (q)"),width=>24}
+END_PGML
+ENDDOCUMENT();

@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "kind": "source",
+  "base": "boolean_tes.rhm",
+  "configuration": null,
+  "hashes": {
+    "boolean_tes.rhm": "3cbf6f48ff7c8bdeceab407dfaccb862e90c372155e8ee3d89757bfa0bba72ca"
+  }
+}

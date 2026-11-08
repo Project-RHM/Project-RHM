@@ -1,0 +1,10 @@
+ 1. Evaluate [`(p \lor q) \land \neg q`] when [`p = F`] and [`q = F`]. Enter 1 for true and 0 for false.
+    answer: false
+ 2. Evaluate [`(p \lor q) \land \neg q`] when [`p = F`] and [`q = F`]. Enter 1 for true and 0 for false.
+    answer: false
+ 3. Evaluate [`(p \lor q) \land \neg q`] when [`p = T`] and [`q = F`]. Enter 1 for true and 0 for false.
+    answer: true
+ 4. Evaluate [`(p \lor q) \land \neg q`] when [`p = F`] and [`q = F`]. Enter 1 for true and 0 for false.
+    answer: false
+ 5. Evaluate [`(p \lor q) \land \neg q`] when [`p = T`] and [`q = F`]. Enter 1 for true and 0 for false.
+    answer: true
