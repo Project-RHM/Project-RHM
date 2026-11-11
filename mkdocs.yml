@@ -47,6 +47,7 @@ nav:
   - Rhema: index.md
   - Tutorial:
       - Overview: tutorial/index.md
+      - Installing with opam: tutorial/install.md
       - 1. A first question: tutorial/first.md
       - 2. Difficulty is a budget: tutorial/budget.md
       - 3. Values and answers: tutorial/values.md

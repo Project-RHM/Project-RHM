@@ -7,6 +7,10 @@ is announced one version before the removal.
 
 ## Unreleased
 
+- **Documentation**: a tutorial page, *Installing with opam*, that goes from
+  a machine without opam to a working `rhema`: installing opam, `opam init`,
+  `opam install rhema`, updating, removing, and what to do when a step
+  fails.
 - **VS Code extension** in `editors/vscode`: highlighting, problems from
   `rhema check` as you type, Run and Compile commands, folding and snippets
   for `.rhm` files. Its tests check the grammar against the compiler's

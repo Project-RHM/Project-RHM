@@ -81,6 +81,10 @@ opam install rhema
 这样安装的是当前发布版 0.1.1。仓库中的代码比它新，新增内容见
 [更新日志](CHANGELOG.md)的 Unreleased 一节。
 
+如果还没有安装 opam，请看文档站的
+[Installing with opam](https://project-rhm.github.io/tutorial/install/)（英文），
+其中从安装 opam 开始，逐步说明了整个过程。
+
 使用 VS Code 时，从
 [Marketplace](https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language)
 安装 **Rhema Language**。它会在输入时运行 `rhema check`，并提供语法高亮以及运行、
