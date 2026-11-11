@@ -30,6 +30,10 @@ a whole assignment, which compiles to the same paper every time.
 opam install rhema
 ```
 
+opam is the package manager of OCaml, the language `rhema` is written in. If
+you do not have it yet, [Installing with opam](tutorial/install.md) starts
+from there.
+
 This installs version 0.1.1: the `rhema` command and a library of grammars
 for arithmetic, algebra, calculus, propositional logic, sets, vectors,
 complex numbers, sequences and linear algebra. The repository is ahead of

@@ -4,9 +4,10 @@ This tutorial builds up the language one idea at a time. Each chapter starts
 from a complete file, says what is new in it, and shows what `rhema` makes of
 it. The files are on the site exactly as the compiler checks them.
 
-You need the `rhema` command (see [Install](../index.md#install)) and a text
-editor. Make a directory to work in; nothing else is needed, because the
-library grammars are found wherever you are.
+You need the `rhema` command and a text editor.
+[Installing with opam](install.md) takes you from nothing to a working
+`rhema`, opam itself included. Make a directory to work in; nothing else is
+needed, because the library grammars are found wherever you are.
 
 1. [A first question](first.md): productions, attributes, the prompt and the
    answer.

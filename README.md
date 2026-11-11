@@ -84,6 +84,10 @@ opam install rhema
 This installs 0.1.1, the current release. The repository is ahead of it: the
 Unreleased section of the [changelog](CHANGELOG.md) lists what is newer.
 
+If you do not have opam yet,
+[Installing with opam](https://project-rhm.github.io/tutorial/install/) goes
+through every step, starting with opam itself.
+
 For VS Code, install **Rhema Language** from the
 [Marketplace](https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language).
 It runs `rhema check` as you type, and adds highlighting and commands to run
