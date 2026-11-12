@@ -3,10 +3,11 @@
 **Math Question Generation** · *Regula · Hierarchia · Mathesis*
 
 [![CI](https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml/badge.svg)](https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml)
+[![opam package](https://img.shields.io/badge/opam-rhema-orange)](https://opam.ocaml.org/packages/rhema/)
+[![VS Code Marketplace](https://img.shields.io/badge/VS_Code-Marketplace-007ACC)](https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language)
+[![Documentation](https://img.shields.io/badge/Docs-guide-blue)](https://project-rhm.github.io/)
+[![License](https://img.shields.io/github/license/Project-RHM/Project-RHM)](LICENSE)
 
-[Documentation](https://project-rhm.github.io/) ·
-[opam package](https://opam.ocaml.org/packages/rhema/) ·
-[VS Code extension](https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language) ·
 [Changelog](CHANGELOG.md) ·
 [中文说明](README.zh.md)
 
