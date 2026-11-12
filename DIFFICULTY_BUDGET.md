@@ -22,6 +22,7 @@ this document is in `DIFFICULTY_BUDGET.zh.md`.
 | `matrix_expr.rhm`, `determinant.rhm` | operations and the size of the matrices | 4, 3 | QUESTION_TYPES.md |
 | `matrix_inverse.rhm`, `linear_system.rhm` | fixed forms, each at its price | 2, 5 | QUESTION_TYPES.md |
 | `counting.rhm`, `number_theory.rhm`, `series.rhm`, `limits.rhm`, `eigen.rhm`, `inequality.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
+| `definite_integral.rhm`, `derivative_applications.rhm`, `exponential_log.rhm`, `analytic_geometry.rhm`, `differential_equation.rhm`, `statistics.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
 
 > **Sets in the language.** Since the `set` declaration
 > (`RHEMA_LANGUAGE_EXTENSIONS.md` section 6) a file can say

@@ -1,0 +1,124 @@
+# ==========================================================================
+#  Applications of the derivative
+#
+#  Tangent lines, critical points, extreme values on a closed interval and
+#  intervals of increase and decrease, all for polynomials. The questions
+#  about critical points are built from them: r1 < r2 are chosen first, the
+#  derivative is 6k (x - r1)(x - r2), and the function is its antiderivative
+#  2k x^3 - 3k (r1 + r2) x^2 + 6k r1 r2 x + d, which has whole coefficients.
+#  It is shown expanded, so the derivative has to be taken and factored.
+#
+#  Answers: a number, the right-hand side of a line as a formula in x, the
+#  critical points as a set (Interval context, so their order does not
+#  matter), or an open interval.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the slope of a tangent to a cubic, where a parabola has a horizontal
+#       tangent
+#    2  the tangent line to a parabola, the critical points of a cubic
+#    3  the absolute maximum or minimum of a cubic on a closed interval, the
+#       interval on which it decreases (or increases)
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+synth pg_context on Q
+
+# A cubic with critical points first < second; it rises, falls between them
+# and rises again when `rising`, and the other way round when not.
+synth poly on C
+synth first on C
+synth second on C
+synth rising on C
+
+start Q
+
+C -> integer_between(-3, 1) integer_between(1, 4) nonzero_integer_between(-1, 1) integer_between(-9, 9) {
+  first = $1.value
+  second = $1.value + $2.value
+  rising = $3.value > 0
+  poly = polynomial_add(polynomial_monomial(2 * $3.value, 3, "x"),
+                        polynomial_quadratic(0 - 3 * $3.value * (2 * $1.value + $2.value),
+                                             6 * $3.value * $1.value * ($1.value + $2.value), $4.value, "x"))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+Q -> "slope" nonzero_integer_between(-4, 4) integer_between(-6, 6) integer_between(-9, 9) integer_between(-9, 9) integer_between(-3, 3) when cost = 1 weight 2 {
+  cost = -1
+  kind = "slope"
+  pg_context = "Numeric"
+  text = "Find the slope of the tangent line to the curve [`y = "
+         ++ polynomial_latex(polynomial_add(polynomial_monomial($2.value, 3, "x"), polynomial_quadratic($3.value, $4.value, $5.value, "x")))
+         ++ "`] at [`x = " ++ str($6.value) ++ "`]."
+  answer_value = 3 * $2.value * $6.value ^ 2 + 2 * $3.value * $6.value + $4.value
+}
+
+# y = a x^2 - 2 a h x + c has its vertex at x = h.
+Q -> "horizontal" nonzero_integer_between(-5, 5) nonzero_integer_between(-9, 9) integer_between(-9, 9) when cost = 1 {
+  cost = -1
+  kind = "horizontal"
+  pg_context = "Numeric"
+  text = "At what value of [`x`] does the curve [`y = "
+         ++ polynomial_latex(polynomial_quadratic($2.value, 0 - 2 * $2.value * $3.value, $4.value, "x"))
+         ++ "`] have a horizontal tangent line?"
+  answer_value = $3.value
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The tangent to y = a x^2 + b x + c at x = p is y = (2 a p + b) x + (c - a p^2).
+Q -> "tangent_line" nonzero_integer_between(-4, 4) integer_between(-9, 9) integer_between(-9, 9) nonzero_integer_between(-4, 4) when cost = 2 weight 2 {
+  cost = -2
+  kind = "tangent_line"
+  require 2 * $2.value * $5.value + $3.value != 0
+  pg_context = "Numeric"
+  text = "Find the equation of the tangent line to the curve [`y = "
+         ++ polynomial_latex(polynomial_quadratic($2.value, $3.value, $4.value, "x"))
+         ++ "`] at [`x = " ++ str($5.value) ++ "`]. Write it as [`y = mx + b`] and enter the right-hand side."
+  answer_value = polynomial_linear(2 * $2.value * $5.value + $3.value, $4.value - $2.value * $5.value ^ 2, "x")
+}
+
+Q -> "critical_points" C when cost = 2 weight 2 {
+  cost = -2
+  kind = "critical_points"
+  pg_context = "Interval"
+  text = "Find the critical points of [`f(x) = " ++ polynomial_latex($2.poly)
+         ++ "`]. Enter them as a set, such as [`\{-1, 4\}`]."
+  answer_value = set_insert(set_insert(set_empty(), $2.first), $2.second)
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# On [first - e1, second + e2] the extreme values are among the two ends and
+# the two critical points; which of them wins depends on how far the ends are.
+Q -> "extreme" C integer_between(0, 2) integer_between(0, 2) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = "extreme"
+  pg_context = "Numeric"
+  text = "Find the absolute " ++ cond($5.value = 1, "maximum", "minimum") ++ " value of [`f(x) = " ++ polynomial_latex($2.poly)
+         ++ "`] on the interval [`" ++ str($2.first - $3.value) ++ " \le x \le " ++ str($2.second + $4.value) ++ "`]."
+  answer_value = cond($5.value = 1,
+                      max(max(polynomial_evaluate($2.poly, $2.first - $3.value), polynomial_evaluate($2.poly, $2.first)),
+                          max(polynomial_evaluate($2.poly, $2.second), polynomial_evaluate($2.poly, $2.second + $4.value))),
+                      min(min(polynomial_evaluate($2.poly, $2.first - $3.value), polynomial_evaluate($2.poly, $2.first)),
+                          min(polynomial_evaluate($2.poly, $2.second), polynomial_evaluate($2.poly, $2.second + $4.value))))
+}
+
+# Between its critical points a rising cubic decreases and a falling one increases.
+Q -> "monotonic" C when cost = 3 weight 2 {
+  cost = -3
+  kind = "monotonic"
+  pg_context = "Interval"
+  text = "Find the open interval on which [`f(x) = " ++ polynomial_latex($2.poly) ++ "`] is "
+         ++ cond($2.rising, "decreasing", "increasing") ++ "."
+  answer_value = set_interval($2.first, $2.second, 0 = 1, 0 = 1)
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

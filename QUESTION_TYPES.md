@@ -52,6 +52,12 @@ attribute, or by the budget.
 | `limits.rhm` | 1 a removable discontinuity, a ratio of quadratics at infinity; 2 a factor shared above and below, `sin(kx)/(mx)`, `(e^{kx} - 1)/(mx)`; 3 a ratio of two sines, `(1 - cos(kx))/(mx^2)` | 2 | Numeric |
 | `eigen.rhm` | 1 the eigenvalues of a triangular matrix; 2 the eigenvalues of a 2 by 2, its characteristic polynomial; 3 an eigenvector, the eigenvalues of a 3 by 3 | 2 | Interval / Numeric / Vector |
 | `inequality.rhm` | 1 linear; 2 quadratic, the absolute value of `x - a`; 3 the absolute value of `px - q`, rational | 2 | Interval |
+| `definite_integral.rhm` | 1 `k x^n` from 0 to q, a quadratic between two bounds; 2 a product of two linear factors to expand first, the area between a parabola and the x-axis; 3 the area between a parabola and a line, `k x (a x^2 + c)^n` by substitution | 2 | Numeric |
+| `derivative_applications.rhm` | 1 the slope of a tangent to a cubic, where a parabola has a horizontal tangent; 2 the tangent line to a parabola, the critical points of a cubic; 3 the absolute maximum or minimum of a cubic on a closed interval, the interval on which it decreases or increases | 2 | Numeric / Interval |
+| `exponential_log.rhm` | 1 the logarithm of a power of its base, `b^(x + c) = b^k`; 2 two bases that are powers of one number, `log_b(p x + q) = k`; 3 a sum of two logarithms with one root rejected, a quadratic in `b^x` | 2 | Numeric |
+| `analytic_geometry.rhm` | 1 the distance between two points, their midpoint, the slope through them; 2 the line through two points, the perpendicular to a line through a point; 3 the centre or the radius of a circle given expanded, the intersection of two lines | 2 | Numeric / Point |
+| `differential_equation.rhm` | initial value problems: 1 `y' = 2a x + b`, `y' = k y`; 2 `y' + a y = b`, `y' = 2k x y`; 3 `y'' + p y' + q y = 0` with two real roots or one repeated | 2 | Numeric |
+| `statistics.rhm` | 1 the mean, median or range of a data set; 2 the variance of a data set, a value missing from a known mean, the expectation of a random variable; 3 the variance of a random variable, at least two successes in n trials | 2 | Numeric |
 <!-- --8<-- [end:tables] -->
 
 ## The five general types added on this branch
@@ -176,6 +182,65 @@ difference. Each grammar has a test that checks its answers independently:
 by brute-force enumeration, by search, by numeric summation or evaluation,
 by `det(A - tI) = 0` and `Av = tv`, or by testing points on either side of
 every end of the interval.
+
+## The fourth batch: integrals, derivatives at work, exponentials, geometry, differential equations, statistics
+
+Six more fixed-form grammars with a default budget of 2, built answer first
+wherever there is something to find. None needed a change to the engine.
+
+- **Definite integrals** (`definite_integral.rhm`) are of polynomials, so
+  the antiderivative is known from the numbers that built the integrand and
+  the answer is an exact fraction. An area is built from the crossing
+  points: `k (x - r1)(x - r2)` encloses `|k| (r2 - r1)^3 / 6` with the axis,
+  and a parabola and a line that differ by it enclose the same. Both are
+  shown expanded.
+- **Applications of the derivative** (`derivative_applications.rhm`) builds
+  a cubic from its critical points `r1 < r2`: the derivative is
+  `6k (x - r1)(x - r2)` and the function is
+  `2k x^3 - 3k (r1 + r2) x^2 + 6k r1 r2 x + d`, with whole coefficients. The
+  critical points are graded as a set, the interval of decrease (or
+  increase) as an open interval, and a tangent line as the right-hand side
+  of `y = mx + b`. An extreme value on a closed interval is sometimes at an
+  end and sometimes at a critical point, depending on how far the ends are.
+- **Exponentials and logarithms** (`exponential_log.rhm`) keeps every
+  equation to powers of one base. The two hardest forms have a second
+  candidate to reject: `log_b(x) + log_b(x - d) = log_b(N)` leads to a
+  quadratic whose other root is negative, and `(b^x - b^m)(b^x + c) = 0`,
+  shown expanded, has a factor that is never zero.
+- **Lines and circles** (`analytic_geometry.rhm`) takes a distance from a
+  Pythagorean triple, expands a circle from its centre and radius, and
+  draws two lines through a chosen point. A point is answered as `(3, -2)`:
+  the grammar writes the answer as text and sets `pg_context = "Point"`, so
+  WeBWorK grades it as a point.
+- **Differential equations** (`differential_equation.rhm`) asks initial
+  value problems only, so the solution is one function and no constant of
+  integration has to be graded. The rate, the equilibrium, or the roots of
+  the characteristic equation and the two constants are chosen first; the
+  equation and the initial values are read off them. The answer is a
+  formula in `x`.
+- **Statistics** (`statistics.rhm`) draws a data set in increasing order and
+  lists it in a mixed order, so the median and the range are known without
+  sorting; a data set for a variance is its mean plus deviations that add
+  up to zero; probabilities are whole weights over their total. Variances
+  divide by the number of values, and the question says so.
+
+```
+cost 3   area between y = x^2 + 10x + 2 and y = 4x - 3      32/3
+cost 3   log_2(x) + log_2(x - 7) = log_2(18)                 9
+cost 3   y'' - 5y' + 6y = 0, y(0) = -2, y'(0) = -2           2e^{3x} - 4e^{2x}
+cost 3   centre of x^2 + y^2 - 16x - 4y - 13 = 0             (8, 2)
+```
+
+Each grammar has a test that checks its answers independently: by
+numerical integration (Simpson's rule, between crossing points found from
+the printed coefficients), by differentiating the printed polynomial
+numerically and scanning the interval, by putting the answer back into the
+equation and counting the sign changes of "left minus right" over a wide
+range (exactly one, so a rejected root is really outside the domain), by
+the definitions of midpoint, perpendicular and circle, by differentiating
+the answer numerically and putting it into the differential equation, and
+by recomputing every summary from the printed data, with a binomial
+probability summed over all sequences of outcomes.
 
 ## What a user can write in one file
 

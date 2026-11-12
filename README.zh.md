@@ -123,22 +123,23 @@ rhema doc                                 # the builtin functions
 
 ## 文法库
 
-0.1.1 软件包安装 27 个文法文件。`generator/stdlib/` 中除这些之外，还有标 † 的六个
+0.1.1 软件包安装 27 个文法文件。`generator/stdlib/` 中除这些之外，还有标 † 的十二个
 文法，它们要到下一个版本才会进入 opam，在此之前需要从源码使用。每个文法的题目、
 价格和 WeBWorK 上下文见 [`QUESTION_TYPES.zh.md`](QUESTION_TYPES.zh.md)。
 
 | 领域 | 文法 |
 | --- | --- |
 | 四则运算 | `arithmetic` |
-| 代数 | `polynomial_expand`、`factoring`、`polynomial_forms`、`linear_equation`、`inequality`†、`library_linear`、`library_quadratic`、`library_polynomial` |
+| 代数 | `polynomial_expand`、`factoring`、`polynomial_forms`、`linear_equation`、`inequality`†、`exponential_log`†、`library_linear`、`library_quadratic`、`library_polynomial` |
 | 数列与级数 | `sequence`、`sequence_parts`、`series`† |
-| 微积分 | `calculus`、`limits`†、`library_formula` |
+| 微积分 | `calculus`、`limits`†、`definite_integral`†、`derivative_applications`†、`differential_equation`†、`library_formula` |
 | 逻辑 | `boolean`、`boolean_equiv`、`logic_forms` |
 | 集合 | `set` |
 | 向量 | `vector`、`vector_expr` |
 | 复数 | `complex` |
 | 线性代数 | `matrix_expr`、`determinant`、`matrix_inverse`、`linear_system`、`eigen`† |
 | 计数与数论 | `counting`†、`number_theory`† |
+| 几何与统计 | `analytic_geometry`†、`statistics`† |
 | 组合 | `derivative_or_boolean`（一道题，来自两个被导入的文法）、`homework_set`（一整份作业） |
 | 共享规则，本身不出题 | `polynomial_core`、`matrix_core` |
 

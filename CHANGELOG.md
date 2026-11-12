@@ -22,6 +22,16 @@ is announced one version before the removal.
   `value = foo` gave the column of `value` for "unknown name 'foo'". Every
   such message now points at the name itself. The parser records where each
   one is written (`At` in `rhema_ast.ml`); generation is unchanged.
+- **Six more question types**, fixed forms at prices 1 to 3 and built
+  answer first: `definite_integral.rhm` (integrals of polynomials and the
+  areas they measure), `derivative_applications.rhm` (tangent lines,
+  critical points, extreme values, intervals of increase),
+  `exponential_log.rhm`, `analytic_geometry.rhm` (lines and circles; a
+  point is answered as `(3, -2)` in WeBWorK's Point context),
+  `differential_equation.rhm` (initial value problems, answered by a
+  formula) and `statistics.rhm`. They use the existing builtins only, and
+  each has a test that checks its answers independently. The teacher
+  workspace lists them.
 - **Six new question types**, all built answer first: `counting.rhm`
   (arrangements, selections and probabilities, with named questions
   `counting` and `probability`), `number_theory.rhm`, `series.rhm`,

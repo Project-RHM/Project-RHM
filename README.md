@@ -129,22 +129,23 @@ installed library (`share/rhema`).
 ## The question library
 
 The 0.1.1 package installs 27 grammar files. `generator/stdlib/` holds those
-and the six marked †, which will reach opam with the next release; until
+and the twelve marked †, which will reach opam with the next release; until
 then they need a clone. [`QUESTION_TYPES.md`](QUESTION_TYPES.md) gives each
 grammar's questions, prices and WeBWorK context.
 
 | Area | Grammars |
 | --- | --- |
 | Arithmetic | `arithmetic` |
-| Algebra | `polynomial_expand`, `factoring`, `polynomial_forms`, `linear_equation`, `inequality`†, `library_linear`, `library_quadratic`, `library_polynomial` |
+| Algebra | `polynomial_expand`, `factoring`, `polynomial_forms`, `linear_equation`, `inequality`†, `exponential_log`†, `library_linear`, `library_quadratic`, `library_polynomial` |
 | Sequences and series | `sequence`, `sequence_parts`, `series`† |
-| Calculus | `calculus`, `limits`†, `library_formula` |
+| Calculus | `calculus`, `limits`†, `definite_integral`†, `derivative_applications`†, `differential_equation`†, `library_formula` |
 | Logic | `boolean`, `boolean_equiv`, `logic_forms` |
 | Sets | `set` |
 | Vectors | `vector`, `vector_expr` |
 | Complex numbers | `complex` |
 | Linear algebra | `matrix_expr`, `determinant`, `matrix_inverse`, `linear_system`, `eigen`† |
 | Counting and number theory | `counting`†, `number_theory`† |
+| Geometry and statistics | `analytic_geometry`†, `statistics`† |
 | Combined | `derivative_or_boolean` (one question, two imported grammars), `homework_set` (a whole assignment) |
 | Shared rules, no questions of their own | `polynomial_core`, `matrix_core` |
 

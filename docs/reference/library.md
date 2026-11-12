@@ -18,9 +18,12 @@ make `x + 2x \cdot \sin x` cost at least 4.
 
 !!! note
     `counting.rhm`, `number_theory.rhm`, `series.rhm`, `limits.rhm`,
-    `eigen.rhm` and `inequality.rhm` are in the repository, not in the 0.1.1
-    package. To use them before the next release, build `rhema` from a
-    clone of the repository.
+    `eigen.rhm`, `inequality.rhm`, `definite_integral.rhm`,
+    `derivative_applications.rhm`, `exponential_log.rhm`,
+    `analytic_geometry.rhm`, `differential_equation.rhm` and
+    `statistics.rhm` are in the repository, not in the 0.1.1 package. To use
+    them before the next release, build `rhema` from a clone of the
+    repository.
 
 --8<-- "QUESTION_TYPES.md:tables"
 

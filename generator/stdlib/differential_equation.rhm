@@ -1,0 +1,120 @@
+# ==========================================================================
+#  Differential equations with initial values
+#
+#  First-order and second-order linear equations whose solution is fixed by
+#  its initial values, so there is one right answer and no constant of
+#  integration to grade. Each problem is built from its solution: the rate,
+#  the equilibrium, or the roots of the characteristic equation and the two
+#  constants are chosen first, and the equation and the initial values are
+#  read off them. The answer is a formula in x.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  y' = 2a x + b by integrating once, y' = k y
+#    2  y' + a y = b (an equilibrium and a decaying or growing part),
+#       y' = 2k x y by separating the variables
+#    3  y'' + p y' + q y = 0 with two different real roots, or one repeated
+# ==========================================================================
+
+attribute cost = 2 split
+
+let x = formula_variable("x")
+let ask = " Give [`y`] as a function of [`x`]."
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A number written in front of a symbol: nothing for 1, a minus sign for -1.
+synth latex on K
+synth value on K
+
+# A term added to what is before it: " + 3", " - ", "" with a zero flag.
+synth latex on S
+synth value on S
+
+start Q
+
+K -> nonzero_integer_between(-4, 4) {
+  value = $1.value
+  latex = cond($1.value = 1, "", cond($1.value = 0 - 1, "-", str($1.value)))
+}
+
+S -> nonzero_integer_between(-4, 4) {
+  value = $1.value
+  latex = cond($1.value > 0, " + ", " - ") ++ cond(abs($1.value) = 1, "", str(abs($1.value)))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# y = a x^2 + b x + c.
+Q -> "direct" nonzero_integer_between(-5, 5) integer_between(-9, 9) integer_between(-9, 9) when cost = 1 {
+  cost = -1
+  kind = "direct"
+  text = "Solve the initial value problem [`y' = " ++ polynomial_latex(polynomial_linear(2 * $2.value, $3.value, "x"))
+         ++ "`], [`y(0) = " ++ str($4.value) ++ "`]." ++ ask
+  answer_value = polynomial_quadratic($2.value, $3.value, $4.value, "x")
+}
+
+# y = c e^(k x).
+Q -> "growth" K nonzero_integer_between(-9, 9) when cost = 1 weight 2 {
+  cost = -1
+  kind = "growth"
+  text = "Solve the initial value problem [`y' = " ++ $2.latex ++ "y`], [`y(0) = " ++ str($3.value) ++ "`]." ++ ask
+  answer_value = formula_multiply(formula_constant($3.value), formula_exp(formula_multiply(formula_constant($2.value), x)))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# y = e + (c - e) e^(-a x) solves y' + a y = a e; e is the equilibrium.
+Q -> "linear" S integer_between(-6, 6) integer_between(-9, 9) when cost = 2 weight 2 {
+  cost = -2
+  kind = "linear"
+  require $3.value != 0 and $4.value != $3.value
+  text = "Solve the initial value problem [`y'" ++ $2.latex ++ "y = " ++ str($2.value * $3.value)
+         ++ "`], [`y(0) = " ++ str($4.value) ++ "`]." ++ ask
+  answer_value = formula_add(formula_constant($3.value),
+                             formula_multiply(formula_constant($4.value - $3.value),
+                                              formula_exp(formula_multiply(formula_constant(0 - $2.value), x))))
+}
+
+# y = c e^(k x^2) solves y' = 2k x y.
+Q -> "separable" nonzero_integer_between(-3, 3) nonzero_integer_between(-9, 9) when cost = 2 weight 2 {
+  cost = -2
+  kind = "separable"
+  text = "Solve the initial value problem [`y' = " ++ str(2 * $2.value) ++ "xy`], [`y(0) = " ++ str($3.value) ++ "`]." ++ ask
+  answer_value = formula_multiply(formula_constant($3.value),
+                                  formula_exp(formula_multiply(formula_constant($2.value), formula_power(x, 2))))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# y = c1 e^(r1 x) + c2 e^(r2 x): the characteristic equation is
+# t^2 - (r1 + r2) t + r1 r2 = 0, y(0) = c1 + c2 and y'(0) = c1 r1 + c2 r2.
+Q -> "two_roots" nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) nonzero_integer_between(-4, 4) nonzero_integer_between(-4, 4) when cost = 3 weight 2 {
+  cost = -3
+  kind = "two_roots"
+  require $2.value != $3.value
+  text = "Solve the initial value problem [`y''"
+         ++ cond($2.value + $3.value = 0, "",
+                 cond($2.value + $3.value < 0, " + ", " - ") ++ cond(abs($2.value + $3.value) = 1, "", str(abs($2.value + $3.value))) ++ "y'")
+         ++ cond($2.value * $3.value > 0, " + ", " - ") ++ cond(abs($2.value * $3.value) = 1, "", str(abs($2.value * $3.value))) ++ "y = 0`], [`y(0) = "
+         ++ str($4.value + $5.value) ++ "`], [`y'(0) = " ++ str($4.value * $2.value + $5.value * $3.value) ++ "`]." ++ ask
+  answer_value = formula_add(formula_multiply(formula_constant($4.value), formula_exp(formula_multiply(formula_constant($2.value), x))),
+                             formula_multiply(formula_constant($5.value), formula_exp(formula_multiply(formula_constant($3.value), x))))
+}
+
+# y = (c1 + c2 x) e^(r x): t^2 - 2r t + r^2 = 0, y(0) = c1, y'(0) = c2 + r c1.
+Q -> "repeated_root" nonzero_integer_between(-3, 3) integer_between(-4, 4) nonzero_integer_between(-4, 4) when cost = 3 {
+  cost = -3
+  kind = "repeated_root"
+  text = "Solve the initial value problem [`y''" ++ cond($2.value < 0, " + ", " - ") ++ str(2 * abs($2.value)) ++ "y' + "
+         ++ cond($2.value ^ 2 = 1, "", str($2.value ^ 2)) ++ "y = 0`], [`y(0) = " ++ str($3.value)
+         ++ "`], [`y'(0) = " ++ str($4.value + $2.value * $3.value) ++ "`]." ++ ask
+  answer_value = formula_multiply(formula_add(formula_constant($3.value), formula_multiply(formula_constant($4.value), x)),
+                                  formula_exp(formula_multiply(formula_constant($2.value), x)))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
