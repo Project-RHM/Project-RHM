@@ -3,9 +3,9 @@
    against what it should be by its definition: a midpoint doubled is the
    sum of the ends, a line through two points passes through both, a
    perpendicular passes through its point and its slope times the other
-   slope is -1, a centre and radius put every point of the circle on the
-   printed equation, and an intersection satisfies both lines, which are not
-   parallel. *)
+   slope is -1, a centre and radius (two blanks of one question) put every
+   point of the circle on the printed equation, and an intersection
+   satisfies both lines, which are not parallel. *)
 
 let failures = ref 0
 
@@ -78,19 +78,11 @@ let lines p =
          let t = terms left in
          (t "x", t "y", float_of_string right))
 
-let number_of_text text =
-  match String.split_on_char '/' text with
-  | [ n ] -> float_of_string n
-  | [ n; d ] -> float_of_string n /. float_of_string d
-  | _ -> failwith ("not a number: " ^ text)
-
-(* A point answer, "(3,-2)" or "(7/2,-1)". *)
+(* A point answer, a point of the plane. *)
 let point_answer (q : Rhema_engine.question) =
   match q.Rhema_engine.answer with
-  | Rhema_engine.Text t when Str.string_match (Str.regexp "^(\\([^,()]+\\),\\([^,()]+\\))$") t 0 ->
-      let x = Str.matched_group 1 t and y = Str.matched_group 2 t in
-      (number_of_text x, number_of_text y)
-  | other -> failwith ("not a point: " ^ Rhema_engine.describe_value other)
+  | Rhema_engine.Point [ x; y ] -> (Rhema_number.to_float x, Rhema_number.to_float y)
+  | other -> failwith ("not a point of the plane: " ^ Rhema_engine.describe_value other)
 
 let number_answer (q : Rhema_engine.question) =
   match q.Rhema_engine.answer with
@@ -132,26 +124,24 @@ let check (q : Rhema_engine.question) =
           (* the given line has slope -a/b *)
           if not (close (m *. (-.a /. bb)) (-1.)) then wrong "not perpendicular"
       | _ -> failwith "expected one point and one line")
-  | "circle_centre" | "circle_radius" ->
+  | "circle" -> (
       ignore (Str.search_forward (Str.regexp "\\[`\\(x\\^{2}[^`]*\\) = 0`\\]") p 0);
       let t = terms (Str.matched_group 1 p) in
       if t "x^{2}" <> 1. || t "y^{2}" <> 1. then wrong "not a circle in standard form";
       let on_circle x y = (x *. x) +. (y *. y) +. (t "x" *. x) +. (t "y" *. y) +. t "" in
-      (* the other of centre and radius, from the printed coefficients *)
-      let h, k, r =
-        if kind q = "circle_centre" then
-          let h, k = point_answer q in
-          (h, k, sqrt ((h *. h) +. (k *. k) -. t ""))
-        else (-.t "x" /. 2., -.t "y" /. 2., number_answer q)
-      in
-      if not (r > 0.) then wrong "no radius";
-      List.iter
-        (fun angle ->
-          let v = on_circle (h +. (r *. cos angle)) (k +. (r *. sin angle)) in
-          if Float.abs v > 1e-7 then wrong (Printf.sprintf "a point of the circle is off the equation by %g" v))
-        [ 0.; 1.; 2.5; 4.; 5.5 ];
-      (* and the centre is where the equation is smallest, -r^2 *)
-      if not (close (on_circle h k) (-.r *. r)) then wrong "not the centre"
+      (* two blanks, in the order the question asks for them *)
+      match q.Rhema_engine.answers with
+      | [ Rhema_engine.Point [ h; k ]; Rhema_engine.Num r ] ->
+          let h = Rhema_number.to_float h and k = Rhema_number.to_float k and r = Rhema_number.to_float r in
+          if not (r > 0.) then wrong "no radius";
+          List.iter
+            (fun angle ->
+              let v = on_circle (h +. (r *. cos angle)) (k +. (r *. sin angle)) in
+              if Float.abs v > 1e-7 then wrong (Printf.sprintf "a point of the circle is off the equation by %g" v))
+            [ 0.; 1.; 2.5; 4.; 5.5 ];
+          (* and the centre is where the equation is smallest, -r^2 *)
+          if not (close (on_circle h k) (-.r *. r)) then wrong "not the centre"
+      | _ -> wrong "not a centre and a radius")
   | "intersection" -> (
       let x, y = point_answer q in
       match lines p with
@@ -165,9 +155,8 @@ let () =
   let base = load_file "analytic_geometry.rhm" in
   let prices =
     [ ("distance", 1); ("midpoint", 1); ("slope", 1); ("line_two_points", 2); ("perpendicular", 2);
-      ("circle_centre", 3); ("circle_radius", 3); ("intersection", 3) ]
+      ("circle", 3); ("intersection", 3) ]
   in
-  let contexts = [ ("midpoint", "Point"); ("circle_centre", "Point"); ("intersection", "Point") ] in
   let seen = Hashtbl.create 8 in
   for cost = 1 to 3 do
     let spec = with_initial base "cost" cost in
@@ -180,8 +169,12 @@ let () =
           Hashtbl.replace seen k ();
           if List.assoc_opt k prices <> Some cost then fail (Printf.sprintf "%s at cost %d" k cost);
           if Rhema_engine.consumption q.Rhema_engine.tree "cost" <> cost then fail (k ^ " did not spend its budget");
-          let context = Option.value (List.assoc_opt k contexts) ~default:"Numeric" in
-          if q.Rhema_engine.context <> context then fail (Printf.sprintf "%s in context %s" k q.Rhema_engine.context);
+          (* A point carries its own context, so every form stays in the default one. *)
+          if q.Rhema_engine.context <> "Numeric" then fail (Printf.sprintf "%s in context %s" k q.Rhema_engine.context);
+          (* Every form places its own blanks: one, or two for the circle. *)
+          let blanks = if k = "circle" then 2 else 1 in
+          if List.length q.Rhema_engine.answers <> blanks then
+            fail (Printf.sprintf "%s has %d blanks" k (List.length q.Rhema_engine.answers));
           (try check q with e -> fail (Printf.sprintf "%s: %s for %S" k (Printexc.to_string e) q.Rhema_engine.prompt))
     done
   done;

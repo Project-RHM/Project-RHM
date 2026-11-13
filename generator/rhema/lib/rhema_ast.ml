@@ -20,6 +20,8 @@ let string_of_position position =
 type expr =
   | Int of int
   | Str of string
+  | Bool of bool
+      (* [true], [false] *)
   | Attr_here of string
       (* [len] — an inherited attribute of the node being built *)
   | Attr_child of int * string
@@ -50,6 +52,11 @@ type equation =
          the parser does not distinguish them; Rhema_check does. *)
   | Require of expr * position
       (* [require $3.value != 0] — a generation-time constraint. *)
+  | Local of string * expr * position
+      (* [let upper = $1.value + $2.value] — a name for this rule only. It is
+         computed where it is written, after the children exist, and may be
+         used by the equations and requirements below it; the node does not
+         carry it, so no `synth` declaration is needed. *)
 
 (* ------------------------------------------------------------------ *)
 (* Right-hand side symbols.                                            *)

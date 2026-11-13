@@ -1,0 +1,101 @@
+# ==========================================================================
+#  Number bases
+#
+#  Whole numbers written in binary, octal and hexadecimal: conversions to
+#  and from decimal, between bases that are powers of two, and a sum in
+#  binary. The number is drawn first and written in the base the question
+#  needs with base_digits; an answer in another base is the number whose
+#  decimal digits are those digits (base_number), so the student types 1011
+#  for eleven in binary and WeBWorK compares it as a number. Such an answer
+#  is graded with exactly(...): WeBWorK otherwise accepts a number within one
+#  part in a thousand, and 10101 would pass for 10100.
+#
+#  An answer is never in hexadecimal: its digits A to F are not a number
+#  WeBWorK can read. Hexadecimal numbers are given, not asked for.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  binary to decimal, decimal to binary
+#    2  hexadecimal to decimal, decimal to octal, binary to octal
+#    3  the sum of two binary numbers in binary, hexadecimal to binary
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A number of two hexadecimal digits, at least one of them a letter.
+synth value on H
+synth latex on H
+
+start Q
+
+H -> integer_between(26, 255) {
+  require $1.value % 16 >= 10 or $1.value / 16 >= 10
+  value = $1.value
+  latex = "\mathrm{" ++ base_digits($1.value, 16) ++ "}_{16}"
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+Q -> "binary_to_decimal" integer_between(9, 63) when cost = 1 {
+  cost = -1
+  kind = "binary_to_decimal"
+  text = "Convert the binary number [`" ++ base_digits($2.value, 2) ++ "_{2}`] to decimal."
+  answer_value = $2.value
+}
+
+Q -> "decimal_to_binary" integer_between(9, 63) when cost = 1 {
+  cost = -1
+  kind = "decimal_to_binary"
+  text = "Write the decimal number [`" ++ str($2.value) ++ "`] in binary."
+  answer_value = exactly(base_number($2.value, 2))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+Q -> "hex_to_decimal" H when cost = 2 weight 2 {
+  cost = -2
+  kind = "hex_to_decimal"
+  text = "Convert the hexadecimal number [`" ++ $2.latex ++ "`] to decimal."
+  answer_value = $2.value
+}
+
+Q -> "decimal_to_octal" integer_between(64, 511) when cost = 2 {
+  cost = -2
+  kind = "decimal_to_octal"
+  text = "Write the decimal number [`" ++ str($2.value) ++ "`] in octal."
+  answer_value = exactly(base_number($2.value, 8))
+}
+
+# Three binary digits are one octal digit.
+Q -> "binary_to_octal" integer_between(64, 511) when cost = 2 weight 2 {
+  cost = -2
+  kind = "binary_to_octal"
+  text = "Write the binary number [`" ++ base_digits($2.value, 2) ++ "_{2}`] in octal."
+  answer_value = exactly(base_number($2.value, 8))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+Q -> "binary_sum" integer_between(20, 120) integer_between(20, 120) when cost = 3 weight 2 {
+  cost = -3
+  kind = "binary_sum"
+  text = "Add the binary numbers [`" ++ base_digits($2.value, 2) ++ "_{2}`] and [`" ++ base_digits($3.value, 2)
+         ++ "_{2}`]. Give the sum in binary."
+  answer_value = exactly(base_number($2.value + $3.value, 2))
+}
+
+# One hexadecimal digit is four binary digits.
+Q -> "hex_to_binary" H when cost = 3 weight 2 {
+  cost = -3
+  kind = "hex_to_binary"
+  text = "Write the hexadecimal number [`" ++ $2.latex ++ "`] in binary."
+  answer_value = exactly(base_number($2.value, 2))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

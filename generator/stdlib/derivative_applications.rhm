@@ -101,13 +101,17 @@ Q -> "extreme" C integer_between(0, 2) integer_between(0, 2) integer_between(0, 
   cost = -3
   kind = "extreme"
   pg_context = "Numeric"
+  let lower = $2.first - $3.value
+  let upper = $2.second + $4.value
+  let at_lower = polynomial_evaluate($2.poly, lower)
+  let at_first = polynomial_evaluate($2.poly, $2.first)
+  let at_second = polynomial_evaluate($2.poly, $2.second)
+  let at_upper = polynomial_evaluate($2.poly, upper)
   text = "Find the absolute " ++ cond($5.value = 1, "maximum", "minimum") ++ " value of [`f(x) = " ++ polynomial_latex($2.poly)
-         ++ "`] on the interval [`" ++ str($2.first - $3.value) ++ " \le x \le " ++ str($2.second + $4.value) ++ "`]."
+         ++ "`] on the interval [`" ++ str(lower) ++ " \le x \le " ++ str(upper) ++ "`]."
   answer_value = cond($5.value = 1,
-                      max(max(polynomial_evaluate($2.poly, $2.first - $3.value), polynomial_evaluate($2.poly, $2.first)),
-                          max(polynomial_evaluate($2.poly, $2.second), polynomial_evaluate($2.poly, $2.second + $4.value))),
-                      min(min(polynomial_evaluate($2.poly, $2.first - $3.value), polynomial_evaluate($2.poly, $2.first)),
-                          min(polynomial_evaluate($2.poly, $2.second), polynomial_evaluate($2.poly, $2.second + $4.value))))
+                      max(max(at_lower, at_first), max(at_second, at_upper)),
+                      min(min(at_lower, at_first), min(at_second, at_upper)))
 }
 
 # Between its critical points a rising cubic decreases and a falling one increases.
@@ -117,7 +121,7 @@ Q -> "monotonic" C when cost = 3 weight 2 {
   pg_context = "Interval"
   text = "Find the open interval on which [`f(x) = " ++ polynomial_latex($2.poly) ++ "`] is "
          ++ cond($2.rising, "decreasing", "increasing") ++ "."
-  answer_value = set_interval($2.first, $2.second, 0 = 1, 0 = 1)
+  answer_value = set_interval($2.first, $2.second, false, false)
 }
 
 prompt "{Q.text}"

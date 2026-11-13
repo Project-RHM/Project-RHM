@@ -398,13 +398,16 @@ let doc options =
     in
     match
       List.find_opt starts
-        [ "formula"; "polynomial"; "equation"; "bool"; "matrix"; "set_"; "vector"; "complex" ]
+        [ "formula"; "polynomial"; "equation"; "bool"; "matrix"; "set_"; "vector"; "complex"; "point" ]
     with
     | Some "set_" -> "set"
     | Some prefix -> prefix
     | None ->
-        if name = "differentiate" then "formula"
-        else if List.mem name [ "factorial"; "choose"; "permutations"; "gcd"; "lcm"; "pow_mod"; "mod_inverse" ]
+        if name = "differentiate" || starts "exact_" then "formula"
+        else if List.mem name [ "blank"; "blank_wide"; "plain"; "exactly" ] then "answers"
+        else if
+          List.mem name
+            [ "factorial"; "choose"; "permutations"; "gcd"; "lcm"; "pow_mod"; "mod_inverse"; "base_digits"; "base_number" ]
         then "integers"
         else "general"
   in

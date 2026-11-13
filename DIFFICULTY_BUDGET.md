@@ -23,6 +23,7 @@ this document is in `DIFFICULTY_BUDGET.zh.md`.
 | `matrix_inverse.rhm`, `linear_system.rhm` | fixed forms, each at its price | 2, 5 | QUESTION_TYPES.md |
 | `counting.rhm`, `number_theory.rhm`, `series.rhm`, `limits.rhm`, `eigen.rhm`, `inequality.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
 | `definite_integral.rhm`, `derivative_applications.rhm`, `exponential_log.rhm`, `analytic_geometry.rhm`, `differential_equation.rhm`, `statistics.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
+| `partial_fractions.rhm`, `recurrence.rhm`, `taylor.rhm`, `row_reduction.rhm`, `base_conversion.rhm`, `trigonometry.rhm`, `partial_derivatives.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
 
 > **Sets in the language.** Since the `set` declaration
 > (`RHEMA_LANGUAGE_EXTENSIONS.md` section 6) a file can say

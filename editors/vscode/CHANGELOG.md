@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `true` and `false` are highlighted as constants, and `let` inside a
+  production's braces as the keyword it now is there.
+
 ## 0.1.1 (2026-10-29)
 
 - `.rhm` files have their own icon in the Explorer and on editor tabs: the

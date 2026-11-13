@@ -70,6 +70,24 @@ the blank goes after the prompt. A file that places its blanks with
 `{answer ...}` leaves `answer` out; writing both is an error, because it
 would not be clear where the blank goes.
 
+When the forms of one grammar need different numbers of blanks, the prompt
+cannot place them: it is the same for every form. A production then puts
+its blanks into its own text with `blank(...)`:
+
+```rhema
+Q -> "circle" ... {
+  ...
+  text = "Find the centre and the radius. Centre: " ++ blank(point2(h, k))
+         ++ " Radius: " ++ blank(r)
+}
+
+prompt "{Q.text}"
+```
+
+`blank_wide(value, columns)` is a blank with a width of its own. The
+library's `analytic_geometry.rhm` is written this way: most of its forms
+have one blank and the circle has two, so the file has no `answer` line.
+
 ## Contexts
 
 WeBWorK grades an answer according to a *context*: `Numeric` for numbers and

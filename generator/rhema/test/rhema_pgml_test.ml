@@ -35,9 +35,22 @@ let trim_trailing_whitespace text =
   in
   String.sub text 0 (find (String.length text - 1))
 
+(* A whole number from 1000 up is written
+   Real(n)->cmp(tolType=>"absolute",tolerance=>0.5), so that WeBWorK grades
+   it exactly (section 6 below). The old front-end reads an answer as a
+   value and has no place for a checker's options, and its parser is a
+   generated file that is left as it is. So before a document is read back,
+   each such answer is put back to the bare number it compares with: the
+   front-end then checks what it always checked, the structure of the
+   document and the value of every answer. *)
+let exact_answer = Str.regexp "Real(\\(-?[0-9]+\\))->cmp(tolType=>\"absolute\",tolerance=>0\\.5)"
+
+let bare_whole_numbers source = Str.global_replace exact_answer "\\1" source
+
 (* Syntax only: lexer + parser, no semantic validation. Used where the point is
    whether the PG grammar can express something at all. *)
 let reparse_syntax_only source =
+  let source = bare_whole_numbers source in
   let lexbuf = Lexing.from_string (trim_trailing_whitespace source) in
   match Parser.main Lexer.read lexbuf with
   | _ -> Ok ()
@@ -51,6 +64,7 @@ let reparse_syntax_only source =
 
 (* Round-trip: PG text -> lexer -> parser -> AST -> semantic validation. *)
 let reparse source =
+  let source = bare_whole_numbers source in
   let lexbuf = Lexing.from_string (trim_trailing_whitespace source) in
   match Parser.main Lexer.read lexbuf with
   | document -> (
@@ -303,6 +317,48 @@ let () =
   | Ok _ ->
       fail
         "Semantic.validate now accepts exact fractions — turn this into a positive check"
+
+(* ------------------------------------------------------------------ *)
+(* 6. A whole number from 1000 up is graded exactly                    *)
+(* ------------------------------------------------------------------ *)
+
+(* WeBWorK compares numbers with a relative tolerance of one part in a
+   thousand, which from 1001 on accepts the next whole number: 5041 passes
+   for 5040. Such an answer is written with an absolute tolerance of half a
+   unit instead. Below 1000 the usual comparison already tells neighbours
+   apart and the answer stays a bare number, as it always was. *)
+let () =
+  let exact n = Printf.sprintf "Real(%d)->cmp(tolType=>\"absolute\",tolerance=>0.5)" n in
+  List.iter
+    (fun (n, expected) ->
+      let written = Rhema_pgml.answer_of_value (Rhema_engine.Num (Rhema_number.of_int n)) in
+      if written <> expected then fail (Printf.sprintf "%d is written %s, not %s" n written expected))
+    [ (0, "0"); (7, "7"); (-7, "-7"); (999, "999"); (-999, "-999"); (1000, exact 1000); (-1000, exact (-1000));
+      (1001, exact 1001); (5040, exact 5040); (-123456, exact (-123456)) ];
+  (* a fraction is not a whole number, however large *)
+  let fraction = Rhema_pgml.answer_of_value (Rhema_engine.Num (Rhema_number.make 20001 2)) in
+  if fraction <> "Formula('20001/2')" then fail ("a large fraction is written " ^ fraction);
+  (* in a document: every answer of four digits or more, and no other *)
+  let spec = load "ascii.rhm" ascii_grammar in
+  let large = ref 0 and small = ref 0 in
+  for seed = 0 to 29 do
+    Random.init seed;
+    let questions = List.init 4 (fun _ -> Rhema_engine.generate spec) in
+    let document = Rhema_pgml.document questions in
+    List.iter
+      (fun (question : Rhema_engine.question) ->
+        match question.Rhema_engine.answer with
+        | Rhema_engine.Num number when Rhema_number.is_integer number ->
+            let n = Rhema_number.require_integer "answer" number in
+            let written = if abs n >= 1000 then exact n else string_of_int n in
+            if abs n >= 1000 then incr large else incr small;
+            if not (contains document ("[_____]{" ^ written ^ "}")) then
+              fail (Printf.sprintf "seed %d: the answer %d is not written %s" seed n written)
+        | _ -> ())
+      questions
+  done;
+  if !large = 0 || !small = 0 then
+    fail (Printf.sprintf "the documents had %d answers from 1000 up and %d below; both are needed" !large !small)
 
 let () =
   if !failures = 0 then print_endline "Ag PGML tests passed."

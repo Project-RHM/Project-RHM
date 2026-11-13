@@ -96,10 +96,11 @@ Q -> "two_roots" nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) n
   cost = -3
   kind = "two_roots"
   require $2.value != $3.value
+  let sum = $2.value + $3.value
+  let product = $2.value * $3.value
   text = "Solve the initial value problem [`y''"
-         ++ cond($2.value + $3.value = 0, "",
-                 cond($2.value + $3.value < 0, " + ", " - ") ++ cond(abs($2.value + $3.value) = 1, "", str(abs($2.value + $3.value))) ++ "y'")
-         ++ cond($2.value * $3.value > 0, " + ", " - ") ++ cond(abs($2.value * $3.value) = 1, "", str(abs($2.value * $3.value))) ++ "y = 0`], [`y(0) = "
+         ++ cond(sum = 0, "", cond(sum < 0, " + ", " - ") ++ cond(abs(sum) = 1, "", str(abs(sum))) ++ "y'")
+         ++ cond(product > 0, " + ", " - ") ++ cond(abs(product) = 1, "", str(abs(product))) ++ "y = 0`], [`y(0) = "
          ++ str($4.value + $5.value) ++ "`], [`y'(0) = " ++ str($4.value * $2.value + $5.value * $3.value) ++ "`]." ++ ask
   answer_value = formula_add(formula_multiply(formula_constant($4.value), formula_exp(formula_multiply(formula_constant($2.value), x))),
                              formula_multiply(formula_constant($5.value), formula_exp(formula_multiply(formula_constant($3.value), x))))

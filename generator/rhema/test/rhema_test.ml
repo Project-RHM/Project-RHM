@@ -86,7 +86,9 @@ let () =
       List.iter
         (fun (rule : Rhema_ast.rule) ->
           List.iter
-            (function Rhema_ast.Assign (_, body, _) -> collect body | Rhema_ast.Require (body, _) -> collect body)
+            (function
+              | Rhema_ast.Assign (_, body, _) | Rhema_ast.Local (_, body, _) -> collect body
+              | Rhema_ast.Require (body, _) -> collect body)
             rule.Rhema_ast.equations)
         spec.Rhema_check.rules;
       if not (List.mem "\\cdot" !literals) then

@@ -58,14 +58,15 @@ attribute, random and let holds one of these:
 |---|---|---|
 | Number | literals, arithmetic, generators | an exact number, or a fraction |
 | Text | strings, `++`, `str`, the `*_latex` functions | (not an answer) |
-| Truth | comparisons, `and`, `or`, `not`, `random ... = boolean` | 1 or 0 |
-| Formula | `formula_*`, `differentiate` | a formula, by equivalence |
+| Truth | `true`, `false`, comparisons, `and`, `or`, `not`, `random ... = boolean` | 1 or 0 |
+| Formula | `formula_*`, `differentiate`, `exact_sin` and its like | a formula, by equivalence, in `x` or in any variables |
 | Polynomial | `polynomial_*` | a formula |
 | Equation | `equation_*` | not directly: `equation_solution_set` gives a Set |
-| Boolean | `bool_*` | a proposition (Boolean context) |
+| Boolean | `bool_*` | a proposition, by equivalence, in any variables |
 | Matrix | `matrix_*` | a matrix (Matrix context) |
 | Set | `set_*` | an interval or union (Interval context) |
 | Vector | `vector_*` | a vector (Vector context) |
+| Point | `point2`, `point3` | a point such as `(3, -2)`, in any context |
 | Complex | `complex` | a complex number (Complex context) |
 
 The [builtin functions](../reference/builtins.md) are listed by value type.

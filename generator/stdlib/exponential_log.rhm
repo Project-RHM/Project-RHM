@@ -28,13 +28,14 @@ start Q
 
 # ---- Price 1 --------------------------------------------------------------
 
-# log_b(b^k) = k and log_b(1 / b^k) = -k.
+# log_b(b^k) = k and log_b(1 / b^k) = -k. The answer is plain: graded with
+# the logarithm functions switched off, or log(625)/log(5) would be accepted.
 Q -> "log_value" integer_between(2, 5) integer_between(2, 4) nonzero_integer_between(-1, 1) when cost = 1 {
   cost = -1
   kind = "log_value"
   text = "Evaluate [`\log_{" ++ str($2.value) ++ "}\left("
          ++ cond($4.value > 0, str($2.value ^ $3.value), "\frac{1}{" ++ str($2.value ^ $3.value) ++ "}") ++ "\right)`]."
-  answer_value = $4.value * $3.value
+  answer_value = plain($4.value * $3.value)
 }
 
 # b^(x + c) = b^k, the right side written as a number: x = k - c.
@@ -63,9 +64,10 @@ Q -> "two_bases" integer_between(2, 3) integer_between(1, 3) integer_between(1, 
 Q -> "log_equation" integer_between(2, 5) integer_between(1, 3) integer_between(1, 5) integer_between(-9, 9) when cost = 2 weight 2 {
   cost = -2
   kind = "log_equation"
-  require $2.value ^ $3.value != $4.value * $5.value
+  let constant = $2.value ^ $3.value - $4.value * $5.value
+  require constant != 0
   text = "Solve [`\log_{" ++ str($2.value) ++ "}\left("
-         ++ polynomial_latex(polynomial_linear($4.value, $2.value ^ $3.value - $4.value * $5.value, "x"))
+         ++ polynomial_latex(polynomial_linear($4.value, constant, "x"))
          ++ "\right) = " ++ str($3.value) ++ "`] for [`x`]."
   answer_value = $5.value
 }
@@ -87,10 +89,12 @@ Q -> "log_sum" integer_between(2, 5) integer_between(1, 9) integer_between(1, 9)
 Q -> "quadratic_exp" integer_between(2, 3) integer_between(1, 3) integer_between(1, 9) when cost = 3 weight 2 {
   cost = -3
   kind = "quadratic_exp"
-  require $4.value != $2.value ^ $3.value
-  text = "Solve [`" ++ str($2.value) ++ "^{2x} " ++ cond($4.value > $2.value ^ $3.value, "+ ", "- ")
-         ++ cond(abs($4.value - $2.value ^ $3.value) = 1, "", str(abs($4.value - $2.value ^ $3.value)) ++ " \cdot ")
-         ++ str($2.value) ++ "^{x} - " ++ str($4.value * $2.value ^ $3.value) ++ " = 0`] for [`x`]."
+  let power = $2.value ^ $3.value
+  let middle = $4.value - power
+  require middle != 0
+  text = "Solve [`" ++ str($2.value) ++ "^{2x} " ++ cond(middle > 0, "+ ", "- ")
+         ++ cond(abs(middle) = 1, "", str(abs(middle)) ++ " \cdot ")
+         ++ str($2.value) ++ "^{x} - " ++ str($4.value * power) ++ " = 0`] for [`x`]."
   answer_value = $3.value
 }
 

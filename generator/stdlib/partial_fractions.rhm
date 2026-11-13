@@ -1,0 +1,122 @@
+# ==========================================================================
+#  Partial fractions
+#
+#  A rational function is given and the constants of its decomposition are
+#  asked for, one blank each. Every question is built from its answer: the
+#  constants and the factors are chosen first and the fractions are added
+#  up, so the numerator shown is the one that decomposes into them. The
+#  decomposition is unique, so the constants are the only right answer.
+#
+#  The forms have two or three constants. Each places its own blanks in its
+#  text with blank(...), so the file has no `answer` line.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  two different factors x - a and x - b
+#    2  a factor p x + q with p > 1; a numerator of the same degree as the
+#       denominator, with the quotient given
+#    3  three different factors; a repeated factor (x - a)^2
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+
+# A factor x - root.
+synth root on F
+synth poly on F
+synth latex on F
+
+# A factor p x + q with p > 1 and no common divisor.
+synth slope on G
+synth constant on G
+synth poly on G
+synth latex on G
+
+start Q
+
+F -> integer_between(-6, 6) {
+  root = $1.value
+  poly = polynomial_linear(1, 0 - $1.value, "x")
+  latex = polynomial_latex(poly)
+}
+
+G -> integer_between(2, 3) nonzero_integer_between(-5, 5) {
+  require gcd($1.value, abs($2.value)) = 1
+  slope = $1.value
+  constant = $2.value
+  poly = polynomial_linear($1.value, $2.value, "x")
+  latex = polynomial_latex(poly)
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# A / (x - a) + B / (x - b) = (A (x - b) + B (x - a)) / ((x - a)(x - b)).
+Q -> "two_factors" F F nonzero_integer_between(-6, 6) nonzero_integer_between(-6, 6) when cost = 1 {
+  cost = -1
+  kind = "two_factors"
+  require $2.root != $3.root
+  let numerator = polynomial_add(polynomial_scale($4.value, $3.poly), polynomial_scale($5.value, $2.poly))
+  text = "Find the constants [`A`] and [`B`] in [`\dfrac{" ++ polynomial_latex(numerator) ++ "}{\left(" ++ $2.latex
+         ++ "\right)\left(" ++ $3.latex ++ "\right)} = \dfrac{A}{" ++ $2.latex ++ "} + \dfrac{B}{" ++ $3.latex
+         ++ "}`]. [`A = `] " ++ blank($4.value) ++ " [`B = `] " ++ blank($5.value)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The same with a factor p x + q; x - b must not be a multiple of it.
+Q -> "scaled" G F nonzero_integer_between(-6, 6) nonzero_integer_between(-6, 6) when cost = 2 weight 2 {
+  cost = -2
+  kind = "scaled"
+  require $2.slope * $3.root + $2.constant != 0
+  let numerator = polynomial_add(polynomial_scale($4.value, $3.poly), polynomial_scale($5.value, $2.poly))
+  text = "Find the constants [`A`] and [`B`] in [`\dfrac{" ++ polynomial_latex(numerator) ++ "}{\left(" ++ $2.latex
+         ++ "\right)\left(" ++ $3.latex ++ "\right)} = \dfrac{A}{" ++ $2.latex ++ "} + \dfrac{B}{" ++ $3.latex
+         ++ "}`]. [`A = `] " ++ blank($4.value) ++ " [`B = `] " ++ blank($5.value)
+}
+
+# k + A / (x - a) + B / (x - b): the numerator has the denominator's degree,
+# and the quotient k, found by division, is given.
+Q -> "improper" F F integer_between(1, 3) nonzero_integer_between(-6, 6) nonzero_integer_between(-6, 6) when cost = 2 weight 2 {
+  cost = -2
+  kind = "improper"
+  require $2.root != $3.root
+  let numerator = polynomial_add(polynomial_scale($4.value, polynomial_multiply($2.poly, $3.poly)),
+                                 polynomial_add(polynomial_scale($5.value, $3.poly), polynomial_scale($6.value, $2.poly)))
+  text = "Find the constants [`A`] and [`B`] in [`\dfrac{" ++ polynomial_latex(numerator) ++ "}{\left(" ++ $2.latex
+         ++ "\right)\left(" ++ $3.latex ++ "\right)} = " ++ str($4.value) ++ " + \dfrac{A}{" ++ $2.latex
+         ++ "} + \dfrac{B}{" ++ $3.latex ++ "}`]. [`A = `] " ++ blank($5.value) ++ " [`B = `] " ++ blank($6.value)
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+Q -> "three_factors" F F F nonzero_integer_between(-5, 5) nonzero_integer_between(-5, 5) nonzero_integer_between(-5, 5) when cost = 3 weight 2 {
+  cost = -3
+  kind = "three_factors"
+  require $2.root != $3.root and $2.root != $4.root and $3.root != $4.root
+  let numerator = polynomial_add(polynomial_scale($5.value, polynomial_multiply($3.poly, $4.poly)),
+                                 polynomial_add(polynomial_scale($6.value, polynomial_multiply($2.poly, $4.poly)),
+                                                polynomial_scale($7.value, polynomial_multiply($2.poly, $3.poly))))
+  text = "Find the constants [`A`], [`B`] and [`C`] in [`\dfrac{" ++ polynomial_latex(numerator) ++ "}{\left(" ++ $2.latex
+         ++ "\right)\left(" ++ $3.latex ++ "\right)\left(" ++ $4.latex ++ "\right)} = \dfrac{A}{" ++ $2.latex
+         ++ "} + \dfrac{B}{" ++ $3.latex ++ "} + \dfrac{C}{" ++ $4.latex ++ "}`]. [`A = `] " ++ blank($5.value)
+         ++ " [`B = `] " ++ blank($6.value) ++ " [`C = `] " ++ blank($7.value)
+}
+
+# A / (x - a) + B / (x - a)^2 + C / (x - b), over (x - a)^2 (x - b).
+Q -> "repeated" F F nonzero_integer_between(-5, 5) nonzero_integer_between(-5, 5) nonzero_integer_between(-5, 5) when cost = 3 weight 2 {
+  cost = -3
+  kind = "repeated"
+  require $2.root != $3.root
+  let numerator = polynomial_add(polynomial_scale($4.value, polynomial_multiply($2.poly, $3.poly)),
+                                 polynomial_add(polynomial_scale($5.value, $3.poly),
+                                                polynomial_scale($6.value, polynomial_power($2.poly, 2))))
+  text = "Find the constants [`A`], [`B`] and [`C`] in [`\dfrac{" ++ polynomial_latex(numerator) ++ "}{\left(" ++ $2.latex
+         ++ "\right)^{2}\left(" ++ $3.latex ++ "\right)} = \dfrac{A}{" ++ $2.latex ++ "} + \dfrac{B}{\left(" ++ $2.latex
+         ++ "\right)^{2}} + \dfrac{C}{" ++ $3.latex ++ "}`]. [`A = `] " ++ blank($4.value)
+         ++ " [`B = `] " ++ blank($5.value) ++ " [`C = `] " ++ blank($6.value)
+}
+
+prompt "{Q.text}"

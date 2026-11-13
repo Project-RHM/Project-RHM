@@ -24,10 +24,15 @@ let with_initial spec name value =
 let kind (q : Rhema_engine.question) =
   match Rhema_engine.attribute q.Rhema_engine.tree "kind" with Rhema_engine.Text t -> t | _ -> "?"
 
+(* The value of a logarithm is graded with the functions switched off. *)
 let answer (q : Rhema_engine.question) =
   match q.Rhema_engine.answer with
   | Rhema_engine.Num n -> Rhema_number.to_float n
+  | Rhema_engine.Plain (Rhema_engine.Num n) -> Rhema_number.to_float n
   | other -> fail ("not a number: " ^ Rhema_engine.describe_value other); nan
+
+let is_plain (q : Rhema_engine.question) =
+  match q.Rhema_engine.answer with Rhema_engine.Plain _ -> true | _ -> false
 
 (* The groups of the first match, read at once: Str keeps one match only,
    and reading a linear expression below starts another. *)
@@ -110,7 +115,8 @@ let check (q : Rhema_engine.question) =
       let b = float_of_string (g 1) and n = float_of_string (g 3) in
       let reciprocal = (match g 2 with exception Not_found -> false | _ -> true) in
       let want = log_base b (if reciprocal then 1. /. n else n) in
-      if Float.abs (got -. want) > 1e-9 then fail (Printf.sprintf "log_value: answer %g, computed %g, for %S" got want p)
+      if Float.abs (got -. want) > 1e-9 then fail (Printf.sprintf "log_value: answer %g, computed %g, for %S" got want p);
+      if not (is_plain q) then fail ("log_value: the answer could be typed back as a logarithm: " ^ p)
   | k ->
       let f = residual q in
       let at = f got in

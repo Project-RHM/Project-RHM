@@ -101,7 +101,7 @@ let check_numeric_derivative seed original derivative =
     [ -0.05; 0.0; 0.05 ]
 
 let rec record_constructors seen = function
-  | Rhema_formula.Constant _ -> Hashtbl.replace seen "constant" true
+  | Rhema_formula.Constant _ | Rhema_formula.Pi -> Hashtbl.replace seen "constant" true
   | Rhema_formula.Variable _ -> Hashtbl.replace seen "variable" true
   | Rhema_formula.Add (left, right) ->
       Hashtbl.replace seen "add" true;
@@ -202,7 +202,7 @@ let rec is_leaf = function
   | _ -> false
 
 let rec price = function
-  | Rhema_formula.Variable _ | Rhema_formula.Constant _ -> 0
+  | Rhema_formula.Variable _ | Rhema_formula.Constant _ | Rhema_formula.Pi -> 0
   | Rhema_formula.Negate body -> price body
   | Rhema_formula.Multiply (Rhema_formula.Constant _, Rhema_formula.Variable _) -> 1
   | Rhema_formula.Add (left, right) | Rhema_formula.Subtract (left, right) ->
@@ -216,7 +216,7 @@ let rec price = function
 (* ln, sqrt, tan and quotients belong to derivative questions only. *)
 let rec uses_advanced = function
   | Rhema_formula.Divide _ | Rhema_formula.Ln _ | Rhema_formula.Sqrt _ | Rhema_formula.Tan _ -> true
-  | Rhema_formula.Constant _ | Rhema_formula.Variable _ -> false
+  | Rhema_formula.Constant _ | Rhema_formula.Pi | Rhema_formula.Variable _ -> false
   | Rhema_formula.Add (l, r) | Rhema_formula.Subtract (l, r) | Rhema_formula.Multiply (l, r) ->
       uses_advanced l || uses_advanced r
   | Rhema_formula.Power (b, _) | Rhema_formula.Negate b | Rhema_formula.Sin b | Rhema_formula.Cos b

@@ -37,7 +37,7 @@ let expect_one_of expected (found : string) start =
 %token RANDOM LET BOOLEAN ON
 %token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH INCLUDE IMPORT AS QUESTION SET
 %token TILDE
-%token AND OR NOT
+%token AND OR NOT TRUE FALSE
 %token ARROW CONCAT NEQ LE GE EQ LT GT
 %token PLUS MINUS STAR SLASH PERCENT CARET
 %token DOT COMMA LPAREN RPAREN LBRACE RBRACE
@@ -277,6 +277,10 @@ equation:
       { Assign (name, body, position $startpos) }
   | REQUIRE; condition = expr
       { Require (condition, position $startpos) }
+  (* A name for this rule only; the file-level `let` is a declaration and is
+     never inside a rule's braces, so the two cannot be confused. *)
+  | LET; name = IDENT; EQ; body = expr
+      { Local (name, body, position $startpos) }
 
 (* ------------------------------------------------------------------ *)
 (* Expressions                                                         *)
@@ -294,6 +298,8 @@ named_argument:
 expr:
   | value = INT                       { Int value }
   | text = STRING                     { Str text }
+  | TRUE                              { Bool true }
+  | FALSE                             { Bool false }
   | name = IDENT                      { At (position $startpos, Attr_here name) }
   | owner = IDENT; DOT; name = IDENT  { At (position $startpos, Attr_child_named (owner, name)) }
   | index = DOLLAR                    { At (position $startpos, Child index) }

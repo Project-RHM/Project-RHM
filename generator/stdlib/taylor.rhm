@@ -1,0 +1,128 @@
+# ==========================================================================
+#  Taylor polynomials
+#
+#  The Taylor polynomial of a given degree at x = 0 of the functions whose
+#  series a first course knows: e^(kx), 1/(1 - kx), sin(kx), cos(kx) and
+#  ln(1 + kx), then a product with a linear factor and an argument k x^2.
+#  The coefficients are written from the series, k^j / j! and its like, as
+#  exact fractions; nothing is differentiated.
+#
+#  The answer is a polynomial in x. WeBWorK grades it as a formula, so the
+#  function itself is not accepted in its place: it is a different function.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  e^(kx) to degree 2 or 3, 1/(1 - kx) to degree 3
+#    2  sin(kx) to degree 3 or 5, cos(kx) to degree 2 or 4, ln(1 + kx) to
+#       degree 3
+#    3  (a + bx) e^(kx) to degree 3, e^(k x^2) to degree 4 or 6
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# The coefficient k of the argument, and how it is written before x.
+synth value on K
+synth latex on K
+
+start Q
+
+K -> nonzero_integer_between(-3, 3) {
+  value = $1.value
+  latex = cond($1.value = 1, "", cond($1.value = 0 - 1, "-", str($1.value)))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# e^(kx) = 1 + kx + k^2 x^2 / 2 + k^3 x^3 / 6 + ...
+Q -> "exponential" K integer_between(2, 3) when cost = 1 weight 2 {
+  cost = -1
+  kind = "exponential"
+  let k = $2.value
+  text = "Find the Taylor polynomial of degree [`" ++ str($3.value) ++ "`] of [`f(x) = e^{" ++ $2.latex
+         ++ "x}`] at [`x = 0`]."
+  answer_value = polynomial_add(polynomial_add(polynomial_linear(k, 1, "x"), polynomial_monomial(k ^ 2 / 2, 2, "x")),
+                                polynomial_monomial(cond($3.value = 3, k ^ 3 / 6, 0), 3, "x"))
+}
+
+# 1 / (1 - kx) = 1 + kx + k^2 x^2 + k^3 x^3 + ...
+Q -> "geometric" K when cost = 1 {
+  cost = -1
+  kind = "geometric"
+  let k = $2.value
+  text = "Find the Taylor polynomial of degree [`3`] of [`f(x) = \dfrac{1}{1 " ++ cond(k > 0, "- ", "+ ")
+         ++ cond(abs(k) = 1, "", str(abs(k))) ++ "x}`] at [`x = 0`]."
+  answer_value = polynomial_add(polynomial_add(polynomial_linear(k, 1, "x"), polynomial_monomial(k ^ 2, 2, "x")),
+                                polynomial_monomial(k ^ 3, 3, "x"))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# sin(kx) = kx - k^3 x^3 / 6 + k^5 x^5 / 120 - ...
+Q -> "sine" K integer_between(1, 2) when cost = 2 weight 2 {
+  cost = -2
+  kind = "sine"
+  let k = $2.value
+  text = "Find the Taylor polynomial of degree [`" ++ str(2 * $3.value + 1) ++ "`] of [`f(x) = \sin\left(" ++ $2.latex
+         ++ "x\right)`] at [`x = 0`]."
+  answer_value = polynomial_add(polynomial_add(polynomial_linear(k, 0, "x"), polynomial_monomial(0 - k ^ 3 / 6, 3, "x")),
+                                polynomial_monomial(cond($3.value = 2, k ^ 5 / 120, 0), 5, "x"))
+}
+
+# cos(kx) = 1 - k^2 x^2 / 2 + k^4 x^4 / 24 - ...
+Q -> "cosine" K integer_between(1, 2) when cost = 2 weight 2 {
+  cost = -2
+  kind = "cosine"
+  let k = $2.value
+  text = "Find the Taylor polynomial of degree [`" ++ str(2 * $3.value) ++ "`] of [`f(x) = \cos\left(" ++ $2.latex
+         ++ "x\right)`] at [`x = 0`]."
+  answer_value = polynomial_add(polynomial_add(polynomial_constant(1, "x"), polynomial_monomial(0 - k ^ 2 / 2, 2, "x")),
+                                polynomial_monomial(cond($3.value = 2, k ^ 4 / 24, 0), 4, "x"))
+}
+
+# ln(1 + kx) = kx - k^2 x^2 / 2 + k^3 x^3 / 3 - ...
+Q -> "logarithm" K when cost = 2 weight 2 {
+  cost = -2
+  kind = "logarithm"
+  let k = $2.value
+  text = "Find the Taylor polynomial of degree [`3`] of [`f(x) = \ln\left(1 " ++ cond(k > 0, "+ ", "- ")
+         ++ cond(abs(k) = 1, "", str(abs(k))) ++ "x\right)`] at [`x = 0`]."
+  answer_value = polynomial_add(polynomial_add(polynomial_linear(k, 0, "x"), polynomial_monomial(0 - k ^ 2 / 2, 2, "x")),
+                                polynomial_monomial(k ^ 3 / 3, 3, "x"))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# (a + bx) e^(kx): the coefficient of x^j is a k^j / j! + b k^(j-1) / (j-1)!.
+Q -> "product" nonzero_integer_between(-4, 4) nonzero_integer_between(-4, 4) K when cost = 3 weight 2 {
+  cost = -3
+  kind = "product"
+  let a = $2.value
+  let b = $3.value
+  let k = $4.value
+  text = "Find the Taylor polynomial of degree [`3`] of [`f(x) = \left(" ++ str(a) ++ cond(b > 0, " + ", " - ")
+         ++ cond(abs(b) = 1, "", str(abs(b))) ++ "x\right) e^{" ++ $4.latex ++ "x}`] at [`x = 0`]."
+  answer_value = polynomial_add(polynomial_add(polynomial_linear(a * k + b, a, "x"),
+                                               polynomial_monomial(a * k ^ 2 / 2 + b * k, 2, "x")),
+                                polynomial_monomial(a * k ^ 3 / 6 + b * k ^ 2 / 2, 3, "x"))
+}
+
+# e^(k x^2) = 1 + k x^2 + k^2 x^4 / 2 + k^3 x^6 / 6 + ...: the series of e^u
+# with u = k x^2.
+Q -> "square_argument" K integer_between(2, 3) when cost = 3 weight 2 {
+  cost = -3
+  kind = "square_argument"
+  let k = $2.value
+  text = "Find the Taylor polynomial of degree [`" ++ str(2 * $3.value) ++ "`] of [`f(x) = e^{" ++ $2.latex
+         ++ "x^{2}}`] at [`x = 0`]."
+  answer_value = polynomial_add(polynomial_add(polynomial_add(polynomial_constant(1, "x"), polynomial_monomial(k, 2, "x")),
+                                               polynomial_monomial(k ^ 2 / 2, 4, "x")),
+                                polynomial_monomial(cond($3.value = 3, k ^ 3 / 6, 0), 6, "x"))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

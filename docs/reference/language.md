@@ -43,8 +43,11 @@ backslash). Any other backslash is kept, so LaTeX is written directly:
 ```text
 answer  as  attribute  boolean  context  copy  import  include  left
 let  nonassoc  on  precedence  prompt  question  random  require  right
-set  split  start  synth  weight  when  width  and  or  not
+set  split  start  synth  weight  when  width  and  or  not  true  false
 ```
+
+A reserved word cannot be used as a name, also not for a local name in a
+production: `let width = ...` is a syntax error.
 
 Inside a `set` block, the words `part`, `of`, `any`, `in`, `spread`, `low`,
 `allowed`, `distinct`, `balanced` and `ordered` have a meaning, but they are
@@ -91,10 +94,20 @@ Every production for a symbol must compute every synthesized attribute that
 symbol carries. A generator leaf carries one attribute, `value`, the number
 it drew; a quoted word carries `value`, its text.
 
-Two names are reserved for the start symbol: `pg_context`, the WeBWorK
-context of each question, and `pg_width`, the width of its answer blanks.
-When the start symbol computes them, they override the file's `context` and
-`width` for that question.
+Three names are reserved for the start symbol: `pg_context`, the WeBWorK
+context of each question, `pg_width`, the width of its answer blanks, and
+`pg_variables`, the variables of its formula and proposition answers. When
+the start symbol
+computes the first two, they override the file's `context` and `width` for
+that question.
+
+`pg_variables` is text naming variables, such as `"x y"`. A formula answer
+is written with a context that declares the variables it holds; with
+`pg_variables` every formula answer of the question is declared in all the
+named ones, so a derivative that comes to `6y` is entered in a blank that
+knows `x` too. A proposition answer is declared in them in the same way, as
+propositional variables. It may also be a `let` of the file, for all its
+questions.
 
 ## Productions
 
@@ -143,15 +156,33 @@ commas:
 :   A condition checked after the children are built and the equations
     above it are computed. When it is false, the node is built again.
 
-Updates are applied in the order written; equations and requirements are
-evaluated in the order written.
+`let NAME = EXPR`
+:   A *local name*: a value computed after the children are built, for the
+    lines below it in the same body. The node does not carry it, so it needs
+    no `synth` declaration and no other production sees it. The name must be
+    new: an attribute, a random, a file-level let or an earlier local name
+    of the same production is refused. Guards, updates and generator
+    arguments are evaluated before the children exist and cannot use it.
+
+Updates are applied in the order written; equations, local names and
+requirements are evaluated in the order written.
+
+```rhema
+B -> integer_between(-3, 2) integer_between(1, 4) {
+  let upper = $1.value + $2.value
+  require upper != 0
+  latex = "\int_{" ++ str($1.value) ++ "}^{" ++ str(upper) ++ "}"
+  value = upper
+}
+```
 
 ## Expressions
 
 | Form | Meaning |
 |---|---|
 | `12`, `"text"` | a number, a string |
-| `NAME` | an inherited attribute of the node, a random or let, or an attribute computed earlier in the same production |
+| `true`, `false` | the two truth values |
+| `NAME` | an inherited attribute of the node, a random or let, or an attribute or local name computed earlier in the same production |
 | `$2.NAME` | an attribute of the second child |
 | `$2` | the second child itself; only as an argument of `infix` and `prefix` |
 | `S.NAME` | an attribute of the start symbol `S`; only in `prompt` and `answer` |
@@ -159,7 +190,7 @@ evaluated in the order written.
 | `f(e, ...)` | a builtin function |
 | `-e`, `not e` | negation |
 | `e + e`, `-`, `*`, `/`, `%`, `^` | arithmetic on numbers |
-| `e ++ e` | joining text |
+| `e ++ e` | joining text, or text and answer blanks |
 | `e = e`, `!=`, `<`, `<=`, `>`, `>=` | comparison |
 | `e and e`, `e or e` | logic |
 
@@ -172,7 +203,8 @@ comparisons (which do not chain); `++` (right-associative); `+ -`;
 `* / %`; `^` (right-associative); unary `-`. Brackets group.
 
 Every value has a type: number, text, truth, formula, polynomial,
-equation, Boolean formula, matrix, set, vector or complex number. Types are
+equation, Boolean formula, matrix, set, vector, point, complex number, or
+text with answer blanks. Types are
 checked when a value is used; a function given the wrong type stops
 generation with a message naming both.
 
@@ -227,6 +259,56 @@ The prompt is PGML with these replacements:
 values. A question has either `answer` or `{answer ...}` blanks, not both.
 `context` names the WeBWorK context (default `Numeric`); `width` sets the
 width of every blank.
+
+### Blanks in text
+
+A blank may also be part of the text a production builds:
+
+```rhema
+text = "Centre: " ++ blank(point2(h, k)) ++ " Radius: " ++ blank_wide(r, 4)
+```
+
+`blank(VALUE)` is an answer blank graded against `VALUE`, and
+`blank_wide(VALUE, COLUMNS)` the same with a width of its own. Joined to
+text with `++` it makes *text with blanks*; when `{S.NAME}` or `{NAME}` in
+the prompt holds such a value, its text and blanks go into the question in
+the order written. Each production then says where its own blanks are, so
+forms with different numbers of blanks can share a grammar.
+
+- A file whose rules or lets call `blank` needs no `answer` line. A question
+  made with no blank at all is refused when it is generated.
+- A question with an `answer` line and blanks in its text is refused: its
+  blanks come from one place.
+- Text with blanks can only be joined with `++` and shown through the
+  prompt; `str`, a comparison or a `*_latex` function refuses it.
+- A blank cannot be inside mathematics, between `` [` `` and `` `] ``.
+
+### Answers that carry their context
+
+Some answers are written to WeBWorK with a context of their own, so the
+question may be in any context and the grammar sets none:
+
+- a point (`point2`, `point3`);
+- a formula in variables other than `x`: the context declares the variables
+  of every formula answer of the question and those named by
+  `pg_variables`, so its blanks accept the same names;
+- a proposition (`bool_*`): the context is a copy of WeBWorK's Boolean
+  context, which knows `p` and `q` alone, that declares the variables of
+  every proposition answer of the question and those named by
+  `pg_variables`. The compiled file loads `contextBoolean.pl` for it;
+- `plain(VALUE)`, a number or formula that must be worked out: the
+  trigonometric, hyperbolic, logarithm and exponential functions are
+  switched off (`sqrt` and `abs` stay), so `sin(pi/3)` is not accepted as
+  the value of sin(π/3).
+
+WeBWorK compares numbers with a relative tolerance of one part in a
+thousand. Up to 1000 that still tells a whole number from its neighbours;
+above it, it does not: for the answer 5040 it accepts 5041, and for 10100
+it accepts 10110. A whole-number answer of 1000 or more (or -1000 or less)
+is therefore written with an absolute tolerance of half a unit, so that no
+other whole number passes; smaller ones are written as bare numbers.
+`exactly(N)` asks for the exact comparison whatever the size of `N`;
+`base_conversion.rhm` uses it where the digits are the answer.
 
 ## Questions
 
@@ -379,7 +461,7 @@ production    = IDENT "->" symbol { symbol } [ "when" expr ] [ "weight" INT ]
 symbol        = IDENT | IDENT "(" [ exprs ] ")"
               | IDENT "." IDENT [ "(" [ IDENT "=" expr { "," IDENT "=" expr } ] ")" ]
               | STRING | "+" | "-" | "*" | "/" | "%" | "^" ;
-equation      = IDENT "=" expr | "require" expr ;
+equation      = IDENT "=" expr | "require" expr | "let" IDENT "=" expr ;
 
 qitem         = "start" IDENT | "context" STRING | "prompt" STRING
               | "answer" expr | "width" INT | IDENT "=" sint ;
@@ -392,7 +474,8 @@ draw          = IDENT "=" sint
               | IDENT "in" "{" sint { "," sint } "}"
               | IDENT "~" sint { "spread" sint | "low" sint | "allowed" "{" sint { "," sint } "}" } ;
 
-expr          = INT | STRING | IDENT | IDENT "." IDENT | "$" INT | "$" INT "." IDENT
+expr          = INT | STRING | "true" | "false"
+              | IDENT | IDENT "." IDENT | "$" INT | "$" INT "." IDENT
               | IDENT "(" [ exprs ] ")" | "(" expr ")"
               | "-" expr | "not" expr | expr binop expr ;
 exprs         = expr { "," expr } ;

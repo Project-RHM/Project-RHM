@@ -91,6 +91,62 @@ let inverse (matrix : t) : t =
   (* entry (i, j) of the inverse is cofactor (j, i) / det *)
   List.init size (fun i -> List.init size (fun j -> Rhema_number.divide (cofactor j i) det))
 
+(* A list of numbers as a matrix of one row, or of one column. *)
+let of_row components : t = make [ components ]
+let of_column components : t = make (List.map (fun component -> [ component ]) components)
+
+(* One matrix above the other, and one beside the other (an augmented
+   matrix [A | B]). *)
+let stack (upper : t) (lower : t) : t =
+  if columns upper <> columns lower then
+    invalid_arg "the two matrices have different numbers of columns";
+  upper @ lower
+
+let augment (left : t) (right : t) : t =
+  if rows left <> rows right then invalid_arg "the two matrices have different numbers of rows";
+  List.map2 ( @ ) left right
+
+(* The reduced row echelon form, by Gauss-Jordan elimination on exact
+   rationals: each pivot is 1, the only non-zero entry of its column, and to
+   the right of the pivot above it; rows of zeros are at the bottom. Also
+   returns the pivot columns (0-based), whose number is the rank. *)
+let reduce (matrix : t) : t * int list =
+  let work = Array.of_list (List.map Array.of_list matrix) in
+  let height = Array.length work and width = columns matrix in
+  let pivots = ref [] and row = ref 0 in
+  for column = 0 to width - 1 do
+    if !row < height then begin
+      let found = ref None in
+      for candidate = height - 1 downto !row do
+        if not (Rhema_number.is_zero work.(candidate).(column)) then found := Some candidate
+      done;
+      match !found with
+      | None -> ()
+      | Some candidate ->
+          let pivot_row = work.(candidate) in
+          work.(candidate) <- work.(!row);
+          let pivot = pivot_row.(column) in
+          let pivot_row = Array.map (fun entry -> Rhema_number.divide entry pivot) pivot_row in
+          work.(!row) <- pivot_row;
+          for other = 0 to height - 1 do
+            if other <> !row then begin
+              let factor = work.(other).(column) in
+              if not (Rhema_number.is_zero factor) then
+                work.(other) <-
+                  Array.mapi
+                    (fun j entry -> Rhema_number.subtract entry (Rhema_number.multiply factor pivot_row.(j)))
+                    work.(other)
+            end
+          done;
+          pivots := column :: !pivots;
+          incr row
+    end
+  done;
+  (Array.to_list (Array.map Array.to_list work), List.rev !pivots)
+
+let row_echelon matrix = fst (reduce matrix)
+let rank matrix = List.length (snd (reduce matrix))
+
 let entry (matrix : t) i j =
   if i < 1 || i > rows matrix || j < 1 || j > columns matrix then
     invalid_arg (Printf.sprintf "there is no entry (%d, %d) in a %d by %d matrix" i j (rows matrix) (columns matrix));

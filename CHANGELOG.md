@@ -7,6 +7,76 @@ is announced one version before the removal.
 
 ## Unreleased
 
+- **Seven more question types**, fixed forms at prices 1 to 3:
+  `partial_fractions.rhm` (the constants, one blank each),
+  `recurrence.rhm` (terms, characteristic roots and closed forms, up to
+  four blanks), `taylor.rhm`, `row_reduction.rhm` (rank, reduced row
+  echelon form, a vector of a null space), `base_conversion.rhm`,
+  `trigonometry.rhm` (exact values and equations, answered as `plain`
+  values) and `partial_derivatives.rhm` (answers in `x` and `y`). Each has
+  a test that checks its answers independently, and the teacher workspace
+  lists them.
+- **`pg_variables`**: a grammar names the variables of its formula answers,
+  as a `let` of the file or as an attribute of the start symbol, so an
+  answer that holds only one of them is entered in a blank that knows all.
+- **Builtins**: `base_digits(n, b)`, a whole number written in base 2 to 16,
+  and `base_number(n, b)`, the number with those digits in decimal, for
+  answers in binary and octal.
+- **Fixed**: a whole-number answer of 1000 or more accepted its neighbours.
+  WeBWorK compares numbers with a relative tolerance of one part in a
+  thousand, so 5041 passed for 5040. Such an answer is now written
+  `Real(n)->cmp(tolType=>"absolute",tolerance=>0.5)`; smaller whole numbers
+  stay bare numbers. This changes the PG written by `arithmetic.rhm`,
+  `counting.rhm`, `sequence.rhm` and `series.rhm` for their large answers,
+  and by any grammar of your own with such answers.
+- **Fixed**: WeBWorK could not read a proposition answer that holds a
+  variable other than `p` and `q`, the two its Boolean context knows
+  ("Variable 'r' is not defined in this context"); most rewriting questions
+  of `logic_forms.rhm` were affected. A proposition answer is now written
+  with a copy of the Boolean context that declares its variables and those
+  named by `pg_variables`, so a grammar need not set `context "Boolean"`
+  for it. `tools/validate_webwork_renderer.py` now compiles ten questions
+  for each case and has WeBWorK build their answer evaluators, which is
+  where such a fault shows.
+- **`exactly(N)`**: a whole number graded that way whatever its size;
+  `base_conversion.rhm` uses it for its binary and octal answers.
+- **Blanks in text**: `blank(VALUE)` and `blank_wide(VALUE, COLUMNS)` make an
+  answer blank that is joined to a production's text with `++`, so forms
+  with different numbers of blanks can share a grammar and one blank can
+  have a width of its own. A file that calls `blank` needs no `answer`
+  line; an `answer` line together with blanks in the text is refused.
+  `analytic_geometry.rhm` now asks for the centre and the radius of a
+  circle in two blanks.
+- **Formulas in any variables**: a formula answer with variables other than
+  `x` is written with a context that declares them, so partial derivatives
+  can be asked; before, such a problem did not compile in WeBWorK.
+  `formula_value` gives the exact number a formula without variables
+  comes to.
+- **π and exact values**: `formula_pi()`, and `exact_sin`, `exact_cos`,
+  `exact_tan` at multiples of π/6 and π/4.
+- **`plain(VALUE)`**: an answer graded with the trigonometric, hyperbolic,
+  logarithm and exponential functions switched off, so a question cannot be
+  typed back as its own answer. `exponential_log.rhm` uses it for the value
+  of a logarithm, where `log(625)/log(5)` used to be accepted.
+- **Fixed**: a fraction in a formula is bracketed as a divisor and under a
+  power, `x/(2/3)` and `(2/3)^2`; they were written `x/2/3` and `2/3^2`,
+  which WeBWorK reads as other numbers. No library grammar was affected.
+- **Language**: `true` and `false` are the two truth values (both are now
+  reserved words; a grammar that used either as a name must rename it).
+- **Language**: a local name in a production, `let NAME = EXPR` inside the
+  braces. It is computed after the children are built, is visible to the
+  lines below it, and is not carried by the node, so it needs no `synth`.
+  A name that would hide an attribute, a random or a file-level `let` is
+  refused.
+- **Points**: `point2(x, y)`, `point3(x, y, z)` and `point_latex`. A point
+  answer is entered as `(3, -2)` and graded as a point in any context; the
+  grammar does not set one. `analytic_geometry.rhm` uses it in place of a
+  text answer in the Point context.
+- **Matrices of any shape**: `matrix_row`, `matrix_column`, `matrix_stack`,
+  `matrix_augment`, `matrix_rows`, `matrix_columns`, and `matrix_rref` and
+  `matrix_rank` by exact Gauss-Jordan elimination.
+- The six grammars of the batch below are rewritten with these; they ask
+  the same questions.
 - **Documentation**: a tutorial page, *Installing with opam*, that goes from
   a machine without opam to a working `rhema`: installing opam, `opam init`,
   `opam install rhema`, updating, removing, and what to do when a step
@@ -27,7 +97,7 @@ is announced one version before the removal.
   areas they measure), `derivative_applications.rhm` (tangent lines,
   critical points, extreme values, intervals of increase),
   `exponential_log.rhm`, `analytic_geometry.rhm` (lines and circles; a
-  point is answered as `(3, -2)` in WeBWorK's Point context),
+  point is answered as `(3, -2)`),
   `differential_equation.rhm` (initial value problems, answered by a
   formula) and `statistics.rhm`. They use the existing builtins only, and
   each has a test that checks its answers independently. The teacher
