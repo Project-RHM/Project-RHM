@@ -202,6 +202,11 @@ let expression_builtins =
     ("differentiate", 2);
     ("formula_latex", 1);
     ("formula_is_zero", 1);
+    ("formula_pi", 0);
+    ("formula_value", 1);
+    ("exact_sin", 2);
+    ("exact_cos", 2);
+    ("exact_tan", 2);
     ("formula_to_polynomial", 2);
     ("polynomial_constant", 2);
     ("polynomial_variable", 1);
@@ -269,6 +274,23 @@ let expression_builtins =
     ("matrix_vector", 2);
     ("matrix_latex", 1);
     ("matrix_row_latex", 2);
+    ("matrix_row", 1);
+    ("matrix_column", 1);
+    ("matrix_stack", 2);
+    ("matrix_augment", 2);
+    ("matrix_rows", 1);
+    ("matrix_columns", 1);
+    ("matrix_rank", 1);
+    ("matrix_rref", 1);
+    ("point2", 2);
+    ("point3", 3);
+    ("point_latex", 1);
+    ("base_digits", 2);
+    ("base_number", 2);
+    ("blank", 1);
+    ("blank_wide", 2);
+    ("plain", 1);
+    ("exactly", 1);
     ("vector_entry", 2);
     ("set_empty", 0);
     ("set_insert", 2);
@@ -360,7 +382,7 @@ let rec iter_expr ~position f expression =
   | _ -> (
       f position expression;
       match expression with
-      | Int _ | Str _ | Attr_here _ | Attr_child _ | Attr_child_named _ | Child _ | At _ -> ()
+      | Int _ | Str _ | Bool _ | Attr_here _ | Attr_child _ | Attr_child_named _ | Child _ | At _ -> ()
       | Unary (_, body) -> iter_expr ~position f body
       | Binary (_, left, right) ->
           iter_expr ~position f left;
@@ -876,7 +898,7 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
                        name)
                 else
                   report position (Printf.sprintf "unknown function '%s'" name))
-        | Int _ | Str _ | Unary _ | Binary _ | At _ -> ())
+        | Int _ | Str _ | Bool _ | Unary _ | Binary _ | At _ -> ())
       expression
   in
 
@@ -1016,6 +1038,39 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
           | Require (condition, position) ->
               check_expr ~assigned_here:(List.rev !assigned) ~rhs:rule.rhs ~context:`Upward
                 ~arity ~position condition
+          | Local (name, body, position) ->
+              (* A name for this rule only. It must be new: hiding an
+                 attribute or a question-level value would make the lines
+                 below it mean something else than they do everywhere else. *)
+              let clash =
+                if is_inherited name then
+                  Some
+                    (Printf.sprintf
+                       "let '%s' would hide the inherited attribute '%s'; choose another name"
+                       name name)
+                else if is_synthesized name then
+                  Some
+                    (Printf.sprintf
+                       "'%s' is a synthesized attribute; write '%s = ...' without 'let' to \
+                        compute it, or choose another name for a local value"
+                       name name)
+                else if is_question_level name then
+                  Some
+                    (Printf.sprintf
+                       "let '%s' would hide the question-level '%s'; choose another name" name
+                       name)
+                else if List.mem name !assigned then
+                  Some (Printf.sprintf "'%s' is assigned twice in the same rule" name)
+                else None
+              in
+              check_expr ~assigned_here:(List.rev !assigned) ~rhs:rule.rhs ~context:`Upward
+                ~arity ~position body;
+              (* A refused name is not recorded, so the one mistake is
+                 reported once and the attribute of that name is still asked
+                 for below. *)
+              (match clash with
+              | Some message -> report position message
+              | None -> assigned := name :: !assigned)
           | Assign (name, body, position) ->
               if List.mem name !assigned then
                 report position
@@ -1148,6 +1203,34 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
              rule.lhs))
     free_rules;
 
+  (* Whether some text of this file, or of a module it imports, may hold an
+     answer blank: a rule or a let calls blank or blank_wide. *)
+  let text_may_hold_blanks =
+    let calls_blank expression =
+      let found = ref false in
+      iter_expr ~position:dummy_position
+        (fun _ node ->
+          match node with Call (("blank" | "blank_wide"), _) -> found := true | _ -> ())
+        expression;
+      !found
+    in
+    let in_rules rules =
+      List.exists
+        (fun rule ->
+          List.exists
+            (function
+              | Assign (_, body, _) | Local (_, body, _) | Require (body, _) -> calls_blank body)
+            rule.equations)
+        rules
+    in
+    let in_lets lets = List.exists (fun (_, body) -> calls_blank body) lets in
+    let rec in_module (module_spec : spec) =
+      in_rules module_spec.rules || in_lets module_spec.lets
+      || List.exists (fun (_, imported) -> in_module imported) module_spec.imports
+    in
+    in_rules rules || in_lets lets || List.exists (fun (_, imported) -> in_module imported) modules
+  in
+
   (* ---- each question: start, prompt, answer, context, width ---- *)
   let validate (draft : draft) =
     let named = draft.d_name <> "main" in
@@ -1256,7 +1339,11 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
     let answer_expr =
       match draft.d_answer with
       | None ->
-          if not inline_blanks then
+          (* Text may bring its own blanks (blank(...) joined with ++); which
+             text reaches the prompt is known only when a question is made,
+             so a file that calls blank anywhere is given the benefit of the
+             doubt, and a question that ends up with no blank is refused then. *)
+          if not (inline_blanks || text_may_hold_blanks) then
             report_here
               (if named then
                  Printf.sprintf

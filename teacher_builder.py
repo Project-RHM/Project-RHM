@@ -36,6 +36,10 @@ TITLES = {
     "exponential_log": "Exponentials and logarithms",
     "analytic_geometry": "Lines and circles",
     "differential_equation": "Differential equations", "statistics": "Statistics",
+    "partial_fractions": "Partial fractions", "recurrence": "Recurrence relations",
+    "taylor": "Taylor polynomials", "row_reduction": "Row reduction and rank",
+    "base_conversion": "Number bases", "trigonometry": "Trigonometry",
+    "partial_derivatives": "Partial derivatives",
 }
 
 

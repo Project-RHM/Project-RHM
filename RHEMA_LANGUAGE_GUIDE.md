@@ -677,7 +677,7 @@ context "Complex"
 ```
 
 `context` 指定生成文件使用的 WeBWorK MathObjects Context。省略时默认为
-`Numeric`。返回 `complex(...)` 答案的文法应声明 `context "Complex"`；直接把布尔公式作为答案的文法应声明 `context "Boolean"`（WeBWorK 的 `contextBoolean.pl` 按真值表判等价）；集合和
+`Numeric`。返回 `complex(...)` 答案的文法应声明 `context "Complex"`；布尔公式作为答案时自带一份声明了其变量的 Boolean 上下文（WeBWorK 的 `contextBoolean.pl` 按真值表判等价），文法不必为它声明 `context "Boolean"`；集合和
 向量 specification 分别使用 `Interval` 和 `Vector`。
 
 ### 16.1 `prompt`
@@ -833,7 +833,7 @@ matrix 或其他专用答案类型
 | `on` | scoped attribute owner | 将综合属性限制在指定非终结符 |
 | `random` | question-level random declaration | 声明每道题只抽取一次的随机值 |
 | `boolean` | Boolean draw | 抽取布尔值 |
-| `let` | question-level binding | 声明每道题计算一次的值 |
+| `let` | question-level binding; local name | 在文件级：声明每道题计算一次的值；在产生式的花括号内：给这条产生式起一个局部名字（见第 30 节） |
 | `start` | start symbol | 指定生成入口非终结符 |
 | `when` | guard | 在生成前筛选规则 |
 | `weight` | production weight | 设置规则相对选择权重 |
@@ -853,6 +853,8 @@ matrix 或其他专用答案类型
 | `and` | Boolean AND | 逻辑与 |
 | `or` | Boolean OR | 逻辑或 |
 | `not` | Boolean NOT | 逻辑非 |
+| `true` | truth literal | 真值“真” |
+| `false` | truth literal | 真值“假” |
 
 ## 21. 注释和字符串（Comments and strings）
 
@@ -1033,3 +1035,37 @@ set homework {
 - `part "标题"` 分部分，部分内按 `1(a)`、`1(b)` 编号；没有 part 的 set 每题一个号。约束：`distinct`（树形不重复）、`balanced`（编码答案不连续三个相同）、`ordered`（部分内由易到难）。
 - `rhema run file.rhm --run NAME` 生成这份作业，每次相同（`--student` 可选，给某个学生单独一份），`--pg` 一个文档，`--pg-dir DIR` 每题一个文件；`--set`、`--count`、`--question` 对 set 不起作用。`rhema list` 列出 set 及题数。
 - 只有 `set` 是保留字，块内其他词是普通标识符。示例 `homework_set.rhm`。详见 `RHEMA_LANGUAGE_EXTENSIONS.md` 第 6 节。
+
+## 30. 真值字面量、局部名字、点、任意形状的矩阵（Smaller additions）
+
+```rhm
+Q -> "line_two_points" P P when cost = 2 {
+  cost = -2
+  let slope = ($3.y - $2.y) / ($3.x - $2.x)
+  answer_value = polynomial_linear(slope, $2.y - $2.x * slope, "x")
+}
+```
+
+- `true` 和 `false` 是两个真值，都是保留字；以前只能写 `0 = 1` 这样的比较。
+- 产生式花括号内的 `let NAME = EXPR` 是局部名字：在子结点建好之后、按书写顺序求值，它下面的各行可以使用。结点不携带它，所以不需要 `synth` 声明。名字必须是新的：不能与继承属性、综合属性、random、文件级 `let` 或同一产生式里已有的局部名字相同，也不能是保留字。守卫条件、预算更新和生成器参数在子结点之前求值，不能使用局部名字。
+- 点是一种值：`point2(x, y)`、`point3(x, y, z)`、`point_latex`。作为答案时学生输入 `(3, -2)`，无论题目处在哪个上下文都按点判分，文法不必设置 `pg_context`。
+- 任意形状的矩阵：`matrix_row(v)`、`matrix_column(v)` 把向量变成一行或一列的矩阵，`matrix_stack(A, B)` 上下拼接，`matrix_augment(A, B)` 左右拼接（增广矩阵），`matrix_rows`、`matrix_columns` 给出形状，`matrix_rref` 是行最简形，`matrix_rank` 是秩。
+
+详见 `RHEMA_LANGUAGE_EXTENSIONS.zh.md` 第 7 节。
+
+## 31. 文本中的答案空、任意变量的式子、π 与精确值（Blanks in text, formulas beyond x）
+
+```rhm
+text = "Centre: " ++ blank(point2(h, k)) ++ " Radius: " ++ blank_wide(r, 4)
+```
+
+- `blank(VALUE)` 是用 `++` 接到文本上的答案空，`blank_wide(VALUE, COLUMNS)` 另带自己的宽度。题干里的 `{Q.text}` 取到带空文本时，文字和答案空按书写顺序进入题目，所以答案空个数不同的题型可以共处一个文法。文件里调用了 `blank` 就不需要 `answer` 行；一道题不能既有 `answer` 行又在文本里放答案空；答案空不能放在 `` [` `` 和 `` `] `` 之间。
+- 含有 `x` 以外变量的式子答案会自带声明了这些变量的上下文；`formula_value(f)` 给出不含变量的式子的精确数值。
+- `pg_variables`（文件级 `let`，或开始符号的属性）用文本指明式子答案的全部变量，例如 `"x y"`，使只含其中一个变量的答案也能在认识全部变量的空里输入。
+- 命题答案（`bool_*`）同样自带上下文：一份声明了其变量的 Boolean 上下文副本（WeBWorK 的 Boolean 上下文本身只认识 `p` 和 `q`）；`pg_variables` 指明的变量对命题答案也生效。
+- `base_digits(n, b)` 把整数写成 b 进制的数字串；`base_number(n, b)` 给出“十进制写法恰好是这些数字”的数，用作二进制、八进制答案。
+- `formula_pi()` 是常数 π；`exact_sin(p, q)`、`exact_cos(p, q)`、`exact_tan(p, q)` 给出 `p π / q` 处的精确值（π/6 和 π/4 的整数倍）。
+- `plain(VALUE)`：判分时关闭三角、双曲、对数和指数函数的答案，学生不能把题目原样填回去。
+- 整数答案的判分：WeBWorK 默认按千分之一的相对容差比较数值（5040 会接受 5041）。绝对值不小于 1000 的整数答案会自动按半个单位的绝对容差写出，不接受相邻的整数；`exactly(N)` 则不论大小都要求精确判分，数字串本身就是答案时使用。
+
+详见 `RHEMA_LANGUAGE_EXTENSIONS.zh.md` 第 8 节。

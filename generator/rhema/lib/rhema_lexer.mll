@@ -37,6 +37,8 @@ let keywords = [
   "and",        AND;
   "or",         OR;
   "not",        NOT;
+  "true",       TRUE;
+  "false",      FALSE;
 ]
 
 let identifier_or_keyword text =

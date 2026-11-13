@@ -34,11 +34,35 @@ type value =
   | Matrix of Rhema_matrix.t
   | Set of Rhema_set.t
   | Vector of Rhema_vector.t
+  | Point of Rhema_number.t list
+      (* a point of the plane or of space, answered as (3, -2) *)
   | VectorNormAnswer of Rhema_vector.t
   | VectorUnitAnswer of Rhema_vector.t
   | VectorDirectionAnswer of Rhema_vector.t * bool
+  | Rich of piece list
+      (* text with answer blanks in it, made by blank() and joined with ++ *)
+  | Exactly of Rhema_number.t
+      (* a whole number as an answer graded without tolerance: WeBWorK
+         compares numbers to one part in a thousand, so 10101 would pass
+         for 10100, which is fatal when the digits are the answer *)
+  | Plain of value
+      (* a number or a formula as an answer that must be worked out: it is
+         graded with the trigonometric, logarithm and exponential functions
+         switched off, so the question cannot be typed back as its answer *)
 
-let describe_value = function
+(* A generated prompt is text with answer blanks in it. A blank is graded
+   against its value; a wide blank also has a width of its own. *)
+and piece =
+  | Piece_text of string
+  | Piece_blank of value
+  | Piece_wide_blank of value * int
+
+(* The value a piece is graded against, if it is a blank. *)
+let blank_value = function
+  | Piece_text _ -> None
+  | Piece_blank value | Piece_wide_blank (value, _) -> Some value
+
+let rec describe_value = function
   | Num number -> Rhema_number.to_string number
   | Text text -> text
   | Truth true -> "true"
@@ -53,11 +77,20 @@ let describe_value = function
   | Boolean formula -> "Boolean(" ^ Rhema_boolean.to_latex formula ^ ")"
   | Set set -> "Set(" ^ Rhema_set.to_pg set ^ ")"
   | Vector vector -> "Vector(" ^ Rhema_vector.component_text vector ^ ")"
+  | Point coordinates -> "Point(" ^ Rhema_vector.component_text coordinates ^ ")"
   | VectorNormAnswer vector -> "VectorNorm(" ^ Rhema_vector.component_text vector ^ ")"
   | VectorUnitAnswer vector -> "VectorUnit(" ^ Rhema_vector.component_text vector ^ ")"
   | VectorDirectionAnswer (vector, same_direction) ->
       Printf.sprintf "VectorDirection(%s,sameDirection=%b)"
         (Rhema_vector.component_text vector) same_direction
+  | Rich pieces ->
+      pieces
+      |> List.map (function
+           | Piece_text text -> text
+           | Piece_blank value | Piece_wide_blank (value, _) -> "[" ^ describe_value value ^ "]")
+      |> String.concat ""
+  | Plain value -> describe_value value
+  | Exactly number -> Rhema_number.to_string number
 
 let as_number context = function
   | Num number -> number
@@ -70,10 +103,20 @@ let as_text context = function
   | Text text -> text
   | Num number -> Rhema_number.to_string number
   | Truth _ | Complex _ | Formula _ | Polynomial _ | Equation _ | Boolean _ | Matrix _ | Set _
-  | Vector _ | VectorNormAnswer _
+  | Vector _ | Point _ | VectorNormAnswer _
   | VectorUnitAnswer _ | VectorDirectionAnswer _ ->
       error
         (Printf.sprintf "%s expected text but received a non-text value" context)
+  | Rich _ ->
+      error
+        (Printf.sprintf
+           "%s was given text that holds an answer blank; such text can only be joined \
+            with ++ and shown through the prompt"
+           context)
+  | Plain _ ->
+      error (Printf.sprintf "%s expected text but received an answer made with plain()" context)
+  | Exactly _ ->
+      error (Printf.sprintf "%s expected text but received an answer made with exactly()" context)
 
 let as_truth context = function
   | Truth truth -> truth
@@ -130,6 +173,22 @@ let as_vector context = function
       error
         (Printf.sprintf "%s expected a vector but received \"%s\"" context
            (describe_value other))
+
+let as_point context = function
+  | Point coordinates -> coordinates
+  | other ->
+      error
+        (Printf.sprintf "%s expected a point but received \"%s\"" context
+           (describe_value other))
+
+(* An exact number as LaTeX: 3, -\frac{6}{25}. *)
+let number_latex number =
+  if Rhema_number.is_integer number then Rhema_number.to_string number
+  else
+    let numerator = number.Rhema_number.numerator
+    and denominator = number.Rhema_number.denominator in
+    Printf.sprintf "%s\\frac{%d}{%d}" (if numerator < 0 then "-" else "") (abs numerator)
+      denominator
 
 let format_complex_latex real imaginary =
   let zero = Rhema_number.zero and one = Rhema_number.of_int 1 in
@@ -371,6 +430,7 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
   match expression with
   | Int number -> Num (Rhema_number.of_int number)
   | Str text -> Text text
+  | Bool truth -> Truth truth
   | At (_, body) -> recurse body
   | Attr_here name -> (
       (* An attribute this rule computed earlier wins, so a rule can build on
@@ -406,8 +466,16 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
       Truth (as_truth "and" (recurse left) && as_truth "and" (recurse right))
   | Binary ("or", left, right) ->
       Truth (as_truth "or" (recurse left) || as_truth "or" (recurse right))
-  | Binary ("++", left, right) ->
-      Text (as_text "++" (recurse left) ^ as_text "++" (recurse right))
+  | Binary ("++", left, right) -> (
+      (* Text joined with text is text; joined with a blank it becomes text
+         with blanks, a list of pieces in the order written. *)
+      let left = recurse left in
+      let right = recurse right in
+      match (left, right) with
+      | Rich first, Rich second -> Rich (first @ second)
+      | Rich first, other -> Rich (first @ [ Piece_text (as_text "++" other) ])
+      | other, Rich second -> Rich (Piece_text (as_text "++" other) :: second)
+      | left, right -> Text (as_text "++" left ^ as_text "++" right))
   | Binary (operator, left, right) -> (
       let left = recurse left and right = recurse right in
       let arithmetic apply = Num (apply (as_number operator left) (as_number operator right)) in
@@ -462,6 +530,10 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
             if operator = "=" then Truth (Rhema_vector.equal left right)
             else if operator = "!=" then Truth (not (Rhema_vector.equal left right))
             else error (Printf.sprintf "'%s' cannot order vectors" operator)
+        | Point left, Point right ->
+            if operator = "=" then Truth (Rhema_vector.equal left right)
+            else if operator = "!=" then Truth (not (Rhema_vector.equal left right))
+            else error (Printf.sprintf "'%s' cannot order points" operator)
         | _ ->
             Truth
               (apply
@@ -596,6 +668,40 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
       Text (Rhema_formula.to_latex (as_formula "formula_latex" (recurse body)))
   | Call ("formula_is_zero", [ body ]) ->
       Truth (Rhema_formula.is_zero (as_formula "formula_is_zero" (recurse body)))
+  | Call ("formula_pi", []) -> Formula Rhema_formula.Pi
+  | Call ("formula_value", [ body ]) -> (
+      match Rhema_formula.rational_value (as_formula "formula_value" (recurse body)) with
+      | Some number -> Num number
+      | None ->
+          error
+            "formula_value: the formula is not a rational number; it holds a variable, pi or \
+             a value of a function")
+  | Call ((("exact_sin" | "exact_cos" | "exact_tan") as name), [ numerator; denominator ]) -> (
+      let whole expression = Rhema_number.require_integer name (as_number name (recurse expression)) in
+      let which =
+        match name with
+        | "exact_sin" -> Rhema_formula.Sine
+        | "exact_cos" -> Rhema_formula.Cosine
+        | _ -> Rhema_formula.Tangent
+      in
+      try
+        Formula
+          (Rhema_formula.exact_value which ~numerator:(whole numerator)
+             ~denominator:(whole denominator))
+      with Invalid_argument message -> error (name ^ ": " ^ message))
+  | Call ("exactly", [ body ]) -> (
+      match recurse body with
+      | Num number when Rhema_number.is_integer number -> Exactly number
+      | other ->
+          error
+            (Printf.sprintf "exactly expected a whole number but received \"%s\"" (describe_value other)))
+  | Call ("plain", [ body ]) -> (
+      match recurse body with
+      | (Num _ | Formula _ | Polynomial _) as value -> Plain value
+      | other ->
+          error
+            (Printf.sprintf "plain expected a number or a formula but received \"%s\""
+               (describe_value other)))
   | Call ("formula_to_polynomial", [ body; variable ]) ->
       let body = as_formula "formula_to_polynomial" (recurse body)
       and variable = as_text "formula_to_polynomial" (recurse variable) in
@@ -869,6 +975,33 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
           (Rhema_matrix.row_latex (as_matrix "matrix_row_latex" (recurse matrix))
              (Rhema_number.require_integer "matrix_row_latex" (as_number "matrix_row_latex" (recurse row))))
       with Invalid_argument message -> error ("matrix_row_latex: " ^ message))
+  | Call (("matrix_row" | "matrix_column") as name, [ vector ]) ->
+      let components = Rhema_vector.components (as_vector name (recurse vector)) in
+      Matrix (if name = "matrix_row" then Rhema_matrix.of_row components else Rhema_matrix.of_column components)
+  | Call (("matrix_stack" | "matrix_augment") as name, [ first; second ]) -> (
+      let join = if name = "matrix_stack" then Rhema_matrix.stack else Rhema_matrix.augment in
+      try Matrix (join (as_matrix name (recurse first)) (as_matrix name (recurse second)))
+      with Invalid_argument message -> error (name ^ ": " ^ message))
+  | Call ("matrix_rows", [ matrix ]) ->
+      Num (Rhema_number.of_int (Rhema_matrix.rows (as_matrix "matrix_rows" (recurse matrix))))
+  | Call ("matrix_columns", [ matrix ]) ->
+      Num (Rhema_number.of_int (Rhema_matrix.columns (as_matrix "matrix_columns" (recurse matrix))))
+  | Call ("matrix_rank", [ matrix ]) ->
+      Num (Rhema_number.of_int (Rhema_matrix.rank (as_matrix "matrix_rank" (recurse matrix))))
+  | Call ("matrix_rref", [ matrix ]) ->
+      Matrix (Rhema_matrix.row_echelon (as_matrix "matrix_rref" (recurse matrix)))
+  | Call ("point2", [ first; second ]) ->
+      Point [ as_number "point2" (recurse first); as_number "point2" (recurse second) ]
+  | Call ("point3", [ first; second; third ]) ->
+      Point
+        [ as_number "point3" (recurse first);
+          as_number "point3" (recurse second);
+          as_number "point3" (recurse third) ]
+  | Call ("point_latex", [ point ]) ->
+      Text
+        ("\\left("
+        ^ String.concat ", " (List.map number_latex (as_point "point_latex" (recurse point)))
+        ^ "\\right)")
   | Call ("vector_entry", [ vector; index ]) ->
       let components = Rhema_vector.components (as_vector "vector_entry" (recurse vector)) in
       let i = Rhema_number.require_integer "vector_entry" (as_number "vector_entry" (recurse index)) in
@@ -990,15 +1123,45 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
         arguments ) ->
       let whole value = Rhema_number.require_integer name (as_number name (recurse value)) in
       Num (Rhema_number.of_int (Rhema_integers.apply name (List.map whole arguments)))
-  | Call ("number_latex", [ body ]) ->
-      (* An exact number as LaTeX: 3, -\frac{6}{25}. *)
-      let n = as_number "number_latex" (recurse body) in
-      if Rhema_number.is_integer n then Text (Rhema_number.to_string n)
-      else
-        let numerator = n.Rhema_number.numerator and denominator = n.Rhema_number.denominator in
-        Text
-          (Printf.sprintf "%s\\frac{%d}{%d}" (if numerator < 0 then "-" else "") (abs numerator)
-             denominator)
+  | Call ("number_latex", [ body ]) -> Text (number_latex (as_number "number_latex" (recurse body)))
+  | Call ((("base_digits" | "base_number") as name), [ number; base ]) ->
+      (* A whole number written in another base: as text with the digits
+         0-9 and A-F, or as the number that has those digits in decimal, so
+         that 11 in base 2 can be an answer the student types as 1011. *)
+      let whole expression = Rhema_number.require_integer name (as_number name (recurse expression)) in
+      let number = whole number and base = whole base in
+      let highest = if name = "base_digits" then 16 else 10 in
+      if base < 2 || base > highest then
+        error (Printf.sprintf "%s: the base %d is not between 2 and %d" name base highest);
+      if number < 0 then error (Printf.sprintf "%s: %d is negative" name number);
+      let rec digits value collected =
+        let collected = "0123456789ABCDEF".[value mod base] :: collected in
+        if value < base then collected else digits (value / base) collected
+      in
+      let written = String.of_seq (List.to_seq (digits number [])) in
+      if name = "base_digits" then Text written
+      else (
+        match int_of_string_opt written with
+        | Some value -> Num (Rhema_number.of_int value)
+        | None -> error (Printf.sprintf "%s: %d has too many digits in base %d" name number base))
+  | Call (("blank" | "blank_wide") as name, value :: rest) -> (
+      let graded =
+        match recurse value with
+        | Rich _ -> error (name ^ ": a blank cannot be graded against text that holds a blank")
+        | Equation _ ->
+            error
+              (name ^ ": an equation is not an answer; use equation_solution_set or \
+                       equation_unique_solution")
+        | value -> value
+      in
+      match rest with
+      | [] -> Rich [ Piece_blank graded ]
+      | [ columns ] ->
+          let columns = Rhema_number.require_integer name (as_number name (recurse columns)) in
+          if columns < 1 || columns > 200 then
+            error (Printf.sprintf "%s: a width of %d is not between 1 and 200" name columns);
+          Rich [ Piece_wide_blank (graded, columns) ]
+      | _ -> error (name ^ ": too many arguments"))
   | Call ("abs", [ body ]) -> Num (Rhema_number.absolute (as_number "abs" (recurse body)))
   | Call ("min", [ left; right ]) ->
       let left = as_number "min" (recurse left) and right = as_number "min" (recurse right) in
@@ -1015,9 +1178,6 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
 
 exception Requirement_failed of string
 
-(* A generated prompt is text with answer blanks in it. *)
-type piece = Piece_text of string | Piece_blank of value
-
 type question = {
   prompt : string;  (* the text, with each blank shown as [___] *)
   answer : value;  (* the first blank's answer *)
@@ -1026,6 +1186,9 @@ type question = {
   answers : value list;
   context : string;  (* the WeBWorK context this question needs *)
   width : int option;  (* its answer width, when the grammar sets one *)
+  variables : string list;
+      (* the variables its formula and proposition answers are in, when the grammar says so
+         with `pg_variables`; the PG writer adds those the answers hold *)
   globals : (string * value) list;
   tree : node;
 }
@@ -1289,24 +1452,33 @@ let rec tree_builder (spec : Rhema_check.spec) ~globals ~(module_globals : modul
         (fun position symbol -> expand_symbol symbol (environment_for position))
         rule.rhs
     in
-    (* Synthesized equations and requirements, in the order they were written. *)
-    let attributes =
+    (* Synthesized equations, local names and requirements, in the order
+       they were written. A local name is visible to the lines below it and
+       is dropped when the rule is done: the node carries attributes only. *)
+    let attributes, _locals =
       List.fold_left
-        (fun collected equation ->
+        (fun ((collected, locals) as so_far) equation ->
+          let self = collected @ locals in
           match equation with
-          | Assign (attribute_name, _, _) when is_inherited attribute_name -> collected
+          | Assign (attribute_name, _, _) when is_inherited attribute_name -> so_far
           | Assign (attribute_name, body, _) ->
               let value =
-                evaluate_in ~self:collected ~environment:updated ~children
-                  ~rule:(Some rule) ~target:attribute_name body
+                evaluate_in ~self ~environment:updated ~children ~rule:(Some rule)
+                  ~target:attribute_name body
               in
-              collected @ [ (attribute_name, value) ]
+              (collected @ [ (attribute_name, value) ], locals)
+          | Local (local_name, body, _) ->
+              let value =
+                evaluate_in ~self ~environment:updated ~children ~rule:(Some rule)
+                  ~target:local_name body
+              in
+              (collected, locals @ [ (local_name, value) ])
           | Require (condition, position) -> (
               match
-                evaluate_in ~self:collected ~environment:updated ~children
-                  ~rule:(Some rule) ~target:"" condition
+                evaluate_in ~self ~environment:updated ~children ~rule:(Some rule) ~target:""
+                  condition
               with
-              | Truth true -> collected
+              | Truth true -> so_far
               | Truth false ->
                   raise
                     (Requirement_failed
@@ -1317,7 +1489,7 @@ let rec tree_builder (spec : Rhema_check.spec) ~globals ~(module_globals : modul
                     (Printf.sprintf
                        "a 'require' must be true or false, but gave \"%s\""
                        (describe_value other))))
-        [] rule.equations
+        ([], []) rule.equations
     in
     {
       symbol = name;
@@ -1437,23 +1609,54 @@ let generate_once (spec : Rhema_check.spec) =
     | Some value -> value
     | None -> error (Printf.sprintf "'%s' has no value" name)
   in
+  (* A hole shows text; text with blanks brings its blanks with it. *)
+  let shown = function
+    | Rich pieces -> pieces
+    | value -> [ Piece_text (as_text "prompt" value) ]
+  in
   let pieces =
     spec.prompt
-    |> List.map (function
-         | Rhema_check.Text text -> Piece_text text
-         | Rhema_check.Value_hole name -> Piece_text (as_text "prompt" (global_value name))
-         | Rhema_check.Hole (_, attribute_name) ->
-             Piece_text (as_text "prompt" (attribute tree attribute_name))
-         | Rhema_check.Answer_hole (_, attribute_name) -> Piece_blank (attribute tree attribute_name)
-         | Rhema_check.Answer_value_hole name -> Piece_blank (global_value name))
+    |> List.concat_map (function
+         | Rhema_check.Text text -> [ Piece_text text ]
+         | Rhema_check.Value_hole name -> shown (global_value name)
+         | Rhema_check.Hole (_, attribute_name) -> shown (attribute tree attribute_name)
+         | Rhema_check.Answer_hole (_, attribute_name) -> [ Piece_blank (attribute tree attribute_name) ]
+         | Rhema_check.Answer_value_hole name -> [ Piece_blank (global_value name) ])
   in
+  (* PGML has no blank inside mathematics: between [` and `] a blank would be
+     read as part of the formula. *)
+  ignore
+    (List.fold_left
+       (fun before piece ->
+         match piece with
+         | Piece_text text -> before ^ text
+         | Piece_blank _ | Piece_wide_blank _ ->
+             let count fragment =
+               let rec go index found =
+                 if index + String.length fragment > String.length before then found
+                 else if String.sub before index (String.length fragment) = fragment then
+                   go (index + String.length fragment) (found + 1)
+                 else go (index + 1) found
+               in
+               go 0 0
+             in
+             if count "[`" > count "`]" then
+               error
+                 "an answer blank is inside mathematics, between [` and `]; close the \
+                  formula before the blank";
+             before)
+       "" pieces);
   (* A trailing `answer` is one more blank after the text. *)
   let pieces =
     match spec.answer with
     | Some expression ->
+        if List.exists (fun piece -> blank_value piece <> None) pieces then
+          error
+            "this question has an 'answer' line and answer blanks in its text; keep the \
+             blanks and drop the 'answer' line, or the other way round";
         let text =
           pieces
-          |> List.map (function Piece_text text -> text | Piece_blank _ -> "")
+          |> List.map (function Piece_text text -> text | Piece_blank _ | Piece_wide_blank _ -> "")
           |> String.concat ""
         in
         [
@@ -1465,9 +1668,7 @@ let generate_once (spec : Rhema_check.spec) =
         ]
     | None -> pieces
   in
-  let answers =
-    List.filter_map (function Piece_blank value -> Some value | Piece_text _ -> None) pieces
-  in
+  let answers = List.filter_map blank_value pieces in
   let answer =
     match answers with
     | first :: _ -> first
@@ -1481,7 +1682,7 @@ let generate_once (spec : Rhema_check.spec) =
         match pieces with Piece_text text :: _ -> text | _ -> "")
     | None ->
         pieces
-        |> List.map (function Piece_text text -> text | Piece_blank _ -> "[___]")
+        |> List.map (function Piece_text text -> text | Piece_blank _ | Piece_wide_blank _ -> "[___]")
         |> String.concat ""
         |> String.trim
   in
@@ -1499,6 +1700,29 @@ let generate_once (spec : Rhema_check.spec) =
         (Rhema_number.require_integer "pg_width" (as_number "pg_width" (attribute tree "pg_width")))
     else None
   in
+  (* `pg_variables`, on the start symbol or as a let of the file: the names
+     a formula answer of this question may use, such as "x y". Without it an
+     answer in y alone would not know x, and a student who typed one would
+     be told so instead of being marked wrong. *)
+  let variables =
+    let declared =
+      match List.assoc_opt "pg_variables" tree.attributes with
+      | Some value -> Some value
+      | None -> List.assoc_opt "pg_variables" globals
+    in
+    match declared with
+    | None -> []
+    | Some value ->
+        as_text "pg_variables" value
+        |> String.map (fun character -> if character = ',' then ' ' else character)
+        |> String.split_on_char ' '
+        |> List.filter (fun name -> name <> "")
+        |> List.map (fun name ->
+               match Rhema_formula.variable name with
+               | _ -> name
+               | exception Invalid_argument message -> error ("pg_variables: " ^ message))
+        |> List.sort_uniq String.compare
+  in
   {
     prompt;
     answer;
@@ -1507,6 +1731,7 @@ let generate_once (spec : Rhema_check.spec) =
     answers;
     context;
     width;
+    variables;
     globals;
     tree;
   }

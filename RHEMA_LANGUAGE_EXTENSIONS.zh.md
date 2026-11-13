@@ -178,6 +178,66 @@ rhema list homework_set.rhm                           列出 set
 
 只有 import 和 set 的文件没有自己的题：`rhema` 会说明并列出 set，网页端的文法列表不显示它。
 
+## 7. 几处小的补充：真值字面量、局部名字、点、任意形状的矩阵
+
+这四处补充不改变任何已有文法，只是去掉了文法库里积累下来的几种绕路写法。
+
+**`true` 和 `false`** 是两个真值；以前文法只能写 `0 = 1`。两者都是保留字。
+
+```
+answer_value = set_interval($2.first, $2.second, false, false)
+```
+
+**产生式里的局部名字**：在花括号内写 `let NAME = EXPR`。它在所写的位置求值，此时子结点已经建好，它下面的各行都可以使用它。结点不携带它：不需要 `synth` 声明，其他产生式也看不到它。以前，一个要用两次的值只能写两遍，或者挪到一个辅助非终结符里。
+
+```
+Q -> "line_two_points" P P when cost = 2 {
+  cost = -2
+  let slope = ($3.y - $2.y) / ($3.x - $2.x)
+  answer_value = polynomial_linear(slope, $2.y - $2.x * slope, "x")
+  ...
+}
+```
+
+名字必须是新的。局部名字如果会遮住继承属性、综合属性、random 或文件级的 `let`，或者在同一个产生式里出现两次，都会被拒绝；保留字（如 `left`、`width`）也不能用作名字。守卫条件、预算更新和生成器的参数在子结点建好之前求值，所以不能使用局部名字。文件级的 `let` 不变：它每道题只算一次，在建树之前。
+
+**点**是一种值：`point2(x, y)` 和 `point3(x, y, z)`，配有 `point_latex`。作为答案时，它在 PG 中写成一个自带 WeBWorK Point 上下文的 Point 对象，所以学生输入 `(3, -2)`，无论题目处在哪个上下文，都按点来判分。文法不必为它设置 `pg_context`；`analytic_geometry.rhm` 就在同一个上下文里混用了数、式子和点。
+
+**任意形状的矩阵。** `matrix_row(v)` 和 `matrix_column(v)` 把向量变成只有一行或只有一列的矩阵；`matrix_stack(A, B)` 把 `A` 放在 `B` 的上面，`matrix_augment(A, B)` 把 `B` 放在 `A` 的右边，所以增广矩阵 `[A | b]` 就是 `matrix_augment(A, matrix_column(b))`。`matrix_rows` 和 `matrix_columns` 给出行数和列数。`matrix_rref` 是行最简形，用精确有理数做高斯–若尔当消元得到；`matrix_rank` 是其中主元的个数，即矩阵的秩。
+
+## 8. 文本中的答案空，以及不止含 x 的式子
+
+提案和在 WeBWorK 上做过的试验见 `RHEMA_ADDITIONS_DESIGN.zh.md`；这里写的是实际实现的内容。
+
+**文本中的答案空。** `blank(VALUE)` 是一个答案空，用 `++` 接到文本上；`blank_wide(VALUE, COLUMNS)` 是带有自己宽度的答案空。产生式把答案空写进自己的文本里，题干中取到这种文本的填充位置会把其中的答案空带进题目：
+
+```
+Q -> "circle" nonzero_integer_between(-9, 9) nonzero_integer_between(-9, 9) integer_between(1, 9) when cost = 3 {
+  cost = -3
+  ...
+  text = "Find the centre and the radius of the circle [`...`]. Centre: "
+         ++ blank(point2($2.value, $3.value)) ++ " Radius: " ++ blank($4.value)
+}
+
+prompt "{Q.text}"
+```
+
+只有一个空的题型和有多个空的题型现在可以放在同一个文法里；以前，答案空由题干决定，而每个题型只有一个题干。只要文件的规则或 let 中调用了 `blank`，就不需要 `answer` 行。以下情况会被拒绝：生成出来的题一个空也没有；既有 `answer` 行、文本里又有答案空；把带空文本交给 `++` 和题干以外的地方；答案空落在数学公式里面（在 `` [` `` 和 `` `] `` 之间）。题干里的 `{answer ...}` 和 `answer` 行不变。
+
+**任意变量的式子。** `formula_variable("y")` 和 `differentiate(f, "y")` 一直都有，但 WeBWorK 的 Numeric 上下文只认识 `x`，所以这样的答案无法编译。现在，含有其他变量的式子答案会连同一个声明了这些变量的上下文一起写出；同一道题里所有式子答案的变量会一并声明，所以这道题的各个空接受同样的变量名。只含 `x` 的式子写法不变。`formula_value(f)` 给出不含变量的式子所等于的精确数值。
+
+文法也可以自己指明变量：`pg_variables` 是一段写明变量名的文本，例如 `"x y"`，既可以是文件里的一个 `let`，也可以是开始符号为每道题计算的属性。这样，每个式子答案都会声明其中所有的变量。否则，求出来是 `6y` 的答案所在的空就不认识 `x`，学生如果输入了 `x`，得到的会是“变量未定义”的提示，而不是判错。`partial_derivatives.rhm` 声明了 `"x y"`。
+
+**任意变量的命题。** 命题答案原来有同样的毛病：它是按当前的 Boolean 上下文写出的，而 `contextBoolean.pl` 的 Boolean 上下文只认识 `p` 和 `q`，所以含有 `r` 的答案 WeBWorK 读不了（“Variable 'r' is not defined in this context”）。`logic_forms.rhm` 的改写题大多受此影响。现在，命题答案会连同一份 Boolean 上下文的副本一起写出，副本里声明了它自己的变量、同一道题里其他命题答案的变量，以及 `pg_variables` 指明的变量。答案自带这个上下文，所以文法不必再声明 `context "Boolean"`；只要文档里有命题答案，生成的文件就会加载 `contextBoolean.pl`。
+
+**π 和精确值。** `formula_pi()` 是常数 π，写给 WeBWorK 时是 `pi`，在 LaTeX 中是 `\pi`、`2\pi`、`\frac{5\pi}{6}`。`exact_sin(p, q)`、`exact_cos(p, q)`、`exact_tan(p, q)` 给出在 `p π / q` 处的函数值，结果是 `sqrt(3)/2` 这样的式子，支持 π/6 和 π/4 的整数倍。
+
+**必须算出来的答案。** `plain(VALUE)` 是一个数或式子，判分时关闭三角函数、双曲函数、对数函数和指数函数（保留 `sqrt` 和 `abs`）。不用它的话，WeBWorK 会把 `sin(pi/3)` 当作 sin(π/3) 的值接受；`exponential_log.rhm` 中的 log₅(625) 以前也会接受 `log(625)/log(5)`，现在它改用了 `plain`。
+
+**精确判分的整数。** WeBWorK 比较数值时使用千分之一的相对容差。在渲染器上实测：1000 以内，它还能把一个整数和相邻的整数区分开；超过 1000 就不能了，答案是 5040 时会接受 5041，答案是 10100 时会接受 10110。因此，绝对值不小于 1000 的整数答案现在写成 `Real(n)->cmp(tolType=>"absolute",tolerance=>0.5)`，即半个单位的绝对容差，其他任何整数都不会通过；较小的整数仍然写成普通的数，不含这类答案的文档写法与以前完全相同。文法库中受影响的是 `arithmetic.rhm`、`counting.rhm`、`sequence.rhm` 和 `series.rhm`：它们较大的答案以前会接受相邻的整数。`exactly(N)` 则不论数值大小都要求这样比较；`base_conversion.rhm` 对写成二进制或八进制的数使用它。
+
+**一处更正。** 式子里的分数写成商的形式 `2/3`，现在在必须加括号的地方会加上括号：`x/(2/3)` 和 `(2/3)^2` 以前被写成 `x/2/3` 和 `2/3^2`。文法库里没有文法会产生这两种写法。
+
 ## 这带来了什么
 
-一个文件现在可以容纳需要不同上下文的多种题型、分成几个小问的题目、与其他文件共享的产生式，并排使用来自其他文件的完整文法而不必改动它们的任何名字，在一套规则上定义多个有名字的题型，以及在一个文件里描述并生成整份作业。还做不到的：给单个答案空单独设宽度，让文法为套题声明覆盖约束（“每条律先各出一次再重复”）；见 `RHEMA_MODULES_DESIGN.md` 第 8 节。
+一个文件现在可以容纳需要不同上下文的多种题型、分成几个小问的题目、与其他文件共享的产生式，并排使用来自其他文件的完整文法而不必改动它们的任何名字，在一套规则上定义多个有名字的题型，在一个文件里描述并生成整份作业，让答案空个数不同的题型共处一个文法，以及给单个答案空单独设宽度。还做不到的：在一个空里填多个解，让文法为套题声明覆盖约束（“每条律先各出一次再重复”）；见 `RHEMA_MODULES_DESIGN.md` 第 8 节。

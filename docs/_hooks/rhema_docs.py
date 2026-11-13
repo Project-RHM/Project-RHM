@@ -23,6 +23,7 @@ class RhemaLexer(RegexLexer):
         "prompt", "answer", "width", "include", "import", "as", "question", "set",
     )
     operators_words = ("and", "or", "not", "boolean")
+    constants = ("true", "false")
     set_words = ("part", "of", "any", "in", "spread", "low", "allowed", "distinct", "balanced", "ordered")
 
     tokens = {
@@ -32,6 +33,7 @@ class RhemaLexer(RegexLexer):
             (r'"', String.Double, "string"),
             (words(keywords, suffix=r"\b"), Keyword),
             (words(operators_words, suffix=r"\b"), Operator.Word),
+            (words(constants, suffix=r"\b"), Keyword.Constant),
             (words(set_words, suffix=r"\b"), Keyword.Pseudo),
             (r"\$\d+", Name.Variable.Magic),
             (r"\d+", Number.Integer),
@@ -100,10 +102,16 @@ GROUPS = [
      "integer, or an inverse that does not exist, stops generation with a "
      "message."),
     ("formula", "Formulas",
-     "Symbolic expressions in named variables: constants, variables, the four "
-     "operations and powers, `sin`, `cos`, `tan`, `exp`, `ln` and `sqrt`, with "
-     "differentiation, substitution, a zero test and LaTeX. A formula answer is "
-     "graded by WeBWorK as a formula."),
+     "Symbolic expressions in named variables: constants, the constant pi, "
+     "variables, the four operations and powers, `sin`, `cos`, `tan`, `exp`, `ln` "
+     "and `sqrt`, with differentiation, substitution, a zero test and LaTeX, and "
+     "the exact values of sine, cosine and tangent at multiples of pi/6 and pi/4. "
+     "A formula answer is graded by WeBWorK as a formula; one in variables other "
+     "than `x` is written with a context that declares them."),
+    ("answers", "Answers",
+     "Functions that say how something is asked for, not what it is: an answer "
+     "blank as part of a production's text, and an answer that must be worked "
+     "out."),
     ("polynomial", "Polynomials",
      "Polynomials in one variable with exact coefficients: building from "
      "monomials, linear and quadratic factors, arithmetic, expansion, evaluation, "
@@ -124,8 +132,10 @@ GROUPS = [
      "Matrices with exact rational entries: 2 by 2 and 3 by 3 construction, the "
      "identity, sum, difference, product, scalar multiple, transpose, determinant, "
      "inverse, entries, a matrix times a vector, and LaTeX (a whole matrix, or a "
-     "row written as a linear equation). A matrix answer is graded in the Matrix "
-     "context."),
+     "row written as a linear equation). A matrix of any shape is built from "
+     "vectors as rows or columns, put one above or beside another; such a matrix "
+     "has a reduced row echelon form and a rank. A matrix answer is graded in the "
+     "Matrix context."),
     ("set", "Sets",
      "Finite sets, intervals and rays of real numbers, with union, intersection "
      "and difference, and LaTeX. A set answer is graded in the Interval context."),
@@ -133,6 +143,11 @@ GROUPS = [
      "Vectors with exact entries: sums, multiples, dot and cross products, norms, "
      "unit vectors, parallel and direction tests, and the answer forms WeBWorK's "
      "Vector context needs."),
+    ("point", "Points",
+     "A point of the plane or of space with exact coordinates, and its LaTeX. A "
+     "point answer is entered as `(3, -2)` and is graded as a point whatever "
+     "context the question is in: the answer carries WeBWorK's Point context "
+     "with it."),
     ("complex", "Complex numbers",
      "A complex number from its real and imaginary parts, and its LaTeX. Complex "
      "arithmetic is written with the ordinary operators on the parts."),
@@ -165,6 +180,28 @@ DESCRIPTIONS = {
     "set_above": "`set_above(a, closed)`: the numbers above a, `(a, \\infty)`, or from a, `[a, \\infty)`, when `closed` is true.",
     "set_below": "`set_below(a, closed)`: the numbers below a, `(-\\infty, a)`, or up to a, `(-\\infty, a]`.",
     "differentiate": "`differentiate(f, \"x\")`: the derivative of formula `f` with respect to `x`.",
+    "formula_pi": "The constant pi, kept as a symbol: `formula_multiply(formula_constant(5 / 6), formula_pi())` is written `\\frac{5\\pi}{6}` and graded as `5pi/6`.",
+    "formula_value": "The number a formula without variables comes to, exactly; an error when it holds a variable, pi or a value of a function that is not rational.",
+    "exact_sin": "`exact_sin(p, q)`: the value of sin(p pi / q) as a formula, such as `sqrt(3)/2`, for multiples of pi/6 and pi/4; an error for other angles.",
+    "exact_cos": "`exact_cos(p, q)`: the value of cos(p pi / q), as `exact_sin`.",
+    "exact_tan": "`exact_tan(p, q)`: the value of tan(p pi / q), as `exact_sin`; an error where the tangent is not defined.",
+    "base_digits": "`base_digits(n, b)`: the whole number `n` written in base `b` (2 to 16) as text, with the digits 0-9 and A-F.",
+    "base_number": "`base_number(n, b)`: the number whose decimal digits are the digits of `n` in base `b` (2 to 10), so that eleven in binary is an answer typed as `1011`.",
+    "blank": "`blank(v)`: an answer blank graded against `v`, to be joined to a production's text with `++`.",
+    "blank_wide": "`blank_wide(v, columns)`: as `blank`, with a width of its own, from 1 to 200.",
+    "exactly": "`exactly(n)`: the whole number `n` as an answer graded without WeBWorK's relative tolerance, so that no other whole number is accepted. A whole-number answer of 1000 or more is graded this way without being asked.",
+    "plain": "`plain(v)`: the number or formula `v` as an answer that must be worked out: graded with the trigonometric, hyperbolic, logarithm and exponential functions switched off; `sqrt` and `abs` stay.",
+    "matrix_row": "`matrix_row(v)`: the vector `v` as a matrix of one row.",
+    "matrix_column": "`matrix_column(v)`: the vector `v` as a matrix of one column.",
+    "matrix_stack": "`matrix_stack(A, B)`: `A` above `B`; they must have the same number of columns.",
+    "matrix_augment": "`matrix_augment(A, B)`: `A` with `B` to its right, the augmented matrix `[A | B]`; they must have the same number of rows.",
+    "matrix_rows": "The number of rows of a matrix.",
+    "matrix_columns": "The number of columns of a matrix.",
+    "matrix_rank": "The rank of a matrix of any shape: the number of pivots of its reduced row echelon form.",
+    "matrix_rref": "The reduced row echelon form of a matrix of any shape, with exact entries.",
+    "point2": "`point2(x, y)`: a point of the plane.",
+    "point3": "`point3(x, y, z)`: a point of space.",
+    "point_latex": "A point in LaTeX, `\\left(3, -\\frac{1}{2}\\right)`.",
 }
 
 
@@ -216,8 +253,12 @@ def _builtins_markdown():
         "",
         "The site is built from the repository, which is ahead of the 0.1.1 release:",
         "`choose`, `factorial`, `gcd`, `lcm`, `mod_inverse`, `number_latex`,",
-        "`permutations`, `pow_mod`, `set_above` and `set_below` are not in that",
-        "package.",
+        "`permutations`, `pow_mod`, `set_above`, `set_below`, the `point` functions,",
+        "`matrix_row`, `matrix_column`, `matrix_stack`, `matrix_augment`,",
+        "`matrix_rows`, `matrix_columns`, `matrix_rank`, `matrix_rref`, `blank`,",
+        "`blank_wide`, `plain`, `exactly`, `formula_pi`, `formula_value`, the `exact_`",
+        "functions, `base_digits` and `base_number` are not in that package;",
+        "neither are `true`, `false`, `let` inside a production and `pg_variables`.",
         "",
     ]
     known = [key for key, _, _ in GROUPS]

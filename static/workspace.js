@@ -7,17 +7,20 @@ document.addEventListener('DOMContentLoaded', () => {
         library_formula:'Arithmetic and algebra', library_linear:'Arithmetic and algebra',
         library_polynomial:'Arithmetic and algebra', library_quadratic:'Arithmetic and algebra',
         linear_equation:'Arithmetic and algebra', polynomial_expand:'Arithmetic and algebra', polynomial_forms:'Arithmetic and algebra',
-        exponential_log:'Arithmetic and algebra',
+        exponential_log:'Arithmetic and algebra', partial_fractions:'Arithmetic and algebra',
         boolean:'Logic and sets', boolean_equiv:'Logic and sets', logic_forms:'Logic and sets', set:'Logic and sets',
         calculus:'Calculus and sequences', sequence:'Calculus and sequences', sequence_parts:'Calculus and sequences',
         limits:'Calculus and sequences', series:'Calculus and sequences', derivative_or_boolean:'Calculus and sequences',
         definite_integral:'Calculus and sequences', derivative_applications:'Calculus and sequences',
-        differential_equation:'Calculus and sequences',
+        differential_equation:'Calculus and sequences', recurrence:'Calculus and sequences',
+        taylor:'Calculus and sequences', partial_derivatives:'Calculus and sequences',
         complex:'Vectors and linear algebra', vector:'Vectors and linear algebra', vector_expr:'Vectors and linear algebra',
         determinant:'Vectors and linear algebra', eigen:'Vectors and linear algebra', linear_system:'Vectors and linear algebra',
         matrix_expr:'Vectors and linear algebra', matrix_inverse:'Vectors and linear algebra',
+        row_reduction:'Vectors and linear algebra',
         counting:'Other topics', number_theory:'Other topics', inequality:'Other topics',
-        analytic_geometry:'Other topics', statistics:'Other topics'
+        analytic_geometry:'Other topics', statistics:'Other topics',
+        base_conversion:'Other topics', trigonometry:'Other topics'
     };
     const translated = value => window.RhemaI18n?.t(value) || value;
     function updateSelection() {

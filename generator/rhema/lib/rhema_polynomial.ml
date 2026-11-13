@@ -213,8 +213,9 @@ let rec of_formula ~variable expression =
       match recurse body with
       | Some body -> Some (scale (Rhema_number.of_int (-1)) body)
       | None -> None)
-  | Rhema_formula.Divide _ | Rhema_formula.Power _ | Rhema_formula.Sin _ | Rhema_formula.Cos _
-  | Rhema_formula.Tan _ | Rhema_formula.Exp _ | Rhema_formula.Ln _ | Rhema_formula.Sqrt _ ->
+  | Rhema_formula.Pi | Rhema_formula.Divide _ | Rhema_formula.Power _ | Rhema_formula.Sin _
+  | Rhema_formula.Cos _ | Rhema_formula.Tan _ | Rhema_formula.Exp _ | Rhema_formula.Ln _
+  | Rhema_formula.Sqrt _ ->
       None
 
 let linear_root polynomial =

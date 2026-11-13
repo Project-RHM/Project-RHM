@@ -33,6 +33,7 @@ let json_string text = "\"" ^ json_escape text ^ "\""
 let rec expression_text = function
   | Int value -> string_of_int value
   | Str text -> Printf.sprintf "%S" text
+  | Bool truth -> string_of_bool truth
   | Attr_here name -> name
   | Attr_child (index, name) -> Printf.sprintf "$%d.%s" index name
   | Attr_child_named (owner, name) -> owner ^ "." ^ name
@@ -63,6 +64,7 @@ let rule_text rule =
 let equation_text = function
   | Assign (name, body, _) -> name ^ " = " ^ expression_text body
   | Require (condition, _) -> "require " ^ expression_text condition
+  | Local (name, body, _) -> "let " ^ name ^ " = " ^ expression_text body
 
 let value_text = Rhema_engine.describe_value
 

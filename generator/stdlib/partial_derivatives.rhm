@@ -1,0 +1,144 @@
+# ==========================================================================
+#  Partial derivatives
+#
+#  Functions of two variables: first and mixed partial derivatives, the
+#  gradient at a point, a tangent plane and a critical point. The function
+#  is a polynomial in x and y; its derivatives are taken by the engine's
+#  differentiate, with respect to "x" or to "y". A critical point is built
+#  from its answer: the point is chosen first and the linear terms of a
+#  quadratic are set so that both partial derivatives vanish there.
+#
+#  A derivative is a formula in x and y. WeBWorK's Numeric context knows
+#  only x, so such an answer is written with a context of its own that
+#  declares both; `pg_variables` below says so for every answer, also one
+#  that holds x or y alone. The forms have one or two blanks and place them
+#  in their own text.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  one first partial derivative
+#    2  both first partial derivatives, the mixed second derivative, the
+#       gradient at a point
+#    3  the tangent plane at a point, the critical point of a quadratic
+# ==========================================================================
+
+attribute cost = 2 split
+
+let x = formula_variable("x")
+let y = formula_variable("y")
+
+# Every formula answer of this file is in x and y, also one that happens to
+# hold only one of them: a derivative that comes to 6y is still entered in a
+# blank that knows x.
+let pg_variables = "x y"
+
+synth kind on Q
+synth text on Q
+
+# a x^m y^n + b x^p + c y^q: a term in both variables and one in each.
+synth formula on P
+synth latex on P
+
+# A point with whole coordinates, as text and as two constants.
+synth first on N
+synth second on N
+synth latex on N
+
+start Q
+
+P -> nonzero_integer_between(-5, 5) integer_between(1, 2) integer_between(1, 2) nonzero_integer_between(-5, 5) integer_between(2, 3) nonzero_integer_between(-5, 5) integer_between(2, 3) {
+  formula = formula_add(formula_add(formula_multiply(formula_constant($1.value),
+                                                     formula_multiply(formula_power(x, $2.value), formula_power(y, $3.value))),
+                                    formula_multiply(formula_constant($4.value), formula_power(x, $5.value))),
+                        formula_multiply(formula_constant($6.value), formula_power(y, $7.value)))
+  latex = formula_latex(formula)
+}
+
+N -> integer_between(-2, 2) integer_between(-2, 2) {
+  first = $1.value
+  second = $2.value
+  latex = "\left(" ++ str($1.value) ++ ", " ++ str($2.value) ++ "\right)"
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+Q -> "first_partial" P integer_between(1, 2) when cost = 1 {
+  cost = -1
+  kind = "first_partial"
+  let name = cond($3.value = 1, "x", "y")
+  text = "Find [`\dfrac{\partial f}{\partial " ++ name ++ "}`] for [`f(x, y) = " ++ $2.latex ++ "`]. "
+         ++ blank(differentiate($2.formula, name))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+Q -> "both_partials" P when cost = 2 weight 2 {
+  cost = -2
+  kind = "both_partials"
+  text = "For [`f(x, y) = " ++ $2.latex ++ "`], find both first partial derivatives. [`\dfrac{\partial f}{\partial x} = `] "
+         ++ blank(differentiate($2.formula, "x")) ++ " [`\dfrac{\partial f}{\partial y} = `] "
+         ++ blank(differentiate($2.formula, "y"))
+}
+
+Q -> "mixed_partial" P when cost = 2 {
+  cost = -2
+  kind = "mixed_partial"
+  text = "Find [`\dfrac{\partial^{2} f}{\partial y \, \partial x}`] for [`f(x, y) = " ++ $2.latex ++ "`]. "
+         ++ blank(differentiate(differentiate($2.formula, "x"), "y"))
+}
+
+# The two partial derivatives with the point put in.
+Q -> "gradient" P N when cost = 2 weight 2 {
+  cost = -2
+  kind = "gradient"
+  let at_x = formula_constant($3.first)
+  let at_y = formula_constant($3.second)
+  let fx = formula_value(formula_substitute(formula_substitute(differentiate($2.formula, "x"), "x", at_x), "y", at_y))
+  let fy = formula_value(formula_substitute(formula_substitute(differentiate($2.formula, "y"), "x", at_x), "y", at_y))
+  text = "Find the gradient of [`f(x, y) = " ++ $2.latex ++ "`] at the point [`" ++ $3.latex
+         ++ "`]. [`\nabla f = \langle`] " ++ blank(fx) ++ " , " ++ blank(fy) ++ " [`\rangle`]"
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# z = f(a, b) + f_x(a, b) (x - a) + f_y(a, b) (y - b).
+Q -> "tangent_plane" P N when cost = 3 weight 2 {
+  cost = -3
+  kind = "tangent_plane"
+  let at_x = formula_constant($3.first)
+  let at_y = formula_constant($3.second)
+  let height = formula_value(formula_substitute(formula_substitute($2.formula, "x", at_x), "y", at_y))
+  let fx = formula_value(formula_substitute(formula_substitute(differentiate($2.formula, "x"), "x", at_x), "y", at_y))
+  let fy = formula_value(formula_substitute(formula_substitute(differentiate($2.formula, "y"), "x", at_x), "y", at_y))
+  require fx != 0 and fy != 0
+  text = "Find the tangent plane to the surface [`z = " ++ $2.latex ++ "`] at the point where [`(x, y) = " ++ $3.latex
+         ++ "`]. Write it as [`z = \ldots`] and enter the right-hand side. "
+         ++ blank(formula_add(formula_constant(height),
+                              formula_add(formula_multiply(formula_constant(fx), formula_subtract(x, at_x)),
+                                          formula_multiply(formula_constant(fy), formula_subtract(y, at_y)))))
+}
+
+# f = p x^2 + r x y + q y^2 + d x + e y with d = -2 p h - r k and
+# e = -2 q k - r h: both partial derivatives vanish at (h, k), and only
+# there, since 4 p q - r^2 is not zero.
+Q -> "critical_point" nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) integer_between(-3, 3) N when cost = 3 weight 2 {
+  cost = -3
+  kind = "critical_point"
+  let p = $2.value
+  let q = $3.value
+  let r = $4.value
+  let d = 0 - 2 * p * $5.first - r * $5.second
+  let e = 0 - 2 * q * $5.second - r * $5.first
+  require 4 * p * q != r ^ 2
+  require d != 0 or e != 0
+  let f = formula_add(formula_add(formula_add(formula_add(formula_multiply(formula_constant(p), formula_power(x, 2)),
+                                                          formula_multiply(formula_constant(r), formula_multiply(x, y))),
+                                              formula_multiply(formula_constant(q), formula_power(y, 2))),
+                                  formula_multiply(formula_constant(d), x)),
+                      formula_multiply(formula_constant(e), y))
+  text = "Find the critical point of [`f(x, y) = " ++ formula_latex(f) ++ "`]. Enter it as a point, such as [`(3, -2)`]. "
+         ++ blank(point2($5.first, $5.second))
+}
+
+prompt "{Q.text}"

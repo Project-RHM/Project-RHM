@@ -135,6 +135,10 @@ python tools/test_webwork_grading_live.py
 ```
 
 In the full container stack, run them with `docker compose exec -T app python3`.
+The validation script compiles a document of ten questions for each grammar
+and named question (`--count` changes that), renders it, and submits it once
+so that WeBWorK builds every answer evaluator: an answer WeBWorK cannot read
+is reported there and not on the rendered page.
 The grading script covers all six Classic vector operations under different
 contexts, a mixed typed-answer document, and actual Classic seed outputs. Its
 last case uses the locally compiled Classic configuration; it does not rewrite
