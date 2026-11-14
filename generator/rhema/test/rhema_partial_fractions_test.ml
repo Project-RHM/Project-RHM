@@ -3,7 +3,12 @@
    the constants answered are put into the decomposition, and the two sides
    are compared as numbers at several points away from the poles. A
    decomposition into partial fractions is unique, so constants that pass
-   are the constants. The factors must be different, or it would not be. *)
+   are the constants. The factors must be different, or it would not be.
+
+   The price is worked out from the printed question as well: 1 for two
+   factors, 2 for each further one, 1 for each factor p x + q, 2 for a
+   repeated factor and 1 for a quotient. It must be the budget, at every
+   budget from 1 to 8. *)
 
 let failures = ref 0
 
@@ -99,19 +104,18 @@ let check (q : Rhema_engine.question) =
       q.Rhema_engine.answers
   in
   (* the right side: an optional whole quotient, then \dfrac{LETTER}{denominator} terms *)
-  let quotient =
-    if Str.string_match (Str.regexp "\\([0-9]+\\) \\+ ") right 0 then float_of_string (Str.matched_group 1 right) else 0.
-  in
+  let improper = Str.string_match (Str.regexp "\\([0-9]+\\) \\+ ") right 0 in
+  let quotient = if improper then float_of_string (Str.matched_group 1 right) else 0. in
   let terms =
-    matches "\\\\dfrac{\\([A-C]\\)}{\\(\\\\left(\\([^()]*\\)\\\\right)\\^{\\([0-9]+\\)}\\|\\([^{}]*\\)\\)}" 5 right
+    matches "\\\\dfrac{\\([A-E]\\)}{\\(\\\\left(\\([^()]*\\)\\\\right)\\^{\\([0-9]+\\)}\\|\\([^{}]*\\)\\)}" 5 right
     |> List.map (function
          | [ letter; _; bracketed; power; bare ] ->
              let body = if bare <> "" then bare else bracketed in
              (letter, polynomial body, if power = "" then 1 else int_of_string power)
          | _ -> assert false)
   in
-  if List.map (fun (letter, _, _) -> letter) terms <> List.filteri (fun i _ -> i < List.length terms) [ "A"; "B"; "C" ] then
-    wrong "the constants are not named A, B, C in order";
+  if List.map (fun (letter, _, _) -> letter) terms <> List.filteri (fun i _ -> i < List.length terms) [ "A"; "B"; "C"; "D"; "E" ] then
+    wrong "the constants are not named A, B, C, ... in order";
   if List.length terms <> List.length constants then
     wrong (Printf.sprintf "%d constants asked, %d answered" (List.length terms) (List.length constants));
   (* each term's denominator is a factor of the whole one, to no higher power *)
@@ -120,6 +124,12 @@ let check (q : Rhema_engine.question) =
       if not (List.exists (fun (g, highest, _) -> Float.abs (f 0.37 -. g 0.37) < 1e-9 && Float.abs (f 2.11 -. g 2.11) < 1e-9 && power <= highest) bottom) then
         wrong "a term whose denominator is not a factor")
     terms;
+  (* one term for each power of each factor *)
+  if List.length terms <> List.fold_left (fun total (_, power, _) -> total + power) 0 bottom then
+    wrong "the terms are not one for each power of each factor";
+  (* the letters named before the identity are those of its terms *)
+  let named = matches "\\[`\\([A-E]\\)`\\]" 1 (fst (split_once "in [`" p)) |> List.concat in
+  if named <> List.map (fun (letter, _, _) -> letter) terms then wrong "the constants named are not those of the terms";
   if List.length terms = List.length constants then
     List.iter
       (fun x ->
@@ -129,13 +139,23 @@ let check (q : Rhema_engine.question) =
         in
         if Float.abs (left -. right) > 1e-9 *. Float.max 1. (Float.abs left) then
           wrong (Printf.sprintf "the two sides differ at x = %g: %g and %g" x left right))
-      [ 0.37; 1.91; -2.63; 5.21; -7.45 ]
+      [ 0.37; 1.91; -2.63; 5.21; -7.45 ];
+  (* what the question is made of *)
+  let scaled = List.length (List.filter (fun (f, _, _) -> Float.abs (f 1. -. f 0. -. 1.) > 1e-9) bottom) in
+  let repeated = List.length (List.filter (fun (_, power, _) -> power = 2) bottom) in
+  if List.exists (fun (_, power, _) -> power > 2) bottom then wrong "a factor to a power above 2";
+  (List.length bottom, scaled, repeated, improper)
 
 let () =
   let base = load_file "partial_fractions.rhm" in
-  let prices = [ ("two_factors", 1, 2); ("scaled", 2, 2); ("improper", 2, 2); ("three_factors", 3, 3); ("repeated", 3, 3) ] in
-  let seen = Hashtbl.create 8 in
-  for cost = 1 to 3 do
+  (* the kinds, and the budgets each is offered at *)
+  let kinds =
+    [ ("two_factors", 1, 1); ("scaled", 2, 2); ("improper", 2, 2); ("three_factors", 3, 3); ("repeated", 3, 3);
+      ("built", 4, 8); ("built_improper", 5, 8) ]
+  in
+  let seen = Hashtbl.create 8 and shapes = Hashtbl.create 8 in
+  let built_at = Hashtbl.create 8 in
+  for cost = 1 to 8 do
     let spec = with_initial base "cost" cost in
     for seed = 0 to 149 do
       Random.init (seed + (1000 * cost));
@@ -144,17 +164,49 @@ let () =
       | q -> (
           let k = kind q in
           Hashtbl.replace seen k ();
-          match List.find_opt (fun (name, _, _) -> name = k) prices with
+          match List.find_opt (fun (name, _, _) -> name = k) kinds with
           | None -> fail ("unknown kind " ^ k)
-          | Some (_, price, blanks) ->
-              if price <> cost then fail (Printf.sprintf "%s at cost %d" k cost);
-              if Rhema_engine.consumption q.Rhema_engine.tree "cost" <> cost then fail (k ^ " did not spend its budget");
-              if List.length q.Rhema_engine.answers <> blanks then
-                fail (Printf.sprintf "%s has %d blanks" k (List.length q.Rhema_engine.answers));
-              (try check q with e -> fail (Printf.sprintf "%s: %s for %S" k (Printexc.to_string e) q.Rhema_engine.prompt)))
+          | Some (_, lowest, highest) -> (
+              if cost < lowest || cost > highest then fail (Printf.sprintf "%s at cost %d" k cost);
+              if Rhema_engine.consumption q.Rhema_engine.tree "cost" <> cost then
+                fail (Printf.sprintf "%s did not spend its budget %d" k cost);
+              match check q with
+              | exception e -> fail (Printf.sprintf "%s: %s for %S" k (Printexc.to_string e) q.Rhema_engine.prompt)
+              | factors, scaled, repeated, improper ->
+                  let price = 1 + (2 * (factors - 2)) + scaled + (2 * repeated) + if improper then 1 else 0 in
+                  if price <> cost then
+                    fail (Printf.sprintf "%s: a question worth %d at budget %d: %S" k price cost q.Rhema_engine.prompt);
+                  if List.length q.Rhema_engine.answers <> factors + repeated then
+                    fail (Printf.sprintf "%s has %d blanks for %d factors, %d repeated" k
+                            (List.length q.Rhema_engine.answers) factors repeated);
+                  if factors > 4 || repeated > 1 then fail (k ^ ": more than four factors, or two repeated");
+                  if improper <> (k = "improper" || k = "built_improper") then fail (k ^ ": a quotient where none belongs");
+                  if cost >= 4 then begin
+                    Hashtbl.replace built_at (k, cost) ();
+                    List.iter
+                      (fun (shape, present) -> if present then Hashtbl.replace shapes shape ())
+                      [ ("four factors", factors = 4); ("five constants", factors + repeated = 5);
+                        ("a repeated factor", repeated = 1); ("a factor p x + q", scaled >= 1);
+                        ("two factors p x + q", scaled >= 2); ("a quotient", improper) ]
+                  end))
     done
   done;
-  List.iter (fun (k, _, _) -> if not (Hashtbl.mem seen k) then fail ("never generated: " ^ k)) prices;
+  List.iter (fun (k, _, _) -> if not (Hashtbl.mem seen k) then fail ("never generated: " ^ k)) kinds;
+  (* every budget from 4 to 8 offers both built kinds it can pay for *)
+  List.iter
+    (fun (k, lowest) ->
+      for cost = lowest to 8 do
+        if not (Hashtbl.mem built_at (k, cost)) then fail (Printf.sprintf "%s never generated at budget %d" k cost)
+      done)
+    [ ("built", 4); ("built_improper", 5) ];
+  List.iter
+    (fun shape -> if not (Hashtbl.mem shapes shape) then fail ("never built: " ^ shape))
+    [ "four factors"; "five constants"; "a repeated factor"; "a factor p x + q"; "two factors p x + q"; "a quotient" ];
+  (* a budget above the highest is refused, not spent some other way *)
+  (Random.init 1;
+   match Rhema_engine.generate (with_initial base "cost" 9) with
+   | exception Rhema_engine.Generation_error _ -> ()
+   | q -> fail ("budget 9 gave a question: " ^ q.Rhema_engine.prompt));
   if !failures = 0 then print_endline "Rhema partial fractions tests passed."
   else begin
     prerr_endline (Printf.sprintf "%d partial fractions test(s) failed." !failures);

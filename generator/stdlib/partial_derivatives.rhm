@@ -14,13 +14,33 @@
 #  that holds x or y alone. The forms have one or two blanks and place them
 #  in their own text.
 #
-#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
-#  at its price alone:
+#  Difficulty is the budget `cost`, spent exactly. Budgets 1 to 3 are fixed
+#  forms of a polynomial, each offered at its price alone:
 #
 #    1  one first partial derivative
 #    2  both first partial derivatives, the mixed second derivative, the
 #       gradient at a point
 #    3  the tangent plane at a point, the critical point of a quadratic
+#
+#  Budgets 4 to 8 ask the same derivatives of a function that is more than
+#  a polynomial. The question costs what it does above, and the function
+#  what it is made of:
+#
+#    one first partial derivative                        1
+#    both, or one second derivative (xx, yx or yy)       2
+#
+#    a term a x^m y^n to start from                      0
+#    sin(ax + by), cos(ax + by), e^(ax + by), each       2
+#    a function of a product, such as e^(x^2 y)          3
+#    a power of x or y times a function of ax + by       5
+#
+#  A function has at most three such terms after its first, and no two of a
+#  kind, so that none can be merged with another. A budget above 8 is
+#  refused.
+#
+#    rhema run partial_derivatives.rhm --set cost=2     the default
+#    rhema run partial_derivatives.rhm --set cost=5
+#    rhema run partial_derivatives.rhm --set cost=8
 # ==========================================================================
 
 attribute cost = 2 split
@@ -44,6 +64,16 @@ synth latex on P
 synth first on N
 synth second on N
 synth latex on N
+
+# A function built term by term, for budgets 4 to 8, and which kinds of
+# term it holds already.
+synth formula on F
+synth has_sin on F
+synth has_cos on F
+synth has_exp on F
+synth has_inner on F
+synth has_product on F
+synth count on F
 
 start Q
 
@@ -139,6 +169,125 @@ Q -> "critical_point" nonzero_integer_between(-3, 3) nonzero_integer_between(-3,
                       formula_multiply(formula_constant(e), y))
   text = "Find the critical point of [`f(x, y) = " ++ formula_latex(f) ++ "`]. Enter it as a point, such as [`(3, -2)`]. "
          ++ blank(point2($5.first, $5.second))
+}
+
+# ---- Budgets 4 to 8 ---------------------------------------------------------
+#
+# F spends what the question leaves it, 2 to 7: nothing on its first term,
+# then 2, 3 or 5 on each further one. The guards keep it from being left
+# with 1, which no term costs. In a x + b y the coefficient a is positive,
+# so the argument is never written with a minus sign in front.
+
+F -> nonzero_integer_between(-5, 5) integer_between(1, 2) integer_between(1, 2) when cost = 0 {
+  formula = formula_multiply(formula_constant($1.value), formula_multiply(formula_power(x, $2.value), formula_power(y, $3.value)))
+  has_sin = 0
+  has_cos = 0
+  has_exp = 0
+  has_inner = 0
+  has_product = 0
+  count = 0
+}
+
+F -> F integer_between(1, 3) nonzero_integer_between(-3, 3) "sin" when cost = 2 or cost >= 4 {
+  cost = -2
+  require $1.has_sin = 0 and $1.count < 3
+  formula = formula_add($1.formula, formula_sin(formula_add(formula_multiply(formula_constant($2.value), x),
+                                                           formula_multiply(formula_constant($3.value), y))))
+  has_sin = 1
+  has_cos = $1.has_cos
+  has_exp = $1.has_exp
+  has_inner = $1.has_inner
+  has_product = $1.has_product
+  count = $1.count + 1
+}
+
+F -> F integer_between(1, 3) nonzero_integer_between(-3, 3) "cos" when cost = 2 or cost >= 4 {
+  cost = -2
+  require $1.has_cos = 0 and $1.count < 3
+  formula = formula_add($1.formula, formula_cos(formula_add(formula_multiply(formula_constant($2.value), x),
+                                                           formula_multiply(formula_constant($3.value), y))))
+  has_sin = $1.has_sin
+  has_cos = 1
+  has_exp = $1.has_exp
+  has_inner = $1.has_inner
+  has_product = $1.has_product
+  count = $1.count + 1
+}
+
+F -> F integer_between(1, 3) nonzero_integer_between(-3, 3) "exp" when cost = 2 or cost >= 4 {
+  cost = -2
+  require $1.has_exp = 0 and $1.count < 3
+  formula = formula_add($1.formula, formula_exp(formula_add(formula_multiply(formula_constant($2.value), x),
+                                                           formula_multiply(formula_constant($3.value), y))))
+  has_sin = $1.has_sin
+  has_cos = $1.has_cos
+  has_exp = 1
+  has_inner = $1.has_inner
+  has_product = $1.has_product
+  count = $1.count + 1
+}
+
+# sin, cos or e of x y, x^2 y or x y^2: the chain rule with an inner
+# derivative that is not a constant.
+F -> F integer_between(1, 3) integer_between(1, 2) integer_between(1, 2) "inner" when cost = 3 or cost >= 5 {
+  cost = -3
+  require $1.has_inner = 0 and $1.count < 3
+  require $3.value + $4.value <= 3
+  let inside = formula_multiply(formula_power(x, $3.value), formula_power(y, $4.value))
+  formula = formula_add($1.formula, cond($2.value = 1, formula_sin(inside), cond($2.value = 2, formula_cos(inside), formula_exp(inside))))
+  has_sin = $1.has_sin
+  has_cos = $1.has_cos
+  has_exp = $1.has_exp
+  has_inner = 1
+  has_product = $1.has_product
+  count = $1.count + 1
+}
+
+# x, x^2, y or y^2 times sin, cos or e of a x + b y: the product rule in one
+# of the two variables.
+F -> F integer_between(1, 2) integer_between(1, 2) integer_between(1, 3) integer_between(1, 3) nonzero_integer_between(-3, 3) "product" when cost = 5 or cost >= 7 {
+  cost = -5
+  require $1.has_product = 0 and $1.count < 3
+  let argument = formula_add(formula_multiply(formula_constant($5.value), x), formula_multiply(formula_constant($6.value), y))
+  let outside = formula_power(cond($2.value = 1, x, y), $3.value)
+  formula = formula_add($1.formula,
+                        formula_multiply(outside, cond($4.value = 1, formula_sin(argument),
+                                                       cond($4.value = 2, formula_cos(argument), formula_exp(argument)))))
+  has_sin = $1.has_sin
+  has_cos = $1.has_cos
+  has_exp = $1.has_exp
+  has_inner = $1.has_inner
+  has_product = 1
+  count = $1.count + 1
+}
+
+Q -> "built_first" F integer_between(1, 2) when cost >= 4 and cost <= 8 weight 2 {
+  cost = -1
+  kind = "built_first"
+  let name = cond($3.value = 1, "x", "y")
+  text = "Find [`\dfrac{\partial f}{\partial " ++ name ++ "}`] for [`f(x, y) = " ++ formula_latex($2.formula) ++ "`]. "
+         ++ blank(differentiate($2.formula, name))
+}
+
+Q -> "built_both" F when cost >= 4 and cost <= 8 weight 2 {
+  cost = -2
+  kind = "built_both"
+  text = "For [`f(x, y) = " ++ formula_latex($2.formula)
+         ++ "`], find both first partial derivatives. [`\dfrac{\partial f}{\partial x} = `] "
+         ++ blank(differentiate($2.formula, "x")) ++ " [`\dfrac{\partial f}{\partial y} = `] "
+         ++ blank(differentiate($2.formula, "y"))
+}
+
+# 1: twice in x; 2: in x and then in y; 3: twice in y.
+Q -> "built_second" F integer_between(1, 3) when cost >= 4 and cost <= 8 weight 2 {
+  cost = -2
+  kind = "built_second"
+  let once = cond($3.value = 3, "y", "x")
+  let twice = cond($3.value = 1, "x", "y")
+  text = "Find [`\dfrac{\partial^{2} f}{"
+         ++ cond($3.value = 1, "\partial x^{2}", cond($3.value = 2, "\partial y \, \partial x", "\partial y^{2}"))
+         ++ "}`] for [`f(x, y) = " ++ formula_latex($2.formula) ++ "`]. "
+         ++ blank(differentiate(differentiate($2.formula, once), twice))
 }
 
 prompt "{Q.text}"

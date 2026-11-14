@@ -20,9 +20,10 @@
 | `logic_forms.rhm` | 所引入的定律或表达式 | 6 | QUESTION_TYPES.md |
 | `matrix_expr.rhm`、`determinant.rhm` | 运算和矩阵的阶 | 4、3 | QUESTION_TYPES.md |
 | `matrix_inverse.rhm`、`linear_system.rhm` | 固定形式，各按其价 | 2、5 | QUESTION_TYPES.md |
-| `counting.rhm`、`number_theory.rhm`、`series.rhm`、`limits.rhm`、`eigen.rhm`、`inequality.rhm` | 固定形式，价格 1 到 3 | 2 | QUESTION_TYPES.md |
+| `counting.rhm`、`number_theory.rhm`、`series.rhm`、`limits.rhm`、`eigen.rhm` | 固定形式，价格 1 到 3 | 2 | QUESTION_TYPES.md |
 | `definite_integral.rhm`、`derivative_applications.rhm`、`exponential_log.rhm`、`analytic_geometry.rhm`、`differential_equation.rhm`、`statistics.rhm` | 固定形式，价格 1 到 3 | 2 | QUESTION_TYPES.md |
-| `partial_fractions.rhm`、`recurrence.rhm`、`taylor.rhm`、`row_reduction.rhm`、`base_conversion.rhm`、`trigonometry.rhm`、`partial_derivatives.rhm` | 固定形式，价格 1 到 3 | 2 | QUESTION_TYPES.md |
+| `recurrence.rhm`、`row_reduction.rhm`、`base_conversion.rhm`、`trigonometry.rhm` | 固定形式，价格 1 到 3 | 2 | QUESTION_TYPES.md |
+| `partial_fractions.rhm`、`taylor.rhm`、`inequality.rhm`、`partial_derivatives.rhm` | 价格 1 到 3 是固定形式，4 到 8 的题目由带价格的部件构造 | 2 | 12 |
 
 > **套题进了语言。** 有了 `set` 声明（`RHEMA_LANGUAGE_EXTENSIONS.zh.md` 第 6 节），文件里可以写 `3 of calc.derivative(cost ~ 6 spread 2)`，`rhema --run` 围绕均值抽预算并把均值调到精确值，这正是 `tools/rhema_difficulty.py set` 原来在外部做的事。工具的 `report` 和 `levels` 仍用于测量一个文法；它的 `set` 子命令为 `--targets` 形式保留，其余功能已被取代。
 
@@ -256,7 +257,28 @@ python3 tools/rhema_difficulty.py set generator/stdlib/boolean.rhm --targets 6,8
 6. 加一个类似 `rhema_boolean_test.ml` 第 3 节、`rhema_engine_test.ml` 第 2b 节或 `rhema_calculus_test.ml`、`rhema_set_test.ml` 中 `check_cost_budget` 的测试：范围内每个预算都能成功生成，`Rhema_engine.consumption tree "cost"` 等于预算，并且一个独立的读取器对打印出的表达式重新定价得到同一个数。
 7. 运行 `tools/rhema_difficulty.py report`，先看不重复比例，再决定分档。
 
-## 12. 它不做的事
+## 12. 会长大的固定形式
+
+固定形式的文法只接受预算 1 到 3，其余一概拒绝：`taylor.rhm` 在预算 5 时曾经回答“没有适合 `Q` 的规则”。现在其中四个文法可以一直到 8。它们在 1 到 3 的形式没有改动，同样的种子在这几个预算下给出同样的试卷；从 4 起，题目由部件构造，每个部件有价格，而价格的选取使得固定形式正是这些价格在 1 到 3 给出的结果。
+
+| 文法 | 部件与价格 |
+| --- | --- |
+| `partial_fractions.rhm` | 两个因式 1；每多一个因式 2；因式 `p x + q` 1；重因式 2；商 1 |
+| `taylor.rhm` | `e^(kx)`、`1/(1 - kx)` 1；`sin`、`cos`、`ln` 2；自变量换成 `k x^2` 2；乘一次因式 2；和 1；积 3 |
+| `inequality.rhm` | 分子中的因式 1，分母中的因式 2，平方因式 3 |
+| `partial_derivatives.rhm` | 所问的导数 1 或 2；`ax + by` 的函数 2，乘积的函数 3，再乘 `x` 或 `y` 的幂 5 |
+
+有三件事必须做对，它们适用于任何这样写的文法。
+
+**只让一个符号拿预算。** 在 `split` 下，凡是文法符号的子节点都会分到一份预算，即使它的规则什么也不花。产生式 `P -> P G`（`G` 是抽取一个因式的辅助符号）会把一部分预算白白分给 `G`，生成的题目就比它的预算便宜。所以逐项构造的题目是一条只有一个符号子节点的链：`P -> P` 后面跟生成器，新的一项就在这条产生式里抽取，剩下的预算全部交给 `P`。
+
+**每一笔余额都要花得掉。** 没有规则能接的预算是错误，不是重试（第 11 节第 5 步）。当各项的价格是 2、3、5 时，守卫要保证产生式不会剩下 1：`when cost = 2 or cost >= 4`。当两个部分分摊预算时（比如两个级数的和），其中一个可能分到 0，而没有哪个函数的价格是 0；`taylor.rhm` 为此设了一条规则——一个不是函数的部分，和与积用 `require` 拒绝它，而不成立的 `require` 会重新抽取。
+
+**限制写成 `require`，并且必须让每个预算都可行。** “最多四个因式”“没有两个同类的项”都是 `require`，不成立时会重试。但嵌套节点的重试次数是相乘的，所以被这些限制变得不可行的预算不会很快失败，而是会运行非常久。因此每个文法都在题目规则的守卫里写明最高预算（`when cost >= 4 and cost <= 8`），高于它的预算立即被拒绝，测试则在不超过它的每个预算下都生成题目。
+
+每个测试都把打印出的题目读回来，按读到的内容定价，并把价格与预算比较，从预算 1 到 8 逐一进行。
+
+## 13. 它不做的事
 
 - 它给表达式定价，不给措辞定价。措辞保持不变。
 - 它不比较题型之间的难度：`boolean.rhm` 的成本 10 和另一个文法的成本 10 不是同一个难度。

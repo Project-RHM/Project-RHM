@@ -7,12 +7,32 @@
 #  answer is the inside or the outside of them, and which ends are closed,
 #  follows from the comparison and the sign of the leading coefficient.
 #
-#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
-#  at its price alone:
+#  Difficulty is the budget `cost`, spent exactly. Budgets 1 to 3 are fixed
+#  forms, each offered at its price alone:
 #
 #    1  a x + b < c (any of <, <=, >, >=)
 #    2  k (x - r1)(x - r2) < 0 written out, |x - a| < b
 #    3  |p x - q| < b, (x - r1) / (x - r2) < 0
+#
+#  Budgets 4 to 8 are sign charts: a product or a quotient of linear factors
+#  compared with 0, priced by its factors:
+#
+#    a factor x - r in the numerator        1
+#    a factor x - r in the denominator      2
+#    a factor (x - r)^2 in the numerator    3
+#
+#  (the quadratic and the quotient above are 1 + 1 and 1 + 2 by the same
+#  prices). A chart has two to five factors, at most two of them in the
+#  denominator and at most one squared, and at least one that changes the
+#  sign. A squared factor does not change it: its root is a point left out
+#  of an interval under < and >, and a solution on its own under <= and >=
+#  where the sign on both sides is wrong, written {r}. A budget above 8 is
+#  refused, and a chart at budget 8 is always a quotient: five factors
+#  without a denominator cost 7 at most.
+#
+#    rhema run inequality.rhm --set cost=2     the default
+#    rhema run inequality.rhm --set cost=5
+#    rhema run inequality.rhm --set cost=8
 # ==========================================================================
 
 context "Interval"
@@ -26,6 +46,28 @@ synth answer_value on Q
 synth latex on O
 synth less on O
 synth closed on O
+
+# A sign chart, built from its largest root down (budgets 4 to 8). It
+# carries the comparison, the solution to the right of its lowest root, and
+# what is still open at that root.
+synth less on P
+synth closed on P
+synth relation on P
+synth lowest on P        # the lowest root so far
+synth sat on P           # whether the inequality holds just below it
+synth unbounded on P     # the interval that holds there runs up to infinity
+synth edge on P          # or up to this number,
+synth edge_closed on P   # which belongs to it or not
+synth tail on P          # the solution above that interval
+synth pieces on P        # how many pieces the tail has
+synth above on P         # the numerator, as written
+synth below on P         # the denominator, as written
+synth above_bare on P    # a single factor of each, without brackets
+synth below_bare on P
+synth tops on P          # factors in the numerator
+synth bottoms on P       # factors in the denominator
+synth squares on P       # squared factors
+synth factors on P
 
 start Q
 
@@ -102,6 +144,149 @@ Q -> "rational" integer_between(-9, 9) integer_between(-9, 9) O when cost = 3 we
                                    $4.closed and $2.value < $3.value, $4.closed and $2.value > $3.value),
                       set_union(set_below(min($2.value, $3.value), $4.closed and $2.value < $3.value),
                                 set_above(max($2.value, $3.value), $4.closed and $2.value > $3.value)))
+}
+
+# ---- Budgets 4 to 8: sign charts --------------------------------------------
+#
+# Every factor is x - r, so the product is positive above the largest root.
+# P starts there, with no factor yet and the comparison drawn, and each
+# production adds a factor with a lower root: the sign below it is the sign
+# above it, reversed by a factor to the first power and kept by a square.
+# An interval where the inequality holds is written down when its lower end
+# is reached; until then P remembers its upper end. The factor x is written
+# without brackets.
+
+P -> O integer_between(3, 7) when cost = 0 {
+  less = $1.less
+  closed = $1.closed
+  relation = $1.latex
+  lowest = $2.value
+  sat = not $1.less
+  unbounded = true
+  edge = $2.value
+  edge_closed = false
+  tail = set_empty()
+  pieces = 0
+  above = ""
+  below = ""
+  above_bare = ""
+  below_bare = ""
+  tops = 0
+  bottoms = 0
+  squares = 0
+  factors = 0
+}
+
+# A factor of the numerator. Its root is a solution under <= and >=.
+P -> P integer_between(1, 3) when cost >= 1 weight 3 {
+  cost = -1
+  require $1.factors < 5
+  less = $1.less
+  closed = $1.closed
+  relation = $1.relation
+  lowest = $1.lowest - $2.value
+  sat = not $1.sat
+  unbounded = false
+  edge = lowest
+  edge_closed = $1.closed
+  tail = cond($1.sat,
+              cond($1.pieces = 0,
+                   cond($1.unbounded, set_above(lowest, $1.closed), set_interval(lowest, $1.edge, $1.closed, $1.edge_closed)),
+                   set_union(cond($1.unbounded, set_above(lowest, $1.closed),
+                                  set_interval(lowest, $1.edge, $1.closed, $1.edge_closed)), $1.tail)),
+              $1.tail)
+  pieces = $1.pieces + cond($1.sat, 1, 0)
+  above_bare = polynomial_latex(polynomial_linear(1, 0 - lowest, "x"))
+  above = cond(lowest = 0, "x", "\left(" ++ above_bare ++ "\right)") ++ $1.above
+  below = $1.below
+  below_bare = $1.below_bare
+  tops = $1.tops + 1
+  bottoms = $1.bottoms
+  squares = $1.squares
+  factors = $1.factors + 1
+}
+
+# A factor of the denominator. Its root is never a solution.
+P -> P integer_between(1, 3) "under" when cost >= 2 weight 2 {
+  cost = -2
+  require $1.factors < 5 and $1.bottoms < 2
+  less = $1.less
+  closed = $1.closed
+  relation = $1.relation
+  lowest = $1.lowest - $2.value
+  sat = not $1.sat
+  unbounded = false
+  edge = lowest
+  edge_closed = false
+  tail = cond($1.sat,
+              cond($1.pieces = 0,
+                   cond($1.unbounded, set_above(lowest, false), set_interval(lowest, $1.edge, false, $1.edge_closed)),
+                   set_union(cond($1.unbounded, set_above(lowest, false),
+                                  set_interval(lowest, $1.edge, false, $1.edge_closed)), $1.tail)),
+              $1.tail)
+  pieces = $1.pieces + cond($1.sat, 1, 0)
+  below_bare = polynomial_latex(polynomial_linear(1, 0 - lowest, "x"))
+  below = cond(lowest = 0, "x", "\left(" ++ below_bare ++ "\right)") ++ $1.below
+  above = $1.above
+  above_bare = $1.above_bare
+  tops = $1.tops
+  bottoms = $1.bottoms + 1
+  squares = $1.squares
+  factors = $1.factors + 1
+}
+
+# A squared factor of the numerator: the sign is the same on both sides.
+# Where the inequality holds on both, the root belongs to the interval under
+# <= and >= and cuts it in two under < and >. Where it holds on neither, the
+# root is a solution on its own under <= and >=.
+P -> P integer_between(1, 3) "squared" when cost >= 3 weight 2 {
+  cost = -3
+  require $1.factors < 5 and $1.squares = 0
+  less = $1.less
+  closed = $1.closed
+  relation = $1.relation
+  lowest = $1.lowest - $2.value
+  sat = $1.sat
+  let cut = $1.sat and not $1.closed
+  let point = $1.closed and not $1.sat
+  unbounded = cond(cut, false, $1.unbounded)
+  edge = cond(cut, lowest, $1.edge)
+  edge_closed = cond(cut, false, $1.edge_closed)
+  tail = cond(cut,
+              cond($1.pieces = 0,
+                   cond($1.unbounded, set_above(lowest, false), set_interval(lowest, $1.edge, false, $1.edge_closed)),
+                   set_union(cond($1.unbounded, set_above(lowest, false),
+                                  set_interval(lowest, $1.edge, false, $1.edge_closed)), $1.tail)),
+         cond(point,
+              cond($1.pieces = 0, set_insert(set_empty(), lowest), set_union(set_insert(set_empty(), lowest), $1.tail)),
+              $1.tail))
+  pieces = $1.pieces + cond(cut or point, 1, 0)
+  above_bare = ""
+  above = cond(lowest = 0, "x^{2}", "\left(" ++ polynomial_latex(polynomial_linear(1, 0 - lowest, "x")) ++ "\right)^{2}")
+          ++ $1.above
+  below = $1.below
+  below_bare = $1.below_bare
+  tops = $1.tops + 1
+  bottoms = $1.bottoms
+  squares = 1
+  factors = $1.factors + 1
+}
+
+# Below the lowest root the interval that holds, if one does, runs down to
+# minus infinity. With a factor that changes the sign it never runs up to
+# infinity as well.
+Q -> "sign_chart" P when cost >= 4 and cost <= 8 weight 3 {
+  kind = cond($2.bottoms = 0, "sign_chart", "sign_chart_rational")
+  require $2.factors >= 2 and $2.tops >= 1 and $2.factors - $2.squares >= 1
+  let top = cond($2.tops = 1 and $2.squares = 0 and $2.bottoms > 0, $2.above_bare, $2.above)
+  let bottom = cond($2.bottoms = 1, $2.below_bare, $2.below)
+  text = "Solve [`" ++ cond($2.bottoms = 0, top, "\dfrac{" ++ top ++ "}{" ++ bottom ++ "}") ++ " " ++ $2.relation
+         ++ " 0`]. Give the solution set in interval notation."
+         ++ cond($2.squares = 1 and $2.closed, " Write a single point as [`\{2\}`].", "")
+  answer_value = cond($2.sat,
+                      cond($2.pieces = 0, set_below($2.edge, $2.edge_closed),
+                           set_union(set_below($2.edge, $2.edge_closed), $2.tail)),
+                      $2.tail)
 }
 
 prompt "{Q.text}"
