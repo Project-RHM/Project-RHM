@@ -43,6 +43,10 @@
   letter-spacing: 0.01em;
 }
 .wy-side-nav-search > a:hover { background: transparent; color: #fff !important; }
+/* With a logo the theme drops the site name, so it is written here. */
+.wy-side-nav-search > a { display: inline-flex; align-items: center; gap: 0.5em; }
+.wy-side-nav-search > a::after { content: "Rhema"; }
+.wy-side-nav-search > a img.logo { width: 2em; height: 2em; margin: 0; padding: 0; }
 .wy-side-nav-search input[type="text"] { border-color: var(--rhema-orange-dark); border-radius: 2px; }
 
 .wy-menu-vertical header, .wy-menu-vertical p.caption {

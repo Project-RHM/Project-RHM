@@ -1,15 +1,28 @@
-# RHM — Reversible Hierarchical Mathesis
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="Rhema 图标：一棵推导树，一个节点和它的两个子节点" width="112">
+</p>
 
-**Math Question Generation（数学题目生成）** · *Regula · Hierarchia · Mathesis*
+<h1 align="center">RHM — Reversible Hierarchical Mathesis</h1>
 
-[![CI](https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml/badge.svg)](https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml)
-[![opam 包](https://img.shields.io/badge/opam-rhema-orange)](https://opam.ocaml.org/packages/rhema/)
-[![VS Code 扩展](https://img.shields.io/badge/VS_Code-Marketplace-007ACC)](https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language)
-[![文档站](https://img.shields.io/badge/Docs-guide-blue)](https://project-rhm.github.io/)
-[![许可证](https://img.shields.io/github/license/Project-RHM/Project-RHM)](LICENSE)
+<p align="center">
+  <b>Math Question Generation（数学题目生成）</b> · <i>Regula · Hierarchia · Mathesis</i>
+</p>
 
-[更新日志](CHANGELOG.md) ·
-[English](README.md)
+<p align="center">
+  <a href="https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml"><img src="https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://opam.ocaml.org/packages/rhema/"><img src="https://img.shields.io/badge/opam-rhema-orange" alt="opam 包"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language"><img src="https://img.shields.io/badge/VS_Code-Marketplace-007ACC" alt="VS Code 扩展"></a>
+  <a href="https://project-rhm.github.io/"><img src="https://img.shields.io/badge/Docs-guide-blue" alt="文档站"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Project-RHM/Project-RHM" alt="许可证"></a>
+</p>
+
+<p align="center">
+  <a href="https://project-rhm.github.io/">文档站</a> ·
+  <a href="#安装">安装</a> ·
+  <a href="#文法库">文法库</a> ·
+  <a href="CHANGELOG.md">更新日志</a> ·
+  <a href="README.md">English</a>
+</p>
 
 *英文原版见 `README.md`，以英文版为准。*
 
@@ -150,7 +163,9 @@ rhema doc                                 # the builtin functions
 
 难度是文法要花掉的预算。`boolean.rhm` 为每种联结词定价（合取 2、条件 4、
 双条件 6，等等），`calculus.rhm` 为函数用到的求导法则定价，固定题型的文法则为
-每种题型标一个价格。每个文法都恰好花完预算，所以 `--set cost=6` 和
+每种题型标一个价格，从 1 到 3。其中四个文法（`partial_fractions`、`taylor`、
+`inequality`、`partial_derivatives`）可以一直到 8，用带价格的部件构造更大的题目。
+每个文法都恰好花完预算，所以 `--set cost=6` 和
 `--set cost=14` 分别得到同一题型中较容易和较难的题目。
 
 一份作业中的预算有三种写法：固定值（`cost = 6`）、平均使用一个列表
@@ -173,7 +188,20 @@ python3 app.py
 产生式树和带属性的推导树。配置 DeepSeek API 密钥后，可以选用 Add Context 功能，
 由大语言模型为四则运算题写一段情境。
 
-## 仓库结构
+## 文档
+
+- [文档站](https://project-rhm.github.io/)（英文）：八章教程和语言参考
+- [`RHEMA_LANGUAGE_GUIDE.md`](RHEMA_LANGUAGE_GUIDE.md)：语言和命令
+- [`RHEMA_LANGUAGE_EXTENSIONS.zh.md`](RHEMA_LANGUAGE_EXTENSIONS.zh.md)：`include`、
+  `import`、有名字的题型、套题、每题一个上下文、文本中的答案空和多变量的答案
+- [`RHEMA_MODULES_DESIGN.zh.md`](RHEMA_MODULES_DESIGN.zh.md)：模块层的设计
+- [`QUESTION_TYPES.zh.md`](QUESTION_TYPES.zh.md)：文法库中的每个文法
+- [`DIFFICULTY_BUDGET.zh.md`](DIFFICULTY_BUDGET.zh.md)：价格、预算和套题
+- [`RELEASING.md`](RELEASING.md)（英文）：版本发布流程
+
+## 开发
+
+### 仓库结构
 
 | 路径 | 内容 |
 | --- | --- |
@@ -186,7 +214,7 @@ python3 app.py
 | `tools/` | 难度、统计和组卷工具，以及测试脚本 |
 | `app.py`、`templates/`、`static/`、`llm_context/` | Web 应用 |
 
-## 测试
+### 测试
 
 ```bash
 cd generator
@@ -231,17 +259,6 @@ CST 重新打印的 PG。输入文件参数可以写 `-` 表示标准输入，�
 `ATTRIBUTE_GRAMMAR_FILE` 可以加载其他文法。它是 Rhema 的前身，使用自己的、更简单
 的格式，详见
 [`ATTRIBUTE_GRAMMAR_IMPROVEMENT.md`](ATTRIBUTE_GRAMMAR_IMPROVEMENT.md)（英文）。
-
-## 文档
-
-- [文档站](https://project-rhm.github.io/)（英文）：八章教程和语言参考
-- [`RHEMA_LANGUAGE_GUIDE.md`](RHEMA_LANGUAGE_GUIDE.md)（英文）：语言和命令
-- [`RHEMA_LANGUAGE_EXTENSIONS.zh.md`](RHEMA_LANGUAGE_EXTENSIONS.zh.md)：`include`、
-  `import`、有名字的题型、套题、每题一个上下文和多个答案空
-- [`RHEMA_MODULES_DESIGN.zh.md`](RHEMA_MODULES_DESIGN.zh.md)：模块层的设计
-- [`QUESTION_TYPES.zh.md`](QUESTION_TYPES.zh.md)：文法库中的每个文法
-- [`DIFFICULTY_BUDGET.zh.md`](DIFFICULTY_BUDGET.zh.md)：价格、预算和套题
-- [`RELEASING.md`](RELEASING.md)（英文）：版本发布流程
 
 ## 名字的含义
 
