@@ -1,15 +1,28 @@
-# RHM — Reversible Hierarchical Mathesis
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="The Rhema icon: a derivation tree, one node and its two children" width="112">
+</p>
 
-**Math Question Generation** · *Regula · Hierarchia · Mathesis*
+<h1 align="center">RHM — Reversible Hierarchical Mathesis</h1>
 
-[![CI](https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml/badge.svg)](https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml)
-[![opam package](https://img.shields.io/badge/opam-rhema-orange)](https://opam.ocaml.org/packages/rhema/)
-[![VS Code Marketplace](https://img.shields.io/badge/VS_Code-Marketplace-007ACC)](https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language)
-[![Documentation](https://img.shields.io/badge/Docs-guide-blue)](https://project-rhm.github.io/)
-[![License](https://img.shields.io/github/license/Project-RHM/Project-RHM)](LICENSE)
+<p align="center">
+  <b>Math Question Generation</b> · <i>Regula · Hierarchia · Mathesis</i>
+</p>
 
-[Changelog](CHANGELOG.md) ·
-[中文说明](README.zh.md)
+<p align="center">
+  <a href="https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml"><img src="https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://opam.ocaml.org/packages/rhema/"><img src="https://img.shields.io/badge/opam-rhema-orange" alt="opam package"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language"><img src="https://img.shields.io/badge/VS_Code-Marketplace-007ACC" alt="VS Code Marketplace"></a>
+  <a href="https://project-rhm.github.io/"><img src="https://img.shields.io/badge/Docs-guide-blue" alt="Documentation"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Project-RHM/Project-RHM" alt="License"></a>
+</p>
+
+<p align="center">
+  <a href="https://project-rhm.github.io/">Documentation</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#the-question-library">Question library</a> ·
+  <a href="CHANGELOG.md">Changelog</a> ·
+  <a href="README.zh.md">中文说明</a>
+</p>
 
 RHM generates mathematics questions for [WeBWorK](https://openwebwork.org/).
 It has three parts:
@@ -157,9 +170,11 @@ own files belong in `generator/grammars/`.
 Difficulty is a budget the grammar spends. `boolean.rhm` prices each
 connective (conjunction 2, conditional 4, biconditional 6 and so on),
 `calculus.rhm` prices the differentiation rules a function calls for, and
-grammars of fixed forms offer each form at its price. Every grammar spends
-its budget exactly, so `--set cost=6` and `--set cost=14` ask for an easy and
-a hard question of the same type.
+grammars of fixed forms offer each form at its price, 1 to 3. Four of those
+(`partial_fractions`, `taylor`, `inequality`, `partial_derivatives`) go on to
+8, building larger questions from priced parts. Every grammar spends its
+budget exactly, so `--set cost=6` and `--set cost=14` ask for an easy and a
+hard question of the same type.
 
 A set can fix a budget (`cost = 6`), use a list evenly
 (`cost in {8, 10, 12}`), or hold a mean (`cost ~ 6 spread 2`).
@@ -195,7 +210,24 @@ For Docker setup, local ports, form controls, preview isolation and tests, see
 renderer with `docker compose up -d --wait webwork-renderer`. The renderer is
 optional for generation and PGML export; WeBWorK preview and grading need it.
 
-## Repository layout
+## Documentation
+
+- [The documentation site](https://project-rhm.github.io/): an eight-chapter
+  tutorial and the language reference
+- [`RHEMA_LANGUAGE_GUIDE.md`](RHEMA_LANGUAGE_GUIDE.md): the language and the
+  command, in Chinese
+- [`RHEMA_LANGUAGE_EXTENSIONS.md`](RHEMA_LANGUAGE_EXTENSIONS.md): `include`,
+  `import`, named questions, sets, per-question contexts, answer blanks in
+  text, and answers in several variables
+- [`RHEMA_MODULES_DESIGN.md`](RHEMA_MODULES_DESIGN.md): the design of the
+  module layer
+- [`QUESTION_TYPES.md`](QUESTION_TYPES.md): every grammar in the library
+- [`DIFFICULTY_BUDGET.md`](DIFFICULTY_BUDGET.md): prices, budgets and sets
+- [`RELEASING.md`](RELEASING.md): how a version is released
+
+## Development
+
+### Repository layout
 
 | Path | Contents |
 | --- | --- |
@@ -208,7 +240,7 @@ optional for generation and PGML export; WeBWorK preview and grading need it.
 | `tools/` | Difficulty, statistics and set tools; test scripts |
 | `app.py`, `templates/`, `static/`, `llm_context/` | The web application |
 
-## Testing
+### Testing
 
 ```bash
 cd generator
@@ -260,21 +292,6 @@ engine, `generator/attribute_grammar.ml`, whose default grammar is
 `generator/arithmetic.ag`. Set `ATTRIBUTE_GRAMMAR_FILE` to load another. This
 is the ancestor of Rhema and uses its own, simpler format; see
 [`ATTRIBUTE_GRAMMAR_IMPROVEMENT.md`](ATTRIBUTE_GRAMMAR_IMPROVEMENT.md).
-
-## Documentation
-
-- [The documentation site](https://project-rhm.github.io/): an eight-chapter
-  tutorial and the language reference
-- [`RHEMA_LANGUAGE_GUIDE.md`](RHEMA_LANGUAGE_GUIDE.md): the language and the
-  command
-- [`RHEMA_LANGUAGE_EXTENSIONS.md`](RHEMA_LANGUAGE_EXTENSIONS.md): `include`,
-  `import`, named questions, sets, per-question contexts and multiple answer
-  blanks
-- [`RHEMA_MODULES_DESIGN.md`](RHEMA_MODULES_DESIGN.md): the design of the
-  module layer
-- [`QUESTION_TYPES.md`](QUESTION_TYPES.md): every grammar in the library
-- [`DIFFICULTY_BUDGET.md`](DIFFICULTY_BUDGET.md): prices, budgets and sets
-- [`RELEASING.md`](RELEASING.md): how a version is released
 
 ## The name
 

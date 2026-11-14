@@ -13,6 +13,7 @@ exclude_docs: |
 
 theme:
   name: readthedocs
+  logo: assets/logo.svg
   highlightjs: false
   navigation_depth: 3
   collapse_navigation: false
