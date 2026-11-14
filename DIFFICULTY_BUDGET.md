@@ -21,9 +21,10 @@ this document is in `DIFFICULTY_BUDGET.zh.md`.
 | `logic_forms.rhm` | the imported law or expression | 6 | QUESTION_TYPES.md |
 | `matrix_expr.rhm`, `determinant.rhm` | operations and the size of the matrices | 4, 3 | QUESTION_TYPES.md |
 | `matrix_inverse.rhm`, `linear_system.rhm` | fixed forms, each at its price | 2, 5 | QUESTION_TYPES.md |
-| `counting.rhm`, `number_theory.rhm`, `series.rhm`, `limits.rhm`, `eigen.rhm`, `inequality.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
+| `counting.rhm`, `number_theory.rhm`, `series.rhm`, `limits.rhm`, `eigen.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
 | `definite_integral.rhm`, `derivative_applications.rhm`, `exponential_log.rhm`, `analytic_geometry.rhm`, `differential_equation.rhm`, `statistics.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
-| `partial_fractions.rhm`, `recurrence.rhm`, `taylor.rhm`, `row_reduction.rhm`, `base_conversion.rhm`, `trigonometry.rhm`, `partial_derivatives.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
+| `recurrence.rhm`, `row_reduction.rhm`, `base_conversion.rhm`, `trigonometry.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
+| `partial_fractions.rhm`, `taylor.rhm`, `inequality.rhm`, `partial_derivatives.rhm` | fixed forms at prices 1 to 3, questions built from priced parts at 4 to 8 | 2 | 12 |
 
 > **Sets in the language.** Since the `set` declaration
 > (`RHEMA_LANGUAGE_EXTENSIONS.md` section 6) a file can say
@@ -428,7 +429,53 @@ budgets a grammar of fixed forms accepts.
 7. Run `tools/rhema_difficulty.py report` and look at the distinct share before
    choosing levels.
 
-## 12. What this does not do
+## 12. Fixed forms that grow
+
+A grammar of fixed forms answers budgets 1 to 3 and refuses the rest:
+`taylor.rhm` at 5 used to say that no rule for `Q` fits. Four of them now go
+on to 8. Their forms at 1 to 3 are untouched, and the same seeds give the
+same papers there; from 4 the question is built from parts, each with a
+price, and the prices are chosen so that the fixed forms are what they give
+at 1 to 3.
+
+| grammar | parts and prices |
+| --- | --- |
+| `partial_fractions.rhm` | two factors 1; each further factor 2; a factor `p x + q` 1; a repeated factor 2; a quotient 1 |
+| `taylor.rhm` | `e^(kx)`, `1/(1 - kx)` 1; `sin`, `cos`, `ln` 2; the argument `k x^2` 2; a linear factor 2; a sum 1; a product 3 |
+| `inequality.rhm` | a factor of the numerator 1, of the denominator 2, a squared factor 3 |
+| `partial_derivatives.rhm` | the question 1 or 2; a function of `ax + by` 2, of a product 3, times a power of `x` or `y` 5 |
+
+Three things had to be got right, and they apply to any grammar written
+this way.
+
+**One symbol takes the budget.** Under `split` every child that is a symbol
+of the grammar is handed a share, also one whose rules spend nothing. A
+production `P -> P G`, with `G` a helper that draws a factor, loses part of
+its budget to `G` and the question comes out cheaper than its budget. So a
+question built term by term is a chain with one symbol child, `P -> P` and
+then generators: the new term is drawn in the production itself, and `P`
+receives all that is left.
+
+**Every remainder must be spendable.** A budget no rule can take is an
+error, not a retry (section 11, step 5). Where the terms cost 2, 3 and 5,
+the guards keep a production from leaving 1: `when cost = 2 or cost >= 4`.
+Where two parts divide the budget between them, as in a sum of two series,
+one of them may be left 0, and no function costs 0; `taylor.rhm` has a rule
+for that, a part that is not a function, which the sum and the product
+refuse with `require`, and a requirement that fails is drawn again.
+
+**Limits are requirements, and must leave every budget possible.** "At most
+four factors" or "no two terms of a kind" is a `require`, which is retried.
+But the retries of nested nodes multiply, so a budget that the limits make
+impossible does not fail quickly: it runs for a very long time. Each
+grammar therefore states its top budget in the guard of its question
+(`when cost >= 4 and cost <= 8`), a budget above it is refused at once, and
+the test generates at every budget up to it.
+
+Each test reads the printed question back, prices it from what it finds
+there and compares the price with the budget, at every budget from 1 to 8.
+
+## 13. What this does not do
 
 - It prices the expression, not the wording. The wording is held constant.
 - It does not compare question types: a cost of 10 in `boolean.rhm` and a cost

@@ -795,6 +795,34 @@ let () =
         (fun q -> check "contextBoolean.pl is loaded without a proposition" (not (contains (Rhema_pgml.document [ q ]) macro)))
         (questions spec 3)
 
+(* ------------------------------------------------------------------ *)
+(* 10. polynomial_truncate                                              *)
+(* ------------------------------------------------------------------ *)
+
+let () =
+  let whole = Rhema_number.of_int in
+  let p = Rhema_polynomial.make ~variable:"x" [ whole 1; whole 2; whole 0; whole 4 ] in
+  let shown q = String.concat " " (List.map Rhema_number.to_string (Rhema_polynomial.coefficients q)) in
+  check "truncating at 2 does not keep 1 + 2x alone" (shown (Rhema_polynomial.truncate p 2) = "1 2");
+  check "truncating at 3 changed a polynomial of degree 3" (shown (Rhema_polynomial.truncate p 3) = "1 2 0 4");
+  check "truncating above the degree changed the polynomial" (shown (Rhema_polynomial.truncate p 9) = "1 2 0 4");
+  check "truncating at 0 does not keep the constant alone" (shown (Rhema_polynomial.truncate p 0) = "1");
+  (* through the language: (x + 1)^3 cut at degree 1 is 3x + 1 *)
+  let body degree =
+    "attribute cost = 1 split\nsynth text on Q\nstart Q\nQ -> integer_between(2, 5) {\n  cost = -1\n\
+    \  text = \"T [`\" ++ polynomial_latex(polynomial_truncate(polynomial_power(polynomial_linear(1, 1, \"x\"), 3), " ^ degree
+    ^ ")) ++ \"`] \" ++ blank($1.value)\n}\nprompt \"{Q.text}\"\n"
+  in
+  (match expect_ok "truncate_test.rhm" (body "1") with
+  | None -> ()
+  | Some spec ->
+      List.iter
+        (fun (q : Rhema_engine.question) ->
+          check ("polynomial_truncate in a grammar gave " ^ q.Rhema_engine.prompt)
+            (contains q.Rhema_engine.prompt "T [`3 \\cdot x + 1`]"))
+        (questions spec 2));
+  expect_generation_error "truncate_negative_test.rhm" (body "0 - 1") ~mentions:"non-negative"
+
 let () =
   if !failures = 0 then print_endline "Rhema language additions tests passed."
   else begin

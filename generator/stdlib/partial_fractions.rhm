@@ -7,16 +7,34 @@
 #  up, so the numerator shown is the one that decomposes into them. The
 #  decomposition is unique, so the constants are the only right answer.
 #
-#  The forms have two or three constants. Each places its own blanks in its
+#  The forms have two to five constants. Each places its own blanks in its
 #  text with blank(...), so the file has no `answer` line.
 #
-#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
-#  at its price alone:
+#  Difficulty is the budget `cost`, spent exactly. A decomposition is priced
+#  by its parts:
+#
+#    two different factors x - a and x - b      1
+#    each further factor                        2
+#    a factor p x + q with p > 1, each          1
+#    a repeated factor (x - a)^2                2
+#    a numerator of the denominator's degree,
+#    with the quotient given                    1
+#
+#  Budgets 1 to 3 are the fixed forms these prices give:
 #
 #    1  two different factors x - a and x - b
 #    2  a factor p x + q with p > 1; a numerator of the same degree as the
 #       denominator, with the quotient given
 #    3  three different factors; a repeated factor (x - a)^2
+#
+#  Budgets 4 to 8 build the decomposition term by term (P below), with at
+#  most four different factors and one of them repeated, so up to five
+#  constants. A budget above 8 is refused.
+#
+#    rhema run partial_fractions.rhm --set cost=2     the default
+#    rhema run partial_fractions.rhm --set cost=5     four factors, or
+#                                                      three with extras
+#    rhema run partial_fractions.rhm --set cost=8
 # ==========================================================================
 
 attribute cost = 2 split
@@ -34,6 +52,24 @@ synth slope on G
 synth constant on G
 synth poly on G
 synth latex on G
+
+# A decomposition built term by term, for budgets 4 to 8. It carries the
+# two sides of the identity: the numerator and the denominator of the sum so
+# far, and the terms as they are written.
+synth num on P
+synth den on P
+synth rest on P         # the denominator without its last factor
+synth last on P         # the last factor, and how it is written
+synth last_latex on P
+synth power on P        # the power the last factor has in the denominator
+synth head on P         # the factors before the last, as written
+synth terms on P        # \dfrac{A}{...} + \dfrac{B}{...}
+synth blanks on P       # A = [   ] B = [   ]
+synth listed on P       # the letters before the last, [`A`], [`B`]
+synth letter on P       # the last letter
+synth constants on P    # how many constants
+synth factors on P      # how many different factors
+synth repeated on P     # how many of them are repeated
 
 start Q
 
@@ -117,6 +153,141 @@ Q -> "repeated" F F nonzero_integer_between(-5, 5) nonzero_integer_between(-5, 5
          ++ "\right)^{2}\left(" ++ $3.latex ++ "\right)} = \dfrac{A}{" ++ $2.latex ++ "} + \dfrac{B}{\left(" ++ $2.latex
          ++ "\right)^{2}} + \dfrac{C}{" ++ $3.latex ++ "}`]. [`A = `] " ++ blank($4.value)
          ++ " [`B = `] " ++ blank($5.value) ++ " [`C = `] " ++ blank($6.value)
+}
+
+# ---- Budgets 4 to 8 ---------------------------------------------------------
+#
+# P spends what the question leaves it: 0 or 1 on its first two factors, then
+# 2 for each further factor x - c, 3 for a further factor p x + q, 2 to
+# repeat the factor before. Every whole number can be spent this way; the
+# limits on the number of factors are requirements.
+#
+# Adding A / f to N / D gives (N f + A D) / (D f). Repeating the last factor
+# f adds C / f^2: with D = R f it gives (N f + C R) / (D f).
+
+P -> integer_between(-3, 3) integer_between(-3, 3) nonzero_integer_between(-4, 4) nonzero_integer_between(-4, 4) when cost = 0 {
+  require $1.value != $2.value
+  let first = polynomial_linear(1, 0 - $1.value, "x")
+  last = polynomial_linear(1, 0 - $2.value, "x")
+  last_latex = polynomial_latex(last)
+  num = polynomial_add(polynomial_scale($3.value, last), polynomial_scale($4.value, first))
+  den = polynomial_multiply(first, last)
+  rest = first
+  power = 1
+  head = "\left(" ++ polynomial_latex(first) ++ "\right)"
+  terms = "\dfrac{A}{" ++ polynomial_latex(first) ++ "} + \dfrac{B}{" ++ last_latex ++ "}"
+  blanks = "[`A = `] " ++ blank($3.value) ++ " [`B = `] " ++ blank($4.value)
+  listed = "[`A`]"
+  letter = "B"
+  constants = 2
+  factors = 2
+  repeated = 0
+}
+
+# The first factor is p x + q, drawn here and not as a G: a symbol of the
+# grammar would be handed a share of the budget, and G spends none. x - b
+# must not be a multiple of it.
+P -> integer_between(2, 3) nonzero_integer_between(-5, 5) integer_between(-3, 3) nonzero_integer_between(-4, 4) nonzero_integer_between(-4, 4) when cost = 1 {
+  cost = -1
+  require gcd($1.value, abs($2.value)) = 1
+  require $1.value * $3.value + $2.value != 0
+  let first = polynomial_linear($1.value, $2.value, "x")
+  last = polynomial_linear(1, 0 - $3.value, "x")
+  last_latex = polynomial_latex(last)
+  num = polynomial_add(polynomial_scale($4.value, last), polynomial_scale($5.value, first))
+  den = polynomial_multiply(first, last)
+  rest = first
+  power = 1
+  head = "\left(" ++ polynomial_latex(first) ++ "\right)"
+  terms = "\dfrac{A}{" ++ polynomial_latex(first) ++ "} + \dfrac{B}{" ++ last_latex ++ "}"
+  blanks = "[`A = `] " ++ blank($4.value) ++ " [`B = `] " ++ blank($5.value)
+  listed = "[`A`]"
+  letter = "B"
+  constants = 2
+  factors = 2
+  repeated = 0
+}
+
+# A further factor x - c.
+P -> P integer_between(-3, 3) nonzero_integer_between(-4, 4) when cost >= 2 weight 3 {
+  cost = -2
+  require $1.factors < 4
+  require polynomial_evaluate($1.den, $2.value) != 0
+  last = polynomial_linear(1, 0 - $2.value, "x")
+  last_latex = polynomial_latex(last)
+  letter = cond($1.constants = 2, "C", cond($1.constants = 3, "D", "E"))
+  num = polynomial_add(polynomial_multiply($1.num, last), polynomial_scale($3.value, $1.den))
+  den = polynomial_multiply($1.den, last)
+  rest = $1.den
+  power = 1
+  head = $1.head ++ "\left(" ++ $1.last_latex ++ "\right)" ++ cond($1.power = 2, "^{2}", "")
+  terms = $1.terms ++ " + \dfrac{" ++ letter ++ "}{" ++ last_latex ++ "}"
+  blanks = $1.blanks ++ " [`" ++ letter ++ " = `] " ++ blank($3.value)
+  listed = $1.listed ++ ", [`" ++ $1.letter ++ "`]"
+  constants = $1.constants + 1
+  factors = $1.factors + 1
+  repeated = $1.repeated
+}
+
+# A further factor p x + q.
+P -> P integer_between(2, 3) nonzero_integer_between(-5, 5) nonzero_integer_between(-4, 4) when cost >= 3 weight 2 {
+  cost = -3
+  require $1.factors < 4
+  require gcd($2.value, abs($3.value)) = 1
+  require polynomial_evaluate($1.den, (0 - $3.value) / $2.value) != 0
+  last = polynomial_linear($2.value, $3.value, "x")
+  last_latex = polynomial_latex(last)
+  letter = cond($1.constants = 2, "C", cond($1.constants = 3, "D", "E"))
+  num = polynomial_add(polynomial_multiply($1.num, last), polynomial_scale($4.value, $1.den))
+  den = polynomial_multiply($1.den, last)
+  rest = $1.den
+  power = 1
+  head = $1.head ++ "\left(" ++ $1.last_latex ++ "\right)" ++ cond($1.power = 2, "^{2}", "")
+  terms = $1.terms ++ " + \dfrac{" ++ letter ++ "}{" ++ last_latex ++ "}"
+  blanks = $1.blanks ++ " [`" ++ letter ++ " = `] " ++ blank($4.value)
+  listed = $1.listed ++ ", [`" ++ $1.letter ++ "`]"
+  constants = $1.constants + 1
+  factors = $1.factors + 1
+  repeated = $1.repeated
+}
+
+# The factor before, once more: its square stands in the denominator.
+P -> P "squared" nonzero_integer_between(-4, 4) when cost >= 2 weight 2 {
+  cost = -2
+  require $1.repeated = 0
+  last = $1.last
+  last_latex = $1.last_latex
+  letter = cond($1.constants = 2, "C", cond($1.constants = 3, "D", "E"))
+  num = polynomial_add(polynomial_multiply($1.num, last), polynomial_scale($3.value, $1.rest))
+  den = polynomial_multiply($1.den, last)
+  rest = $1.rest
+  power = 2
+  head = $1.head
+  terms = $1.terms ++ " + \dfrac{" ++ letter ++ "}{\left(" ++ last_latex ++ "\right)^{2}}"
+  blanks = $1.blanks ++ " [`" ++ letter ++ " = `] " ++ blank($3.value)
+  listed = $1.listed ++ ", [`" ++ $1.letter ++ "`]"
+  constants = $1.constants + 1
+  factors = $1.factors
+  repeated = 1
+}
+
+Q -> "built" P when cost >= 4 and cost <= 8 weight 3 {
+  cost = -1
+  kind = "built"
+  text = "Find the constants " ++ $2.listed ++ " and [`" ++ $2.letter ++ "`] in [`\dfrac{" ++ polynomial_latex($2.num)
+         ++ "}{" ++ $2.head ++ "\left(" ++ $2.last_latex ++ "\right)" ++ cond($2.power = 2, "^{2}", "") ++ "} = "
+         ++ $2.terms ++ "`]. " ++ $2.blanks
+}
+
+# The same with a quotient k, given: the numerator has the denominator's
+# degree.
+Q -> "built_improper" P integer_between(1, 3) when cost >= 5 and cost <= 8 weight 2 {
+  cost = -2
+  kind = "built_improper"
+  text = "Find the constants " ++ $2.listed ++ " and [`" ++ $2.letter ++ "`] in [`\dfrac{"
+         ++ polynomial_latex(polynomial_add($2.num, polynomial_scale($3.value, $2.den)))
+         ++ "}{" ++ $2.head ++ "\left(" ++ $2.last_latex ++ "\right)" ++ cond($2.power = 2, "^{2}", "") ++ "} = "
+         ++ str($3.value) ++ " + " ++ $2.terms ++ "`]. " ++ $2.blanks
 }
 
 prompt "{Q.text}"

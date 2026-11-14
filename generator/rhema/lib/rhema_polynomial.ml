@@ -57,6 +57,12 @@ let coefficient polynomial degree =
   | Some coefficient -> coefficient
   | None -> Rhema_number.zero
 
+(* The terms of degree at most [degree]: what is left of a power series
+   written out to some higher degree. *)
+let truncate polynomial degree =
+  if degree < 0 then invalid_arg "polynomial degree must be non-negative";
+  make ~variable:polynomial.variable (List.filteri (fun index _ -> index <= degree) polynomial.coefficients)
+
 let ensure_same_variable operation left right =
   if left.variable <> right.variable then
     invalid_arg

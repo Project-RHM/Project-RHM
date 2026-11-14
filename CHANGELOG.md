@@ -7,6 +7,16 @@ is announced one version before the removal.
 
 ## Unreleased
 
+- **Four question types scale with the budget.** `partial_fractions.rhm`,
+  `taylor.rhm`, `inequality.rhm` and `partial_derivatives.rhm` refused
+  every budget above 3. They now go on to 8, building the question from
+  priced parts: more factors and constants, sums and products of series,
+  sign charts of up to five factors, and functions of two variables with
+  sin, cos and e. Budgets 1 to 3 give the same questions as before, seed
+  for seed. A budget above 8 is refused. `DIFFICULTY_BUDGET.md` section 12
+  has the prices and what a grammar written this way must get right.
+- **Builtin**: `polynomial_truncate(p, n)`, the terms of a polynomial of
+  degree at most `n`.
 - **Seven more question types**, fixed forms at prices 1 to 3:
   `partial_fractions.rhm` (the constants, one blank each),
   `recurrence.rhm` (terms, characteristic roots and closed forms, up to

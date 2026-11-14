@@ -10,13 +10,34 @@
 #  The answer is a polynomial in x. WeBWorK grades it as a formula, so the
 #  function itself is not accepted in its place: it is a different function.
 #
-#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
-#  at its price alone:
+#  Difficulty is the budget `cost`, spent exactly. A function is priced by
+#  what it is made of; the degree asked for is not priced:
+#
+#    e^(kx), 1/(1 - kx)                 1
+#    sin(kx), cos(kx), ln(1 + kx)       2
+#    the argument k x^2 in place of kx  2 more
+#    times a linear factor a + bx       2
+#    the sum of two functions           1, and what the two cost
+#    the product of two functions       3, and what the two cost
+#
+#  Budgets 1 to 3 are the fixed forms these prices give:
 #
 #    1  e^(kx) to degree 2 or 3, 1/(1 - kx) to degree 3
 #    2  sin(kx) to degree 3 or 5, cos(kx) to degree 2 or 4, ln(1 + kx) to
 #       degree 3
 #    3  (a + bx) e^(kx) to degree 3, e^(k x^2) to degree 4 or 6
+#
+#  Budgets 4 to 8 build the function from those parts (S below): every part
+#  carries its series to degree 6, sums and products are taken of the
+#  series, and the question cuts the result at the degree it asks for: 3 or
+#  4, or 5 or 6 for a function with no term of degree 3 or 4. The
+#  coefficient of the highest power asked for is never zero. Two
+#  exponentials are not multiplied: that is one exponential. A budget above
+#  8 is refused.
+#
+#    rhema run taylor.rhm --set cost=2     the default
+#    rhema run taylor.rhm --set cost=5     e^(2x) sin(3x), and its like
+#    rhema run taylor.rhm --set cost=8
 # ==========================================================================
 
 attribute cost = 2 split
@@ -28,6 +49,26 @@ synth answer_value on Q
 # The coefficient k of the argument, and how it is written before x.
 synth value on K
 synth latex on K
+
+# For budgets 4 to 8. U is an argument k x or k x^2 with its powers; B a
+# function of one, S a function built from them. `series` is the series to
+# degree 6, `top` what the function is on the outside: the name of a function, or
+# "linear", "sum", "product".
+synth value on U
+synth latex on U
+synth after_one on U      # the argument after "1": "+ 2x", "- x^{2}"
+synth p1 on U
+synth p2 on U
+synth p3 on U
+synth p4 on U
+synth p5 on U
+synth p6 on U
+synth series on B
+synth latex on B
+synth name on B
+synth series on S
+synth latex on S
+synth top on S
 
 start Q
 
@@ -122,6 +163,152 @@ Q -> "square_argument" K integer_between(2, 3) when cost = 3 weight 2 {
   answer_value = polynomial_add(polynomial_add(polynomial_add(polynomial_constant(1, "x"), polynomial_monomial(k, 2, "x")),
                                                polynomial_monomial(k ^ 2 / 2, 4, "x")),
                                 polynomial_monomial(cond($3.value = 3, k ^ 3 / 6, 0), 6, "x"))
+}
+
+# ---- Budgets 4 to 8 ---------------------------------------------------------
+
+# The argument: k x for nothing, k x^2 for 2. Its powers are cut at degree 6
+# as they are made.
+U -> nonzero_integer_between(-2, 2) when cost = 0 {
+  value = $1.value
+  latex = cond($1.value = 1, "", cond($1.value = 0 - 1, "-", str($1.value))) ++ "x"
+  after_one = cond($1.value > 0, "+ ", "- ") ++ cond(abs($1.value) = 1, "", str(abs($1.value))) ++ "x"
+  p1 = polynomial_monomial($1.value, 1, "x")
+  p2 = polynomial_multiply(p1, p1)
+  p3 = polynomial_multiply(p2, p1)
+  p4 = polynomial_multiply(p3, p1)
+  p5 = polynomial_multiply(p4, p1)
+  p6 = polynomial_multiply(p5, p1)
+}
+
+U -> nonzero_integer_between(-2, 2) "squared" when cost = 2 {
+  cost = -2
+  value = $1.value
+  latex = cond($1.value = 1, "", cond($1.value = 0 - 1, "-", str($1.value))) ++ "x^{2}"
+  after_one = cond($1.value > 0, "+ ", "- ") ++ cond(abs($1.value) = 1, "", str(abs($1.value))) ++ "x^{2}"
+  p1 = polynomial_monomial($1.value, 2, "x")
+  p2 = polynomial_multiply(p1, p1)
+  p3 = polynomial_multiply(p2, p1)
+  p4 = polynomial_constant(0, "x")
+  p5 = polynomial_constant(0, "x")
+  p6 = polynomial_constant(0, "x")
+}
+
+# A function pays its own price and leaves the rest, 0 or 2, to its
+# argument.
+
+# e^u = 1 + u + u^2/2 + u^3/6 + u^4/24 + u^5/120 + u^6/720
+B -> "exp" U when cost = 1 or cost = 3 weight 2 {
+  cost = -1
+  series = polynomial_add(polynomial_linear(0, 1, "x"),
+           polynomial_add($2.p1, polynomial_add(polynomial_scale(1 / 2, $2.p2),
+           polynomial_add(polynomial_scale(1 / 6, $2.p3), polynomial_add(polynomial_scale(1 / 24, $2.p4),
+           polynomial_add(polynomial_scale(1 / 120, $2.p5), polynomial_scale(1 / 720, $2.p6)))))))
+  name = "exp"
+  latex = "e^{" ++ $2.latex ++ "}"
+}
+
+# 1 / (1 - u) = 1 + u + u^2 + ... + u^6
+B -> "geometric" U when cost = 1 or cost = 3 {
+  cost = -1
+  series = polynomial_add(polynomial_linear(0, 1, "x"),
+           polynomial_add($2.p1, polynomial_add($2.p2, polynomial_add($2.p3, polynomial_add($2.p4,
+           polynomial_add($2.p5, $2.p6))))))
+  name = "geometric"
+  latex = "\dfrac{1}{1 " ++ cond($2.value > 0, "- ", "+ ") ++ cond(abs($2.value) = 1, "", str(abs($2.value)))
+          ++ cond(polynomial_degree($2.p1) = 2, "x^{2}", "x") ++ "}"
+}
+
+# sin u = u - u^3/6 + u^5/120
+B -> "sin" U when cost = 2 or cost = 4 {
+  cost = -2
+  series = polynomial_add($2.p1, polynomial_add(polynomial_scale(0 - 1 / 6, $2.p3), polynomial_scale(1 / 120, $2.p5)))
+  name = "sin"
+  latex = "\sin\left(" ++ $2.latex ++ "\right)"
+}
+
+# cos u = 1 - u^2/2 + u^4/24 - u^6/720
+B -> "cos" U when cost = 2 or cost = 4 {
+  cost = -2
+  series = polynomial_add(polynomial_linear(0, 1, "x"),
+           polynomial_add(polynomial_scale(0 - 1 / 2, $2.p2), polynomial_add(polynomial_scale(1 / 24, $2.p4),
+           polynomial_scale(0 - 1 / 720, $2.p6))))
+  name = "cos"
+  latex = "\cos\left(" ++ $2.latex ++ "\right)"
+}
+
+# ln(1 + u) = u - u^2/2 + u^3/3 - u^4/4 + u^5/5 - u^6/6
+B -> "ln" U when cost = 2 or cost = 4 {
+  cost = -2
+  series = polynomial_add($2.p1, polynomial_add(polynomial_scale(0 - 1 / 2, $2.p2),
+           polynomial_add(polynomial_scale(1 / 3, $2.p3), polynomial_add(polynomial_scale(0 - 1 / 4, $2.p4),
+           polynomial_add(polynomial_scale(1 / 5, $2.p5), polynomial_scale(0 - 1 / 6, $2.p6))))))
+  name = "ln"
+  latex = "\ln\left(1 " ++ $2.after_one ++ "\right)"
+}
+
+S -> B when cost >= 1 and cost <= 4 weight 2 {
+  series = $1.series
+  latex = $1.latex
+  top = $1.name
+}
+
+# (a + bx) f(x); a sum under it is bracketed.
+S -> "linear" nonzero_integer_between(-4, 4) nonzero_integer_between(-4, 4) S when cost >= 3 weight 2 {
+  cost = -2
+  require $4.top != "linear"
+  series = polynomial_truncate(polynomial_multiply(polynomial_linear($3.value, $2.value, "x"), $4.series), 6)
+  latex = "\left(" ++ str($2.value) ++ cond($3.value > 0, " + ", " - ") ++ cond(abs($3.value) = 1, "", str(abs($3.value)))
+          ++ "x\right) " ++ cond($4.top = "sum", "\left(" ++ $4.latex ++ "\right)", $4.latex)
+  top = "linear"
+}
+
+# A sum or a product divides what is left between its two parts, and every
+# division is possible, also one that leaves a part nothing. No function
+# costs nothing, and a budget no rule can take stops the generation, so
+# there is a rule for it: a part that is not a function. The sum and the
+# product refuse it, and the division is drawn again.
+S -> "nothing" when cost = 0 {
+  series = polynomial_constant(0, "x")
+  latex = ""
+  top = "nothing"
+}
+
+S -> S "+" S when cost >= 3 weight 2 {
+  cost = -1
+  require $1.top != "nothing" and $3.top != "nothing"
+  require $1.latex != $3.latex
+  series = polynomial_add($1.series, $3.series)
+  latex = $1.latex ++ " + " ++ $3.latex
+  top = "sum"
+}
+
+S -> S "\cdot" S when cost >= 5 weight 3 {
+  cost = -3
+  require $1.top != "nothing" and $3.top != "nothing"
+  require $1.latex != $3.latex
+  require $1.top != "exp" or $3.top != "exp"
+  series = polynomial_truncate(polynomial_multiply($1.series, $3.series), 6)
+  latex = cond($1.top = "sum", "\left(" ++ $1.latex ++ "\right)", $1.latex) ++ " \cdot "
+          ++ cond($3.top = "sum", "\left(" ++ $3.latex ++ "\right)", $3.latex)
+  top = "product"
+}
+
+# The degree asked for, 3 or 4, is one whose coefficient is not zero. A
+# function with neither, such as sin(k x^2), is asked to degree 5 or 6.
+Q -> "built" S integer_between(3, 4) when cost >= 4 and cost <= 8 weight 4 {
+  kind = "built"
+  require polynomial_coefficient($2.series, $3.value) != 0
+  text = "Find the Taylor polynomial of degree [`" ++ str($3.value) ++ "`] of [`f(x) = " ++ $2.latex ++ "`] at [`x = 0`]."
+  answer_value = polynomial_truncate($2.series, $3.value)
+}
+
+Q -> "built" S integer_between(5, 6) when cost >= 4 and cost <= 8 {
+  kind = "built"
+  require polynomial_coefficient($2.series, 3) = 0 and polynomial_coefficient($2.series, 4) = 0
+  require polynomial_coefficient($2.series, $3.value) != 0
+  text = "Find the Taylor polynomial of degree [`" ++ str($3.value) ++ "`] of [`f(x) = " ++ $2.latex ++ "`] at [`x = 0`]."
+  answer_value = polynomial_truncate($2.series, $3.value)
 }
 
 prompt "{Q.text}"

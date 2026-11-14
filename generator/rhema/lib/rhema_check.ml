@@ -222,6 +222,7 @@ let expression_builtins =
     ("polynomial_evaluate", 2);
     ("polynomial_coefficient", 2);
     ("polynomial_degree", 1);
+    ("polynomial_truncate", 2);
     ("polynomial_is_zero", 1);
     ("polynomial_formula", 1);
     ("polynomial_latex", 1);

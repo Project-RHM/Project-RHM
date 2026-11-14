@@ -791,6 +791,15 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
            (Rhema_polynomial.coefficient
               (as_polynomial "polynomial_coefficient" (recurse polynomial)) degree)
        with Invalid_argument message -> error message)
+  | Call ("polynomial_truncate", [ polynomial; degree ]) ->
+      let degree =
+        Rhema_number.require_integer "polynomial_truncate"
+          (as_number "polynomial_truncate" (recurse degree))
+      in
+      (try
+         Polynomial
+           (Rhema_polynomial.truncate (as_polynomial "polynomial_truncate" (recurse polynomial)) degree)
+       with Invalid_argument message -> error message)
   | Call ("polynomial_degree", [ polynomial ]) ->
       let degree =
         match Rhema_polynomial.degree (as_polynomial "polynomial_degree" (recurse polynomial)) with

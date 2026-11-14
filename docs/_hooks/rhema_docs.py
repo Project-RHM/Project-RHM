@@ -185,6 +185,7 @@ DESCRIPTIONS = {
     "exact_sin": "`exact_sin(p, q)`: the value of sin(p pi / q) as a formula, such as `sqrt(3)/2`, for multiples of pi/6 and pi/4; an error for other angles.",
     "exact_cos": "`exact_cos(p, q)`: the value of cos(p pi / q), as `exact_sin`.",
     "exact_tan": "`exact_tan(p, q)`: the value of tan(p pi / q), as `exact_sin`; an error where the tangent is not defined.",
+    "polynomial_truncate": "`polynomial_truncate(p, n)`: the terms of `p` of degree at most `n`, which is what is left of a series written out to a higher degree.",
     "base_digits": "`base_digits(n, b)`: the whole number `n` written in base `b` (2 to 16) as text, with the digits 0-9 and A-F.",
     "base_number": "`base_number(n, b)`: the number whose decimal digits are the digits of `n` in base `b` (2 to 10), so that eleven in binary is an answer typed as `1011`.",
     "blank": "`blank(v)`: an answer blank graded against `v`, to be joined to a production's text with `++`.",
@@ -257,7 +258,8 @@ def _builtins_markdown():
         "`matrix_row`, `matrix_column`, `matrix_stack`, `matrix_augment`,",
         "`matrix_rows`, `matrix_columns`, `matrix_rank`, `matrix_rref`, `blank`,",
         "`blank_wide`, `plain`, `exactly`, `formula_pi`, `formula_value`, the `exact_`",
-        "functions, `base_digits` and `base_number` are not in that package;",
+        "functions, `base_digits`, `base_number` and `polynomial_truncate` are not in",
+        "that package;",
         "neither are `true`, `false`, `let` inside a production and `pg_variables`.",
         "",
     ]

@@ -537,6 +537,7 @@ latex = prefix("\neg", $2)
 | `polynomial_evaluate(polynomial, value)` | 2 | 精确代入并返回 Num |
 | `polynomial_coefficient(polynomial, degree)` | 2 | 读取指定次数的系数 |
 | `polynomial_degree(polynomial)` | 1 | 返回次数；零多项式返回 `-1` |
+| `polynomial_truncate(polynomial, degree)` | 2 | 只保留次数不超过 `degree` 的项（把写到更高次的级数截断） |
 | `polynomial_is_zero(polynomial)` | 1 | 判断零多项式 |
 | `polynomial_formula/polynomial_latex(polynomial)` | 1 | 转成 Formula 或 LaTeX |
 | `equation(left, right)` | 2 | 用两个 Formula 构造方程 |

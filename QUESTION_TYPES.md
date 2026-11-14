@@ -51,20 +51,20 @@ attribute, or by the budget.
 | `series.rhm` | 1 an infinite geometric series, a sum of squares; 2 a geometric series in sigma notation, the sum of a quadratic, a telescoping sum; 3 a telescoping sum with a gap (finite or infinite), the sum of two geometric series | 2 | Numeric |
 | `limits.rhm` | 1 a removable discontinuity, a ratio of quadratics at infinity; 2 a factor shared above and below, `sin(kx)/(mx)`, `(e^{kx} - 1)/(mx)`; 3 a ratio of two sines, `(1 - cos(kx))/(mx^2)` | 2 | Numeric |
 | `eigen.rhm` | 1 the eigenvalues of a triangular matrix; 2 the eigenvalues of a 2 by 2, its characteristic polynomial; 3 an eigenvector, the eigenvalues of a 3 by 3 | 2 | Interval / Numeric / Vector |
-| `inequality.rhm` | 1 linear; 2 quadratic, the absolute value of `x - a`; 3 the absolute value of `px - q`, rational | 2 | Interval |
+| `inequality.rhm` | 1 linear; 2 quadratic, the absolute value of `x - a`; 3 the absolute value of `px - q`, rational; 4 to 8 a sign chart of two to five factors: a factor of the numerator 1, of the denominator 2, a squared factor 3 | 2 | Interval |
 | `definite_integral.rhm` | 1 `k x^n` from 0 to q, a quadratic between two bounds; 2 a product of two linear factors to expand first, the area between a parabola and the x-axis; 3 the area between a parabola and a line, `k x (a x^2 + c)^n` by substitution | 2 | Numeric |
 | `derivative_applications.rhm` | 1 the slope of a tangent to a cubic, where a parabola has a horizontal tangent; 2 the tangent line to a parabola, the critical points of a cubic; 3 the absolute maximum or minimum of a cubic on a closed interval, the interval on which it decreases or increases | 2 | Numeric / Interval |
 | `exponential_log.rhm` | 1 the logarithm of a power of its base, `b^(x + c) = b^k`; 2 two bases that are powers of one number, `log_b(p x + q) = k`; 3 a sum of two logarithms with one root rejected, a quadratic in `b^x` | 2 | Numeric |
 | `analytic_geometry.rhm` | 1 the distance between two points, their midpoint, the slope through them; 2 the line through two points, the perpendicular to a line through a point; 3 the centre and the radius of a circle given expanded (two blanks), the intersection of two lines | 2 | Numeric (a point answer carries the Point context) |
 | `differential_equation.rhm` | initial value problems: 1 `y' = 2a x + b`, `y' = k y`; 2 `y' + a y = b`, `y' = 2k x y`; 3 `y'' + p y' + q y = 0` with two real roots or one repeated | 2 | Numeric |
 | `statistics.rhm` | 1 the mean, median or range of a data set; 2 the variance of a data set, a value missing from a known mean, the expectation of a random variable; 3 the variance of a random variable, at least two successes in n trials | 2 | Numeric |
-| `partial_fractions.rhm` | the constants of a decomposition, one blank each: 1 two different factors; 2 a factor `p x + q`, a numerator of the denominator's degree with the quotient given; 3 three factors, a repeated factor | 2 | Numeric |
+| `partial_fractions.rhm` | the constants of a decomposition, one blank each: 1 two different factors; 2 a factor `p x + q`, a numerator of the denominator's degree with the quotient given; 3 three factors, a repeated factor; 4 to 8 built term by term, up to five constants: each further factor 2, a factor `p x + q` 1, a repeated factor 2, a quotient 1 | 2 | Numeric |
 | `recurrence.rhm` | 1 a term of a first-order or a second-order recurrence; 2 `A` and `B` in the solution `A r^n + B`, the roots of a characteristic equation; 3 `r`, `s`, `A`, `B` in `A r^n + B s^n`, and `r`, `A`, `B` in `(A + B n) r^n` | 2 | Numeric / Interval |
-| `taylor.rhm` | the Taylor polynomial at 0: 1 `e^(kx)`, `1/(1 - kx)`; 2 `sin(kx)`, `cos(kx)`, `ln(1 + kx)`; 3 `(a + bx) e^(kx)`, `e^(k x^2)` | 2 | Numeric |
+| `taylor.rhm` | the Taylor polynomial at 0: 1 `e^(kx)`, `1/(1 - kx)`; 2 `sin(kx)`, `cos(kx)`, `ln(1 + kx)`; 3 `(a + bx) e^(kx)`, `e^(k x^2)`; 4 to 8 functions built from those: the argument `k x^2` 2, a linear factor 2, a sum 1, a product 3 | 2 | Numeric |
 | `row_reduction.rhm` | 1 the rank of a 3 by 3 matrix; 2 the reduced row echelon form of a 2 by 3 matrix; 3 the reduced form of a 3 by 4 matrix, a vector of a null space | 2 | Numeric / Matrix / Vector |
 | `base_conversion.rhm` | 1 binary to decimal and back; 2 hexadecimal to decimal, decimal to octal, binary to octal; 3 a sum in binary, hexadecimal to binary | 2 | Numeric |
 | `trigonometry.rhm` | 1 degrees and radians, an exact value in the first quadrant; 2 an exact value in any quadrant, the other functions from one and the quadrant; 3 the two solutions of `sin x = v`, `cos x = v` or `tan x = v` on one turn, with argument `x` or `2x` | 2 | Numeric (plain answers) |
-| `partial_derivatives.rhm` | 1 a first partial derivative; 2 both, the mixed second derivative, the gradient at a point; 3 a tangent plane, the critical point of a quadratic | 2 | Numeric (answers in `x` and `y`) |
+| `partial_derivatives.rhm` | 1 a first partial derivative; 2 both, the mixed second derivative, the gradient at a point; 3 a tangent plane, the critical point of a quadratic; 4 to 8 the same derivatives (first 1, both or a second one 2) of a function with sin, cos and e: of `ax + by` 2 each, of a product such as `x^2 y` 3, times a power of `x` or `y` 5 | 2 | Numeric (answers in `x` and `y`) |
 <!-- --8<-- [end:tables] -->
 
 ## The five general types added on this branch
@@ -175,6 +175,11 @@ it, so nothing is ever solved and every question has the answer it claims.
   inside or the outside of them, and which ends are closed, from the
   comparison and the sign of the leading coefficient. Its answers use two
   new set values, the rays `set_above(a, closed)` and `set_below(a, closed)`.
+  From budget 4 it builds a sign chart from the largest root down: each
+  factor reverses the sign or, when squared, keeps it, and an interval is
+  written down when its lower end is reached, so the answer comes out in
+  its shortest form. A squared factor gives a point left out of an interval
+  under `<` and `>`, and a solution on its own, `{r}`, under `<=` and `>=`.
 
 ```
 cost 2   eigenvalues of [[-20, 21], [-14, 15]]   {-6, 1}
@@ -264,7 +269,9 @@ written for the additions of `RHEMA_LANGUAGE_EXTENSIONS.md` sections 7 and
 - **Partial fractions** (`partial_fractions.rhm`) chooses the constants and
   the factors, adds the fractions up and shows the result; the constants
   are asked for, one blank each, two or three by the form. The
-  decomposition is unique, so they are the only answer.
+  decomposition is unique, so they are the only answer. From budget 4 the
+  decomposition is built term by term, with up to four different factors
+  and five constants: adding `A / f` to `N / D` gives `(N f + A D) / (D f)`.
 - **Recurrences** (`recurrence.rhm`) asks for a term, or for a solution in
   closed form built from its answer: the roots of the characteristic
   equation and the constants come first, the coefficients and the first
@@ -272,7 +279,10 @@ written for the additions of `RHEMA_LANGUAGE_EXTENSIONS.md` sections 7 and
   `A r^n + B s^n`.
 - **Taylor polynomials** (`taylor.rhm`) writes the coefficients from the
   known series as exact fractions. The answer is a polynomial; the function
-  itself is a different function and is not accepted in its place.
+  itself is a different function and is not accepted in its place. From
+  budget 4 the function is a sum or a product of such functions: every part
+  carries its series to degree 6, the series are added or multiplied, and
+  `polynomial_truncate` cuts the result at the degree asked for.
 - **Row reduction** (`row_reduction.rhm`) builds `A = M R` from a reduced
   form `R` and a matrix `M` of determinant 1, so `R` is the reduced form of
   `A`, the pivots of `R` count its rank and its free column gives the null
@@ -292,7 +302,9 @@ written for the additions of `RHEMA_LANGUAGE_EXTENSIONS.md` sections 7 and
   polynomial in `x` and `y` with respect to either. The file says
   `let pg_variables = "x y"`, so every formula answer is entered in a blank
   that knows both, also a derivative that comes to `6y`. A critical point
-  is built from its answer and is a point value.
+  is built from its answer and is a point value. From budget 4 the function
+  holds sin, cos and e as well, at most three such terms and no two of a
+  kind, and a second derivative may be asked twice in `x` or in `y`.
 
 ```
 cost 3   (6x^2 + 66x + 182) / ((x + 5)^2 (x + 6)) = A/(x + 5) + B/(x + 5)^2 + C/(x + 6)   4; 2; 2
