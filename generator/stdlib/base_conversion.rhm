@@ -13,12 +13,30 @@
 #  An answer is never in hexadecimal: its digits A to F are not a number
 #  WeBWorK can read. Hexadecimal numbers are given, not asked for.
 #
-#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
-#  at its price alone:
+#  Difficulty is the budget `cost`, spent exactly. Budgets 1 to 3 are fixed
+#  forms, each offered at its price alone:
 #
 #    1  binary to decimal, decimal to binary
 #    2  hexadecimal to decimal, decimal to octal, binary to octal
 #    3  the sum of two binary numbers in binary, hexadecimal to binary
+#
+#  Budgets 4 to 8 are sums and differences of two to four numbers written
+#  in binary, octal and hexadecimal, answered in decimal, binary or octal,
+#  and priced by their parts:
+#
+#    the first number: binary or octal 1, hexadecimal 2
+#    each further number: its own price and 1 for adding it,
+#    2 for subtracting it
+#    the answer in decimal 0; in binary or octal 1, or 0 when every
+#    number of the question is in that base already
+#
+#  (six of the seven fixed forms are what these prices give for one or two
+#  numbers; decimal to octal is dearer for its larger numbers). No
+#  difference is zero or negative on the way. A budget above 8 is refused.
+#
+#    rhema run base_conversion.rhm --set cost=2     the default
+#    rhema run base_conversion.rhm --set cost=5
+#    rhema run base_conversion.rhm --set cost=8
 # ==========================================================================
 
 attribute cost = 2 split
@@ -30,6 +48,21 @@ synth answer_value on Q
 # A number of two hexadecimal digits, at least one of them a letter.
 synth value on H
 synth latex on H
+
+# A sum or difference built number by number, for budgets 4 to 8.
+synth value on E
+synth latex on E
+synth operands on E
+synth all_binary on E
+synth all_octal on E
+
+# The same with every number in binary (B) or in octal (O).
+synth value on B
+synth latex on B
+synth operands on B
+synth value on O
+synth latex on O
+synth operands on O
 
 start Q
 
@@ -95,6 +128,195 @@ Q -> "hex_to_binary" H when cost = 3 weight 2 {
   kind = "hex_to_binary"
   text = "Write the hexadecimal number [`" ++ $2.latex ++ "`] in binary."
   answer_value = exactly(base_number($2.value, 2))
+}
+
+# ---- Budgets 4 to 8 ---------------------------------------------------------
+#
+# E pays for its first number, 1 or 2, and then for each further one: 2 or
+# 3 to add it, 3 or 4 to subtract it. Every budget from 1 up can be spent
+# that way. A number is drawn in the production that adds it, so that E has
+# one symbol to hand its budget to. A hexadecimal number has two digits, at
+# least one of them a letter.
+
+E -> integer_between(9, 120) when cost = 1 {
+  cost = -1
+  value = $1.value
+  latex = base_digits($1.value, 2) ++ "_{2}"
+  operands = 1
+  all_binary = true
+  all_octal = false
+}
+
+E -> integer_between(9, 300) "octal" when cost = 1 {
+  cost = -1
+  value = $1.value
+  latex = base_digits($1.value, 8) ++ "_{8}"
+  operands = 1
+  all_binary = false
+  all_octal = true
+}
+
+E -> integer_between(26, 255) "hexadecimal" when cost = 2 {
+  cost = -2
+  require $1.value % 16 >= 10 or $1.value / 16 >= 10
+  value = $1.value
+  latex = "\mathrm{" ++ base_digits($1.value, 16) ++ "}_{16}"
+  operands = 1
+  all_binary = false
+  all_octal = false
+}
+
+E -> E "+" integer_between(9, 120) when cost >= 3 weight 3 {
+  cost = -2
+  require $1.operands < 4
+  value = $1.value + $3.value
+  latex = $1.latex ++ " + " ++ base_digits($3.value, 2) ++ "_{2}"
+  operands = $1.operands + 1
+  all_binary = $1.all_binary
+  all_octal = false
+}
+
+E -> E "+" integer_between(9, 300) "octal" when cost >= 3 weight 3 {
+  cost = -2
+  require $1.operands < 4
+  value = $1.value + $3.value
+  latex = $1.latex ++ " + " ++ base_digits($3.value, 8) ++ "_{8}"
+  operands = $1.operands + 1
+  all_binary = false
+  all_octal = $1.all_octal
+}
+
+E -> E "+" integer_between(26, 255) "hexadecimal" when cost >= 4 weight 3 {
+  cost = -3
+  require $1.operands < 4
+  require $3.value % 16 >= 10 or $3.value / 16 >= 10
+  value = $1.value + $3.value
+  latex = $1.latex ++ " + \mathrm{" ++ base_digits($3.value, 16) ++ "}_{16}"
+  operands = $1.operands + 1
+  all_binary = false
+  all_octal = false
+}
+
+E -> E "-" integer_between(9, 120) when cost >= 4 weight 2 {
+  cost = -3
+  require $1.operands < 4
+  require $1.value > $3.value
+  value = $1.value - $3.value
+  latex = $1.latex ++ " - " ++ base_digits($3.value, 2) ++ "_{2}"
+  operands = $1.operands + 1
+  all_binary = $1.all_binary
+  all_octal = false
+}
+
+E -> E "-" integer_between(9, 300) "octal" when cost >= 4 weight 2 {
+  cost = -3
+  require $1.operands < 4
+  require $1.value > $3.value
+  value = $1.value - $3.value
+  latex = $1.latex ++ " - " ++ base_digits($3.value, 8) ++ "_{8}"
+  operands = $1.operands + 1
+  all_binary = false
+  all_octal = $1.all_octal
+}
+
+E -> E "-" integer_between(26, 255) "hexadecimal" when cost >= 5 weight 2 {
+  cost = -4
+  require $1.operands < 4
+  require $3.value % 16 >= 10 or $3.value / 16 >= 10
+  require $1.value > $3.value
+  value = $1.value - $3.value
+  latex = $1.latex ++ " - \mathrm{" ++ base_digits($3.value, 16) ++ "}_{16}"
+  operands = $1.operands + 1
+  all_binary = false
+  all_octal = false
+}
+
+Q -> "mixed_to_decimal" E when cost >= 4 and cost <= 8 weight 3 {
+  kind = "mixed_to_decimal"
+  text = "Compute [`" ++ $2.latex ++ "`]. Give the answer in decimal."
+  answer_value = $2.value
+}
+
+Q -> "mixed_to_binary" E when cost >= 4 and cost <= 8 weight 2 {
+  cost = -1
+  kind = "mixed_to_binary"
+  require not $2.all_binary
+  text = "Compute [`" ++ $2.latex ++ "`]. Give the answer in binary."
+  answer_value = exactly(base_number($2.value, 2))
+}
+
+Q -> "mixed_to_octal" E when cost >= 4 and cost <= 8 weight 2 {
+  cost = -1
+  kind = "mixed_to_octal"
+  require not $2.all_octal
+  text = "Compute [`" ++ $2.latex ++ "`]. Give the answer in octal."
+  answer_value = exactly(base_number($2.value, 8))
+}
+
+# Every number in one base, and the answer too: nothing is converted. A
+# chain of its own, so that these questions are as common as their weight
+# says and do not wait for E to come out in one base by chance. No number
+# here costs 2, so the guards keep an addition or a subtraction from
+# leaving 2 behind.
+
+B -> integer_between(9, 120) when cost = 1 {
+  cost = -1
+  value = $1.value
+  latex = base_digits($1.value, 2) ++ "_{2}"
+  operands = 1
+}
+
+B -> B "+" integer_between(9, 120) when cost = 3 or cost >= 5 weight 3 {
+  cost = -2
+  require $1.operands < 4
+  value = $1.value + $3.value
+  latex = $1.latex ++ " + " ++ base_digits($3.value, 2) ++ "_{2}"
+  operands = $1.operands + 1
+}
+
+B -> B "-" integer_between(9, 120) when cost = 4 or cost >= 6 weight 2 {
+  cost = -3
+  require $1.operands < 4
+  require $1.value > $3.value
+  value = $1.value - $3.value
+  latex = $1.latex ++ " - " ++ base_digits($3.value, 2) ++ "_{2}"
+  operands = $1.operands + 1
+}
+
+O -> integer_between(9, 300) when cost = 1 {
+  cost = -1
+  value = $1.value
+  latex = base_digits($1.value, 8) ++ "_{8}"
+  operands = 1
+}
+
+O -> O "+" integer_between(9, 300) when cost = 3 or cost >= 5 weight 3 {
+  cost = -2
+  require $1.operands < 4
+  value = $1.value + $3.value
+  latex = $1.latex ++ " + " ++ base_digits($3.value, 8) ++ "_{8}"
+  operands = $1.operands + 1
+}
+
+O -> O "-" integer_between(9, 300) when cost = 4 or cost >= 6 weight 2 {
+  cost = -3
+  require $1.operands < 4
+  require $1.value > $3.value
+  value = $1.value - $3.value
+  latex = $1.latex ++ " - " ++ base_digits($3.value, 8) ++ "_{8}"
+  operands = $1.operands + 1
+}
+
+Q -> "binary_arithmetic" B when cost >= 4 and cost <= 8 weight 2 {
+  kind = "binary_arithmetic"
+  text = "Compute [`" ++ $2.latex ++ "`]. Give the answer in binary."
+  answer_value = exactly(base_number($2.value, 2))
+}
+
+Q -> "octal_arithmetic" O when cost >= 4 and cost <= 8 {
+  kind = "octal_arithmetic"
+  text = "Compute [`" ++ $2.latex ++ "`]. Give the answer in octal."
+  answer_value = exactly(base_number($2.value, 8))
 }
 
 prompt "{Q.text}"

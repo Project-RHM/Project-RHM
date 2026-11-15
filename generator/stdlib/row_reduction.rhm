@@ -12,13 +12,39 @@
 #  context); a vector of the null space is graded up to a non-zero multiple
 #  (Vector context), since any such multiple is as good.
 #
-#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
-#  at its price alone:
+#  Difficulty is the budget `cost`, spent exactly. Budgets 1 to 3 are fixed
+#  forms, each offered at its price alone:
 #
 #    1  the rank of a 3 by 3 matrix (2 or 3)
 #    2  the reduced row echelon form of a 2 by 3 matrix
 #    3  the reduced row echelon form of a 3 by 4 matrix, a non-zero vector
 #       of the null space of a 3 by 3 matrix of rank 2
+#
+#  Budgets 4 to 8 ask the same of wider matrices, three rows by four to six
+#  columns, whose reduced form is built column by column (C below):
+#
+#    the rank, the reduced form, a null space
+#    of a matrix of three columns                 1, 2, 3
+#    each column beyond the third                 1
+#    each free variable of a null space
+#    beyond the first                             1
+#
+#    4  the rank of a 3 by 6 matrix, the reduced form of a 3 by 5
+#    5  the reduced form of a 3 by 6, the null space of a 3 by 4 (two free
+#       variables)
+#    6  the null space of a 3 by 5 with two free variables
+#    7  the null space of a 3 by 5 with three
+#    8  the null space of a 3 by 6 with three
+#
+#  A null space of dimension two or three is answered as one matrix whose
+#  columns are the basis read off the reduced form: for each free variable in
+#  turn, the solution in which it is 1 and the other free variables are 0.
+#  That basis is the only one of its kind, so the matrix is the only right
+#  answer. A budget above 8 is refused.
+#
+#    rhema run row_reduction.rhm --set cost=2     the default
+#    rhema run row_reduction.rhm --set cost=5
+#    rhema run row_reduction.rhm --set cost=8
 # ==========================================================================
 
 attribute cost = 2 split
@@ -44,6 +70,13 @@ synth kind on Q
 synth text on Q
 synth answer_value on Q
 synth pg_context on Q
+
+# A reduced row echelon form of three rows, built column by column for
+# budgets 4 to 8, with its numbers of pivots, free columns and columns.
+synth form on C
+synth pivots on C
+synth frees on C
+synth columns on C
 
 start Q
 
@@ -107,6 +140,98 @@ Q -> "null_vector" when cost = 3 weight 2 {
   text = "Find a non-zero vector [`\mathbf{v}`] with [`A\mathbf{v} = \mathbf{0}`], where [`A = " ++ matrix_latex(matrix)
          ++ "`]. Enter it as a vector, such as [`\langle 1, -2, 3 \rangle`]."
   answer_value = vector_parallel_answer(vector3(0 - a, 0 - b, 1))
+}
+
+# ---- Budgets 4 to 8 ---------------------------------------------------------
+#
+# C starts with two columns for nothing and pays 1 for each further one. A
+# pivot column is the next unit vector; a free column has entries in the
+# rows that have a pivot already and zeros below, which is what keeps the
+# matrix in reduced form. The question fixes the number of columns through
+# the budget it leaves C, and asks for the shape it needs with `require`.
+
+C -> "pivot" when cost = 0 weight 3 {
+  form = matrix_augment(matrix_column(vector3(1, 0, 0)), matrix_column(vector3(0, 1, 0)))
+  pivots = 2
+  frees = 0
+  columns = 2
+}
+
+C -> nonzero_integer_between(-3, 3) when cost = 0 {
+  form = matrix_augment(matrix_column(vector3(1, 0, 0)), matrix_column(vector3($1.value, 0, 0)))
+  pivots = 1
+  frees = 1
+  columns = 2
+}
+
+C -> C "pivot" when cost >= 1 weight 2 {
+  cost = -1
+  require $1.pivots < 3
+  form = matrix_augment($1.form, matrix_column(vector3(cond($1.pivots = 0, 1, 0), cond($1.pivots = 1, 1, 0),
+                                                         cond($1.pivots = 2, 1, 0))))
+  pivots = $1.pivots + 1
+  frees = $1.frees
+  columns = $1.columns + 1
+}
+
+C -> C integer_between(-3, 3) integer_between(-3, 3) integer_between(-3, 3) when cost >= 1 weight 3 {
+  cost = -1
+  require $1.frees < 4
+  let second = cond($1.pivots >= 2, $3.value, 0)
+  let third = cond($1.pivots >= 3, $4.value, 0)
+  require $2.value != 0 or second != 0 or third != 0
+  form = matrix_augment($1.form, matrix_column(vector3($2.value, second, third)))
+  pivots = $1.pivots
+  frees = $1.frees + 1
+  columns = $1.columns + 1
+}
+
+# Six columns: C spends all four. The rank is drawn first, 2 or 3, and C is
+# built again until it has it: left to itself C has rank 3 far more often.
+Q -> "rank_wide" C integer_between(2, 3) when cost = 4 {
+  kind = "rank_wide"
+  pg_context = "Numeric"
+  require $2.pivots = $3.value
+  let matrix = matrix_multiply(mix3, $2.form)
+  require matrix != $2.form
+  text = "Find the rank of [`A = " ++ matrix_latex(matrix) ++ "`]."
+  answer_value = $2.pivots
+}
+
+# Five or six columns.
+Q -> "rref_wide" C when cost = 4 or cost = 5 {
+  cost = -1
+  kind = "rref_wide"
+  pg_context = "Matrix"
+  require $2.pivots >= 2 and $2.frees >= 1
+  let matrix = matrix_multiply(mix3, $2.form)
+  require matrix != $2.form
+  text = "Find the reduced row echelon form of [`A = " ++ matrix_latex(matrix) ++ "`]."
+  answer_value = $2.form
+}
+
+# Two free variables, in four or five columns.
+Q -> "null_space" C when cost = 5 or cost = 6 {
+  cost = -3
+  kind = "null_space"
+  pg_context = "Matrix"
+  require $2.pivots >= 2 and $2.frees = 2
+  let matrix = matrix_multiply(mix3, $2.form)
+  require matrix != $2.form
+  text = "The null space of [`A = " ++ matrix_latex(matrix) ++ "`] has dimension [`2`]. Enter the matrix whose columns are its basis read off the reduced row echelon form of [`A`]: for each free variable in turn, the solution of [`A\mathbf{x} = \mathbf{0}`] in which that variable is [`1`] and the other free variables are [`0`]."
+  answer_value = matrix_null_space(matrix)
+}
+
+# Three free variables, in five or six columns.
+Q -> "null_space" C when cost = 7 or cost = 8 {
+  cost = -4
+  kind = "null_space"
+  pg_context = "Matrix"
+  require $2.pivots >= 2 and $2.frees = 3
+  let matrix = matrix_multiply(mix3, $2.form)
+  require matrix != $2.form
+  text = "The null space of [`A = " ++ matrix_latex(matrix) ++ "`] has dimension [`3`]. Enter the matrix whose columns are its basis read off the reduced row echelon form of [`A`]: for each free variable in turn, the solution of [`A\mathbf{x} = \mathbf{0}`] in which that variable is [`1`] and the other free variables are [`0`]."
+  answer_value = matrix_null_space(matrix)
 }
 
 prompt "{Q.text}"

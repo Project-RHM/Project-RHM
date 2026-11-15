@@ -823,6 +823,39 @@ let () =
         (questions spec 2));
   expect_generation_error "truncate_negative_test.rhm" (body "0 - 1") ~mentions:"non-negative"
 
+(* ------------------------------------------------------------------ *)
+(* 11. matrix_null_space                                                *)
+(* ------------------------------------------------------------------ *)
+
+let () =
+  let whole = Rhema_number.of_int in
+  let matrix rows = List.map (List.map whole) rows in
+  let shown m = String.concat " / " (List.map (fun row -> String.concat " " (List.map Rhema_number.to_string row)) m) in
+  (* x1 + 2 x2 + 3 x4 = 0 and x3 + 4 x4 = 0: x2 and x4 are free *)
+  check "the basis read off a reduced form is wrong"
+    (shown (Rhema_matrix.null_space (matrix [ [ 1; 2; 0; 3 ]; [ 0; 0; 1; 4 ] ])) = "-2 -3 / 1 0 / 0 -4 / 0 1");
+  (* the same space when the rows are mixed: the second row added to the first, and doubled *)
+  check "the basis depends on how the rows are written"
+    (shown (Rhema_matrix.null_space (matrix [ [ 1; 2; 1; 7 ]; [ 0; 0; 2; 8 ] ])) = "-2 -3 / 1 0 / 0 -4 / 0 1");
+  (* a first column of zeros is a free variable *)
+  check "a zero column is not taken for a free variable"
+    (shown (Rhema_matrix.null_space (matrix [ [ 0; 1; 5 ] ])) = "1 0 / 0 -5 / 0 1");
+  check "a matrix with no free variable has a null space"
+    (match Rhema_matrix.null_space (matrix [ [ 1; 2 ]; [ 3; 4 ] ]) with exception Invalid_argument _ -> true | _ -> false);
+  let body rows =
+    "attribute cost = 1 split\nsynth text on Q\nstart Q\nQ -> integer_between(2, 5) {\n  cost = -1\n\
+    \  text = \"N [`\" ++ matrix_latex(matrix_null_space(" ^ rows ^ ")) ++ \"`] \" ++ blank($1.value)\n}\nprompt \"{Q.text}\"\n"
+  in
+  (match expect_ok "null_space_test.rhm" (body "matrix_row(vector3(1, 2, 3))") with
+  | None -> ()
+  | Some spec ->
+      List.iter
+        (fun (q : Rhema_engine.question) ->
+          check ("matrix_null_space in a grammar gave " ^ q.Rhema_engine.prompt)
+            (contains q.Rhema_engine.prompt "-2 & -3 \\\\ 1 & 0 \\\\ 0 & 1"))
+        (questions spec 2));
+  expect_generation_error "null_space_trivial_test.rhm" (body "matrix_identity(2)") ~mentions:"zero vector alone"
+
 let () =
   if !failures = 0 then print_endline "Rhema language additions tests passed."
   else begin

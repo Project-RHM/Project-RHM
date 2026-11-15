@@ -4,7 +4,13 @@
    an answer in another base, read as digits of that base, must be the
    value too, must use only digits that base has, and must be graded
    exactly: WeBWorK's usual tolerance would accept a neighbouring string of
-   digits. *)
+   digits.
+
+   A sum or difference of budgets 4 to 8 is read number by number with its
+   signs, worked out here, and priced: 1 or 2 for the first number, its own
+   price and 1 for each one added, 2 for each one subtracted, and 1 for an
+   answer in binary or octal unless every number is in that base. The price
+   must be the budget. *)
 
 let failures = ref 0
 
@@ -95,6 +101,89 @@ let check (q : Rhema_engine.question) =
   | value -> if value <> given then wrong (Printf.sprintf "it is %d in decimal, the number given is %d" value given)
   | exception Failure message -> wrong message
 
+(* A sum or difference: the numbers of its one formula with the sign before
+   each, as (sign, digits, base). *)
+let terms p =
+  ignore (Str.search_forward (Str.regexp "Compute \\[`\\([^`]*\\)`\\]") p 0);
+  let formula = Str.matched_group 1 p in
+  let re = Str.regexp "\\( [+-] \\)?\\(\\\\mathrm{\\)?\\([0-9A-F]+\\)}?_{\\([0-9]+\\)}" in
+  let rec go start found =
+    if start >= String.length formula then List.rev found
+    else if Str.string_match re formula start then begin
+      let sign = try if String.trim (Str.matched_group 1 formula) = "-" then -1 else 1 with Not_found -> 1 in
+      let digits = Str.matched_group 3 formula and base = int_of_string (Str.matched_group 4 formula) in
+      let next = Str.match_end () in
+      if found = [] && (try ignore (Str.matched_group 1 formula); true with Not_found -> false) then
+        failwith "a sign before the first number";
+      go next ((sign, digits, base) :: found)
+    end
+    else failwith ("cannot read " ^ formula)
+  in
+  go 0 []
+
+let check_mixed ~cost ~seen_parts (q : Rhema_engine.question) =
+  let p = q.Rhema_engine.prompt and k = kind q in
+  let wrong what = fail (Printf.sprintf "%s: %s, answer %s, for %S" k what q.Rhema_engine.answer_text p) in
+  let answer, exact =
+    match q.Rhema_engine.answer with
+    | Rhema_engine.Num n when Rhema_number.is_integer n -> (Rhema_number.require_integer "answer" n, false)
+    | Rhema_engine.Exactly n -> (Rhema_number.require_integer "answer" n, true)
+    | other -> failwith ("not a whole number: " ^ Rhema_engine.describe_value other)
+  in
+  let numbers = terms p in
+  let target =
+    ignore (Str.search_forward (Str.regexp "Give the answer in \\([a-z]+\\)\\.") p 0);
+    match Str.matched_group 1 p with "decimal" -> 10 | "binary" -> 2 | "octal" -> 8 | other -> failwith ("answer in " ^ other)
+  in
+  (* the value, and that no difference on the way is zero or negative *)
+  let total =
+    List.fold_left
+      (fun total (sign, digits, base) ->
+        let next = total + (sign * value_of digits base) in
+        if next <= 0 then wrong "zero or less on the way";
+        next)
+      0 numbers
+  in
+  List.iter
+    (fun (_, digits, base) ->
+      if base = 16 && not (String.exists (fun c -> c >= 'A') digits) then wrong "a hexadecimal number without a letter";
+      if base = 16 && String.length digits <> 2 then wrong "a hexadecimal number that does not have two digits";
+      if not (List.mem base [ 2; 8; 16 ]) then wrong (Printf.sprintf "a number in base %d" base);
+      if digits.[0] = '0' then wrong "a number with a leading zero")
+    numbers;
+  let count = List.length numbers in
+  if count < 2 || count > 4 then wrong (Printf.sprintf "%d numbers" count);
+  let own base = if base = 16 then 2 else 1 in
+  let every base = List.for_all (fun (_, _, b) -> b = base) numbers in
+  let price =
+    List.fold_left
+      (fun total (index, (sign, _, base)) -> total + own base + if index = 0 then 0 else if sign < 0 then 2 else 1)
+      0
+      (List.mapi (fun index number -> (index, number)) numbers)
+    + if target = 10 || every target then 0 else 1
+  in
+  if price <> cost then wrong (Printf.sprintf "a question worth %d at budget %d" price cost);
+  if exact <> (target <> 10) then wrong "an answer in another base must be graded exactly, and only such an answer";
+  (match value_of (string_of_int answer) target with
+  | value -> if value <> total then wrong (Printf.sprintf "it is %d in decimal, the sum is %d" value total)
+  | exception Failure message -> wrong message);
+  let expected_kind =
+    match target with
+    | 10 -> "mixed_to_decimal"
+    | 2 -> if every 2 then "binary_arithmetic" else "mixed_to_binary"
+    | _ -> if every 8 then "octal_arithmetic" else "mixed_to_octal"
+  in
+  if k <> expected_kind then wrong ("this is a question of kind " ^ expected_kind);
+  List.iter
+    (fun (present, part) -> if present then Hashtbl.replace seen_parts part ())
+    [ (true, k); (true, Printf.sprintf "%d numbers" count); (List.exists (fun (sign, _, _) -> sign < 0) numbers, "a subtraction");
+      (List.exists (fun (_, _, b) -> b = 16) numbers, "a hexadecimal number");
+      (List.exists (fun (_, _, b) -> b = 8) numbers, "an octal number");
+      (List.exists (fun (_, _, b) -> b = 2) numbers, "a binary number");
+      (List.exists (fun (sign, _, b) -> sign < 0 && b = 16) numbers, "a hexadecimal number subtracted");
+      (answer >= 1000 && target = 10, "a decimal answer of four digits") ];
+  Hashtbl.replace seen_parts (Printf.sprintf "%s at budget %d" k cost) ()
+
 let () =
   let base = load_file "base_conversion.rhm" in
   let prices =
@@ -102,6 +191,34 @@ let () =
       ("binary_to_octal", 2); ("binary_sum", 3); ("hex_to_binary", 3) ]
   in
   let seen = Hashtbl.create 8 in
+  let seen_parts = Hashtbl.create 32 in
+  let mixed = [ "mixed_to_decimal"; "mixed_to_binary"; "mixed_to_octal"; "binary_arithmetic"; "octal_arithmetic" ] in
+  for cost = 4 to 8 do
+    let spec = with_initial base "cost" cost in
+    for seed = 0 to 149 do
+      Random.init (seed + (1000 * cost));
+      match Rhema_engine.generate spec with
+      | exception Rhema_engine.Generation_error m -> fail (Printf.sprintf "cost %d seed %d: %s" cost seed m)
+      | q ->
+          let k = kind q in
+          if not (List.mem k mixed) then fail (Printf.sprintf "%s at cost %d" k cost);
+          if Rhema_engine.consumption q.Rhema_engine.tree "cost" <> cost then
+            fail (Printf.sprintf "%s did not spend its budget %d" k cost);
+          (try check_mixed ~cost ~seen_parts q
+           with e -> fail (Printf.sprintf "%s: %s for %S" k (Printexc.to_string e) q.Rhema_engine.prompt))
+    done
+  done;
+  List.iter
+    (fun part -> if not (Hashtbl.mem seen_parts part) then fail ("never generated: " ^ part))
+    (mixed
+    @ [ "2 numbers"; "3 numbers"; "4 numbers"; "a subtraction"; "a hexadecimal number"; "an octal number";
+        "a binary number"; "a hexadecimal number subtracted" ]
+    @ List.concat_map (fun k -> List.map (fun cost -> Printf.sprintf "%s at budget %d" k cost) [ 4; 5; 6; 7; 8 ])
+        [ "mixed_to_decimal"; "mixed_to_binary"; "mixed_to_octal" ]);
+  (Random.init 1;
+   match Rhema_engine.generate (with_initial base "cost" 9) with
+   | exception Rhema_engine.Generation_error _ -> ()
+   | q -> fail ("budget 9 gave a question: " ^ q.Rhema_engine.prompt));
   for cost = 1 to 3 do
     let spec = with_initial base "cost" cost in
     for seed = 0 to 149 do

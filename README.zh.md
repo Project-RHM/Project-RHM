@@ -163,8 +163,9 @@ rhema doc                                 # the builtin functions
 
 难度是文法要花掉的预算。`boolean.rhm` 为每种联结词定价（合取 2、条件 4、
 双条件 6，等等），`calculus.rhm` 为函数用到的求导法则定价，固定题型的文法则为
-每种题型标一个价格，从 1 到 3。其中四个文法（`partial_fractions`、`taylor`、
-`inequality`、`partial_derivatives`）可以一直到 8，用带价格的部件构造更大的题目。
+每种题型标一个价格，从 1 到 3。其中七个文法（`partial_fractions`、`taylor`、
+`inequality`、`partial_derivatives`、`row_reduction`、`base_conversion`、
+`definite_integral`）可以一直到 8，用带价格的部件构造更大的题目。
 每个文法都恰好花完预算，所以 `--set cost=6` 和
 `--set cost=14` 分别得到同一题型中较容易和较难的题目。
 

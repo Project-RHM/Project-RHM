@@ -42,10 +42,16 @@ let trim_trailing_whitespace text =
    generated file that is left as it is. So before a document is read back,
    each such answer is put back to the bare number it compares with: the
    front-end then checks what it always checked, the structure of the
-   document and the value of every answer. *)
+   document and the value of every answer. A fraction with a numerator
+   from 1000 up is written Compute("p/q")->cmp(...) for the same reason
+   (section 7) and is put back to Formula('p/q'). *)
 let exact_answer = Str.regexp "Real(\\(-?[0-9]+\\))->cmp(tolType=>\"absolute\",tolerance=>0\\.5)"
 
-let bare_whole_numbers source = Str.global_replace exact_answer "\\1" source
+let exact_fraction =
+  Str.regexp "Compute(\"\\(-?[0-9]+/[0-9]+\\)\")->cmp(tolType=>\"absolute\",tolerance=>1/[0-9]+)"
+
+let bare_whole_numbers source =
+  Str.global_replace exact_fraction "Formula('\\1')" (Str.global_replace exact_answer "\\1" source)
 
 (* Syntax only: lexer + parser, no semantic validation. Used where the point is
    whether the PG grammar can express something at all. *)
@@ -335,9 +341,19 @@ let () =
       if written <> expected then fail (Printf.sprintf "%d is written %s, not %s" n written expected))
     [ (0, "0"); (7, "7"); (-7, "-7"); (999, "999"); (-999, "-999"); (1000, exact 1000); (-1000, exact (-1000));
       (1001, exact 1001); (5040, exact 5040); (-123456, exact (-123456)) ];
-  (* a fraction is not a whole number, however large *)
-  let fraction = Rhema_pgml.answer_of_value (Rhema_engine.Num (Rhema_number.make 20001 2)) in
-  if fraction <> "Formula('20001/2')" then fail ("a large fraction is written " ^ fraction);
+  (* 7. a fraction is graded to within half a step of its denominator when
+     its numerator is 1000 or more: WeBWorK then accepts (p + 1)/q and
+     (p - 1)/q, whatever q is. Below that it is written as it always was. *)
+  let half_step p q = Printf.sprintf "Compute(\"%d/%d\")->cmp(tolType=>\"absolute\",tolerance=>1/%d)" p q (2 * q) in
+  List.iter
+    (fun (p, q, expected) ->
+      let written = Rhema_pgml.answer_of_value (Rhema_engine.Num (Rhema_number.make p q)) in
+      if written <> expected then fail (Printf.sprintf "%d/%d is written %s, not %s" p q written expected))
+    [ (1, 2, "Formula('1/2')"); (999, 2, "Formula('999/2')"); (-997, 12, "Formula('-997/12')");
+      (1, 1000, "Formula('1/1000')"); (1001, 2, half_step 1001 2); (20001, 2, half_step 20001 2);
+      (-5000, 3, half_step (-5000) 3); (1289, 2530, half_step 1289 2530);
+      (* reduced first: 2000/4 is the whole number 500, and 3000/4 is 750 *)
+      (2000, 4, "500"); (6002, 4, half_step 3001 2) ];
   (* in a document: every answer of four digits or more, and no other *)
   let spec = load "ascii.rhm" ascii_grammar in
   let large = ref 0 and small = ref 0 in

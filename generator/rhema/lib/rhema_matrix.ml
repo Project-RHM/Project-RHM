@@ -147,6 +147,31 @@ let reduce (matrix : t) : t * int list =
 let row_echelon matrix = fst (reduce matrix)
 let rank matrix = List.length (snd (reduce matrix))
 
+(* The basis of the null space that is read off the reduced form, as the
+   columns of a matrix: for each free variable in turn, the solution of
+   A x = 0 in which that variable is 1 and the other free variables are 0.
+   A pivot variable is then minus the entry of its row in the free column. *)
+let null_space (matrix : t) : t =
+  let reduced, pivots = reduce matrix in
+  let width = columns matrix in
+  let free = List.filter (fun column -> not (List.mem column pivots)) (List.init width Fun.id) in
+  if free = [] then invalid_arg "the null space holds the zero vector alone";
+  let reduced = Array.of_list (List.map Array.of_list reduced) in
+  (* the row of a pivot variable: its place among the pivots *)
+  let rec row_of variable row = function
+    | [] -> None
+    | pivot :: rest -> if pivot = variable then Some row else row_of variable (row + 1) rest
+  in
+  List.init width (fun variable ->
+      List.map
+        (fun free_column ->
+          if variable = free_column then Rhema_number.of_int 1
+          else
+            match row_of variable 0 pivots with
+            | Some row -> Rhema_number.negate reduced.(row).(free_column)
+            | None -> Rhema_number.zero)
+        free)
+
 let entry (matrix : t) i j =
   if i < 1 || i > rows matrix || j < 1 || j > columns matrix then
     invalid_arg (Printf.sprintf "there is no entry (%d, %d) in a %d by %d matrix" i j (rows matrix) (columns matrix));

@@ -170,9 +170,10 @@ own files belong in `generator/grammars/`.
 Difficulty is a budget the grammar spends. `boolean.rhm` prices each
 connective (conjunction 2, conditional 4, biconditional 6 and so on),
 `calculus.rhm` prices the differentiation rules a function calls for, and
-grammars of fixed forms offer each form at its price, 1 to 3. Four of those
-(`partial_fractions`, `taylor`, `inequality`, `partial_derivatives`) go on to
-8, building larger questions from priced parts. Every grammar spends its
+grammars of fixed forms offer each form at its price, 1 to 3. Seven of those
+(`partial_fractions`, `taylor`, `inequality`, `partial_derivatives`,
+`row_reduction`, `base_conversion`, `definite_integral`) go on to 8, building
+larger questions from priced parts. Every grammar spends its
 budget exactly, so `--set cost=6` and `--set cost=14` ask for an easy and a
 hard question of the same type.
 

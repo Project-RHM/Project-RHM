@@ -52,7 +52,7 @@ attribute, or by the budget.
 | `limits.rhm` | 1 a removable discontinuity, a ratio of quadratics at infinity; 2 a factor shared above and below, `sin(kx)/(mx)`, `(e^{kx} - 1)/(mx)`; 3 a ratio of two sines, `(1 - cos(kx))/(mx^2)` | 2 | Numeric |
 | `eigen.rhm` | 1 the eigenvalues of a triangular matrix; 2 the eigenvalues of a 2 by 2, its characteristic polynomial; 3 an eigenvector, the eigenvalues of a 3 by 3 | 2 | Interval / Numeric / Vector |
 | `inequality.rhm` | 1 linear; 2 quadratic, the absolute value of `x - a`; 3 the absolute value of `px - q`, rational; 4 to 8 a sign chart of two to five factors: a factor of the numerator 1, of the denominator 2, a squared factor 3 | 2 | Interval |
-| `definite_integral.rhm` | 1 `k x^n` from 0 to q, a quadratic between two bounds; 2 a product of two linear factors to expand first, the area between a parabola and the x-axis; 3 the area between a parabola and a line, `k x (a x^2 + c)^n` by substitution | 2 | Numeric |
+| `definite_integral.rhm` | 1 `k x^n` from 0 to q, a quadratic between two bounds; 2 a product of two linear factors to expand first, the area between a parabola and the x-axis; 3 the area between a parabola and a line, `k x (a x^2 + c)^n` by substitution; 4 to 8 the integral of a sum of two or three pieces, no two of a kind: a quadratic 1, a product 2, a substitution 3, `k |x - m|` 3 | 2 | Numeric |
 | `derivative_applications.rhm` | 1 the slope of a tangent to a cubic, where a parabola has a horizontal tangent; 2 the tangent line to a parabola, the critical points of a cubic; 3 the absolute maximum or minimum of a cubic on a closed interval, the interval on which it decreases or increases | 2 | Numeric / Interval |
 | `exponential_log.rhm` | 1 the logarithm of a power of its base, `b^(x + c) = b^k`; 2 two bases that are powers of one number, `log_b(p x + q) = k`; 3 a sum of two logarithms with one root rejected, a quadratic in `b^x` | 2 | Numeric |
 | `analytic_geometry.rhm` | 1 the distance between two points, their midpoint, the slope through them; 2 the line through two points, the perpendicular to a line through a point; 3 the centre and the radius of a circle given expanded (two blanks), the intersection of two lines | 2 | Numeric (a point answer carries the Point context) |
@@ -61,8 +61,8 @@ attribute, or by the budget.
 | `partial_fractions.rhm` | the constants of a decomposition, one blank each: 1 two different factors; 2 a factor `p x + q`, a numerator of the denominator's degree with the quotient given; 3 three factors, a repeated factor; 4 to 8 built term by term, up to five constants: each further factor 2, a factor `p x + q` 1, a repeated factor 2, a quotient 1 | 2 | Numeric |
 | `recurrence.rhm` | 1 a term of a first-order or a second-order recurrence; 2 `A` and `B` in the solution `A r^n + B`, the roots of a characteristic equation; 3 `r`, `s`, `A`, `B` in `A r^n + B s^n`, and `r`, `A`, `B` in `(A + B n) r^n` | 2 | Numeric / Interval |
 | `taylor.rhm` | the Taylor polynomial at 0: 1 `e^(kx)`, `1/(1 - kx)`; 2 `sin(kx)`, `cos(kx)`, `ln(1 + kx)`; 3 `(a + bx) e^(kx)`, `e^(k x^2)`; 4 to 8 functions built from those: the argument `k x^2` 2, a linear factor 2, a sum 1, a product 3 | 2 | Numeric |
-| `row_reduction.rhm` | 1 the rank of a 3 by 3 matrix; 2 the reduced row echelon form of a 2 by 3 matrix; 3 the reduced form of a 3 by 4 matrix, a vector of a null space | 2 | Numeric / Matrix / Vector |
-| `base_conversion.rhm` | 1 binary to decimal and back; 2 hexadecimal to decimal, decimal to octal, binary to octal; 3 a sum in binary, hexadecimal to binary | 2 | Numeric |
+| `row_reduction.rhm` | 1 the rank of a 3 by 3 matrix; 2 the reduced row echelon form of a 2 by 3 matrix; 3 the reduced form of a 3 by 4 matrix, a vector of a null space; 4 to 8 the same of 3 by 4 to 3 by 6 matrices: each column beyond the third 1, each free variable of a null space beyond the first 1 | 2 | Numeric / Matrix / Vector |
+| `base_conversion.rhm` | 1 binary to decimal and back; 2 hexadecimal to decimal, decimal to octal, binary to octal; 3 a sum in binary, hexadecimal to binary; 4 to 8 sums and differences of two to four numbers in binary, octal and hexadecimal: a number 1 (hexadecimal 2), adding one 1, subtracting one 2, an answer in another base 1 | 2 | Numeric |
 | `trigonometry.rhm` | 1 degrees and radians, an exact value in the first quadrant; 2 an exact value in any quadrant, the other functions from one and the quadrant; 3 the two solutions of `sin x = v`, `cos x = v` or `tan x = v` on one turn, with argument `x` or `2x` | 2 | Numeric (plain answers) |
 | `partial_derivatives.rhm` | 1 a first partial derivative; 2 both, the mixed second derivative, the gradient at a point; 3 a tangent plane, the critical point of a quadratic; 4 to 8 the same derivatives (first 1, both or a second one 2) of a function with sin, cos and e: of `ax + by` 2 each, of a product such as `x^2 y` 3, times a power of `x` or `y` 5 | 2 | Numeric (answers in `x` and `y`) |
 <!-- --8<-- [end:tables] -->
@@ -207,7 +207,9 @@ value (`RHEMA_LANGUAGE_EXTENSIONS.md` section 7), asking the same questions.
   the answer is an exact fraction. An area is built from the crossing
   points: `k (x - r1)(x - r2)` encloses `|k| (r2 - r1)^3 / 6` with the axis,
   and a parabola and a line that differ by it enclose the same. Both are
-  shown expanded.
+  shown expanded. From budget 4 the integrand is a sum of pieces, each
+  integrated between the bounds as it is added; `k |x - m|` is new there,
+  integrated on the two sides of `m`. Answers are kept below 1000.
 - **Applications of the derivative** (`derivative_applications.rhm`) builds
   a cubic from its critical points `r1 < r2`: the derivative is
   `6k (x - r1)(x - r2)` and the function is
@@ -287,12 +289,20 @@ written for the additions of `RHEMA_LANGUAGE_EXTENSIONS.md` sections 7 and
   form `R` and a matrix `M` of determinant 1, so `R` is the reduced form of
   `A`, the pivots of `R` count its rank and its free column gives the null
   space. It uses the matrices of any shape (`matrix_row`, `matrix_stack`).
+  From budget 4 the reduced form is built column by column, a pivot column
+  or a free one, up to six columns. A null space of dimension two or three
+  is one matrix, `matrix_null_space(A)`: its columns are the basis read off
+  the reduced form, the solution for each free variable in which it is 1 and
+  the others are 0, which is the only such basis.
 - **Number bases** (`base_conversion.rhm`) writes a number in another base
   with `base_digits`; an answer in binary or octal is the number with those
   decimal digits (`base_number`), typed as `1011`, and graded with
   `exactly(...)`: WeBWorK's usual tolerance of one part in a thousand would
   accept 10110 for 10100. Hexadecimal is given, never asked for: its digits
-  are not a number WeBWorK reads.
+  are not a number WeBWorK reads. From budget 4 the question is a sum or
+  difference of numbers in several bases, built number by number; questions
+  wholly in binary or in octal have a chain of their own, so that they are
+  as common as their weight says.
 - **Trigonometry** (`trigonometry.rhm`) counts angles in twelfths of π and
   takes its values from `exact_sin`, `exact_cos` and `exact_tan`. An
   equation is built from its two solutions on the interval, asked for as

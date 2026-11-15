@@ -7,16 +7,26 @@ is announced one version before the removal.
 
 ## Unreleased
 
-- **Four question types scale with the budget.** `partial_fractions.rhm`,
-  `taylor.rhm`, `inequality.rhm` and `partial_derivatives.rhm` refused
-  every budget above 3. They now go on to 8, building the question from
-  priced parts: more factors and constants, sums and products of series,
-  sign charts of up to five factors, and functions of two variables with
-  sin, cos and e. Budgets 1 to 3 give the same questions as before, seed
-  for seed. A budget above 8 is refused. `DIFFICULTY_BUDGET.md` section 12
-  has the prices and what a grammar written this way must get right.
-- **Builtin**: `polynomial_truncate(p, n)`, the terms of a polynomial of
-  degree at most `n`.
+- **Seven question types scale with the budget.** `partial_fractions.rhm`,
+  `taylor.rhm`, `inequality.rhm`, `partial_derivatives.rhm`,
+  `row_reduction.rhm`, `base_conversion.rhm` and `definite_integral.rhm`
+  refused every budget above 3. They now go on to 8, building the question
+  from priced parts: more factors and constants, sums and products of
+  series, sign charts of up to five factors, functions of two variables
+  with sin, cos and e, matrices of up to six columns and null spaces of
+  dimension two and three, sums and differences across number bases, and
+  integrals of sums of pieces. Budgets 1 to 3 give the same questions as
+  before, seed for seed. A budget above 8 is refused.
+  `DIFFICULTY_BUDGET.md` section 12 has the prices and what a grammar
+  written this way must get right.
+- **Builtins**: `polynomial_truncate(p, n)`, the terms of a polynomial of
+  degree at most `n`, and `matrix_null_space(A)`, the basis of a null space
+  read off the reduced form, as the columns of a matrix.
+- **Fixed**: the WeBWorK renderer of the Docker stack could restart for
+  ever after Docker itself was restarted (exit code 140). Its process id
+  file outlived the container, and a new process with the same id took
+  itself for a running server. `compose.yml` now empties that file before
+  the renderer starts.
 - **Seven more question types**, fixed forms at prices 1 to 3:
   `partial_fractions.rhm` (the constants, one blank each),
   `recurrence.rhm` (terms, characteristic roots and closed forms, up to
@@ -39,6 +49,14 @@ is announced one version before the removal.
   stay bare numbers. This changes the PG written by `arithmetic.rhm`,
   `counting.rhm`, `sequence.rhm` and `series.rhm` for their large answers,
   and by any grammar of your own with such answers.
+- **Fixed**: a fraction answer whose numerator is 1000 or more accepted the
+  neighbouring fractions, for the same reason: 4923/4 passed for 4922/4.
+  Such an answer is now written
+  `Compute("p/q")->cmp(tolType=>"absolute",tolerance=>1/(2q))`, half a step
+  of its denominator; a decimal typed in its place must be right to within
+  that. Smaller fractions stay `Formula('p/q')`. This changes the PG of
+  `arithmetic.rhm` for its large answers, and of a few answers of
+  `definite_integral.rhm` and `statistics.rhm`.
 - **Fixed**: WeBWorK could not read a proposition answer that holds a
   variable other than `p` and `q`, the two its Boolean context knows
   ("Variable 'r' is not defined in this context"); most rewriting questions

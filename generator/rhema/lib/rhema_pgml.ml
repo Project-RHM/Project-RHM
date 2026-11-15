@@ -4,9 +4,10 @@
    accepts, so the output can be checked by reading it straight back through
    Lexer/Parser/Semantic. That rules out a whole class of mistakes locally.
    Answers that carry more than a value are outside that subset: a point, a
-   proposition or a formula with a context of its own, and a whole number
-   with its own tolerance (exact_whole below). The read-back test puts the last of these
-   back to the bare number before it reads the document.
+   proposition or a formula with a context of its own, and a whole number or
+   a fraction with its own tolerance (exact_whole and exact_fraction below).
+   The read-back test puts the last two back to the plain number before it
+   reads the document.
 
    Three habits of the existing printer are deliberately not copied, because
    the project's parser rejects all three (its own generated files do not read
@@ -103,10 +104,20 @@ let own_boolean_context variables text =
 let exact_whole number =
   Printf.sprintf "Real(%s)->cmp(tolType=>\"absolute\",tolerance=>0.5)" (Rhema_number.to_string number)
 
+(* A fraction p/q graded to within half a step of its denominator, so that
+   (p + 1)/q and (p - 1)/q are not accepted. Compute keeps the fraction as
+   the answer shown; a decimal typed in its place must be right to within
+   1/(2q). For q = 1 this is exact_whole. *)
+let exact_fraction number =
+  Printf.sprintf "Compute(\"%s\")->cmp(tolType=>\"absolute\",tolerance=>1/%d)" (Rhema_number.to_string number)
+    (2 * number.Rhema_number.denominator)
+
 (* WeBWorK compares numbers with a relative tolerance of one part in a
    thousand. Up to 1000 that still tells a whole number from its neighbours;
    from 1001 on it does not: 5041 is accepted for 5040. Measured on the
-   renderer: n + 1 and n - 1 pass for every |n| > 1000 and for none below. *)
+   renderer: n + 1 and n - 1 pass for every |n| > 1000 and for none below.
+   A fraction is the same in its numerator, whatever its denominator:
+   (p + 1)/q and (p - 1)/q pass for every |p| > 1000 and for none below. *)
 let tolerance_reaches_neighbours number = abs number.Rhema_number.numerator >= 1000
 
 (* [variables] are those of every formula answer of the question, so that
@@ -115,7 +126,9 @@ let tolerance_reaches_neighbours number = abs number.Rhema_number.numerator >= 1
 let answer_of_value ?(variables = []) ?(propositional = []) = function
   | Rhema_engine.Num number when Rhema_number.is_integer number ->
       if tolerance_reaches_neighbours number then exact_whole number else Rhema_number.to_string number
-  | Rhema_engine.Num number -> Printf.sprintf "Formula('%s')" (Rhema_number.to_string number)
+  | Rhema_engine.Num number ->
+      if tolerance_reaches_neighbours number then exact_fraction number
+      else Printf.sprintf "Formula('%s')" (Rhema_number.to_string number)
   | Rhema_engine.Text text -> Printf.sprintf "Formula('%s')" text
   | Rhema_engine.Truth truth -> if truth then "1" else "0"
   | Rhema_engine.Complex (real, imaginary) ->
