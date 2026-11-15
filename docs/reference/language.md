@@ -307,6 +307,12 @@ above it, it does not: for the answer 5040 it accepts 5041, and for 10100
 it accepts 10110. A whole-number answer of 1000 or more (or -1000 or less)
 is therefore written with an absolute tolerance of half a unit, so that no
 other whole number passes; smaller ones are written as bare numbers.
+A fraction is the same in its numerator: from 1001 on, WeBWorK accepts
+`(p + 1)/q` for `p/q`, whatever `q` is. A fraction answer whose numerator is
+1000 or more (or -1000 or less) is written with an absolute tolerance of
+half a step of its denominator, `1/(2q)`, so that neither neighbour passes;
+a decimal typed in its place must then be right to within that. Smaller
+fractions are written as before.
 `exactly(N)` asks for the exact comparison whatever the size of `N`;
 `base_conversion.rhm` uses it where the digits are the answer.
 

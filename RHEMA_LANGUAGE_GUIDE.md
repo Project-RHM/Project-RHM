@@ -1050,7 +1050,7 @@ Q -> "line_two_points" P P when cost = 2 {
 - `true` 和 `false` 是两个真值，都是保留字；以前只能写 `0 = 1` 这样的比较。
 - 产生式花括号内的 `let NAME = EXPR` 是局部名字：在子结点建好之后、按书写顺序求值，它下面的各行可以使用。结点不携带它，所以不需要 `synth` 声明。名字必须是新的：不能与继承属性、综合属性、random、文件级 `let` 或同一产生式里已有的局部名字相同，也不能是保留字。守卫条件、预算更新和生成器参数在子结点之前求值，不能使用局部名字。
 - 点是一种值：`point2(x, y)`、`point3(x, y, z)`、`point_latex`。作为答案时学生输入 `(3, -2)`，无论题目处在哪个上下文都按点判分，文法不必设置 `pg_context`。
-- 任意形状的矩阵：`matrix_row(v)`、`matrix_column(v)` 把向量变成一行或一列的矩阵，`matrix_stack(A, B)` 上下拼接，`matrix_augment(A, B)` 左右拼接（增广矩阵），`matrix_rows`、`matrix_columns` 给出形状，`matrix_rref` 是行最简形，`matrix_rank` 是秩。
+- 任意形状的矩阵：`matrix_row(v)`、`matrix_column(v)` 把向量变成一行或一列的矩阵，`matrix_stack(A, B)` 上下拼接，`matrix_augment(A, B)` 左右拼接（增广矩阵），`matrix_rows`、`matrix_columns` 给出形状，`matrix_rref` 是行最简形，`matrix_rank` 是秩，`matrix_null_space(A)` 给出零空间的基（各列依次是每个自由变量取 1、其余自由变量取 0 的解；没有自由变量时报错）。
 
 详见 `RHEMA_LANGUAGE_EXTENSIONS.zh.md` 第 7 节。
 
@@ -1067,6 +1067,6 @@ text = "Centre: " ++ blank(point2(h, k)) ++ " Radius: " ++ blank_wide(r, 4)
 - `base_digits(n, b)` 把整数写成 b 进制的数字串；`base_number(n, b)` 给出“十进制写法恰好是这些数字”的数，用作二进制、八进制答案。
 - `formula_pi()` 是常数 π；`exact_sin(p, q)`、`exact_cos(p, q)`、`exact_tan(p, q)` 给出 `p π / q` 处的精确值（π/6 和 π/4 的整数倍）。
 - `plain(VALUE)`：判分时关闭三角、双曲、对数和指数函数的答案，学生不能把题目原样填回去。
-- 整数答案的判分：WeBWorK 默认按千分之一的相对容差比较数值（5040 会接受 5041）。绝对值不小于 1000 的整数答案会自动按半个单位的绝对容差写出，不接受相邻的整数；`exactly(N)` 则不论大小都要求精确判分，数字串本身就是答案时使用。
+- 整数答案的判分：WeBWorK 默认按千分之一的相对容差比较数值（5040 会接受 5041）。绝对值不小于 1000 的整数答案会自动按半个单位的绝对容差写出，不接受相邻的整数；`exactly(N)` 则不论大小都要求精确判分，数字串本身就是答案时使用。分子的绝对值不小于 1000 的分数答案同理，按分母半步 `1/(2q)` 的绝对容差写出，不接受相邻的分数；用小数作答时需精确到这半步之内。
 
 详见 `RHEMA_LANGUAGE_EXTENSIONS.zh.md` 第 8 节。

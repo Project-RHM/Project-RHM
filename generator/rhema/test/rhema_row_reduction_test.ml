@@ -5,7 +5,15 @@
    (leading ones moving right, alone in their columns, zero rows last) and
    the same row space as the matrix; a null vector must be sent to zero,
    must not be zero, and the matrix must have rank 2, so that the null
-   space is the line through it. *)
+   space is the line through it.
+
+   The wider matrices of budgets 4 to 8 are checked the same way. A null
+   space given as a matrix must have one column for each free variable
+   found here, each sent to zero, with 1 at its own free variable and 0 at
+   the others: there is one such matrix. The price is worked out from the
+   matrix read back, 1, 2 or 3 for what is asked, 1 for each column beyond
+   the third and 1 for each free variable of a null space beyond the first,
+   and must be the budget. *)
 
 let failures = ref 0
 
@@ -149,12 +157,103 @@ let check (q : Rhema_engine.question) shapes =
           if not (is_zero !image) then wrong "the vector is not sent to zero")
         a;
       if rank a <> 2 then wrong (Printf.sprintf "the rank is %d, so the null space is not a line" (rank a))
+  | "rank_wide", Rhema_engine.Num n ->
+      if of_number n <> (rank a, 1) then wrong (Printf.sprintf "the rank is %d" (rank a))
+  | "rref_wide", Rhema_engine.Matrix answer ->
+      let r = Array.of_list (List.map (fun row -> Array.of_list (List.map of_number row)) (Rhema_matrix.entries answer)) in
+      if Array.length r <> height || Array.length r.(0) <> width then wrong "the answer has another shape";
+      if not (is_reduced r) then wrong "the answer is not in reduced row echelon form";
+      let both = Array.append a r in
+      if not (rank a = rank r && rank both = rank a) then wrong "the answer is not row equivalent to the matrix"
+  | "null_space", Rhema_engine.Matrix answer ->
+      let n = Array.of_list (List.map (fun row -> Array.of_list (List.map of_number row)) (Rhema_matrix.entries answer)) in
+      let pivots = snd (reduce a) in
+      let free = List.filter (fun column -> not (List.mem column pivots)) (List.init width Fun.id) in
+      if Array.length n <> width then wrong "the answer does not have a row for each variable"
+      else if Array.length n.(0) <> List.length free then
+        wrong (Printf.sprintf "%d columns for %d free variables" (Array.length n.(0)) (List.length free))
+      else begin
+        List.iteri
+          (fun j own ->
+            (* sent to zero *)
+            Array.iter
+              (fun row ->
+                let image = ref (0, 1) in
+                Array.iteri (fun i entry -> image := sub !image (mul (-fst entry, snd entry) n.(i).(j))) row;
+                if not (is_zero !image) then wrong (Printf.sprintf "column %d is not sent to zero" (j + 1)))
+              a;
+            (* 1 at its own free variable, 0 at the others *)
+            List.iter
+              (fun other ->
+                if n.(other).(j) <> if other = own then (1, 1) else (0, 1) then
+                  wrong (Printf.sprintf "column %d is not the solution with x%d = 1 alone among the free variables" (j + 1) (own + 1)))
+              free)
+          free;
+        let stated = List.hd (integers (List.nth (Str.split (Str.regexp_string "has dimension") p) 1)) in
+        if stated <> List.length free then wrong (Printf.sprintf "the dimension is %d, not the %d stated" (List.length free) stated)
+      end
   | _ -> wrong "unexpected answer"
+
+(* What a wide question is worth, from the matrix read back. *)
+let wide_price (q : Rhema_engine.question) =
+  let a = matrix q.Rhema_engine.prompt in
+  let width = Array.length a.(0) in
+  let free = width - rank a in
+  match kind q with
+  | "rank_wide" -> 1 + (width - 3)
+  | "rref_wide" -> 2 + (width - 3)
+  | "null_space" -> 3 + (width - 3) + (free - 1)
+  | other -> failwith ("no price for " ^ other)
 
 let () =
   let base = load_file "row_reduction.rhm" in
   let prices = [ ("rank", 1, "Numeric"); ("rref_small", 2, "Matrix"); ("rref_large", 3, "Matrix"); ("null_vector", 3, "Vector") ] in
   let seen = Hashtbl.create 8 and shapes = Hashtbl.create 8 in
+  let wide = [ ("rank_wide", "Numeric"); ("rref_wide", "Matrix"); ("null_space", "Matrix") ] in
+  let asked = Hashtbl.create 16 in
+  for cost = 4 to 8 do
+    let spec = with_initial base "cost" cost in
+    for seed = 0 to 149 do
+      Random.init (seed + (1000 * cost));
+      match Rhema_engine.generate spec with
+      | exception Rhema_engine.Generation_error m -> fail (Printf.sprintf "cost %d seed %d: %s" cost seed m)
+      | q -> (
+          let k = kind q in
+          match List.assoc_opt k wide with
+          | None -> fail (Printf.sprintf "%s at cost %d" k cost)
+          | Some context -> (
+              if Rhema_engine.consumption q.Rhema_engine.tree "cost" <> cost then
+                fail (Printf.sprintf "%s did not spend its budget %d" k cost);
+              if q.Rhema_engine.context <> context then fail (Printf.sprintf "%s in context %s" k q.Rhema_engine.context);
+              try
+                let a = matrix q.Rhema_engine.prompt in
+                let height = Array.length a and width = Array.length a.(0) in
+                let pivots = snd (reduce a) in
+                if height <> 3 || width < 4 || width > 6 then
+                  fail (Printf.sprintf "%s: a %d by %d matrix" k height width);
+                if List.length pivots < 2 then fail (k ^ ": a matrix of rank below 2");
+                if wide_price q <> cost then
+                  fail (Printf.sprintf "%s: a question worth %d at budget %d: %S" k (wide_price q) cost q.Rhema_engine.prompt);
+                Hashtbl.replace asked (Printf.sprintf "%s of %d columns, %d free" k width (width - List.length pivots)) ();
+                Hashtbl.replace asked (Printf.sprintf "%s at budget %d" k cost) ();
+                (* a free column standing before a pivot column *)
+                if pivots <> List.init (List.length pivots) Fun.id then Hashtbl.replace asked "a free column before a pivot" ()
+                else Hashtbl.replace asked "the pivots first" ();
+                check q shapes
+              with e -> fail (Printf.sprintf "%s: %s for %S" k (Printexc.to_string e) q.Rhema_engine.prompt)))
+    done
+  done;
+  List.iter
+    (fun what -> if not (Hashtbl.mem asked what) then fail ("never asked: " ^ what))
+    [ "rank_wide of 6 columns, 3 free"; "rank_wide of 6 columns, 4 free"; "rref_wide of 5 columns, 2 free";
+      "rref_wide of 5 columns, 3 free"; "rref_wide of 6 columns, 3 free"; "rref_wide of 6 columns, 4 free"; "null_space of 4 columns, 2 free"; "null_space of 5 columns, 2 free";
+      "null_space of 5 columns, 3 free"; "null_space of 6 columns, 3 free"; "rank_wide at budget 4";
+      "rref_wide at budget 4"; "rref_wide at budget 5"; "null_space at budget 5"; "null_space at budget 6";
+      "null_space at budget 7"; "null_space at budget 8"; "a free column before a pivot"; "the pivots first" ];
+  (Random.init 1;
+   match Rhema_engine.generate (with_initial base "cost" 9) with
+   | exception Rhema_engine.Generation_error _ -> ()
+   | q -> fail ("budget 9 gave a question: " ^ q.Rhema_engine.prompt));
   for cost = 1 to 3 do
     let spec = with_initial base "cost" cost in
     for seed = 0 to 149 do

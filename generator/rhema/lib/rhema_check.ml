@@ -283,6 +283,7 @@ let expression_builtins =
     ("matrix_columns", 1);
     ("matrix_rank", 1);
     ("matrix_rref", 1);
+    ("matrix_null_space", 1);
     ("point2", 2);
     ("point3", 3);
     ("point_latex", 1);

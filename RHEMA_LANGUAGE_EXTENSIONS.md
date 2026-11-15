@@ -439,6 +439,21 @@ functions switched off (`sqrt` and `abs` stay). Without it WeBWorK accepts
 `sin(pi/3)` as the value of sin(π/3), and accepted `log(625)/log(5)` for
 log₅(625) in `exponential_log.rhm`, which now uses `plain`.
 
+**Fractions with a large numerator.** The same holds for a fraction, in
+its numerator and whatever its denominator: measured on the renderer,
+WeBWorK accepts `(p + 1)/q` and `(p - 1)/q` for `p/q` from a numerator of
+1001 on and never at 999 or below. A fraction answer whose numerator is
+1000 or more (or -1000 or less) is now written
+`Compute("p/q")->cmp(tolType=>"absolute",tolerance=>1/(2q))`: half a step
+of its denominator, so that neither neighbour passes, with the fraction
+kept as the answer shown. A decimal typed in place of the fraction must be
+right to within that half step, which is at least twice as strict as
+before; a smaller fraction is written `Formula('p/q')` as it always was. In
+the library this reaches the large answers of `arithmetic.rhm` (70 of 300
+at its default budget) and a few of `definite_integral.rhm` and
+`statistics.rhm`. The rule for whole numbers below is this one with a
+denominator of 1.
+
 **Whole numbers graded exactly.** WeBWorK compares numbers with a relative
 tolerance of one part in a thousand. Measured on the renderer, it tells a
 whole number from its neighbours up to 1000 and not above: it accepts 5041

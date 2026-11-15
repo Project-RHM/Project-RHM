@@ -999,6 +999,9 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
       Num (Rhema_number.of_int (Rhema_matrix.rank (as_matrix "matrix_rank" (recurse matrix))))
   | Call ("matrix_rref", [ matrix ]) ->
       Matrix (Rhema_matrix.row_echelon (as_matrix "matrix_rref" (recurse matrix)))
+  | Call ("matrix_null_space", [ matrix ]) -> (
+      try Matrix (Rhema_matrix.null_space (as_matrix "matrix_null_space" (recurse matrix)))
+      with Invalid_argument message -> error ("matrix_null_space: " ^ message))
   | Call ("point2", [ first; second ]) ->
       Point [ as_number "point2" (recurse first); as_number "point2" (recurse second) ]
   | Call ("point3", [ first; second; third ]) ->
