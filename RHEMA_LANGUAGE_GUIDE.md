@@ -907,6 +907,16 @@ rhema list calculus.rhm                      # 题型、预算、set、import
 rhema doc                                    # 全部内置函数；rhema doc matrix_inverse 看一个
 ```
 
+输出文件名的后缀决定写出什么：`.tex` 是同一份题目的 LaTeX 试卷，`.pdf` 是把它编译好的 PDF，其他后缀仍是 WeBWorK PG：
+
+```bash
+rhema homework_set.rhm --run homework -o homework.tex            # LaTeX 源文件，可以再编辑
+rhema homework_set.rhm --run homework -o homework.pdf --answers  # PDF，末页附答案
+rhema calculus.rhm --count 10 --set cost=6 -o quiz.pdf --title "Quiz 2"
+```
+
+试卷有标题、按 set 编号的题目（`1(a).`、`2.`）、各部分的小标题，每个答案空的位置是一条供书写的横线。`--answers` 在最后一页加上答案，每题一条、每个空一个答案；`--title` 指定标题。同一份作业、同一个 `--student`，三种格式里是同样的题目。生成 PDF 需要本机装有 TeX 引擎：`rhema` 依次寻找 `pdflatex`、`xelatex`、`lualatex`、`tectonic`，或使用环境变量 `RHEMA_LATEX` 指定的那一个；找不到或编译失败时会给出说明，不写 PDF，并把 LaTeX 源文件留在 PDF 本应所在的位置。题目文本中只有 `` [`...`] `` 和 ``` [``...``] ``` 被当作数学公式，行末两个空格是换行，其余字符原样印出。过宽的公式会自动缩小到行宽以内。
+
 一份作业就是一张卷子，每次生成都相同；给某个学生单独一份时加 `--student`：
 
 ```bash

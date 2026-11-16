@@ -128,6 +128,7 @@ a file by its path; the search below applies to the files it imports.
 rhema check calculus.rhm                  # file:line:col: error: ... or OK
 rhema calculus.rhm -o calculus.pg         # compile to WeBWorK PG
 rhema homework_set.rhm --run homework     # a whole assignment -> homework.pg
+rhema homework_set.rhm --run homework -o homework.pdf --answers   # a paper to print, with a key†
 rhema run boolean.rhm --set cost=6        # questions and answers in the terminal
 rhema run calculus.rhm --question integral  # one named question of the file
 rhema list calculus.rhm                   # questions, budgets, sets, imports
@@ -135,7 +136,9 @@ rhema doc                                 # the builtin functions
 ```
 
 One assignment is one paper, the same every time it is generated;
-`--student ID` gives a student a paper of their own. Imported files are found
+`--student ID` gives a student a paper of their own. An output named `.tex`
+or `.pdf` is that paper in LaTeX or as a PDF (a PDF needs a TeX engine on the
+machine); † this is newer than the 0.1.1 package. Imported files are found
 beside the importing file, then in `-I` directories, `RHEMA_PATH` and the
 installed library (`share/rhema`).
 
@@ -252,6 +255,7 @@ python3 tools/test_grammar_creation.py
 python3 tools/test_teacher_builder.py
 python3 tools/test_webwork_preview.py
 tools/check_doc_examples.sh generator/_build/install/default/bin/rhema
+tools/check_latex_output.sh generator/_build/install/default/bin/rhema   # needs a TeX engine
 ```
 
 Several suites read a generated question back and recompute its answer

@@ -124,6 +124,7 @@ dune build
 rhema check calculus.rhm                  # file:line:col: error: ... or OK
 rhema calculus.rhm -o calculus.pg         # compile to WeBWorK PG
 rhema homework_set.rhm --run homework     # a whole assignment -> homework.pg
+rhema homework_set.rhm --run homework -o homework.pdf --answers   # a paper to print, with a key†
 rhema run boolean.rhm --set cost=6        # questions and answers in the terminal
 rhema run calculus.rhm --question integral  # one named question of the file
 rhema list calculus.rhm                   # questions, budgets, sets, imports
@@ -131,7 +132,8 @@ rhema doc                                 # the builtin functions
 ```
 
 一份作业对应一份试卷，每次生成的结果都相同；`--student ID` 为某位学生单独生成
-一份试卷。被导入的文件依次在以下位置查找：导入它的文件所在目录、`-I` 指定的目录、
+一份试卷。输出文件名以 `.tex` 或 `.pdf` 结尾时，写出的是这份试卷的 LaTeX 源文件或
+PDF（生成 PDF 需要本机装有 TeX 引擎）；† 这项功能比 0.1.1 包新。被导入的文件依次在以下位置查找：导入它的文件所在目录、`-I` 指定的目录、
 `RHEMA_PATH`，以及已安装的文法库（`share/rhema`）。
 
 ## 文法库
@@ -224,6 +226,7 @@ dune runtest --force
 cd ..
 python3 tools/test_grammar_creation.py
 tools/check_doc_examples.sh generator/_build/install/default/bin/rhema
+tools/check_latex_output.sh generator/_build/install/default/bin/rhema   # needs a TeX engine
 ```
 
 有几组测试会读回生成的题目，用独立于文法的方式重新计算答案。CI 会运行这些测试，

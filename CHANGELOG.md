@@ -7,6 +7,15 @@ is announced one version before the removal.
 
 ## Unreleased
 
+- **A paper to print: LaTeX and PDF output.** `rhema FILE -o OUT.tex` writes
+  the same questions as a LaTeX document, and `-o OUT.pdf` compiles it with
+  a TeX engine found on the machine (`pdflatex`, `xelatex`, `lualatex`,
+  `tectonic`, or the one `RHEMA_LATEX` names). `--answers` adds an answer
+  key on a last page and `--title` sets the title. A set keeps its labels
+  and headings, a blank becomes a rule to write on, and a formula too wide
+  for the line is scaled down to it. The same assignment and student give
+  the same questions as the `.pg` file. An output with any other extension
+  is WeBWorK PG, as before.
 - **Seven question types scale with the budget.** `partial_fractions.rhm`,
   `taylor.rhm`, `inequality.rhm`, `partial_derivatives.rhm`,
   `row_reduction.rhm`, `base_conversion.rhm` and `definite_integral.rhm`
