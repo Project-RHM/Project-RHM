@@ -80,6 +80,23 @@ $ rhema assignment.rhm --run week3 --pg-dir week3/
 writes `week3.pg` and also `week3/question01.pg`, `question02.pg` and so on,
 for courses that prefer one problem per file.
 
+## The same paper for print
+
+The same assignment can be written as a paper instead, for a quiz in class
+or to read away from a screen:
+
+```text
+$ rhema assignment.rhm --run week3 -o week3.pdf
+$ rhema assignment.rhm --run week3 -o week3-key.pdf --answers
+$ rhema assignment.rhm --run week3 -o week3.tex
+```
+
+A `.pdf` is the paper itself, with a rule to write on in place of each
+answer blank; `--answers` adds a key on a last page; a `.tex` is the LaTeX
+source, to edit before printing. It holds the questions of `week3.pg`, the
+same ones: a paper is named by its assignment, not by its format. A PDF
+needs a TeX engine installed; see [the command](../reference/command.md).
+
 ## Uploading
 
 In the WeBWorK course:

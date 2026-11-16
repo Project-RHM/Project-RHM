@@ -2,6 +2,7 @@
 
 ```text
 rhema FILE.rhm [-o OUT.pg] [options]    compile FILE to WeBWorK PG
+rhema FILE.rhm -o OUT.tex | OUT.pdf     the same questions as a paper
 rhema check FILE...                     check only
 rhema run FILE [options]                show the questions and answers
 rhema list FILE                         the questions and sets FILE declares
@@ -24,6 +25,53 @@ $ rhema homework_set.rhm --run quick --pg-dir out/
 
 `--pg-dir DIR`, with `--run`, also writes one file per question, named
 `question01.pg`, `question02.pg` and so on.
+
+## A paper: LaTeX and PDF
+
+The extension of the output says what is written. `-o OUT.tex` writes the
+same questions as a LaTeX document, and `-o OUT.pdf` compiles that document
+to a PDF:
+
+```text
+$ rhema homework_set.rhm --run homework -o homework.tex
+$ rhema homework_set.rhm --run homework -o homework.pdf --answers
+$ rhema calculus.rhm --count 10 --set cost=6 -o quiz.pdf --title "Quiz 2"
+```
+
+The paper has a title, the questions numbered as the set numbers them
+(`1(a).`, `2.`), the headings of its parts, and a rule to write on where
+each answer blank stands. The same assignment and the same `--student` give
+the same questions in all three formats.
+
+`--answers`
+:   An answer key on a last page: one entry for each question, one answer
+    for each blank.
+
+`--title TEXT`
+:   The paper's title. The default is the set's name, the assignment's with
+    `--assignment`, or the file's name.
+
+A `.pdf` needs a TeX engine on the machine. `rhema` uses the first of
+`pdflatex`, `xelatex`, `lualatex` and `tectonic` that it finds, or the one
+the environment variable `RHEMA_LATEX` names. When there is none, or the
+engine fails, it says so, writes no PDF and leaves the LaTeX beside where
+the PDF would be. The document needs only `amsmath`, `amssymb`, `graphicx`
+and `geometry`.
+
+The LaTeX is meant to be edited. Every question is set through four
+commands defined at the top of the file (`\rhemaquestion`, `\rhemablank`,
+`\rhemaheading`, `\rhemamath`), so another layout is a change to those
+lines. `\rhemamath` keeps a formula whole and scales it down when it is
+wider than the line, so that a long derivative or a wide matrix stays on
+the page.
+
+In the text of a question, `` [`...`] `` and ``` [``...``] ``` are
+mathematics, two spaces at the end of a line are a line break, and every
+other character is printed as it is. Other PGML markup, such as `*bold*`,
+is not interpreted.
+
+!!! note
+    LaTeX and PDF output is in the repository, not in the 0.1.1 package.
 
 ## Options
 

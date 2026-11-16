@@ -19,6 +19,7 @@ let usage =
   String.concat "\n"
     [
       "usage: rhema FILE.rhm [-o OUT.pg] [options]     compile FILE to WeBWorK PG";
+      "       rhema FILE.rhm -o OUT.tex | OUT.pdf      the same questions as a paper";
       "       rhema check FILE...                      check only";
       "       rhema run FILE [options]                 show the questions and answers";
       "       rhema list FILE                          the questions and sets FILE declares";
@@ -37,10 +38,16 @@ let usage =
       "  -I DIR              also look for imported and included files in DIR";
       "                      (after the file's own directory; RHEMA_PATH too)";
       "  --pg-dir DIR        with --run: one .pg file per question, in DIR";
+      "  --answers           with a .tex or .pdf output: an answer key on a last page";
+      "  --title TEXT        with a .tex or .pdf output: the paper's title (default:";
+      "                      the set's or the file's name)";
       "  --ast-out FILE, --visualization-out FILE   save the derivation trees too";
       "";
       "Every imported or included file is looked for beside the importing one,";
       "then in the -I directories, RHEMA_PATH, and the installed library.";
+      "";
+      "A .pdf output is the .tex output compiled by the first of pdflatex, xelatex,";
+      "lualatex and tectonic found on this machine, or by the one RHEMA_LATEX names.";
     ]
 
 let fail_usage message =
@@ -60,6 +67,8 @@ type options = {
   mutable overrides : (string * int) list;
   mutable includes : string list;
   mutable pg_dir : string option;
+  mutable answers : bool;
+  mutable title : string option;
   mutable ast_output : string option;
   mutable visualization_output : string option;
 }
@@ -76,7 +85,7 @@ let parse_override text =
 
 let known_options =
   [ "-o"; "--out"; "--question"; "--run"; "--count"; "--assignment"; "--student"; "--seed";
-    "--set"; "-I"; "--pg-dir"; "--ast-out"; "--visualization-out" ]
+    "--set"; "-I"; "--pg-dir"; "--title"; "--ast-out"; "--visualization-out" ]
 
 let parse_options arguments =
   let options =
@@ -92,6 +101,8 @@ let parse_options arguments =
       overrides = [];
       includes = [];
       pg_dir = None;
+      answers = false;
+      title = None;
       ast_output = None;
       visualization_output = None;
     }
@@ -133,6 +144,12 @@ let parse_options arguments =
         walk rest
     | "--pg-dir" :: value :: rest ->
         options.pg_dir <- Some value;
+        walk rest
+    | "--answers" :: rest ->
+        options.answers <- true;
+        walk rest
+    | "--title" :: value :: rest ->
+        options.title <- Some value;
         walk rest
     | "--ast-out" :: value :: rest ->
         options.ast_output <- Some value;
@@ -284,10 +301,34 @@ let compile options =
         | Some set -> set ^ ".pg"
         | None -> Filename.remove_extension file ^ ".pg")
   in
+  (* The extension of the output says what is wanted: a paper in LaTeX, the
+     same compiled to PDF, or (anything else) WeBWorK PG. *)
+  let paper = Filename.check_suffix output ".tex" || Filename.check_suffix output ".pdf" in
+  if (options.answers || options.title <> None) && not paper then
+    fail_usage "--answers and --title go with a .tex or .pdf output";
   let document =
-    match product with
-    | Questions (spec, questions) -> Rhema_cli.questions_document spec questions
-    | Set result -> Rhema_sets.document result
+    if not paper then
+      match product with
+      | Questions (spec, questions) -> Rhema_cli.questions_document spec questions
+      | Set result -> Rhema_sets.document result
+    else
+      let student = Option.map (fun id -> "Student: " ^ id) options.student in
+      let title default = Option.value ~default options.title in
+      match product with
+      | Questions (spec, questions) ->
+          (* the assignment when one is named, else the file and its question *)
+          let named =
+            match (options.assignment, options.question) with
+            | Some assignment, _ -> assignment
+            | None, Some question -> Filename.remove_extension (Filename.basename file) ^ ": " ^ question
+            | None, None -> Filename.remove_extension (Filename.basename file)
+          in
+          Rhema_latex.document ?width:spec.Rhema_check.width ~answers:options.answers ?student ~title:(title named)
+            questions
+      | Set result ->
+          Rhema_sets.latex ~answers:options.answers ?student
+            ~title:(title (Option.value ~default:result.Rhema_sets.name options.assignment))
+            result
   in
   (match (product, options.pg_dir) with
   | Set result, Some directory ->
@@ -297,7 +338,19 @@ let compile options =
         (Rhema_sets.documents result)
   | _, Some _ -> fail_usage "--pg-dir goes with --run"
   | _, None -> ());
-  if output = "-" then print_string document else Rhema_cli.write_file output document;
+  if Filename.check_suffix output ".pdf" then begin
+    match Rhema_pdf.compile ~latex:document ~output with
+    | Ok _ -> ()
+    | Error message ->
+        (* the LaTeX is kept beside where the PDF would be, to look at *)
+        let kept = Filename.remove_extension output ^ ".tex" in
+        Rhema_cli.write_file kept document;
+        prerr_endline (Printf.sprintf "%s: error: %s
+%s: the LaTeX source is in %s" file message file kept);
+        exit 1
+  end
+  else if output = "-" then print_string document
+  else Rhema_cli.write_file output document;
   let questions = questions_of product in
   Option.iter (fun path -> Rhema_visualization.write_ast path questions) options.ast_output;
   Option.iter
