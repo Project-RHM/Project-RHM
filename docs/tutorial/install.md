@@ -107,15 +107,20 @@ The following actions will be performed:
   - install menhirGLR 20260209 [required by menhir]
   - install menhirLib 20260209 [required by menhir]
   - install menhirSdk 20260209 [required by menhir]
-  - install rhema     0.1.1
+  - install rhema     0.2.0
 ```
 
 Answer `y`. Building takes a minute or two. Then:
 
 ```text
 $ rhema --version
-rhema 0.1.1 (the Rhema language, RHM project)
+rhema 0.2.0 (the Rhema language, RHM project)
 ```
+
+!!! note
+    0.2.0 was released on 2026-11-16. Until the opam repository has accepted
+    it, opam installs 0.1.1; `opam update` followed by `opam upgrade rhema`
+    brings 0.2.0 once it is there.
 
 The package holds the `rhema` command and the library of grammars. The
 library is in the directory `opam var rhema:share` prints, and `rhema` looks

@@ -95,8 +95,10 @@ The compiler and its library, on OCaml 4.14 or later:
 opam install rhema
 ```
 
-This installs 0.1.1, the current release. The repository is ahead of it: the
-Unreleased section of the [changelog](CHANGELOG.md) lists what is newer.
+This installs the current release, 0.2.0; the [changelog](CHANGELOG.md) says
+what each release brought. 0.2.0 was released on 2026-11-16: until the opam
+repository has accepted it, the command above gives 0.1.1, and `opam update`
+followed by `opam upgrade rhema` brings 0.2.0 once it is there.
 
 If you do not have opam yet,
 [Installing with opam](https://project-rhm.github.io/tutorial/install/) goes
@@ -128,7 +130,7 @@ a file by its path; the search below applies to the files it imports.
 rhema check calculus.rhm                  # file:line:col: error: ... or OK
 rhema calculus.rhm -o calculus.pg         # compile to WeBWorK PG
 rhema homework_set.rhm --run homework     # a whole assignment -> homework.pg
-rhema homework_set.rhm --run homework -o homework.pdf --answers   # a paper to print, with a key†
+rhema homework_set.rhm --run homework -o homework.pdf --answers   # a paper to print, with a key
 rhema run boolean.rhm --set cost=6        # questions and answers in the terminal
 rhema run calculus.rhm --question integral  # one named question of the file
 rhema list calculus.rhm                   # questions, budgets, sets, imports
@@ -138,30 +140,28 @@ rhema doc                                 # the builtin functions
 One assignment is one paper, the same every time it is generated;
 `--student ID` gives a student a paper of their own. An output named `.tex`
 or `.pdf` is that paper in LaTeX or as a PDF (a PDF needs a TeX engine on the
-machine); † this is newer than the 0.1.1 package. Imported files are found
-beside the importing file, then in `-I` directories, `RHEMA_PATH` and the
-installed library (`share/rhema`).
+machine). Imported files are found beside the importing file, then in `-I`
+directories, `RHEMA_PATH` and the installed library (`share/rhema`).
 
 ## The question library
 
-The 0.1.1 package installs 27 grammar files. `generator/stdlib/` holds those
-and the nineteen marked †, which will reach opam with the next release; until
-then they need a clone. [`QUESTION_TYPES.md`](QUESTION_TYPES.md) gives each
-grammar's questions, prices and WeBWorK context.
+The package installs 46 grammar files, the ones in `generator/stdlib/`.
+[`QUESTION_TYPES.md`](QUESTION_TYPES.md) gives each grammar's questions,
+prices and WeBWorK context.
 
 | Area | Grammars |
 | --- | --- |
 | Arithmetic | `arithmetic` |
-| Algebra | `polynomial_expand`, `factoring`, `polynomial_forms`, `linear_equation`, `inequality`†, `exponential_log`†, `partial_fractions`†, `library_linear`, `library_quadratic`, `library_polynomial` |
-| Sequences and series | `sequence`, `sequence_parts`, `series`†, `recurrence`† |
-| Calculus | `calculus`, `limits`†, `definite_integral`†, `derivative_applications`†, `differential_equation`†, `taylor`†, `partial_derivatives`†, `library_formula` |
+| Algebra | `polynomial_expand`, `factoring`, `polynomial_forms`, `linear_equation`, `inequality`, `exponential_log`, `partial_fractions`, `library_linear`, `library_quadratic`, `library_polynomial` |
+| Sequences and series | `sequence`, `sequence_parts`, `series`, `recurrence` |
+| Calculus | `calculus`, `limits`, `definite_integral`, `derivative_applications`, `differential_equation`, `taylor`, `partial_derivatives`, `library_formula` |
 | Logic | `boolean`, `boolean_equiv`, `logic_forms` |
 | Sets | `set` |
 | Vectors | `vector`, `vector_expr` |
 | Complex numbers | `complex` |
-| Linear algebra | `matrix_expr`, `determinant`, `matrix_inverse`, `linear_system`, `eigen`†, `row_reduction`† |
-| Counting and number theory | `counting`†, `number_theory`†, `base_conversion`† |
-| Geometry, trigonometry and statistics | `analytic_geometry`†, `trigonometry`†, `statistics`† |
+| Linear algebra | `matrix_expr`, `determinant`, `matrix_inverse`, `linear_system`, `eigen`, `row_reduction` |
+| Counting and number theory | `counting`, `number_theory`, `base_conversion` |
+| Geometry, trigonometry and statistics | `analytic_geometry`, `trigonometry`, `statistics` |
 | Combined | `derivative_or_boolean` (one question, two imported grammars), `homework_set` (a whole assignment) |
 | Shared rules, no questions of their own | `polynomial_core`, `matrix_core` |
 

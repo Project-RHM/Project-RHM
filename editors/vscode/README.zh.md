@@ -75,7 +75,7 @@ npm run package
 ```
 
 ```bash
-code --install-extension rhema-language-0.1.0.vsix
+code --install-extension rhema-language-0.1.2.vsix
 ```
 
 第一次运行 `npm run package` 时，`npx` 会下载打包工具 `vsce`。发布流程见

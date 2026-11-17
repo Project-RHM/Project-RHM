@@ -92,8 +92,9 @@ rhema quiz.rhm --run quiz
 opam install rhema
 ```
 
-这样安装的是当前发布版 0.1.1。仓库中的代码比它新，新增内容见
-[更新日志](CHANGELOG.md)的 Unreleased 一节。
+这样安装的是当前发布版 0.2.0，各版本的变化见[更新日志](CHANGELOG.md)。0.2.0 发布于
+2026-11-16：在 opam 仓库收录它之前，上面的命令装到的仍是 0.1.1；收录之后，先运行
+`opam update`，再运行 `opam upgrade rhema`，即可升级到 0.2.0。
 
 如果还没有安装 opam，请看文档站的
 [Installing with opam](https://project-rhm.github.io/tutorial/install/)（英文），
@@ -124,7 +125,7 @@ dune build
 rhema check calculus.rhm                  # file:line:col: error: ... or OK
 rhema calculus.rhm -o calculus.pg         # compile to WeBWorK PG
 rhema homework_set.rhm --run homework     # a whole assignment -> homework.pg
-rhema homework_set.rhm --run homework -o homework.pdf --answers   # a paper to print, with a key†
+rhema homework_set.rhm --run homework -o homework.pdf --answers   # a paper to print, with a key
 rhema run boolean.rhm --set cost=6        # questions and answers in the terminal
 rhema run calculus.rhm --question integral  # one named question of the file
 rhema list calculus.rhm                   # questions, budgets, sets, imports
@@ -133,28 +134,27 @@ rhema doc                                 # the builtin functions
 
 一份作业对应一份试卷，每次生成的结果都相同；`--student ID` 为某位学生单独生成
 一份试卷。输出文件名以 `.tex` 或 `.pdf` 结尾时，写出的是这份试卷的 LaTeX 源文件或
-PDF（生成 PDF 需要本机装有 TeX 引擎）；† 这项功能比 0.1.1 包新。被导入的文件依次在以下位置查找：导入它的文件所在目录、`-I` 指定的目录、
-`RHEMA_PATH`，以及已安装的文法库（`share/rhema`）。
+PDF（生成 PDF 需要本机装有 TeX 引擎）。被导入的文件依次在以下位置查找：导入它的文件
+所在目录、`-I` 指定的目录、`RHEMA_PATH`，以及已安装的文法库（`share/rhema`）。
 
 ## 文法库
 
-0.1.1 软件包安装 27 个文法文件。`generator/stdlib/` 中除这些之外，还有标 † 的十九个
-文法，它们要到下一个版本才会进入 opam，在此之前需要从源码使用。每个文法的题目、
+软件包安装 46 个文法文件，即 `generator/stdlib/` 中的全部文件。每个文法的题目、
 价格和 WeBWorK 上下文见 [`QUESTION_TYPES.zh.md`](QUESTION_TYPES.zh.md)。
 
 | 领域 | 文法 |
 | --- | --- |
 | 四则运算 | `arithmetic` |
-| 代数 | `polynomial_expand`、`factoring`、`polynomial_forms`、`linear_equation`、`inequality`†、`exponential_log`†、`partial_fractions`†、`library_linear`、`library_quadratic`、`library_polynomial` |
-| 数列与级数 | `sequence`、`sequence_parts`、`series`†、`recurrence`† |
-| 微积分 | `calculus`、`limits`†、`definite_integral`†、`derivative_applications`†、`differential_equation`†、`taylor`†、`partial_derivatives`†、`library_formula` |
+| 代数 | `polynomial_expand`、`factoring`、`polynomial_forms`、`linear_equation`、`inequality`、`exponential_log`、`partial_fractions`、`library_linear`、`library_quadratic`、`library_polynomial` |
+| 数列与级数 | `sequence`、`sequence_parts`、`series`、`recurrence` |
+| 微积分 | `calculus`、`limits`、`definite_integral`、`derivative_applications`、`differential_equation`、`taylor`、`partial_derivatives`、`library_formula` |
 | 逻辑 | `boolean`、`boolean_equiv`、`logic_forms` |
 | 集合 | `set` |
 | 向量 | `vector`、`vector_expr` |
 | 复数 | `complex` |
-| 线性代数 | `matrix_expr`、`determinant`、`matrix_inverse`、`linear_system`、`eigen`†、`row_reduction`† |
-| 计数与数论 | `counting`†、`number_theory`†、`base_conversion`† |
-| 几何、三角与统计 | `analytic_geometry`†、`trigonometry`†、`statistics`† |
+| 线性代数 | `matrix_expr`、`determinant`、`matrix_inverse`、`linear_system`、`eigen`、`row_reduction` |
+| 计数与数论 | `counting`、`number_theory`、`base_conversion` |
+| 几何、三角与统计 | `analytic_geometry`、`trigonometry`、`statistics` |
 | 组合 | `derivative_or_boolean`（一道题，来自两个被导入的文法）、`homework_set`（一整份作业） |
 | 共享规则，本身不出题 | `polynomial_core`、`matrix_core` |
 
