@@ -70,9 +70,6 @@ mathematics, two spaces at the end of a line are a line break, and every
 other character is printed as it is. Other PGML markup, such as `*bold*`,
 is not interpreted.
 
-!!! note
-    LaTeX and PDF output is in the repository, not in the 0.1.1 package.
-
 ## Options
 
 `--question NAME`

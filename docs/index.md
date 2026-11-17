@@ -34,12 +34,15 @@ opam is the package manager of OCaml, the language `rhema` is written in. If
 you do not have it yet, [Installing with opam](tutorial/install.md) starts
 from there.
 
-This installs version 0.1.1: the `rhema` command and a library of grammars
-for arithmetic, algebra, calculus, propositional logic, sets, vectors,
-complex numbers, sequences and linear algebra. The repository is ahead of
-this release, with more [grammars](reference/library.md) and
-[builtin functions](reference/builtins.md), which the next release will
-include; both pages say which.
+This installs version 0.2.0: the `rhema` command and a
+[library of grammars](reference/library.md) for arithmetic, algebra,
+calculus, propositional logic, sets, vectors, complex numbers, sequences,
+linear algebra, counting, number theory and statistics.
+
+!!! note
+    0.2.0 was released on 2026-11-16. Until the opam repository has accepted
+    it, the command above gives 0.1.1; `opam update` followed by
+    `opam upgrade rhema` brings 0.2.0 once it is there.
 
 For VS Code, install
 [Rhema Language](https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language)

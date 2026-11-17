@@ -5,7 +5,24 @@ functions' names and arguments, and the `rhema` command's options are the
 public interface. A breaking change raises the major version; a deprecation
 is announced one version before the removal.
 
-## Unreleased
+## 0.2.0 (2026-11-16)
+
+The library grows from 27 grammar files to 46, seven of the new question
+types scale with the budget, and a paper can be written as LaTeX or PDF as
+well as WeBWorK PG.
+
+Coming from 0.1.1:
+
+- `true` and `false` are now reserved words. A grammar that used either as a
+  name must rename it; nothing else in the language or the command changed
+  meaning.
+- The 27 grammar files of 0.1.1 ask the same questions for the same seed
+  (compared on 30 questions of each question type and on the library's
+  set). Four of them write some answers differently in PG, so that WeBWorK
+  grades them correctly: `arithmetic.rhm` and `sequence.rhm` (whole numbers
+  and fractions of 1000 or more), `set.rhm` (unions without brackets around
+  their parts) and `logic_forms.rhm` (propositions with their own context).
+  The entries below give the reasons.
 
 - **A paper to print: LaTeX and PDF output.** `rhema FILE -o OUT.tex` writes
   the same questions as a LaTeX document, and `-o OUT.pdf` compiles it with
@@ -123,7 +140,7 @@ is announced one version before the removal.
   for `.rhm` files. Its tests check the grammar against the compiler's
   keywords and every `.rhm` file in the repository (CI job `editor`), and
   drive the extension in VS Code against a real `rhema`. Published on the
-  Visual Studio Marketplace as `rhema.rhema-language` (0.1.1, preview).
+  Visual Studio Marketplace as `rhema.rhema-language` (a preview).
 - **Fixed**: a problem with a name, a child reference or a call was reported
   at the start of the equation or declaration holding it, so
   `value = foo` gave the column of `value` for "unknown name 'foo'". Every

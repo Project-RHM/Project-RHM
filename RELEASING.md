@@ -18,9 +18,12 @@ development profile only (`enabled_if (= %{profile} dev)`): it needs
 
 ## Each release
 
-1. Set the version in `generator/dune-project` (`(version X.Y.Z)`), move the
-   `CHANGELOG.md` entry from "unreleased" to the version and date, and
-   commit.
+1. Set the version in `generator/dune-project` (`(version X.Y.Z)`), run
+   `dune build` so that `rhema.opam` follows, and give the `CHANGELOG.md`
+   entry its version and date. Where `README.md`, `README.zh.md` and the
+   pages under `docs/` name the release that opam installs, name the new
+   one, with a note that opam has the old one until the opam repository
+   accepts the new (step 7 removes the note). Commit.
 2. Check locally, in `generator/`:
 
    ```bash
@@ -37,26 +40,30 @@ development profile only (`enabled_if (= %{profile} dev)`): it needs
    rm -rf /tmp/rhema-export && mkdir /tmp/rhema-export && git archive HEAD:generator | tar x -C /tmp/rhema-export && (cd /tmp/rhema-export && dune build -p rhema @install @runtest --force && opam lint rhema.opam)
    ```
 
-4. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+4. Tag the commit on `main` and push the tag:
+   `git tag vX.Y.Z && git push origin vX.Y.Z`.
 5. Make the source archive. Because the dune project lives in `generator/`,
-   the release archive is that directory, not the repository: install
-   `dune-release` (`opam install dune-release`) and run, in `generator/`:
+   the release archive is that directory, not the repository:
 
    ```bash
-   dune-release distrib
+   git archive --format=tar.gz --prefix=rhema-X.Y.Z/ -o rhema-X.Y.Z.tar.gz vX.Y.Z:generator
    ```
 
-   It writes `_build/rhema-X.Y.Z.tbz`. Upload it as an asset of the GitHub
-   release for the tag (`dune-release publish distrib` does this with a
-   GitHub token, or do it by hand).
-6. Submit to opam: `dune-release opam pkg` writes the entry, `dune-release
-   opam submit` opens the pull request against ocaml/opam-repository. By
-   hand, the entry is `packages/rhema/rhema.X.Y.Z/opam`: the generated
-   `rhema.opam` with the `version:` line removed and this appended:
+   Make it once. An archive of a directory carries the time it was made, so
+   a second run gives a file with other checksums; the file that is uploaded
+   is the one the checksums of step 6 are taken from. Publish a GitHub
+   release for the tag with the archive as its asset, so that it is at
+   `https://github.com/Project-RHM/Project-RHM/releases/download/vX.Y.Z/rhema-X.Y.Z.tar.gz`.
+6. Submit to opam. The entry is `packages/rhema/rhema.X.Y.Z/opam` in a
+   branch of a fork of
+   [ocaml/opam-repository](https://github.com/ocaml/opam-repository) (ours
+   is `Project-RHM/opam-repository`): the generated `rhema.opam` without its
+   first line (the comment) and its `version:` line, and with this appended:
 
    ```
+   x-maintenance-intent: ["(latest)"]
    url {
-     src: "https://github.com/Project-RHM/Project-RHM/releases/download/vX.Y.Z/rhema-X.Y.Z.tbz"
+     src: "https://github.com/Project-RHM/Project-RHM/releases/download/vX.Y.Z/rhema-X.Y.Z.tar.gz"
      checksum: [
        "sha256=..."
        "sha512=..."
@@ -64,9 +71,14 @@ development profile only (`enabled_if (= %{profile} dev)`): it needs
    }
    ```
 
-   (`sha256sum`/`sha512sum` of the archive.) The opam CI builds the package
-   on several OCaml versions and platforms; a maintainer merges once it is
-   green, usually within days.
+   (`shasum -a 256` and `shasum -a 512` of the archive.) Once the release
+   is published, `opam lint --check-upstream packages/rhema/rhema.X.Y.Z/opam`
+   downloads the archive and compares the checksums. Open the pull request
+   against `ocaml/opam-repository`; its CI builds the package on several
+   OCaml versions and platforms, and a maintainer merges once it is green,
+   usually within days.
+7. When opam has the release (`opam update && opam show rhema`), remove the
+   note of step 1 from the READMEs and the site.
 
 ## Without the opam repository
 
