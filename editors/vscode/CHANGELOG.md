@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 (2026-11-16)
 
 - `true` and `false` are highlighted as constants, and `let` inside a
   production's braces as the keyword it now is there.
