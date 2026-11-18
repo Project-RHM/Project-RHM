@@ -839,6 +839,7 @@ matrix 或其他专用答案类型
 | `when` | guard | 在生成前筛选规则 |
 | `weight` | production weight | 设置规则相对选择权重 |
 | `require` | runtime requirement | 在生成后检查约束 |
+| `mistake` | mistake declaration; mistake line | 在文件级：声明学生会犯的一种错误及其说明；在产生式的花括号内：写出犯这种错误的学生在此处算出的值（见 `RHEMA_LANGUAGE_EXTENSIONS.zh.md` 第 9 节） |
 | `precedence` | operator precedence | 声明运算符优先级 |
 | `left` | left associativity | 声明左结合 |
 | `right` | right associativity | 声明右结合 |

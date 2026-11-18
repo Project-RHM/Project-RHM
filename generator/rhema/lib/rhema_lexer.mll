@@ -26,6 +26,7 @@ let keywords = [
   "when",       WHEN;
   "weight",     WEIGHT;
   "require",    REQUIRE;
+  "mistake",    MISTAKE;
   "prompt",     PROMPT;
   "answer",     ANSWER;
   "width",      WIDTH;

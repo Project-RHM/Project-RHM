@@ -34,7 +34,7 @@ let expect_one_of expected (found : string) start =
 %}
 
 %token ATTRIBUTE SYNTH START CONTEXT PRECEDENCE LEFT RIGHT NONASSOC
-%token RANDOM LET BOOLEAN ON
+%token RANDOM LET BOOLEAN ON MISTAKE
 %token COPY SPLIT WHEN WEIGHT REQUIRE PROMPT ANSWER WIDTH INCLUDE IMPORT AS QUESTION SET
 %token TILDE
 %token AND OR NOT TRUE FALSE
@@ -81,6 +81,10 @@ declaration:
   (* Computed once per question, from the randoms; mainly for the prompt. *)
   | LET; name = IDENT; EQ; body = expr
       { Let_decl (name, body, position $startpos) }
+
+  (* A mistake students make: its name, and what the student does. *)
+  | MISTAKE; name = IDENT; description = STRING
+      { Mistake_decl (name, description, position $startpos) }
 
   | SYNTH; name = IDENT; scope = ioption(preceded(ON, IDENT))
       { Synthesized_decl (name, scope, position $startpos) }
@@ -281,6 +285,11 @@ equation:
      never inside a rule's braces, so the two cannot be confused. *)
   | LET; name = IDENT; EQ; body = expr
       { Local (name, body, position $startpos) }
+  (* What a student who makes the named mistake computes here. Inside a
+     rule's braces the word is followed by two names; at the top level, by a
+     name and a description. *)
+  | MISTAKE; mistake = IDENT; name = IDENT; EQ; body = expr
+      { Mistake (mistake, name, body, position $startpos) }
 
 (* ------------------------------------------------------------------ *)
 (* Expressions                                                         *)

@@ -120,9 +120,9 @@ the answer balanced by a coin):
 | --- | --- | --- |
 | 4 | 34% | 52% |
 | 6 | 63% | 54% |
-| 8 | 87% | 50% |
-| 10 | 97% | 53% |
-| 14 | 100% | 53% |
+| 8 | 87% | 51% |
+| 10 | 97% | 49% |
+| 14 | 100% | 51% |
 
 Cost is not length: one budget buys expressions of several sizes. Small
 budgets buy few distinct questions, so a set should not be built below

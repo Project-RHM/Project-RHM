@@ -121,7 +121,10 @@ file, so read the paper there first:
 $ rhema run assignment.rhm --run week3
 ```
 
-That is the end of the tutorial. The [reference](../reference/command.md)
+That is everything a paper needs. The [reference](../reference/command.md)
 describes the command in full; the library's grammars, under
 `share/rhema` where Rhema is installed, are worked examples of everything
 above.
+
+**Next:** chapter 9 is about the questions themselves: a grammar can name
+the mistakes students make, and every question then tells them apart.

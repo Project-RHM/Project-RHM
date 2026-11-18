@@ -20,6 +20,7 @@ class RhemaLexer(RegexLexer):
     keywords = (
         "attribute", "random", "let", "synth", "on", "start", "context", "precedence",
         "left", "right", "nonassoc", "copy", "split", "when", "weight", "require",
+        "mistake",
         "prompt", "answer", "width", "include", "import", "as", "question", "set",
     )
     operators_words = ("and", "or", "not", "boolean")

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `mistake` is highlighted as a keyword, and there is a snippet for
+  declaring one.
+
 ## 0.1.2 (2026-11-16)
 
 - `true` and `false` are highlighted as constants, and `let` inside a

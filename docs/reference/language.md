@@ -42,8 +42,9 @@ backslash). Any other backslash is kept, so LaTeX is written directly:
 
 ```text
 answer  as  attribute  boolean  context  copy  import  include  left
-let  nonassoc  on  precedence  prompt  question  random  require  right
-set  split  start  synth  weight  when  width  and  or  not  true  false
+let  mistake  nonassoc  on  precedence  prompt  question  random  require
+right  set  split  start  synth  weight  when  width  and  or  not  true
+false
 ```
 
 A reserved word cannot be used as a name, also not for a local name in a
@@ -164,6 +165,11 @@ commas:
     of the same production is refused. Guards, updates and generator
     arguments are evaluated before the children exist and cannot use it.
 
+`mistake NAME ATTRIBUTE = EXPR`
+:   A *mistake line*: what a student who makes the [mistake](#mistakes)
+    `NAME` computes for `ATTRIBUTE` here. It is skipped when the question is
+    generated.
+
 Updates are applied in the order written; equations, local names and
 requirements are evaluated in the order written.
 
@@ -222,6 +228,68 @@ same value wherever it is used. Its arguments must be integer literals.
 A `let` is computed once per question, after the randoms, from randoms and
 earlier lets. It may call any builtin function but may not refer to the
 tree.
+
+## Mistakes
+
+```rhema
+mistake NAME STRING
+```
+
+declares a mistake students make. `STRING` says what the student does and
+must not be empty. Mistake names are a namespace of their own: a mistake
+may have the name of an attribute.
+
+A production says where the mistake is made, with a mistake line in its
+body:
+
+```rhema
+F -> "sin" F when cost >= 3 {
+  cost = -2
+  f = formula_sin($2.f)
+  d = formula_multiply(formula_cos($2.f), $2.d)
+  mistake no_chain d = formula_cos($2.f)
+  latex = formula_latex(f)
+}
+```
+
+The name after the mistake's must be a synthesized attribute or a local
+name that the production has computed above the line. The expression may
+use everything an equation at that place may use, the right value of its
+own name included. A production has at most one line for the same mistake
+and name. Every declared mistake must have a line in some production.
+
+A mistake line takes no part in generation. After a question is built, each
+mistake that some production of its tree has a line for is tried:
+
+1. The tree is evaluated again from the leaves up. Each node keeps its
+   production and its children; its equations and local names are computed
+   in order, and a line for the mistake gives its name the new value, for
+   the lines below it and for the node. Requirements are not checked.
+   Subtrees of imported modules are left as they are.
+2. A value is *mistaken* when a line for the mistake gave it a value other
+   than the one it had, or when the expression that computed it read a
+   mistaken value. A line that gives the same value changes nothing.
+3. The answers are read again. If none was read from a mistaken value, the
+   mistake does not concern this question. If one was and some answer is
+   now different, the mistake is reported with the answers it leads to. If
+   one was and every answer is the same, wrong working would be marked
+   right: the question is discarded and generated afresh, as after a
+   failed requirement.
+
+Two answers are the same when a marker would take one for the other:
+formulas are compared as functions, at fixed points, and other values by
+their own equality. A mistake that ends in an arithmetic failure, such as
+a division by zero, is reported as leading to no answer, and the question
+is kept. A mistake line that cannot be evaluated for another reason, such
+as a value of the wrong type, stops generation with a message naming the
+mistake.
+
+`rhema run` lists, under each answer, `mistake NAME: ANSWERS` for every
+mistake reported. The PG and LaTeX output of a question does not depend on
+the file's mistakes.
+
+An `include`d file's mistakes and lines become the including file's. An
+`import`ed module's are its own: they apply to the module's questions.
 
 ## Precedence and rendering
 
@@ -410,6 +478,9 @@ part by total budget.
       times, before generation gives up and names the requirement that
       failed most often.
 4. The prompt, blanks and context are read from the finished tree.
+5. Each [mistake](#mistakes) with a line in the tree is tried. A question
+   in which one changes the working and leaves every answer right is
+   started afresh, within the same 200 attempts.
 
 When a failure could not have gone differently, because no random choice was
 involved, it is reported at once instead of retried.
@@ -432,11 +503,15 @@ involved, it is reported at once instead of retried.
   attribute, so no derivation can go round for ever without spending;
 - prompts, answers, questions and sets refer to things that exist, with the
   right kinds of blank;
+- every mistake is declared once, with a description, and is made in some
+  production; every mistake line names a declared mistake and a value its
+  production has already computed;
 - no file includes or imports itself.
 
 What the checker cannot know is left to generation, and reported clearly
 when it happens: a budget no production can spend, a requirement that
-cannot be met, a value of the wrong type for a function.
+cannot be met, a value of the wrong type for a function, a mistake that
+always changes the working and never an answer.
 
 ## Grammar
 
@@ -449,6 +524,7 @@ file          = { declaration } ;
 declaration   = "attribute" IDENT "=" sint [ "copy" | "split" ]
               | "random" IDENT "=" ( "boolean" | IDENT "(" [ exprs ] ")" )
               | "let" IDENT "=" expr
+              | "mistake" IDENT STRING
               | "synth" IDENT [ "on" IDENT ]
               | "start" IDENT
               | "context" STRING
@@ -467,7 +543,8 @@ production    = IDENT "->" symbol { symbol } [ "when" expr ] [ "weight" INT ]
 symbol        = IDENT | IDENT "(" [ exprs ] ")"
               | IDENT "." IDENT [ "(" [ IDENT "=" expr { "," IDENT "=" expr } ] ")" ]
               | STRING | "+" | "-" | "*" | "/" | "%" | "^" ;
-equation      = IDENT "=" expr | "require" expr | "let" IDENT "=" expr ;
+equation      = IDENT "=" expr | "require" expr | "let" IDENT "=" expr
+              | "mistake" IDENT IDENT "=" expr ;
 
 qitem         = "start" IDENT | "context" STRING | "prompt" STRING
               | "answer" expr | "width" INT | IDENT "=" sint ;

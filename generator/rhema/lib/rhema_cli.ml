@@ -44,9 +44,13 @@ let questions spec ~variant ~count =
 let questions_listing questions =
   questions
   |> List.mapi (fun index (question : Rhema_engine.question) ->
-         Printf.sprintf "%2d. %s\n    %s: %s\n" (index + 1) question.Rhema_engine.prompt
+         Printf.sprintf "%2d. %s\n    %s: %s\n%s" (index + 1) question.Rhema_engine.prompt
            (if List.length question.Rhema_engine.answers > 1 then "answers" else "answer")
-           question.Rhema_engine.answer_text)
+           question.Rhema_engine.answer_text
+           (* what each mistake that can be made here leads to *)
+           (Rhema_engine.describe_mistakes question
+           |> List.map (fun line -> "    " ^ line ^ "\n")
+           |> String.concat ""))
   |> String.concat ""
 
 let questions_document (spec : Rhema_check.spec) questions =

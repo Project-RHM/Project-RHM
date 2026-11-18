@@ -33,6 +33,13 @@ synth latex on L
 synth mask on L
 synth value on L               # generator leaves carry `value`; declared once
 
+# The expansion is worked out production by production, so a power taken
+# wrongly is carried through the products above it. A factor has at most
+# three terms, and each is raised on its own: (x + 3)^2 becomes x^2 + 9.
+# Only a question that asks for the expansion reads `poly`; one that asks
+# for the factored form is not concerned.
+mistake power_term_by_term "raises each term of a bracket to the power on its own"
+
 # ---- Products and powers -------------------------------------------------
 #
 # Each rule's guard is the least it can spend.
@@ -51,6 +58,8 @@ E -> E "\cdot" E when cost >= 2 weight 3 {
 E -> L "square" when cost >= 1 and cost <= 3 weight 2 {
   cost = -1
   poly = polynomial_power($1.poly, 2)
+  mistake power_term_by_term poly =
+    polynomial_add(polynomial_add(polynomial_monomial(polynomial_coefficient($1.poly, 2) ^ 2, 4, "x"), polynomial_monomial(polynomial_coefficient($1.poly, 1) ^ 2, 2, "x")), polynomial_monomial(polynomial_coefficient($1.poly, 0) ^ 2, 0, "x"))
   factored = formula_power($1.factored, 2)
   latex = "(" ++ $1.latex ++ ")^{2}"
   factors = 2
@@ -60,6 +69,8 @@ E -> L "square" when cost >= 1 and cost <= 3 weight 2 {
 E -> L "cube" when cost >= 2 and cost <= 4 weight 1 {
   cost = -2
   poly = polynomial_power($1.poly, 3)
+  mistake power_term_by_term poly =
+    polynomial_add(polynomial_add(polynomial_monomial(polynomial_coefficient($1.poly, 2) ^ 3, 6, "x"), polynomial_monomial(polynomial_coefficient($1.poly, 1) ^ 3, 3, "x")), polynomial_monomial(polynomial_coefficient($1.poly, 0) ^ 3, 0, "x"))
   factored = formula_power($1.factored, 3)
   latex = "(" ++ $1.latex ++ ")^{3}"
   factors = 3

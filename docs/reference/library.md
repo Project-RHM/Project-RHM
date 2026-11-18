@@ -18,6 +18,30 @@ make `x + 2x \cdot \sin x` cost at least 4.
 
 --8<-- "QUESTION_TYPES.md:tables"
 
+## Mistakes
+
+Four grammars say what common mistakes lead to (chapter 9 of the tutorial).
+`rhema run` lists them under each answer, and none of these grammars asks a
+question in which a mistake changes the working and still gives the right
+answer.
+
+| Grammar | Mistake | What the student does |
+|---|---|---|
+| `calculus.rhm` | `factor_by_factor` | differentiates a product factor by factor |
+| | `no_chain` | leaves out the derivative of the inside |
+| | `top_and_bottom` | differentiates the top and the bottom of a quotient separately |
+| `complex.rhm` | `i_squared_one` | takes `i` squared to be 1 |
+| | `minus_real_only` | subtracts the real parts but adds the imaginary parts |
+| `boolean.rhm` | `false_antecedent` | takes a conditional with a false antecedent to be false |
+| | `exclusive_or` | reads "or" as one or the other but not both |
+| `polynomial_expand.rhm`, `polynomial_forms.rhm` | `power_term_by_term` | raises each term of a bracket to the power on its own |
+
+The mistakes of `calculus.rhm` concern its derivative questions; an
+integral question lists none. `power_term_by_term` is declared in
+`polynomial_core.rhm` and concerns a question that asks for the expansion;
+`factoring.rhm` is built on the same productions and lists none. A modulus
+question of `complex.rhm` lists none.
+
 ## Libraries and examples
 
 `polynomial_core.rhm`

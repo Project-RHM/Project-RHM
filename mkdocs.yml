@@ -57,6 +57,7 @@ nav:
       - 6. Building on the library: tutorial/import.md
       - 7. A whole assignment: tutorial/sets.md
       - 8. Into WeBWorK: tutorial/webwork.md
+      - 9. Mistakes students make: tutorial/mistakes.md
   - Reference:
       - The language: reference/language.md
       - The rhema command: reference/command.md

@@ -1,8 +1,9 @@
 # Language Extensions: include, import, named questions, sets, a context per question, several blanks
 
 *Six additions to the Rhema language that let one file hold whatever
-question types its author wants, four smaller ones (section 7), and blanks
-in text with formulas beyond x (section 8). A Chinese version is in
+question types its author wants, four smaller ones (section 7), blanks
+in text with formulas beyond x (section 8), and mistakes (section 9). A
+Chinese version is in
 `RHEMA_LANGUAGE_EXTENSIONS.zh.md`; the language itself is described in
 `RHEMA_LANGUAGE_GUIDE.md`.*
 
@@ -470,6 +471,145 @@ neighbours. `exactly(N)` asks for the same comparison whatever the size;
 **A correction.** A fraction in a formula is written as a quotient, `2/3`,
 and is now bracketed where a quotient must be: `x/(2/3)` and `(2/3)^2`
 were written `x/2/3` and `2/3^2`. No library grammar produced either.
+
+## 9. Mistakes: wrong working never earns a right answer
+
+A right answer does not always come from right working: a student who
+subtracts the smaller number from the larger gets `7 - 3` right. A grammar
+can now say what a mistake is. The engine shows what each mistake leads to
+and never generates a question in which a mistake changes the working and
+the answer still comes out right.
+
+**Declaring a mistake.** At file level, a name and what the student does:
+
+```
+mistake factor_by_factor "differentiates a product factor by factor"
+mistake no_chain "leaves out the derivative of the inside"
+```
+
+**Saying where it is made.** A mistake is made at a step of the working,
+and a step is a production. Inside the braces, after the production has
+computed a value, a *mistake line* says what the mistaken student computes
+in its place:
+
+```
+F -> "sin" F when cost >= 2 {
+  cost = -2
+  f = formula_sin($2.f)
+  d = formula_multiply(formula_cos($2.f), $2.d)
+  mistake no_chain d = formula_cos($2.f)
+  latex = formula_latex(f)
+}
+```
+
+The line is skipped when the question is generated. It may give another
+value to a synthesized attribute or a local name computed above it, and may
+use everything above it, the right value of its own name included
+(`mistake smaller_from_larger value = cond(value < 0, -value, value)`).
+
+**What the engine does.** After a question is built, every mistake that
+some production of its tree has a line for is tried. The tree is evaluated
+again from the leaves up with that mistake's lines read; everything else is
+computed by the right equations, so a mistake made low in the tree travels
+up through correct working, as it does on paper. Requirements are not
+checked again. A value is *mistaken* when a line gave it a value other than
+the right one, or when it was computed from a mistaken value; the engine
+records which values each equation actually read to know this. Then:
+
+| What happened | Result |
+|---|---|
+| no line changed a value (`sin(x)` under `no_chain`) | the mistake is not made in this question |
+| no answer was read from a mistaken value | the mistake does not concern this question |
+| an answer was, and some answer changed | the mistake is reported, with the answers it leads to |
+| an answer was, and every answer is the same | the question is discarded and built afresh |
+
+So in a generated question a mistake that changes the working changes an
+answer. `rhema run` shows the result:
+
+```
+ 3. Differentiate [`4 \cdot x \cdot \sin\left(x\right)`] with respect to [`x`].
+    answer: Formula(4*sin(x)+4*x*cos(x))
+    mistake factor_by_factor: Formula(4*cos(x))
+```
+
+**Answers are compared as a marker compares them.** Two formulas are the
+same answer when they are the same function: they are evaluated at seven
+fixed points and compared, as WeBWorK does with random ones. The points are
+fixed so that the comparison draws nothing from the random stream that
+shapes the paper. Other values use their own equality (logical equivalence
+for propositions, equal entries for matrices, and so on).
+
+**Decisions.**
+
+- *The answer must be worked out by the grammar.* A mistake can only travel
+  through working the grammar spells out. A grammar that calls
+  `differentiate` once at the root gives a mistake nowhere to be made;
+  `calculus.rhm` now computes the derivative as an attribute, production by
+  production.
+- *A mistake counts where it changes a value.* The first version counted
+  every line, and so threw away any question holding a `sin(x)` that no
+  other sine made up for; the library could not have asked its plainest
+  questions. Counting a line only where it changes a value keeps them, and
+  no grammar needs a second production for the case where a mistake cannot
+  be made.
+- *The filter is about marking, not coverage.* It guarantees that wrong
+  working is never marked right. It does not make every question test every
+  mistake: a paper of questions like `sin(x)` is accepted and tests no
+  `no_chain`. What a paper covers is read from the listing; asking a set
+  for coverage is a later step.
+- *A mistake that leads to no value*, such as a division by zero, is
+  reported as `no answer` and the question is kept: the student does not
+  reach the right answer. A line that fails for any other reason is the
+  grammar's fault and stops generation with a message naming the mistake.
+- *A module's mistakes are its own.* A subtree built from an imported
+  module's symbol is not evaluated again under the importer's mistakes, and
+  the module's mistakes apply to the module's questions. `include` merges
+  them like every other declaration.
+- *`mistake` is a reserved word*, like `require` and `let`.
+
+**In the library.** Four grammars declare mistakes.
+
+| Grammar | Mistakes | What changed in the grammar |
+|---|---|---|
+| `calculus.rhm` | `factor_by_factor`, `no_chain`, `top_and_bottom` | a derivative `d` on every production; a derivative question answers with it |
+| `complex.rhm` | `i_squared_one`, `minus_real_only` | two lines; the parts were already computed production by production |
+| `boolean.rhm` | `false_antecedent`, `exclusive_or` | a truth value `v` on every production; the question answers with it |
+| `polynomial_core.rhm` | `power_term_by_term` | two lines, on the square and the cube |
+
+Measured against the same grammars without mistakes, on the same 500-question
+papers:
+
+| Question | Same questions | Why the rest differ |
+|---|---|---|
+| `calculus.rhm` derivative | the first 244 | one question hid a mistake and was rebuilt, which moves every later draw |
+| `calculus.rhm` integral | all 500 | no mistake concerns an integral |
+| `boolean.rhm` | the first 24 | hiding is common where the answer is one of two values |
+| `complex.rhm` | the first 66 | |
+| `polynomial_expand.rhm`, `factoring.rhm`, `polynomial_forms.rhm` | all 500 | a power taken term by term always shows |
+
+The shape of the papers is unchanged: for `boolean.rhm` at budgets 4 to 14
+the share of distinct questions is the same to the percent and the share of
+true answers stays between 49% and 54%; generating 2000 questions takes
+4.9 s where it took 4.6 s. A derivative answer of `calculus.rhm` is the
+same function as before and is, in about one question in a hundred,
+written differently.
+
+**What it does not do yet.** The WeBWorK and LaTeX output is unchanged: the
+mistaken answers are not yet used for hints or as distractors. A set cannot
+yet ask that a mistake be covered. `linear_equation.rhm` has no mistakes:
+its answer is the root the equation was built from, and a slip in the
+expansion needs the left side worked out a second time, as the student
+sees it.
+
+Tests: `rhema_mistakes_test.ml` (the checker's refusals; reported answers
+against an independent reader; a mistake is reported exactly where it
+changes a value; no question hides one, while the same grammar without the
+mistake does generate such questions; answers the mistake does not reach;
+modules and includes; local names and blanks; formulas compared as
+functions; and for each library grammar, that the value worked out
+production by production is the right one and that every reported mistake
+leads to a different answer). Tutorial chapter 9 and "Mistakes" in the
+language reference describe it for authors.
 
 ## What this allows
 
