@@ -92,6 +92,28 @@ let rec describe_value = function
   | Plain value -> describe_value value
   | Exactly number -> Rhema_number.to_string number
 
+(* The type of a value, as the checker names it. The tests use it to hold
+   what the checker infers against what generation really produces. *)
+let value_type : value -> Rhema_types.ty = function
+  | Num _ -> Rhema_types.Number
+  | Text _ -> Rhema_types.Text
+  | Truth _ -> Rhema_types.Truth
+  | Complex _ -> Rhema_types.Complex
+  | Formula _ -> Rhema_types.Formula
+  | Polynomial _ -> Rhema_types.Polynomial
+  | Equation _ -> Rhema_types.Equation
+  | Boolean _ -> Rhema_types.Proposition
+  | Matrix _ -> Rhema_types.Matrix
+  | Set _ -> Rhema_types.Set
+  | Vector _ -> Rhema_types.Vector
+  | Point _ -> Rhema_types.Point
+  | VectorNormAnswer _ -> Rhema_types.Norm_answer
+  | VectorUnitAnswer _ -> Rhema_types.Unit_answer
+  | VectorDirectionAnswer _ -> Rhema_types.Direction_answer
+  | Rich _ -> Rhema_types.Blanked
+  | Exactly _ -> Rhema_types.Exactly
+  | Plain _ -> Rhema_types.Plain
+
 let as_number context = function
   | Num number -> number
   | other ->

@@ -92,17 +92,21 @@ let () =
         (questions spec 30));
   (* They are reserved: neither can be used as a name. *)
   expect_error "reserved_test.rhm" ("random true = boolean\n" ^ header ^ footer) ~mentions:"true";
-  (* A literal is a truth value, not a number. *)
+  (* A literal is a truth value, not a number: the checker says so, and
+     where it cannot tell, because `cond` may give either, the engine does. *)
+  expect_error "literal_static_test.rhm"
+    (header ^ "Q -> integer_between(1, 9) {\n  cost = -1\n  text = \"x\"\n  answer_value = true + 1\n}\n" ^ footer)
+    ~mentions:"true is a truth value";
   match
     expect_ok "literal_type_test.rhm"
-      (header ^ "Q -> integer_between(1, 9) {\n  cost = -1\n  text = \"x\"\n  answer_value = true + 1\n}\n" ^ footer)
+      (header ^ "Q -> integer_between(1, 9) {\n  cost = -1\n  text = \"x\"\n  answer_value = cond(true, true, 1) + 1\n}\n" ^ footer)
   with
   | None -> ()
   | Some spec -> (
       Random.init 1;
       match Rhema_engine.generate spec with
       | exception Rhema_engine.Generation_error _ -> ()
-      | q -> fail ("true + 1 gave " ^ Rhema_engine.describe_value q.Rhema_engine.answer))
+      | q -> fail ("cond(true, true, 1) + 1 gave " ^ Rhema_engine.describe_value q.Rhema_engine.answer))
 
 (* ------------------------------------------------------------------ *)
 (* 2. let inside a rule                                                 *)
@@ -450,13 +454,23 @@ let () =
     (blanks_header
    ^ "Q -> integer_between(1, 9) {\n  cost = -2\n  kind = \"k\"\n  text = \"[`x = \" ++ blank(1) ++ \"`]\"\n}\nprompt \"{Q.text}\"\n")
     ~mentions:"inside mathematics";
-  expect_generation_error "blank_as_text_test.rhm"
+  (* The checker refuses both of these; written through `cond`, which may
+     give text as well, they are left to the engine, and it refuses them. *)
+  expect_error "blank_as_text_static_test.rhm"
     (blanks_header
    ^ "Q -> integer_between(1, 9) {\n  cost = -2\n  kind = str(blank(1))\n  text = \"x\"\n}\nprompt \"{Q.text}\"\nanswer 1\n")
+    ~mentions:"blank(...) is text with answer blanks";
+  expect_error "blank_of_blank_static_test.rhm"
+    (blanks_header
+   ^ "Q -> integer_between(1, 9) {\n  cost = -2\n  kind = \"k\"\n  text = blank(blank(1))\n}\nprompt \"{Q.text}\"\n")
+    ~mentions:"blank(...) is text with answer blanks";
+  expect_generation_error "blank_as_text_test.rhm"
+    (blanks_header
+   ^ "Q -> integer_between(1, 9) {\n  cost = -2\n  kind = str(cond(true, blank(1), \"x\"))\n  text = \"x\"\n}\nprompt \"{Q.text}\"\nanswer 1\n")
     ~mentions:"holds an answer blank";
   expect_generation_error "blank_of_blank_test.rhm"
     (blanks_header
-   ^ "Q -> integer_between(1, 9) {\n  cost = -2\n  kind = \"k\"\n  text = blank(blank(1))\n}\nprompt \"{Q.text}\"\n")
+   ^ "Q -> integer_between(1, 9) {\n  cost = -2\n  kind = \"k\"\n  text = blank(cond(true, blank(1), 2))\n}\nprompt \"{Q.text}\"\n")
     ~mentions:"cannot be graded against text";
   expect_generation_error "blank_width_test.rhm"
     (blanks_header
@@ -726,8 +740,11 @@ let () =
   expect_generation_error "exactly_fraction_test.rhm"
     ("attribute cost = 1 split\nsynth text on Q\nstart Q\nQ -> integer_between(2, 5) {\n  cost = -1\n  text = \"x \" ++ blank(exactly(1 / $1.value))\n}\nprompt \"{Q.text}\"\n")
     ~mentions:"exactly expected a whole number";
-  expect_generation_error "plain_text_test.rhm"
+  expect_error "plain_text_static_test.rhm"
     ("attribute cost = 1 split\nsynth text on Q\nstart Q\nQ -> integer_between(2, 5) {\n  cost = -1\n  text = \"x \" ++ blank(plain(\"text\"))\n}\nprompt \"{Q.text}\"\n")
+    ~mentions:"plain takes a number, a formula or a polynomial";
+  expect_generation_error "plain_text_test.rhm"
+    ("attribute cost = 1 split\nsynth text on Q\nstart Q\nQ -> integer_between(2, 5) {\n  cost = -1\n  text = \"x \" ++ blank(plain(cond(true, \"text\", 1)))\n}\nprompt \"{Q.text}\"\n")
     ~mentions:"plain expected a number or a formula";
   expect_generation_error "exact_angle_test.rhm"
     ("attribute cost = 1 split\nsynth text on Q\nstart Q\nQ -> integer_between(2, 5) {\n  cost = -1\n  text = \"x \" ++ blank(exact_sin(1, 5))\n}\nprompt \"{Q.text}\"\n")

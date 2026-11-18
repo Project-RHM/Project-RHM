@@ -29,6 +29,30 @@ is announced one version before the removal.
   expansions are the same questions as in 0.2.0. A derivative answer of
   `calculus.rhm` is the same function as before and is sometimes written
   differently in PG.
+- **Static types.** `rhema check`, and every command that reads a file, now
+  infers the types every expression can have and reports a use that none of
+  them allows: text in arithmetic, a number where a formula is wanted, a
+  guard or requirement that is not a truth value, a budget update that is
+  not a number, an equation as an answer, a child written `$n` where a
+  value is wanted, a mistake line whose value the lines after it cannot
+  take. Such
+  a file used to pass the check and stop while generating. Nothing is
+  declared: an attribute has the types its productions give it, by
+  nonterminal, and a module's types cross an import. A use that only some
+  types allow is still left to the engine, and so is everything that
+  depends on the value (a whole number, a zero divisor, the shape of a
+  matrix). See "Types" in the language reference.
+  For a file without such a use nothing changes: every question type of
+  the library, its set, and PG and LaTeX output are byte-identical.
+  A file that generated before is refused now in two cases: a wrong type
+  where nothing was ever evaluated (the unchosen branch of `cond`, the
+  right side of `and` or `or`, a production no question reaches, the lines
+  below a requirement that never holds, or a budget update, whose
+  production the engine silently never chose); an answer that is an
+  equation or text holding a blank, which `rhema run` listed and the PG
+  writer could not write.
+- `rhema doc` prints what each function takes and gives, and the builtins
+  page of the site, generated from it, shows the same.
 - `mistake` is now a reserved word. A grammar that used it as a name must
   rename it.
 

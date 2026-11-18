@@ -573,7 +573,8 @@ answer Q.result
 |}
     ~mentions:"the mistake 'one_more' gives the right answer"
 
-(* A line that cannot be evaluated is the grammar's fault, and says where. *)
+(* A line that cannot be evaluated is the grammar's fault, and says where.
+   Written through `cond`, the wrong type is the engine's to find. *)
 let () =
   expect_generation_error "mistake_wrong_type.rhm"
     {|mistake muddled "adds text to a number"
@@ -583,7 +584,7 @@ start Q
 
 Q -> integer_between(2, 9) {
   value = $1.value
-  mistake muddled value = $1.value + "one"
+  mistake muddled value = $1.value + cond(true, "one", 1)
 }
 
 prompt "Copy the number."

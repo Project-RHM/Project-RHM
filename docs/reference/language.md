@@ -200,19 +200,17 @@ B -> integer_between(-3, 2) integer_between(1, 4) {
 | `e = e`, `!=`, `<`, `<=`, `>`, `>=` | comparison |
 | `e and e`, `e or e` | logic |
 
-Numbers are exact rationals: `1 / 3` is one third, not 0.333. Comparisons
-of text compare the strings; `=` and `!=` on truth values are the
-biconditional and exclusive or.
+Numbers are exact rationals: `1 / 3` is one third, not 0.333. `=` and `!=`
+on text compare the strings, and on truth values they are the
+biconditional and exclusive or; `<`, `<=`, `>` and `>=` order numbers
+only.
 
 Operators bind, from loosest to tightest: `or`; `and`; `not`; the
 comparisons (which do not chain); `++` (right-associative); `+ -`;
 `* / %`; `^` (right-associative); unary `-`. Brackets group.
 
-Every value has a type: number, text, truth, formula, polynomial,
-equation, Boolean formula, matrix, set, vector, point, complex number, or
-text with answer blanks. Types are
-checked when a value is used; a function given the wrong type stops
-generation with a message naming both.
+Every value has a type, and `rhema check` finds the uses no type allows
+before anything is generated; see [Types](#types).
 
 ## Question-level values
 
@@ -228,6 +226,144 @@ same value wherever it is used. Its arguments must be integer literals.
 A `let` is computed once per question, after the randoms, from randoms and
 earlier lets. It may call any builtin function but may not refer to the
 tree.
+
+## Types
+
+Every value has one of these types. Nothing in a file declares a type: the
+checker works them out.
+
+| Type | Made by |
+|---|---|
+| number | a literal, a generator, a budget, arithmetic; exact rationals |
+| text | a string, a quoted word in a production, `str`, the `_latex` functions |
+| truth value | `true`, `false`, `random NAME = boolean`, comparisons, `and` `or` `not` |
+| formula, polynomial, equation | the `formula_`, `polynomial_` and `equation` functions |
+| proposition | the `bool_` functions |
+| matrix, set, vector, point, complex number | their functions |
+| text with answer blanks | `blank`, `blank_wide`, and `++` with one |
+| answer wrappers | `exactly`, `plain`, `vector_norm_answer` and its like |
+
+A truth value and a proposition are different things: `p and q` is true or
+false now, and `bool_and(bool_var("p"), bool_var("q"))` is a formula that
+can be shown, compared and evaluated.
+
+### What the checker infers
+
+For every expression the checker finds the *set* of types it can have:
+
+- A literal, a random, a budget and a generator leaf have one type. A
+  quoted word read as `$n.value` is text; a generator read as `$n.value` is
+  a number.
+- A function gives the type its entry in [the builtins](builtins.md) says.
+  `cond(T, A, B)` gives whatever `A` or `B` can be.
+- An operator or a function has a type only when each operand can have a
+  type it takes. An expression that can never be evaluated has no type, and
+  nothing built on it is an error: the mistake is reported where it is, and
+  not again where its result is used.
+- A synthesized attribute has every type that some production of its
+  nonterminal can give it. It is kept by nonterminal: `value` on `E` and
+  `value` on `Q` are two attributes and may have two types.
+- A module's attributes and values keep the types found when the module was
+  checked; `$n.NAME` on `alias.F` and `alias.NAME` read them.
+
+The sets are found by reading the productions until none grows, so a
+recursive production and the order of the declarations make no difference.
+
+### What is an error
+
+A use is an error when **no** type its operand can have is allowed:
+
+```rhema
+let label = "n = " ++ n
+let broken = label + 1
+```
+
+```text
+quiz.rhm:5:14: error: '+' takes a number on its left, but 'label' is text
+```
+
+The rules are the ones the engine applies when it evaluates. For an
+`answer` and an `{answer ...}` hole the engine left the rule to the WeBWorK
+writer, which stopped on an equation; the checker now applies it.
+
+| Use | Takes |
+|---|---|
+| `+ - * / % ^`, unary `-`, `< <= > >=` | numbers |
+| `and`, `or`, `not`, a `when` guard, a `require` | truth values |
+| `=`, `!=` | two values of one type: numbers, text, truth values, formulas, polynomials, equations, propositions, matrices, sets, vectors, points or complex numbers |
+| `++` | text, numbers and text with blanks |
+| a function argument | what its entry says; where text is wanted a number is written out, and nothing else is converted |
+| a budget update, a generator's argument, a module's starting value | a number |
+| `{S.NAME}` and `{NAME}` in a prompt | text, a number, or text with blanks |
+| `answer`, `{answer ...}`, `blank` | anything but an equation or text that holds a blank |
+| `$n` on its own | only `infix` and `prefix` take a child; everywhere else write `$n.NAME` |
+| a child given to `infix` or `prefix` | its own copy of the attribute being computed must be text or a number |
+| a use read under a mistake | what it takes, with the mistaken values in place: see below |
+| `pg_context`, `pg_variables`; `pg_width` | text, or a number, which is written out; a number |
+
+A use that *some* type allows is not an error. If `value` is a number in one
+production and a formula in another, `formula_negate($1.value)` is accepted,
+and the engine refuses it in the questions where it meets a number.
+
+An expression is checked wherever it is written, also where it would never
+be evaluated: the unchosen branch of `cond`, the right side of `and` and
+`or`, a production that no question reaches. A file with a wrong type in
+such a place could generate before types were checked, and is refused.
+
+A mistake line may give a value of any kind: one root where the set of
+roots is the answer, the words "no solution" where a number is. The checker
+reads the file once more for each [mistake](#mistakes), as the engine
+evaluates a finished tree under it: the lines for that mistake give their
+names new values, requirements are not read, and an attribute has, under
+the mistake, every type some production then gives it. A use that can take
+none of those types is an error, because generation would stop there every
+time the mistake was tried:
+
+```rhema
+value = $1.value
+mistake as_text value = "two"
+twice = value * 2
+```
+
+```text
+quiz.rhm:9:11: error: under the mistake 'as_text', '*' takes a number on its left, but 'value' is text
+```
+
+This reading teaches the checker nothing about the right working: an
+attribute's own type comes from its equations alone.
+
+Types are checked last, on a file that has passed every other check, so
+that a name that does not exist is reported once and not again for the type
+it does not have; type errors therefore appear only when the others are
+gone. `rhema check` does it, and so does every command that reads a file.
+
+There is one message for each wrong use: an operator with two wrong sides
+gives two. A message points at the operand when the operand is a name, a
+child or a function call. A literal or an expression in brackets has no
+position of its own, and the message then points at the function call
+around it, or at the start of its equation.
+
+### What is left to the engine
+
+Whatever depends on the value and not on its type. A file that passes
+`rhema check` can still stop while generating on:
+
+- a number that must be whole and is not (`factorial(1 / 2)`, a budget
+  update, an index);
+- a division by zero, in numbers or in formulas;
+- matrices and vectors of sizes that do not fit, a singular matrix to
+  invert;
+- a function outside its domain: `exact_sin(1, 5)`, a base above 16, a
+  variable named `2`;
+- an equation with no exact solutions where one is asked for;
+- a use that only some of an expression's types allow, as above;
+- a requirement that cannot be met, or a budget no production can spend.
+
+Each of these stops generation with a message. A few still end the command
+with a bare `Fatal error` line instead: a name that is not a variable name
+given to a polynomial constructor or to an equation's solving functions, a
+zero divisor met inside `differentiate` or `formula_substitute`, a negative
+size for `matrix_identity`.
 
 ## Mistakes
 
@@ -498,6 +634,9 @@ involved, it is reported at once instead of retried.
   attributes those children carry;
 - every builtin and generator is called with the right number of arguments,
   and random draws have literal arguments;
+- no operator, function, guard, requirement, budget update, prompt, answer
+  or mistake line is given a value that cannot have a type it takes
+  ([Types](#types));
 - every nonterminal can finish (some production for it uses only symbols
   that can finish), and every cycle of productions spends an inherited
   attribute, so no derivation can go round for ever without spending;
@@ -510,7 +649,8 @@ involved, it is reported at once instead of retried.
 
 What the checker cannot know is left to generation, and reported clearly
 when it happens: a budget no production can spend, a requirement that
-cannot be met, a value of the wrong type for a function, a mistake that
+cannot be met, a value whose type suits in some questions and not in
+others, a number that must be whole, a division by zero, a mistake that
 always changes the working and never an answer.
 
 ## Grammar
