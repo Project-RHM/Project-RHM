@@ -227,7 +227,8 @@ let plan (spec : Rhema_check.spec) (set : Rhema_ast.set_decl) =
   if has_parts then parts
   else List.concat_map (fun (_, members) -> List.map (fun slot -> (None, [ slot ])) members) parts
 
-let run ?paper (spec : Rhema_check.spec) (set : Rhema_ast.set_decl) ~variant =
+let run ?paper ?(on_question = fun _ _ -> ()) (spec : Rhema_check.spec)
+    (set : Rhema_ast.set_decl) ~variant =
   let paper = Option.value ~default:set.Rhema_ast.set_name paper in
   let seed = variant in
   let items = set.Rhema_ast.set_items in
@@ -251,6 +252,7 @@ let run ?paper (spec : Rhema_check.spec) (set : Rhema_ast.set_decl) ~variant =
   in
   let seen_shapes = Hashtbl.create 32 in
   let recent_answers = ref [] in
+  let count = List.fold_left (fun n (_, slots) -> n + List.length slots) 0 parts in
   let index = ref 0 in
   let generate (kind, grammar, budgets) =
     let position = !index in
@@ -292,7 +294,9 @@ let run ?paper (spec : Rhema_check.spec) (set : Rhema_ast.set_decl) ~variant =
         end
       end
     in
-    attempt retries_per_question
+    let accepted = attempt retries_per_question in
+    on_question (position + 1) count;
+    accepted
   in
   let generated = List.map (fun (heading, slots) -> (heading, List.map generate slots)) parts in
   let letter index = String.make 1 (Char.chr (Char.code 'a' + index)) in

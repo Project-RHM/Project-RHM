@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return input;
     }
     function inputField(field) {
-        const labelText=(field.module==='root'?'':field.module.slice(5)+' / ')+nameOf(field.name);
+        const labelText=(field.module==='root'?'':field.module.slice(5)+' / ')+(field.label||nameOf(field.name));
         const label=element('label',labelText,'teacher-field');
         const value=config.values[field.id];
         if(field.kind==='range') {

@@ -23,6 +23,7 @@ from teacher_builder import TITLES, register_teacher_routes, is_form_preset, ref
 from api_keys import ApiKeyError, DeepSeekKeyValidator, key_status, read_keys, save_verified, remove_key, parse_key_config, DEFAULT_MODEL, MODELS
 from rhema_ai import register_ai_routes, same_origin
 from generation_history import output_stem, write_record, list_records, record_for
+from visual_builder import visual_record
 
 app = Flask(__name__)
 WEBWORK_CLIENT = WebworkClient()
@@ -998,6 +999,7 @@ def rhema_grammars():
             'title': TITLES.get(name[:-4], name[:-4].replace('_', ' ').title()),
             'custom': os.path.isfile(os.path.join(RHEMA_GRAMMAR_DIR, name)),
             'preset': is_form_preset(RHEMA_GRAMMAR_DIR, name),
+            'visual': visual_record(RHEMA_GRAMMAR_DIR, name) is not None,
         } for name in grammars],
         # file -> its named questions, for the files that have more than main
         'questions': {name: questions for name in grammars

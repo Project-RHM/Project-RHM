@@ -15,6 +15,7 @@ import zipfile
 
 from flask import Blueprint, jsonify, request, send_file
 from generation_history import output_stem, write_record
+from visual_builder import register_visual_routes, visual_record
 
 
 TITLES = {
@@ -122,6 +123,12 @@ def register_teacher_routes(app, project_directory):
         path = path_for(name)
         schema = json.loads(run([str(bridge), "describe", str(path), str(stdlib)]))
         schema.update(grammar=name, title=TITLES.get(path.stem, path.stem.replace("_", " ").title()))
+        visual = visual_record(grammars, name)
+        if visual:
+            labels = {"vb_" + p["name"]: p["name"] for p in visual.get("specification", {}).get("parameters", [])}
+            for field in schema["fields"]:
+                if field["name"] in labels:
+                    field["label"] = labels[field["name"]]
         return schema
 
     def preset(name):
@@ -253,9 +260,10 @@ def register_teacher_routes(app, project_directory):
                 if 0 < line <= len(lines):
                     detail += "\nConstraint: " + lines[line - 1].strip()
             raise BuilderError("The chosen settings are not compatible. Enable more rules, lower the budget, or relax the quality and length limits.\n" + detail) from error
-        if trial:
-            for path in relative.values():
-                (generator / path).unlink(missing_ok=True)
+        finally:
+            if trial:
+                for path in relative.values():
+                    (generator / path).unlink(missing_ok=True)
         preview = [] if trial else json.loads(run([str(bridge), "preview", str(specification), str(stdlib),
                                                   str(count), question, identity, student], timeout=25))
         if not trial:
@@ -351,4 +359,5 @@ def register_teacher_routes(app, project_directory):
         buffer.seek(0)
         return send_file(buffer, mimetype="application/zip", as_attachment=True, download_name="rhema-specification.zip")
 
+    register_visual_routes(blueprint, generator, stdlib, grammars, runtime, run, generate)
     app.register_blueprint(blueprint)

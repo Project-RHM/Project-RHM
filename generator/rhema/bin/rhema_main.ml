@@ -15,6 +15,8 @@
 
 let program = "rhema"
 
+module Ui = Rhema_terminal
+
 let usage =
   String.concat "\n"
     [
@@ -39,6 +41,12 @@ let usage =
       "  --pg-dir DIR        with --run: one .pg file per question, in DIR";
       "  --ast-out FILE, --visualization-out FILE   save the derivation trees too";
       "";
+      "terminal output:";
+      "  --plain             omit the banner, progress and styled diagnostics";
+      "  --no-color          disable colors (also respects NO_COLOR)";
+      "  --no-emoji          use ASCII status markers and progress bar";
+      "  -v, --verbose       show accepted rules and attribute values on stderr";
+      "";
       "Every imported or included file is looked for beside the importing one,";
       "then in the -I directories, RHEMA_PATH, and the installed library.";
     ]
@@ -62,6 +70,7 @@ type options = {
   mutable pg_dir : string option;
   mutable ast_output : string option;
   mutable visualization_output : string option;
+  mutable terminal : Ui.options;
 }
 
 let parse_override text =
@@ -78,7 +87,7 @@ let known_options =
   [ "-o"; "--out"; "--question"; "--run"; "--count"; "--assignment"; "--student"; "--seed";
     "--set"; "-I"; "--pg-dir"; "--ast-out"; "--visualization-out" ]
 
-let parse_options arguments =
+let parse_options terminal arguments =
   let options =
     {
       files = [];
@@ -94,6 +103,7 @@ let parse_options arguments =
       pg_dir = None;
       ast_output = None;
       visualization_output = None;
+      terminal;
     }
   in
   let number flag value =
@@ -141,8 +151,12 @@ let parse_options arguments =
         options.visualization_output <- Some value;
         walk rest
     | [ flag ] when List.mem flag known_options -> fail_usage (flag ^ " needs a value")
-    | flag :: _ when String.length flag > 1 && flag.[0] = '-' ->
-        fail_usage ("unknown option " ^ flag)
+    | flag :: rest when String.length flag > 1 && flag.[0] = '-' -> (
+        match Ui.option options.terminal flag with
+        | Some terminal ->
+            options.terminal <- terminal;
+            walk rest
+        | None -> fail_usage ("unknown option " ^ flag))
     | file :: rest ->
         options.files <- options.files @ [ file ];
         walk rest
@@ -153,9 +167,6 @@ let parse_options arguments =
 (* ------------------------------------------------------------------ *)
 (* Loading                                                             *)
 (* ------------------------------------------------------------------ *)
-
-let report_failures failures =
-  List.iter (fun failure -> prerr_endline (Rhema_cli.describe_failure failure)) failures
 
 let set_search_path options =
   Rhema_load.search_path :=
@@ -169,12 +180,16 @@ let the_file options =
   | [] -> fail_usage "no input file"
   | _ -> fail_usage "one input file at a time (check takes several)"
 
-let load file =
+let load ui ?note file =
   match Rhema_load.parse_file file with
   | Ok spec -> spec
   | Error failures ->
-      report_failures failures;
+      Ui.specification_errors ui ?note failures;
       exit 1
+
+let abort ui ?note ~heading file message =
+  Ui.errors ui ?note ~heading [ { Rhema_load.where = file; what = message; kind = Other } ];
+  exit 1
 
 let set_names (spec : Rhema_check.spec) =
   spec.Rhema_check.sets |> List.map (fun (set : Rhema_ast.set_decl) -> set.Rhema_ast.set_name)
@@ -200,72 +215,81 @@ let assignment_of options file =
       | Some set -> set
       | None -> Rhema_cli.default_assignment ~filename:file ~question:options.question)
 
-let produce options file =
-  set_search_path options;
-  let spec = load file in
+let produce ui ~compiling options file =
+  if options.run <> None && options.question <> None then
+    fail_usage "--question and --run cannot be combined: a set names its own questions";
+  if options.run = None && options.count < 0 then fail_usage "--count must be non-negative";
   let assignment = assignment_of options file in
   let variant = Rhema_cli.variant ~assignment ~student:options.student ~seed:options.seed in
   let paper = Rhema_cli.paper ~assignment ~student:options.student in
-  match options.run with
-  | Some name -> (
-      if options.question <> None then
-        fail_usage "--question and --run cannot be combined: a set names its own questions";
-      match
-        List.find_opt (fun (set : Rhema_ast.set_decl) -> set.Rhema_ast.set_name = name) spec.Rhema_check.sets
-      with
-      | None ->
-          prerr_endline
-            (Printf.sprintf "%s: error: '%s' is not a set of this file; it has %s" file name
-               (list_or_none (set_names spec)));
-          exit 1
-      | Some set -> (
-          try Set (Rhema_sets.run spec set ~variant ~paper)
-          with Rhema_engine.Generation_error message ->
-            prerr_endline (file ^ ": error: " ^ message);
-            exit 1))
-  | None ->
-      if spec.Rhema_check.library then begin
-        prerr_endline
-          (if spec.Rhema_check.sets <> [] then
-             Printf.sprintf
-               "%s: error: this file has no question of its own; it holds the set%s %s, \
-                run one with --run NAME"
-               file
-               (if List.length spec.Rhema_check.sets = 1 then "" else "s")
-               (String.concat ", " (set_names spec))
-           else
-             file
-             ^ ": error: this file has no start symbol; it is a library, to be included or \
-                imported by a grammar");
-        exit 1
-      end;
-      let spec =
-        match options.question with
-        | None -> spec
-        | Some name -> (
-            match Rhema_check.select_question spec name with
-            | Ok spec -> spec
-            | Error message ->
-                prerr_endline (file ^ ": error: " ^ message);
-                exit 1)
-      in
-      let spec =
-        List.fold_left
-          (fun spec (name, value) ->
-            match Rhema_check.with_initial spec name value with
-            | Ok spec -> spec
-            | Error message ->
-                prerr_endline (file ^ ": error: " ^ message);
-                exit 1)
-          spec options.overrides
-      in
-      let questions =
-        try Rhema_cli.questions spec ~variant ~count:options.count
-        with Rhema_engine.Generation_error message ->
-          prerr_endline (file ^ ": error: " ^ message);
-          exit 1
-      in
-      Questions (spec, questions)
+  let note = if compiling then Some "This run did not write a PG file." else None in
+  let generation_error message = abort ui ?note ~heading:"Question generation failed" file message in
+  let generate count work =
+    Ui.generating ui;
+    if count >= 100 then
+      Ui.quip ui (Printf.sprintf "Are you sure? That's %d questions. Continuing." count);
+    Ui.progress ui 0 count;
+    match work () with
+    | product ->
+        Ui.finish_progress ui;
+        product
+    | exception Rhema_engine.Generation_error message -> generation_error message
+  in
+  Ui.banner ui;
+  Ui.field ui "Specification" file;
+  Ui.field ui "Assignment" assignment;
+  Option.iter (Ui.field ui "Student ID") options.student;
+  Ui.field ui "Seed" (string_of_int variant);
+  Ui.stage ui 1 "Load specification";
+  set_search_path options;
+  let spec = load ui ?note file in
+  Ui.loaded ui;
+  let product =
+    match options.run with
+    | Some name -> (
+        match
+          List.find_opt (fun (set : Rhema_ast.set_decl) -> set.Rhema_ast.set_name = name) spec.Rhema_check.sets
+        with
+        | None ->
+            generation_error
+              (Printf.sprintf "'%s' is not a set of this file; it has %s" name (list_or_none (set_names spec)))
+        | Some set ->
+            let count =
+              List.fold_left
+                (fun total -> function Rhema_ast.Set_entry e -> total + e.se_count | _ -> total)
+                0 set.Rhema_ast.set_items
+            in
+            generate count (fun () -> Set (Rhema_sets.run spec set ~variant ~paper ~on_question:(Ui.progress ui))))
+    | None ->
+        if spec.Rhema_check.library then
+          generation_error
+            (if spec.Rhema_check.sets <> [] then
+               Printf.sprintf "this file has no question of its own; it holds the set%s %s, run one with --run NAME"
+                 (if List.length spec.Rhema_check.sets = 1 then "" else "s")
+                 (String.concat ", " (set_names spec))
+             else
+               "this file has no start symbol; it is a library, to be included or imported by a grammar");
+        let selected = function Ok spec -> spec | Error message -> generation_error message in
+        let spec =
+          match options.question with
+          | None -> spec
+          | Some name -> (
+              match Rhema_check.select_question spec name with
+              | Ok spec -> spec
+              | Error message ->
+                  Ui.quip ui "404: question not found.";
+                  generation_error message)
+        in
+        let spec =
+          List.fold_left
+            (fun spec (name, value) -> selected (Rhema_check.with_initial spec name value))
+            spec options.overrides
+        in
+        generate options.count (fun () ->
+            Questions (spec, Rhema_cli.questions spec ~variant ~count:options.count
+              ~on_question:(Ui.progress ui)))
+  in
+  (product, variant)
 
 let questions_of = function Questions (_, questions) -> questions | Set result -> Rhema_sets.questions result
 
@@ -273,9 +297,25 @@ let questions_of = function Questions (_, questions) -> questions | Set result -
 (* Commands                                                            *)
 (* ------------------------------------------------------------------ *)
 
+let export ui file write =
+  try write (); flush stdout with
+  | Sys_error message | Failure message -> abort ui ~heading:"Output failed" file message
+  | Unix.Unix_error (code, action, path) ->
+      let message = Printf.sprintf "%s: %s (%s)" action (Unix.error_message code) path in
+      abort ui ~heading:"Output failed" file message
+
+let write_trees options ~file questions =
+  Option.iter (fun path -> Rhema_visualization.write_ast path questions) options.ast_output;
+  Option.iter
+    (fun path -> Rhema_visualization.write_html path ~grammar:file questions)
+    options.visualization_output
+
+let tree_paths options =
+  List.filter_map (fun (label, path) -> Option.map (fun path -> (label, path)) path)
+    [ ("AST", options.ast_output); ("Tree", options.visualization_output) ]
+
 let compile options =
   let file = the_file options in
-  let product = produce options file in
   let output =
     match options.output with
     | Some path -> path
@@ -284,48 +324,63 @@ let compile options =
         | Some set -> set ^ ".pg"
         | None -> Filename.remove_extension file ^ ".pg")
   in
-  let document =
-    match product with
-    | Questions (spec, questions) -> Rhema_cli.questions_document spec questions
-    | Set result -> Rhema_sets.document result
-  in
-  (match (product, options.pg_dir) with
-  | Set result, Some directory ->
-      if not (Sys.file_exists directory) then Sys.mkdir directory 0o755;
-      List.iter
-        (fun (name, text) -> Rhema_cli.write_file (Filename.concat directory name) text)
-        (Rhema_sets.documents result)
-  | _, Some _ -> fail_usage "--pg-dir goes with --run"
-  | _, None -> ());
-  if output = "-" then print_string document else Rhema_cli.write_file output document;
+  if options.pg_dir <> None && options.run = None then fail_usage "--pg-dir goes with --run";
+  let pg_stdout = output = "-" in
+  let ui = Ui.create { options.terminal with plain = options.terminal.plain || pg_stdout } in
+  let product, variant = produce ui ~compiling:true options file in
   let questions = questions_of product in
-  Option.iter (fun path -> Rhema_visualization.write_ast path questions) options.ast_output;
-  Option.iter
-    (fun path -> Rhema_visualization.write_html path ~grammar:file questions)
-    options.visualization_output
+  Ui.trace ui questions;
+  Ui.stage ui 4 "Export WeBWorK PG";
+  if options.pg_dir <> None then
+    Ui.quip ui "Rush B! One PG file per question, coming up.";
+  export ui file (fun () ->
+      let document =
+        match product with
+        | Questions (spec, questions) -> Rhema_cli.questions_document spec questions
+        | Set result -> Rhema_sets.document result
+      in
+      (match (product, options.pg_dir) with
+      | Set result, Some directory ->
+          if not (Sys.file_exists directory) then Sys.mkdir directory 0o755;
+          List.iter
+            (fun (name, text) -> Rhema_cli.write_file (Filename.concat directory name) text)
+            (Rhema_sets.documents result)
+      | _ -> ());
+      if pg_stdout then print_string document else Rhema_cli.write_file output document;
+      write_trees options ~file questions);
+  let paths =
+    (if pg_stdout then [] else [ ("PG", output) ])
+    @ (match options.pg_dir with None -> [] | Some path -> [ ("Individual PG", path) ])
+    @ tree_paths options
+  in
+  Ui.summary ui ~count:(List.length questions) ~variant ~explicit_seed:options.seed ~paths
 
 let run options =
   let file = the_file options in
-  let product = produce options file in
-  (match product with
-  | Questions (_, questions) -> print_string (Rhema_cli.questions_listing questions)
-  | Set result -> print_string (Rhema_sets.listing result));
+  let ui = Ui.create options.terminal in
+  let product, variant = produce ui ~compiling:false options file in
   let questions = questions_of product in
-  Option.iter (fun path -> Rhema_visualization.write_ast path questions) options.ast_output;
-  Option.iter
-    (fun path -> Rhema_visualization.write_html path ~grammar:file questions)
-    options.visualization_output
+  Ui.trace ui questions;
+  Ui.stage ui 4 "Show questions and answers";
+  export ui file (fun () ->
+      (match product with
+      | Questions (_, questions) -> print_string (Rhema_cli.questions_listing questions)
+      | Set result -> print_string (Rhema_sets.listing result));
+      write_trees options ~file questions);
+  Ui.summary ui ~count:(List.length questions) ~variant ~explicit_seed:options.seed
+    ~paths:(tree_paths options)
 
 let check options =
   if options.files = [] then fail_usage "check needs at least one file";
   set_search_path options;
+  let ui = Ui.create options.terminal in
   let failed = ref false in
   List.iter
     (fun file ->
       match Rhema_load.parse_file file with
       | Error failures ->
           failed := true;
-          report_failures failures
+          Ui.specification_errors ui failures
       | Ok spec ->
           Printf.printf "%s: OK (%d rules; questions: %s; sets: %s%s)\n" file
             (List.length spec.Rhema_check.rules)
@@ -333,12 +388,16 @@ let check options =
             (list_or_none (set_names spec))
             (if spec.Rhema_check.library && spec.Rhema_check.sets = [] then "; a library" else ""))
     options.files;
-  if !failed then exit 1
+  if !failed then exit 1;
+  if List.length options.files > 1 then begin
+    flush stdout;
+    Ui.quip ui "Oh, that will be great! All specifications checked out."
+  end
 
 let list options =
   let file = the_file options in
   set_search_path options;
-  let spec = load file in
+  let spec = load (Ui.create options.terminal) file in
   if spec.Rhema_check.imports <> [] then
     Printf.printf "imports:\n%s"
       (spec.Rhema_check.imports
@@ -437,13 +496,52 @@ let doc options =
         groups;
       print_endline "\nWhat each one does: https://project-rhm.github.io/reference/builtins/"
 
+let nailong_harness terminal =
+  let ui = Ui.create terminal in
+  let file = "<nailong>" in
+  let smoke =
+    {|synth value
+start Q
+Q -> "multiply" { value = 6 * 7 }
+prompt "What is six times seven?"
+answer Q.value
+|}
+  in
+  let fail = abort ui ~heading:"Nailong Harness failed" file in
+  let spec =
+    match Rhema_load.parse_string ~filename:file smoke with
+    | Ok spec -> spec
+    | Error failures ->
+        Ui.errors ui ~heading:"Nailong Harness failed" failures;
+        exit 1
+  in
+  match Rhema_cli.questions spec ~variant:42 ~count:1 with
+  | [ { Rhema_engine.answer_text = "42"; _ } ] ->
+      print_endline "Nailong Harness: PASS (parse, check, generate; answer = 42)";
+      Ui.quip ui "Works on my machine."
+  | _ -> fail "the sample's answer should be 42"
+  | exception Rhema_engine.Generation_error message -> fail message
+
+let rec leading_terminal_options options = function
+  | flag :: rest as arguments -> (
+      match Ui.option options flag with
+      | Some options -> leading_terminal_options options rest
+      | None -> (options, arguments))
+  | [] -> (options, [])
+
 let () =
-  match Array.to_list Sys.argv |> List.tl with
+  let terminal, arguments = leading_terminal_options Ui.defaults (List.tl (Array.to_list Sys.argv)) in
+  let parse_options = parse_options terminal in
+  match arguments with
   | [] | [ "--help" ] | [ "-h" ] | [ "help" ] ->
+      Ui.banner (Ui.create terminal);
       print_endline usage;
-      exit (if Array.length Sys.argv = 1 then 2 else 0)
+      exit (if arguments = [] then 2 else 0)
   | [ "--version" ] | [ "-V" ] | [ "version" ] ->
       Printf.printf "%s %s (the Rhema language, RHM project)\n" program Rhema_cli.version
+  | [ "--hello" ] -> Ui.hello (Ui.create terminal)
+  | [ "--nailong" ] -> nailong_harness terminal
+  | [ "--coffee" ] -> print_endline "418: I'm a teapot. I compile questions, not coffee."
   | "check" :: rest -> check (parse_options rest)
   | "run" :: rest -> run (parse_options rest)
   | "list" :: rest -> list (parse_options rest)

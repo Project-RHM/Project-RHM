@@ -119,6 +119,7 @@
                         <div class="teacher-mode-tabs" role="tablist" aria-label="Question authoring">
                             <button type="button" id="teacherFormMode" role="tab" aria-selected="true">Configure</button>
                             <button type="button" id="teacherSourceMode" role="tab" aria-selected="false">Rhema source</button>
+                            <button type="button" id="visualEditDefinition" hidden><i data-lucide="blocks" aria-hidden="true"></i><span>Visual definition</span></button>
                         </div>
                         <div class="rhema-controls-row">
                             <div class="rhema-field rhema-grammar-field">
@@ -147,6 +148,10 @@
                                 <div class="rhema-field rhema-filename-field">
                                 <label for="rhemaNewName">File name</label>
                                 <input id="rhemaNewName" type="text" placeholder="linear_equation.rhm" maxlength="83" autocomplete="off">
+                                </div>
+                                <div class="rhema-field">
+                                    <label for="rhemaCreateMethod">Authoring method</label>
+                                    <select id="rhemaCreateMethod"><option value="visual">Visual builder</option><option value="source">Rhema source</option></select>
                                 </div>
                                 <div class="rhema-field">
                                     <label for="rhemaDraftStart">Start from</label>
@@ -363,6 +368,7 @@
                 </div>
             </div>
             
+            {% include 'visual_builder.html' %}
             <div id="pgImportContent" class="content-area" data-max-source-bytes="{{ pg_preview_max_bytes }}">
                 <header class="page-hero">
                     <div><h1>PG file preview</h1><span id="pgImportTitle" class="pg-import-subtitle">No file selected</span></div>
@@ -962,6 +968,7 @@
 
         const historyRecordCache = new Map();
         function loadHistoryContent(filename) {
+            if (window.visualBuilder && !window.visualBuilder.canLeave()) return;
             currentHistoryFile = filename;
             currentHistoryVisualizationFilename = '';
             showContent('historyContent');
@@ -1295,6 +1302,7 @@
                 }
                 openCreateQuestionType();
             });
+            document.addEventListener('rhema:visual-generated', loadHistory);
             
             // 返回生成界面按钮 - 修复事件绑定
             document.getElementById('backToGenerate').addEventListener('click', function() {
@@ -1681,6 +1689,7 @@
                 switchResultView('generate', 'rendered');
             }
             function canLeaveSource() {
+                if (window.visualBuilder && !window.visualBuilder.canLeave()) return false;
                 if (rhemaBusy || document.getElementById('loading').style.display !== 'none' || contextGenerationInProgress) {
                     showToast('Wait for the current operation to finish.', 'error'); return false;
                 }
@@ -1691,6 +1700,8 @@
                 await loadRhemaGrammarList();
                 rhemaNewError.textContent = ''; rhemaNewName.value = '';
                 document.getElementById('rhemaDraftStart').value = 'basic';
+                document.getElementById('rhemaCreateMethod').value = 'visual';
+                document.getElementById('rhemaDraftStart').parentElement.hidden = true;
                 const copies = document.getElementById('rhemaCopySource');
                 copies.replaceChildren(...Array.from(rhemaGrammarSelect.options).filter(o => !o.dataset.draft).map(o => new Option(o.value,o.value)));
                 copies.value = rhemaIsNew ? copies.options[0]?.value || '' : rhemaGrammarSelect.value;
@@ -1699,6 +1710,11 @@
             }
             document.getElementById('rhemaDraftStart').addEventListener('change', e => {
                 document.getElementById('rhemaCopyField').hidden = e.target.value !== 'existing';
+            });
+            document.getElementById('rhemaCreateMethod').addEventListener('change', e => {
+                const source = e.target.value === 'source';
+                document.getElementById('rhemaDraftStart').parentElement.hidden = !source;
+                document.getElementById('rhemaCopyField').hidden = !source || document.getElementById('rhemaDraftStart').value !== 'existing';
             });
             document.getElementById('rhemaCancelNewBtn').addEventListener('click', () => rhemaNewPanel.close());
             document.getElementById('rhemaCreateDraftBtn').addEventListener('click', async function() {
@@ -1711,6 +1727,13 @@
                     rhemaNewError.textContent = 'This name already exists. Choose another name.'; return;
                 }
                 if (!canLeaveSource()) return;
+                if (document.getElementById('rhemaCreateMethod').value === 'visual') {
+                    rhemaNewPanel.close();
+                    rhemaDirty = false;
+                    window.workspaceUI.enterVisual();
+                    window.visualBuilder.start(name);
+                    return;
+                }
                 const start = document.getElementById('rhemaDraftStart').value;
                 let content = '';
                 if (start === 'basic') content = 'context "Numeric"\n\nrandom a = integer_between(2, 9)\nrandom b = integer_between(2, 9)\n\nsynth text on Q\nsynth value on Q\nstart Q\n\nQ -> "addition" {\n  text = str(a) ++ " + " ++ str(b)\n  value = a + b\n}\n\nprompt "Calculate [`{Q.text}`]."\nanswer Q.value\nwidth 10\n';
@@ -1741,7 +1764,20 @@
                 if (e.key === 'Enter') { e.preventDefault(); document.getElementById('rhemaCreateDraftBtn').click(); }
             });
             window.rhemaAuthoring = {
+                async refreshCatalog(name) {
+                    rhemaGrammarsLoaded = false;
+                    await loadRhemaGrammarList();
+                    if (name) { rhemaGrammarSelect.value = name; showRhemaQuestions(); window.workspaceUI.refreshSelection(); }
+                },
+                openVisual(name) {
+                    if (!canLeaveSource()) return false;
+                    rhemaDirty = false;
+                    window.workspaceUI.enterVisual();
+                    window.visualBuilder.load(name);
+                    return true;
+                },
                 canOpenPreview() {
+                    if (window.visualBuilder && !window.visualBuilder.canLeave()) return false;
                     if (rhemaBusy || document.getElementById('loading').style.display !== 'none' || contextGenerationInProgress) {
                         showToast('Wait for the current operation to finish.', 'error'); return false;
                     }
@@ -2377,5 +2413,7 @@
     <script src="{{ url_for('static', filename='workspace.js') }}"></script>
     <script src="{{ url_for('static', filename='generation_history.js') }}"></script>
     <script src="{{ url_for('static', filename='workspace_splitter.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='visual_builder.css') }}">
+    <script src="{{ url_for('static', filename='visual_builder.js') }}"></script>
 </body>
 </html>

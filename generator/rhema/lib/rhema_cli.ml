@@ -37,9 +37,12 @@ let write_file path text =
   Fun.protect ~finally:(fun () -> close_out channel) (fun () -> output_string channel text)
 
 (* Generate [count] questions of the selected question of [spec]. *)
-let questions spec ~variant ~count =
+let questions ?(on_question = fun _ _ -> ()) spec ~variant ~count =
   Random.init variant;
-  List.init count (fun _ -> Rhema_engine.generate spec)
+  List.init count (fun index ->
+      let question = Rhema_engine.generate spec in
+      on_question (index + 1) count;
+      question)
 
 let questions_listing questions =
   questions

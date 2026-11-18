@@ -23,7 +23,7 @@ class BooleanDemoTests(unittest.TestCase):
         grammars.mkdir(parents=True)
         for name in ('stdlib', '_build'):
             (generator / name).symlink_to(ROOT / 'generator' / name, target_is_directory=True)
-        self.grammar = 'boolean_demo_flexible.rhm'
+        self.grammar = 'boolean_flexible.rhm'
         shutil.copyfile(ROOT / 'generator/grammars' / self.grammar, grammars / self.grammar)
         application = Flask(__name__)
         register_teacher_routes(application, self.root)

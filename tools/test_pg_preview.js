@@ -40,7 +40,7 @@ function setup(importer = false) {
     };
     const window = {addEventListener(name, action) { (windowEvents[name] ||= []).push(action); }};
     const emit = message => { for (const action of windowEvents.message || []) action(message); };
-    for (const prefix of ['generated','history','import']) {
+    for (const prefix of ['generated','history','import','visual']) {
         const frame = element(prefix + 'RenderedFrame');
         frame.contentWindow = {postMessage(message) {
             emit({source:frame.contentWindow, data:{...message, type:'answers', answers:{AnSwEr0001:'2'}}});
@@ -70,6 +70,17 @@ function setup(importer = false) {
 }
 
 const SOURCE = 'DOCUMENT();\nBEGIN_PGML\nQuestion [_____]{2}\nEND_PGML\nENDDOCUMENT();';
+test('visual builder reuses isolated rendering and grading with the exact same PG source',async()=>{
+    const env=setup();env.element('visualPgSource').value=SOURCE;
+    await env.context.renderProblemPreview('visual');
+    const state=env.state('visual'),frame=env.element('visualRenderedFrame');
+    env.emit({source:frame.contentWindow,data:{channel:'rhema-answer-check',token:state.token,type:'ready',answerCount:1}});
+    await env.context.checkPreviewAnswers('visual');
+    assert.equal(env.calls.length,2);assert.equal(env.calls[0].data.pg_source,env.calls[1].data.pg_source);
+    assert.equal(env.calls[0].data.problem_seed,env.calls[1].data.problem_seed);
+    env.element('visualPgSource').value='changed';await env.element('visualPgSource').emit('input');
+    assert.equal(env.element('visualCheckAnswers').disabled,true);
+});
 function file(name='test.pg', text=SOURCE) {
     const data = new TextEncoder().encode(text);
     return {name, size:data.length, arrayBuffer:async()=>data.buffer};

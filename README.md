@@ -121,6 +121,24 @@ One assignment is one paper, the same every time it is generated;
 beside the importing file, then in `-I` directories, `RHEMA_PATH` and the
 installed library (`share/rhema`).
 
+In an interactive terminal, compile and run show a RHEMA banner, actual
+question progress, and a summary with the seed and files written. Paths are
+clickable in supported terminals. A successful PG export does not run WeBWorK.
+For example:
+
+```bash
+rhema boolean.rhm --count 6 --student demo-01 -o boolean.pg
+rhema run boolean.rhm --count 1 --verbose
+rhema --plain boolean.rhm --count 6 -o - > boolean.pg
+```
+
+`--verbose` prints accepted productions and inherited/synthesized attributes
+to stderr. Use `--plain` to disable the interactive presentation, `--no-color`
+(or `NO_COLOR=1`) to turn off colors, and `--no-emoji` for ASCII markers.
+The presentation is automatically off in CI, with redirected output, and
+when compiling to stdout. Plain diagnostics keep the original
+`file:line:column: error: ...` format for editor integrations.
+
 ## The question library
 
 The 0.1.1 package installs 27 grammar files. `generator/stdlib/` holds those

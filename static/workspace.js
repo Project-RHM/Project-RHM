@@ -126,6 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.workspaceUI = {
         refreshSelection:updateSelection,
         enterCreation(){showContent('generateContent');navigation('');setGenerator('ag');closeMobileSidebar();},
+        enterVisual(){showContent('visualBuilderContent');navigation('');closeMobileSidebar();},
         rendererState,
         generated(data) {
             const isRhema = document.querySelector('input[name="generatorMode"]:checked').value === 'ag';

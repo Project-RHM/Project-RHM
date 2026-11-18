@@ -10,7 +10,7 @@ let rec negations = function Var _ -> 0 | Not e -> 1 + negations e
   | Bin (_,a,b) -> negations a + negations b
 
 let () =
-  let spec = match Rhema_load.parse_file "../grammars/boolean_demo_flexible.rhm" with
+  let spec = match Rhema_load.parse_file "../grammars/boolean_flexible.rhm" with
     | Ok s -> s | Error errors -> failwith (String.concat "\n" (List.map Rhema_load.string_of_failure errors)) in
   let total = ref 0 in
   for variables = 2 to 4 do
