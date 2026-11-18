@@ -154,6 +154,23 @@ cost 3   cos 2x = sqrt(3)/2 on [0, pi)                                          
 
 每个文法都有一个独立检验答案的测试：在远离极点的若干点上比较分解式两边的数值；逐项算出数列，再与通项公式比较；验证 `f - T` 在 0 的两侧都比 `x^n` 更快地趋于零；用另行编写的精确分数消元（不借用引擎自己的实现）；逐位换算数字；用浮点数重新计算角和函数值，并在整个区间上扫描方程，确认恰好有所答的两个解；用一个小的解析器把引擎写出的 LaTeX 读回成函数，再用差商求导。
 
+## 文法库考查的错误
+
+有四个文法说明了常见错误会导致什么答案。`rhema run` 会把它们列在每个答案下面；这些文法不会出这样的题：错误已经改变了演算过程，答案却仍然正确（见 `RHEMA_LANGUAGE_EXTENSIONS.zh.md` 第 9 节）。
+
+| 文法 | 错误 | 学生的做法 |
+|---|---|---|
+| `calculus.rhm` | `factor_by_factor` | 对乘积逐个因子求导 |
+| | `no_chain` | 漏掉内层函数的导数 |
+| | `top_and_bottom` | 对商的分子和分母分别求导 |
+| `complex.rhm` | `i_squared_one` | 把 `i` 的平方当作 1 |
+| | `minus_real_only` | 实部相减，虚部却相加 |
+| `boolean.rhm` | `false_antecedent` | 前件为假时，把条件命题当作假 |
+| | `exclusive_or` | 把“或”理解为二者只居其一 |
+| `polynomial_expand.rhm`、`polynomial_forms.rhm` | `power_term_by_term` | 把括号里的各项分别乘方 |
+
+`calculus.rhm` 的积分题、`complex.rhm` 的求模题以及因式分解题不列出任何错误：它们的答案不是由这些错误所改变的值算出来的。
+
 ## 用户能在一个文件里写什么
 
 共享题目级随机值的多种题型，每个有多条 `Q ->` 规则的文法都是例子；需要不同 WeBWorK 上下文的题型（`pg_context`）；有多个答案空的题目（题干里的 `{answer ...}`）；以及与其他文件共享的产生式（`include`）或整个引入的文法（`import`）。`polynomial_core.rhm` 是一个只有产生式、没有自己问题的库，`factoring.rhm`、`polynomial_expand.rhm` 和 `polynomial_forms.rhm` 都包含它。见 `RHEMA_LANGUAGE_EXTENSIONS.md`。

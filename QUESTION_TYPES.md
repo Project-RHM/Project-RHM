@@ -332,6 +332,28 @@ values recomputed in floating point and an equation's interval scanned for
 exactly the two solutions; and difference quotients of the function read
 back by a small parser for the LaTeX the engine writes.
 
+## Mistakes the library looks for
+
+Four grammars say what common mistakes lead to. `rhema run` lists them
+under each answer, and none of these grammars asks a question in which a
+mistake changes the working and still gives the right answer (section 9 of
+`RHEMA_LANGUAGE_EXTENSIONS.md`).
+
+| Grammar | Mistake | What the student does |
+|---|---|---|
+| `calculus.rhm` | `factor_by_factor` | differentiates a product factor by factor |
+| | `no_chain` | leaves out the derivative of the inside |
+| | `top_and_bottom` | differentiates the top and the bottom of a quotient separately |
+| `complex.rhm` | `i_squared_one` | takes `i` squared to be 1 |
+| | `minus_real_only` | subtracts the real parts but adds the imaginary parts |
+| `boolean.rhm` | `false_antecedent` | takes a conditional with a false antecedent to be false |
+| | `exclusive_or` | reads "or" as one or the other but not both |
+| `polynomial_expand.rhm`, `polynomial_forms.rhm` | `power_term_by_term` | raises each term of a bracket to the power on its own |
+
+An integral question of `calculus.rhm`, a modulus question of `complex.rhm`
+and a factoring question list none: their answers are not computed from the
+values these mistakes change.
+
 ## What a user can write in one file
 
 Several question forms sharing the question-level randoms, as every grammar

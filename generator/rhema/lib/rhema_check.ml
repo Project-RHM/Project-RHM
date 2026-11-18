@@ -89,6 +89,9 @@ type spec = {
   (* The sets the file declares, validated: every question they name exists
      and every budget they draw is an inherited attribute of its grammar. *)
   sets : Rhema_ast.set_decl list;
+  (* The mistakes the file declares, each with what the student does, in
+     declaration order. Every one has a line in some rule. *)
+  mistakes : (string * string) list;
 }
 
 (* Make another of the file's questions the one the engine generates. *)
@@ -530,6 +533,7 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
   let rules = ref [] in
   let blocks = ref [] in
   let sets = ref [] in
+  let mistakes : (string * string * position) list ref = ref [] in
 
   let declared_once what current position set =
     match !current with
@@ -588,6 +592,15 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
           if List.mem_assoc name !randoms || List.mem_assoc name !lets then
             report position (Printf.sprintf "'%s' is declared more than once" name);
           lets := !lets @ [ (name, body) ]
+      | Mistake_decl (name, description, position) ->
+          if List.exists (fun (other, _, _) -> other = name) !mistakes then
+            report position (Printf.sprintf "mistake '%s' is declared more than once" name);
+          if String.trim description = "" then
+            report position
+              (Printf.sprintf
+                 "mistake '%s' needs a description: say in a few words what the student does"
+                 name);
+          mistakes := !mistakes @ [ (name, description, position) ]
       | Synthesized_decl (name, scope, position) ->
           (* The same attribute may be declared on several nonterminals, so a
              repeat is only wrong when it repeats the same scope, or when it
@@ -695,6 +708,10 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
     rules |> List.map (fun rule -> rule.lhs) |> List.sort_uniq String.compare
   in
   let is_nonterminal name = List.mem name nonterminals in
+  let mistakes = !mistakes in
+  let is_mistake name = List.exists (fun (other, _, _) -> other = name) mistakes in
+  (* The mistakes some rule has a line for; one with none is refused below. *)
+  let mistakes_made = ref [] in
 
   (* ---- the questions of the file ---- *)
   (* The file-level declarations form `main`; each block is one more. A file
@@ -1034,9 +1051,47 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
           check_expr ~context:`Downward ~arity ~position condition);
 
       let assigned = ref [] in
+      let mistaken = ref [] in
       List.iter
         (fun equation ->
           match equation with
+          | Mistake (mistake, name, body, position) ->
+              (* What a student who makes the mistake computes in place of a
+                 value the rule has already computed. It is evaluated where it
+                 is written, so it may use everything above it, the right
+                 value of its own name included. *)
+              if not (is_mistake mistake) then
+                report position
+                  (Printf.sprintf
+                     "mistake '%s' is not declared; add 'mistake %s \"...\"' with what the \
+                      student does%s"
+                     mistake mistake
+                     (match mistakes with
+                     | [] -> ""
+                     | declared ->
+                         "; the declared mistakes are "
+                         ^ String.concat ", " (List.map (fun (other, _, _) -> other) declared)))
+              else if not (List.mem mistake !mistakes_made) then
+                mistakes_made := mistake :: !mistakes_made;
+              if is_inherited name then
+                report position
+                  (Printf.sprintf
+                     "'%s' is an inherited attribute; a mistake changes what is computed \
+                      from the tree, not the budget that built it"
+                     name)
+              else if not (List.mem name !assigned) then
+                report position
+                  (Printf.sprintf
+                     "a mistake line gives another value to something the rule has \
+                      computed; '%s' is not computed above this line"
+                     name)
+              else if List.mem (mistake, name) !mistaken then
+                report position
+                  (Printf.sprintf "'%s' already has a line for the mistake '%s' in this rule"
+                     name mistake);
+              mistaken := (mistake, name) :: !mistaken;
+              check_expr ~assigned_here:(List.rev !assigned) ~rhs:rule.rhs ~context:`Upward
+                ~arity ~position body
           | Require (condition, position) ->
               check_expr ~assigned_here:(List.rev !assigned) ~rhs:rule.rhs ~context:`Upward
                 ~arity ~position condition
@@ -1113,6 +1168,18 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
                  rule.lhs name name))
         (synthesized_of rule.lhs))
     rules;
+
+  (* A mistake no rule makes would never be looked for, and a file that
+     declares it would seem to guard against it. *)
+  List.iter
+    (fun (name, _, position) ->
+      if not (List.mem name !mistakes_made) then
+        report position
+          (Printf.sprintf
+             "mistake '%s' is made in no rule; add a line 'mistake %s ATTRIBUTE = ...' to \
+              the rule where a student makes it"
+             name name))
+    mistakes;
 
   (* ---- termination ---- *)
   (* Both checks below are conservative shape checks, not proofs: they ignore
@@ -1221,7 +1288,10 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
         (fun rule ->
           List.exists
             (function
-              | Assign (_, body, _) | Local (_, body, _) | Require (body, _) -> calls_blank body)
+              | Assign (_, body, _)
+              | Local (_, body, _)
+              | Require (body, _)
+              | Mistake (_, _, body, _) -> calls_blank body)
             rule.equations)
         rules
     in
@@ -1592,6 +1662,7 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
           imports = !imports;
           questions;
           sets = !sets;
+          mistakes = List.map (fun (name, description, _) -> (name, description)) mistakes;
         }
       in
       (* The selected question's starting budgets apply; a library has none. *)

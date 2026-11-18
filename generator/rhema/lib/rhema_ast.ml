@@ -57,6 +57,12 @@ type equation =
          computed where it is written, after the children exist, and may be
          used by the equations and requirements below it; the node does not
          carry it, so no `synth` declaration is needed. *)
+  | Mistake of string * string * expr * position
+      (* [mistake no_chain derivative = formula_cos($2.formula)] — what a
+         student who makes the named mistake computes here. The line is read
+         only when a finished tree is evaluated again under that mistake; it
+         then gives the attribute or local name a new value, for the lines
+         below it and for the node. *)
 
 (* ------------------------------------------------------------------ *)
 (* Right-hand side symbols.                                            *)
@@ -188,6 +194,10 @@ type declaration =
   | Let_decl of string * expr * position
       (* let ta = cond(A, "T", "F") — computed once per question from the
          randoms, for use in the prompt. *)
+  | Mistake_decl of string * string * position
+      (* mistake no_chain "leaves out the derivative of the inside" — a
+         mistake students make, by name, with what the student does. The
+         rules say where it is made, with `mistake NAME ATTR = EXPR` lines. *)
   | Synthesized_decl of string * string option * position
       (* synth value          — carried by every nonterminal
          synth left on Q      — carried only by Q, so the other rules are not
@@ -219,6 +229,7 @@ let declaration_position = function
   | Inherited_decl (_, _, _, position)
   | Random_decl (_, _, position)
   | Let_decl (_, _, position)
+  | Mistake_decl (_, _, position)
   | Synthesized_decl (_, _, position)
   | Start_decl (_, position)
   | Context_decl (_, position)

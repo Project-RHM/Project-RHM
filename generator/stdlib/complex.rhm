@@ -63,6 +63,17 @@ synth modulus on T
 synth latex on T
 synth value on T
 
+# ---- Mistakes ---------------------------------------------------------------
+#
+# The real and imaginary parts are worked out production by production, so
+# a slip at one step travels up through the right rules above it. A
+# question in which a slip changes the working has a wrong answer under it;
+# a modulus question reads neither part of an expression built with these
+# rules, so no mistake concerns it.
+
+mistake i_squared_one "takes i squared to be 1"
+mistake minus_real_only "subtracts the real parts but adds the imaginary parts"
+
 start Q
 
 precedence 1 left "+" "-"
@@ -179,6 +190,7 @@ E -> E "-" E when cost >= 1 weight 2 {
   require $1.latex != $3.latex
   re = $1.re - $3.re
   im = $1.im - $3.im
+  mistake minus_real_only im = $1.im + $3.im
   latex = infix($1, "-", $3)
   atom = 0
 }
@@ -187,6 +199,7 @@ E -> E "\cdot" E when cost >= 3 weight 3 {
   cost = -3
   require $1.latex != $3.latex
   re = $1.re * $3.re - $1.im * $3.im
+  mistake i_squared_one re = $1.re * $3.re + $1.im * $3.im
   im = $1.re * $3.im + $1.im * $3.re
   latex = infix($1, "\cdot", $3)
   atom = 0

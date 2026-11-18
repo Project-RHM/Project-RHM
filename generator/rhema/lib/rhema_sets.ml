@@ -360,7 +360,10 @@ let listing result =
             (match drawn.budgets with [] -> "" | budgets -> "; " ^ describe_budgets budgets)
             drawn.question.Rhema_engine.prompt
             (if List.length drawn.question.Rhema_engine.answers > 1 then "answers" else "answer")
-            drawn.question.Rhema_engine.answer_text)
+            drawn.question.Rhema_engine.answer_text;
+          List.iter
+            (fun line -> Printf.bprintf buffer "    %s\n" line)
+            (Rhema_engine.describe_mistakes drawn.question))
         members)
     result.parts;
   Buffer.add_string buffer "\nbudget means:";

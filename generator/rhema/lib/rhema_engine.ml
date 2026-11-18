@@ -226,9 +226,41 @@ type node = {
   level : int;
 }
 
+(* When a tree is evaluated again under a mistake, the engine needs to know
+   which values each equation read, to tell whether a mistaken value reached
+   the answer. While [tracing] is on, every attribute read from a node is
+   noted in [node_reads], and every name an equation read from its own rule
+   in [own_reads]. Generation itself never turns it on. *)
+let tracing = ref false
+let node_reads : (node * string) list ref = ref []
+let own_reads : string list ref = ref []
+
+(* Run [compute] and say what it read: (its result, node reads, own reads). *)
+let traced compute =
+  let outer = (!tracing, !node_reads, !own_reads) in
+  tracing := true;
+  node_reads := [];
+  own_reads := [];
+  let restore () =
+    let was_tracing, outer_nodes, outer_own = outer in
+    tracing := was_tracing;
+    node_reads := outer_nodes;
+    own_reads := outer_own
+  in
+  match compute () with
+  | value ->
+      let nodes = !node_reads and own = !own_reads in
+      restore ();
+      (value, nodes, own)
+  | exception failure ->
+      restore ();
+      raise failure
+
 let attribute node name =
   match List.assoc_opt name node.attributes with
-  | Some value -> value
+  | Some value ->
+      if !tracing then node_reads := (node, name) :: !node_reads;
+      value
   | None ->
       error
         (Printf.sprintf "'%s' has no attribute '%s'%s" node.symbol name
@@ -437,7 +469,9 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
          its own work; then a question-level random or let. The checker has
          already made sure those two sets of names do not overlap. *)
       match List.assoc_opt name self with
-      | Some value -> value
+      | Some value ->
+          if !tracing then own_reads := name :: !own_reads;
+          value
       | None -> (
           match List.assoc_opt name globals with
           | Some value -> value
@@ -1185,10 +1219,91 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
       error (Printf.sprintf "cannot apply '%s' to %d argument(s)" name (List.length arguments))
 
 (* ------------------------------------------------------------------ *)
+(* Comparing answers                                                   *)
+(* ------------------------------------------------------------------ *)
+
+(* Whether two answers are the same to a marker. Formulas are compared as
+   WeBWorK compares them, by their values at a few points, so that a mistake
+   which happens to give the right function written another way is not
+   taken for a wrong answer. The points are fixed: comparing answers must
+   not draw from the random stream that shapes the paper. *)
+let rec same_value left right =
+  let same_formula left right =
+    Rhema_formula.equal left right
+    ||
+    let names =
+      List.sort_uniq String.compare (Rhema_formula.variables left @ Rhema_formula.variables right)
+    in
+    let points = [ 0.37; 0.83; 1.29; 1.91; 2.63; -0.71; -1.43 ] in
+    let at point formula =
+      let lookup name =
+        let rec index position = function
+          | [] -> 0
+          | other :: rest -> if other = name then position else index (position + 1) rest
+        in
+        Some (point +. (0.173 *. float_of_int (index 0 names)))
+      in
+      try Some (Rhema_formula.evaluate_with lookup formula) with Invalid_argument _ -> None
+    in
+    let compared =
+      List.filter_map
+        (fun point ->
+          match (at point left, at point right) with
+          | Some left, Some right when Float.is_finite left && Float.is_finite right ->
+              let scale = Float.max 1. (Float.max (Float.abs left) (Float.abs right)) in
+              Some (Float.abs (left -. right) <= 1e-9 *. scale)
+          | _ -> None)
+        points
+    in
+    compared <> [] && List.for_all Fun.id compared
+  in
+  match (left, right) with
+  | Plain left, right | left, Plain right -> same_value left right
+  | (Num left | Exactly left), (Num right | Exactly right) -> Rhema_number.equal left right
+  | Text left, Text right -> left = right
+  | Truth left, Truth right -> left = right
+  | Complex (left_real, left_imaginary), Complex (right_real, right_imaginary) ->
+      Rhema_number.equal left_real right_real && Rhema_number.equal left_imaginary right_imaginary
+  | Formula left, Formula right -> same_formula left right
+  | Polynomial left, Polynomial right -> Rhema_polynomial.equal left right
+  | Equation left, Equation right -> Rhema_equation.equal left right
+  | Boolean left, Boolean right -> Rhema_boolean.equivalent left right
+  | Matrix left, Matrix right -> Rhema_matrix.equal left right
+  | Set left, Set right -> Rhema_set.equal left right
+  | Vector left, Vector right
+  | Point left, Point right
+  | VectorNormAnswer left, VectorNormAnswer right
+  | VectorUnitAnswer left, VectorUnitAnswer right ->
+      Rhema_vector.equal left right
+  | VectorDirectionAnswer (left, left_same), VectorDirectionAnswer (right, right_same) ->
+      left_same = right_same && Rhema_vector.equal left right
+  | Rich left, Rich right ->
+      List.length left = List.length right
+      && List.for_all2
+           (fun left right ->
+             match (left, right) with
+             | Piece_text left, Piece_text right -> left = right
+             | (Piece_blank left | Piece_wide_blank (left, _)),
+               (Piece_blank right | Piece_wide_blank (right, _)) ->
+                 same_value left right
+             | _ -> false)
+           left right
+  | _ -> false
+
+(* ------------------------------------------------------------------ *)
 (* Generation                                                          *)
 (* ------------------------------------------------------------------ *)
 
 exception Requirement_failed of string
+
+(* What a question's answers become for a student who makes one of the
+   grammar's mistakes. [None] when the mistake leads to no value at all, such
+   as a division by zero. *)
+type mistaken = {
+  mistake : string;
+  description : string;
+  mistaken_answers : value list option;
+}
 
 type question = {
   prompt : string;  (* the text, with each blank shown as [___] *)
@@ -1203,7 +1318,20 @@ type question = {
          with `pg_variables`; the PG writer adds those the answers hold *)
   globals : (string * value) list;
   tree : node;
+  mistakes : mistaken list;
+      (* the grammar's mistakes that change the working of this question,
+         each with the answers it leads to, which are never all right *)
 }
+
+(* One line per mistake that shows in the question, for a listing. *)
+let describe_mistakes question =
+  List.map
+    (fun made ->
+      Printf.sprintf "mistake %s: %s" made.mistake
+        (match made.mistaken_answers with
+        | Some answers -> String.concat "; " (List.map describe_value answers)
+        | None -> "no answer"))
+    question.mistakes
 
 let retries_per_node = 40
 let retries_per_question = 200
@@ -1473,6 +1601,9 @@ let rec tree_builder (spec : Rhema_check.spec) ~globals ~(module_globals : modul
           let self = collected @ locals in
           match equation with
           | Assign (attribute_name, _, _) when is_inherited attribute_name -> so_far
+          (* A mistake line is no part of the question: it is read only when
+             the finished tree is evaluated again under that mistake. *)
+          | Mistake _ -> so_far
           | Assign (attribute_name, body, _) ->
               let value =
                 evaluate_in ~self ~environment:updated ~children ~rule:(Some rule)
@@ -1513,23 +1644,99 @@ let rec tree_builder (spec : Rhema_check.spec) ~globals ~(module_globals : modul
         (match rule_precedence rule with Some (_, level, _) -> level | None -> atom_level);
     }
   in
-  (expand_nonterminal, is_inherited, rule_precedence)
+  (* The same tree as a student who makes [mistake] would work it out: every
+     node keeps its rule and its children, and the synthesized attributes are
+     computed again from the leaves up, this time reading the lines for that
+     mistake. Requirements are not checked again; they shaped the question,
+     which is already built. A subtree of an imported module is left as it
+     is, since a module's rules and mistakes are its own.
+
+     With each node comes the list of its attributes that are *mistaken*:
+     given a value other than the right one by a line for the mistake, or
+     computed from a mistaken value. A line that gives the value the rule
+     had already computed is no mistake here: leaving out the derivative of
+     the inside changes nothing in sin(x). *)
+  let rec under_mistake mistake node =
+    match node.applied_rule with
+    | None -> (node, [])
+    | Some rule when not (List.memq rule spec.rules) -> (node, [])
+    | Some rule ->
+        let revisited = List.map (under_mistake mistake) node.children in
+        let children = List.map fst revisited in
+        let updated = apply_updates node.inherited_attributes rule in
+        let replace name value bindings =
+          List.map (fun (other, old) -> if other = name then (other, value) else (other, old)) bindings
+        in
+        let attributes, _locals, mistaken =
+          List.fold_left
+            (fun ((collected, locals, mistaken) as so_far) equation ->
+              let self = collected @ locals in
+              (* The value of [body], and whether it was computed from a
+                 mistaken value of a child or of this rule. *)
+              let compute target body =
+                let value, nodes, own =
+                  traced (fun () ->
+                      evaluate_in ~self ~environment:updated ~children ~rule:(Some rule) ~target
+                        body)
+                in
+                let from_child =
+                  List.exists
+                    (fun (child, name) ->
+                      match List.assq_opt child revisited with
+                      | Some names -> List.mem name names
+                      | None -> false)
+                    nodes
+                in
+                (value, from_child || List.exists (fun name -> List.mem name mistaken) own)
+              in
+              let mark name is_mistaken =
+                let others = List.filter (fun other -> other <> name) mistaken in
+                if is_mistaken then name :: others else others
+              in
+              match equation with
+              | Assign (name, _, _) when is_inherited name -> so_far
+              | Require _ -> so_far
+              | Assign (name, body, _) ->
+                  let value, is_mistaken = compute name body in
+                  (collected @ [ (name, value) ], locals, mark name is_mistaken)
+              | Local (name, body, _) ->
+                  let value, is_mistaken = compute name body in
+                  (collected, locals @ [ (name, value) ], mark name is_mistaken)
+              | Mistake (made, name, body, _) when made = mistake ->
+                  let value, from_mistaken = compute name body in
+                  let changed =
+                    match List.assoc_opt name self with
+                    | Some right -> not (same_value right value)
+                    | None -> true
+                  in
+                  ( replace name value collected,
+                    replace name value locals,
+                    mark name (from_mistaken || changed || List.mem name mistaken) )
+              | Mistake _ -> so_far)
+            ([], [], []) rule.equations
+        in
+        ( { node with children; attributes },
+          List.filter (fun name -> List.mem_assoc name attributes) mistaken )
+  in
+  (expand_nonterminal, is_inherited, rule_precedence, under_mistake)
 
 (* A subtree of an imported module, from one of its nonterminals and the
    starting values an importer gave its inherited attributes. *)
 and expand_module (module_spec : Rhema_check.spec) ~globals ~module_globals nonterminal initial =
-  let expand, _, _ = tree_builder module_spec ~globals ~module_globals in
+  let expand, _, _, _ = tree_builder module_spec ~globals ~module_globals in
   expand nonterminal initial
 
 let generate_tree (spec : Rhema_check.spec) ~globals ~module_globals =
-  let expand, is_inherited, rule_precedence = tree_builder spec ~globals ~module_globals in
+  let expand, is_inherited, rule_precedence, under_mistake =
+    tree_builder spec ~globals ~module_globals
+  in
   let initial =
     List.map
       (fun (declaration : Rhema_check.inherited_attribute) ->
         (declaration.attribute_name, declaration.initial))
       spec.Rhema_check.inherited
   in
-  (expand spec.Rhema_check.start initial, is_inherited, rule_precedence)
+  (expand spec.Rhema_check.start initial, is_inherited, rule_precedence, under_mistake)
 
 (* Rewrite the start symbol's name away so the top-level answer expression can
    be evaluated with the root standing in as child $1. *)
@@ -1615,7 +1822,9 @@ let generate_once (spec : Rhema_check.spec) =
     error "this file has no start symbol: it is a library, to be included by a grammar";
   let module_globals = draw_module_globals [] spec in
   let globals = draw_globals spec ~module_globals in
-  let tree, is_inherited, rule_precedence = generate_tree spec ~globals ~module_globals in
+  let tree, is_inherited, rule_precedence, under_mistake =
+    generate_tree spec ~globals ~module_globals
+  in
   let global_value name =
     match List.assoc_opt name globals with
     | Some value -> value
@@ -1626,13 +1835,24 @@ let generate_once (spec : Rhema_check.spec) =
     | Rich pieces -> pieces
     | value -> [ Piece_text (as_text "prompt" value) ]
   in
+  (* The question as text and blanks, read from a tree: the generated one,
+     or the same tree under a mistake. With it come the attributes of the
+     start symbol that the blanks were read from. *)
+  let read_question tree =
+  let sources = ref [] in
   let pieces =
     spec.prompt
     |> List.concat_map (function
          | Rhema_check.Text text -> [ Piece_text text ]
          | Rhema_check.Value_hole name -> shown (global_value name)
-         | Rhema_check.Hole (_, attribute_name) -> shown (attribute tree attribute_name)
-         | Rhema_check.Answer_hole (_, attribute_name) -> [ Piece_blank (attribute tree attribute_name) ]
+         | Rhema_check.Hole (_, attribute_name) ->
+             let pieces = shown (attribute tree attribute_name) in
+             if List.exists (fun piece -> blank_value piece <> None) pieces then
+               sources := attribute_name :: !sources;
+             pieces
+         | Rhema_check.Answer_hole (_, attribute_name) ->
+             sources := attribute_name :: !sources;
+             [ Piece_blank (attribute tree attribute_name) ]
          | Rhema_check.Answer_value_hole name -> [ Piece_blank (global_value name) ])
   in
   (* PGML has no blank inside mathematics: between [` and `] a blank would be
@@ -1671,15 +1891,19 @@ let generate_once (spec : Rhema_check.spec) =
           |> List.map (function Piece_text text -> text | Piece_blank _ | Piece_wide_blank _ -> "")
           |> String.concat ""
         in
-        [
-          Piece_text text;
-          Piece_blank
-            (evaluate ~globals ~is_inherited ~rule_precedence ~environment:[]
-               ~children:[ tree ] ~rule:None ~target:"value"
-               (bind_root spec.start expression));
-        ]
+        let value, read, _ =
+          traced (fun () ->
+              evaluate ~globals ~is_inherited ~rule_precedence ~environment:[]
+                ~children:[ tree ] ~rule:None ~target:"value"
+                (bind_root spec.start expression))
+        in
+        List.iter (fun (node, name) -> if node == tree then sources := name :: !sources) read;
+        [ Piece_text text; Piece_blank value ]
     | None -> pieces
   in
+  (pieces, !sources)
+  in
+  let pieces, _ = read_question tree in
   let answers = List.filter_map blank_value pieces in
   let answer =
     match answers with
@@ -1735,6 +1959,55 @@ let generate_once (spec : Rhema_check.spec) =
                | exception Invalid_argument message -> error ("pg_variables: " ^ message))
         |> List.sort_uniq String.compare
   in
+  (* Each mistake of the grammar that some rule of this tree has a line for
+     is tried: the tree is evaluated again as a student making it would, and
+     the answers are read again. A mistake that changes no value, or whose
+     changed values never reach an answer, says nothing about this question.
+     One that changes a value an answer is computed from and still leaves
+     every answer right would earn full marks for wrong working, so the
+     question is built afresh: in a generated question, a mistake that
+     changes the working changes an answer. *)
+  let makes mistake =
+    let rec within node =
+      (match node.applied_rule with
+       | Some rule when List.memq rule spec.rules ->
+           List.exists
+             (function Mistake (made, _, _, _) -> made = mistake | _ -> false)
+             rule.equations
+       | _ -> false)
+      || List.exists within node.children
+    in
+    within tree
+  in
+  let mistakes =
+    List.filter_map
+      (fun (mistake, description) ->
+        if not (makes mistake) then None
+        else
+          match
+            let mistaken_tree, mistaken = under_mistake mistake tree in
+            let pieces, sources = read_question mistaken_tree in
+            ( List.filter_map blank_value pieces,
+              List.exists (fun source -> List.mem source mistaken) sources )
+          with
+          | exception Rhema_number.Arithmetic_error _ ->
+              (* The mistake leads to no value, a division by zero for one:
+                 a student who makes it does not reach the right answer. *)
+              Some { mistake; description; mistaken_answers = None }
+          | exception Generation_error message ->
+              error (Printf.sprintf "under the mistake '%s': %s" mistake message)
+          | _, false -> None
+          | mistaken_answers, true ->
+              if
+                List.length mistaken_answers = List.length answers
+                && List.for_all2 same_value answers mistaken_answers
+              then
+                raise
+                  (Requirement_failed
+                     (Printf.sprintf "the mistake '%s' gives the right answer" mistake))
+              else Some { mistake; description; mistaken_answers = Some mistaken_answers })
+      spec.mistakes
+  in
   {
     prompt;
     answer;
@@ -1746,6 +2019,7 @@ let generate_once (spec : Rhema_check.spec) =
     variables;
     globals;
     tree;
+    mistakes;
   }
 
 let generate spec =

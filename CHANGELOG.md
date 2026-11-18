@@ -5,6 +5,33 @@ functions' names and arguments, and the `rhema` command's options are the
 public interface. A breaking change raises the major version; a deprecation
 is announced one version before the removal.
 
+## Unreleased
+
+- **Mistakes.** A grammar can declare a mistake students make,
+  `mistake NAME "what the student does"`, and say in a production what such
+  a student computes, with a line `mistake NAME ATTRIBUTE = EXPRESSION`.
+  After a question is built its tree is evaluated again under each mistake.
+  A question in which a mistake changes the working and still gives the
+  right answers is built afresh, so wrong working is never marked right;
+  `rhema run` lists what each mistake leads to under the answer. Formulas
+  are compared as functions. See chapter 9 of the tutorial and "Mistakes"
+  in the language reference.
+- **Four library grammars declare mistakes:** `calculus.rhm` (a product
+  differentiated factor by factor, the chain rule left out, a quotient
+  differentiated top and bottom), `complex.rhm` (`i` squared taken to be 1,
+  a minus sign kept from the imaginary part), `boolean.rhm` (a conditional
+  with a false antecedent taken to be false, "or" read as exclusive) and
+  the polynomial expansions (each term raised to the power on its own).
+  Their papers change where a question hid a mistake: such a question is
+  replaced, and the draws after it move. On a 500-question paper the first
+  different question is number 245 for `calculus.rhm` derivatives, 67 for
+  `complex.rhm` and 25 for `boolean.rhm`; integrals, factorings and
+  expansions are the same questions as in 0.2.0. A derivative answer of
+  `calculus.rhm` is the same function as before and is sometimes written
+  differently in PG.
+- `mistake` is now a reserved word. A grammar that used it as a name must
+  rename it.
+
 ## 0.2.0 (2026-11-16)
 
 The library grows from 27 grammar files to 46, seven of the new question

@@ -65,6 +65,8 @@ let equation_text = function
   | Assign (name, body, _) -> name ^ " = " ^ expression_text body
   | Require (condition, _) -> "require " ^ expression_text condition
   | Local (name, body, _) -> "let " ^ name ^ " = " ^ expression_text body
+  | Mistake (mistake, name, body, _) ->
+      "mistake " ^ mistake ^ " " ^ name ^ " = " ^ expression_text body
 
 let value_text = Rhema_engine.describe_value
 

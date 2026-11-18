@@ -60,12 +60,14 @@ synth derivative on I
 synth answer_value on I
 
 synth formula on F
+synth d on F                   # the derivative, worked out rule by rule
 synth latex on F
 synth constant on F            # 1 when the subtree is a bare constant, else 0
 synth monomial on F            # 1 when the subtree is x, c*x or a power of one
 synth constants_used on F      # how many constant leaves the subtree holds
 synth linear_terms on F        # x or c*x terms added directly in this subtree
 synth formula on T
+synth d on T
 synth latex on T
 synth value on T
 synth constant on T
@@ -74,6 +76,20 @@ synth constants_used on T
 synth linear on T              # 1 for x and c*x, 0 for a constant
 synth coefficient on T         # the number in front of x, or the constant
 synth power on F               # 1 when the subtree is a power, so powers do not nest
+
+# ---- Mistakes ---------------------------------------------------------------
+#
+# The derivative `d` is worked out production by production, so that a
+# mistake made at one step travels up through the right rules above it, as
+# it does on paper. A mistake counts where it changes the working: leaving
+# out the inside's derivative changes nothing in sin(x) and something in
+# sin(3x). A derivative question in which a mistake changes the working
+# always has a wrong answer under it; an integral question does not read
+# `d`, so no mistake concerns it.
+
+mistake factor_by_factor "differentiates a product factor by factor"
+mistake no_chain "leaves out the derivative of the inside"
+mistake top_and_bottom "differentiates the top and the bottom of a quotient separately"
 
 start Q
 
@@ -108,7 +124,7 @@ Q -> I when calculus_mode != 1 and cost >= 3 weight 1 {
 D -> F "derivative" {
   kind = "derivative"
   require $1.constants_used <= 1
-  derivative = differentiate($1.formula, "x")
+  derivative = $1.d
   require not formula_is_zero(derivative)
   text = "Differentiate the function with respect to x:
 [`f(x) = " ++ $1.latex ++ "`]."
@@ -170,6 +186,7 @@ F -> F "+" F when cost >= 1 weight 3 {
   power = 0
   require linear_terms <= 1
   formula = formula_add($1.formula, $3.formula)
+  d = formula_add($1.d, $3.d)
   require not formula_is_zero(differentiate(formula, "x"))
   latex = formula_latex(formula)
 }
@@ -185,6 +202,7 @@ F -> F "-" F when cost >= 1 weight 3 {
   power = 0
   require linear_terms <= 1
   formula = formula_subtract($1.formula, $3.formula)
+  d = formula_subtract($1.d, $3.d)
   require not formula_is_zero(differentiate(formula, "x"))
   latex = formula_latex(formula)
 }
@@ -201,6 +219,8 @@ F -> F "\\cdot" F when cost >= 4 weight 2 {
   linear_terms = 0
   power = 0
   formula = formula_multiply($1.formula, $3.formula)
+  d = formula_add(formula_multiply($1.d, $3.formula), formula_multiply($1.formula, $3.d))
+  mistake factor_by_factor d = formula_multiply($1.d, $3.d)
   latex = formula_latex(formula)
 }
 
@@ -213,6 +233,9 @@ F -> T "power" integer_between(2, 5) when cost >= 1 and cost <= 2 weight 3 {
   linear_terms = 0
   power = 1
   formula = formula_power($1.formula, $3.value)
+  let outside = formula_multiply(formula_constant($3.value), formula_power($1.formula, $3.value - 1))
+  d = formula_multiply(outside, $1.d)
+  mistake no_chain d = outside
   latex = formula_latex(formula)
 }
 
@@ -225,6 +248,9 @@ F -> F "power" integer_between(2, 5) when cost >= 5 weight 3 {
   constants_used = $1.constants_used
   linear_terms = 0
   formula = formula_power($1.formula, $3.value)
+  let outside = formula_multiply(formula_constant($3.value), formula_power($1.formula, $3.value - 1))
+  d = formula_multiply(outside, $1.d)
+  mistake no_chain d = outside
   latex = formula_latex(formula)
 }
 
@@ -237,6 +263,8 @@ F -> "sin" T when cost >= 1 and cost <= 2 weight 2 {
   linear_terms = 0
   power = 0
   formula = formula_sin($2.formula)
+  d = formula_multiply(formula_cos($2.formula), $2.d)
+  mistake no_chain d = formula_cos($2.formula)
   latex = formula_latex(formula)
 }
 
@@ -248,6 +276,8 @@ F -> "sin" F when cost >= 5 weight 2 {
   linear_terms = 0
   power = 0
   formula = formula_sin($2.formula)
+  d = formula_multiply(formula_cos($2.formula), $2.d)
+  mistake no_chain d = formula_cos($2.formula)
   latex = formula_latex(formula)
 }
 
@@ -260,6 +290,8 @@ F -> "cos" T when cost >= 1 and cost <= 2 weight 2 {
   linear_terms = 0
   power = 0
   formula = formula_cos($2.formula)
+  d = formula_negate(formula_multiply(formula_sin($2.formula), $2.d))
+  mistake no_chain d = formula_negate(formula_sin($2.formula))
   latex = formula_latex(formula)
 }
 
@@ -271,6 +303,8 @@ F -> "cos" F when cost >= 5 weight 2 {
   linear_terms = 0
   power = 0
   formula = formula_cos($2.formula)
+  d = formula_negate(formula_multiply(formula_sin($2.formula), $2.d))
+  mistake no_chain d = formula_negate(formula_sin($2.formula))
   latex = formula_latex(formula)
 }
 
@@ -283,6 +317,8 @@ F -> "exp" T when cost >= 1 and cost <= 2 weight 1 {
   linear_terms = 0
   power = 0
   formula = formula_exp($2.formula)
+  d = formula_multiply(formula_exp($2.formula), $2.d)
+  mistake no_chain d = formula_exp($2.formula)
   latex = formula_latex(formula)
 }
 
@@ -294,6 +330,8 @@ F -> "exp" F when cost >= 5 weight 1 {
   linear_terms = 0
   power = 0
   formula = formula_exp($2.formula)
+  d = formula_multiply(formula_exp($2.formula), $2.d)
+  mistake no_chain d = formula_exp($2.formula)
   latex = formula_latex(formula)
 }
 
@@ -313,6 +351,8 @@ F -> "ln" T when advanced > 0 and cost >= 1 and cost <= 2 weight 2 {
   linear_terms = 0
   power = 0
   formula = formula_ln($2.formula)
+  d = formula_divide($2.d, $2.formula)
+  mistake no_chain d = formula_divide(formula_constant(1), $2.formula)
   latex = formula_latex(formula)
 }
 
@@ -324,6 +364,8 @@ F -> "ln" F when advanced > 0 and cost >= 5 weight 2 {
   linear_terms = 0
   power = 0
   formula = formula_ln($2.formula)
+  d = formula_divide($2.d, $2.formula)
+  mistake no_chain d = formula_divide(formula_constant(1), $2.formula)
   latex = formula_latex(formula)
 }
 
@@ -337,6 +379,8 @@ F -> "sqrt" T when advanced > 0 and cost >= 1 and cost <= 2 weight 2 {
   linear_terms = 0
   power = 0
   formula = formula_sqrt($2.formula)
+  d = formula_divide($2.d, formula_multiply(formula_constant(2), formula_sqrt($2.formula)))
+  mistake no_chain d = formula_divide(formula_constant(1), formula_multiply(formula_constant(2), formula_sqrt($2.formula)))
   latex = formula_latex(formula)
 }
 
@@ -348,6 +392,8 @@ F -> "sqrt" F when advanced > 0 and cost >= 5 weight 2 {
   linear_terms = 0
   power = 0
   formula = formula_sqrt($2.formula)
+  d = formula_divide($2.d, formula_multiply(formula_constant(2), formula_sqrt($2.formula)))
+  mistake no_chain d = formula_divide(formula_constant(1), formula_multiply(formula_constant(2), formula_sqrt($2.formula)))
   latex = formula_latex(formula)
 }
 
@@ -360,6 +406,8 @@ F -> "tan" T when advanced > 0 and cost >= 1 and cost <= 2 weight 1 {
   linear_terms = 0
   power = 0
   formula = formula_tan($2.formula)
+  d = formula_divide($2.d, formula_power(formula_cos($2.formula), 2))
+  mistake no_chain d = formula_divide(formula_constant(1), formula_power(formula_cos($2.formula), 2))
   latex = formula_latex(formula)
 }
 
@@ -371,6 +419,8 @@ F -> "tan" F when advanced > 0 and cost >= 5 weight 1 {
   linear_terms = 0
   power = 0
   formula = formula_tan($2.formula)
+  d = formula_divide($2.d, formula_power(formula_cos($2.formula), 2))
+  mistake no_chain d = formula_divide(formula_constant(1), formula_power(formula_cos($2.formula), 2))
   latex = formula_latex(formula)
 }
 
@@ -386,6 +436,11 @@ F -> F "/" F when advanced > 0 and cost >= 4 weight 2 {
   linear_terms = 0
   power = 0
   formula = formula_divide($1.formula, $3.formula)
+  d = formula_divide(
+        formula_subtract(formula_multiply($1.d, $3.formula), formula_multiply($1.formula, $3.d)),
+        formula_power($3.formula, 2))
+  mistake top_and_bottom d = cond(formula_is_zero($3.d), formula_constant(0),
+                                  formula_divide($1.d, $3.d))
   latex = formula_latex(formula)
 }
 
@@ -396,6 +451,7 @@ F -> T when cost <= 1 {
   constants_used = $1.constants_used
   linear_terms = $1.linear
   formula = $1.formula
+  d = $1.d
   latex = $1.latex
 }
 
@@ -408,6 +464,7 @@ T -> "x" when cost = 0 weight 4 {
   linear = 1
   coefficient = 1
   formula = formula_variable("x")
+  d = formula_constant(1)
   latex = formula_latex(formula)
   value = formula
 }
@@ -425,6 +482,7 @@ T -> nonzero_integer_between(-6, 6) "x" when cost = 1 weight 4 {
   formula = formula_multiply(
               formula_constant($1.value),
               formula_variable("x"))
+  d = formula_constant($1.value)
   latex = formula_latex(formula)
   value = formula
 }
@@ -436,6 +494,7 @@ T -> nonzero_integer_between(-8, 8) when cost = 0 and constants > 0 weight 1 {
   linear = 0
   coefficient = $1.value
   formula = formula_constant($1.value)
+  d = formula_constant(0)
   latex = formula_latex(formula)
   value = formula
 }

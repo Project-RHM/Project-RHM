@@ -40,9 +40,9 @@ Small budgets buy few different questions. For `boolean.rhm`, measured on
 |---|---|---|
 | 4 | 34% | 52% |
 | 6 | 63% | 54% |
-| 8 | 87% | 50% |
-| 10 | 97% | 53% |
-| 14 | 100% | 53% |
+| 8 | 87% | 51% |
+| 10 | 97% | 49% |
+| 14 | 100% | 51% |
 
 A set drawn at a budget where few questions are distinct will repeat
 itself, or fail under `distinct`, so stay above about 6 for this grammar.

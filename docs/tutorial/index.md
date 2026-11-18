@@ -23,6 +23,8 @@ needed, because the library grammars are found wherever you are.
 7. [A whole assignment](sets.md): `set`, parts, budgets around a mean.
 8. [Into WeBWorK](webwork.md): compiling, one paper per assignment,
    uploading.
+9. [Mistakes students make](mistakes.md): `mistake`, and questions that
+   tell a mistake from the right working.
 
 !!! note "Notation"
     Commands are shown after a `$`. Output that depends on the paper drawn
