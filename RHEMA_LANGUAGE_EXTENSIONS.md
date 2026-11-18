@@ -2,7 +2,8 @@
 
 *Six additions to the Rhema language that let one file hold whatever
 question types its author wants, four smaller ones (section 7), blanks
-in text with formulas beyond x (section 8), and mistakes (section 9). A
+in text with formulas beyond x (section 8), mistakes (section 9), and
+static types (section 10). A
 Chinese version is in
 `RHEMA_LANGUAGE_EXTENSIONS.zh.md`; the language itself is described in
 `RHEMA_LANGUAGE_GUIDE.md`.*
@@ -610,6 +611,157 @@ functions; and for each library grammar, that the value worked out
 production by production is the right one and that every reported mistake
 leads to a different answer). Tutorial chapter 9 and "Mistakes" in the
 language reference describe it for authors.
+
+## 10. Static types: found by `rhema check`, not in the middle of a paper
+
+Until now a value's type was checked only when it was used, while a
+question was being generated. A file that added text to a number passed
+`rhema check` and stopped at the first question that reached the line, and
+a line reached only by some questions stopped a paper part of the way
+through. The checker now infers types and reports these uses itself.
+
+```
+let label = "n = " ++ n
+let broken = label + 1
+```
+
+```
+quiz.rhm:5:14: error: '+' takes a number on its left, but 'label' is text
+```
+
+**No new syntax.** Nothing declares a type. The language has no parameter
+declarations, no user functions and no lists, and gains none.
+
+**One table.** `rhema_types.ml` names the eighteen types of a value and
+says, for every operator and each of the 154 functions, what it takes and
+gives. The checker reads the functions' names, arities and types from it;
+`rhema doc` and the site's builtins page print it. The four generators are
+leaves, not functions, and keep their own short list in the checker. The
+engine keeps its own checks, and a test holds the two together (below).
+
+**A type is a set.** Two productions of one nonterminal may compute an
+attribute as a number and as a formula, and the branches of `cond` may
+differ; the library does both. So the checker infers, for each expression,
+the set of types it can have:
+
+- a literal, a random, a budget, a generator leaf: one type;
+- a function: what the table gives; `cond`: the union of its branches;
+- a synthesized attribute: the union over the productions of its
+  nonterminal, kept by `(nonterminal, name)`, so `value` on `E` and `value`
+  on `Q` are unrelated;
+- a module's attributes and values: the sets found when the module was
+  checked, kept in its specification and read by its importers.
+
+An operator or function gives its result only when each operand can have a
+type it takes; otherwise the expression has no type, as one that can never
+be evaluated. The sets start empty and the productions are read until none
+grows. Because a set never loses a type as the sets it is computed from
+grow, the result does not depend on the order of the declarations, and it
+ends because there are finitely many types.
+
+Two things were wrong in a first version and are fixed, each with a test.
+It took the result of an operator for granted after refusing an operand, so
+in `E -> E + E` with a leaf whose `value` was text, the sum itself added
+"number" to `E.value` and the wrong leaf passed. And it counted a refused
+side of `++` as text while the sets were still growing, which made the
+verdict depend on the order of three productions.
+
+**What is reported.** A use is an error when *no* type in the operand's set
+is allowed. A use that some type allows is left to the engine. This is the
+policy for everything that cannot be settled before generation.
+
+An expression is checked wherever it is written, also where it would never
+be evaluated: the unchosen branch of `cond`, the right side of `and` and
+`or`, a production no question reaches.
+
+**Where.** Guards and requirements (truth values); budget updates,
+generator arguments and a module's starting values (numbers); every
+operator and function argument; `$n` used as a value, and a value given
+where `infix` or `prefix` needs a child, whose own copy of the attribute
+must be text; what a prompt shows and what a blank or an `answer` is graded
+against; `pg_context`, `pg_width`, `pg_variables`; and mistake lines.
+
+**Mistake lines** may give a value of any kind: one root where the set of
+roots is the answer, the words "no solution" where a number is. A first
+version asked for the same kind of value as the right one; an independent
+check showed that this refused real mistakes that had worked, and the
+engine never had such a rule. What is refused now is what must fail. The
+checker reads the file once more for each mistake, as the engine evaluates
+a finished tree under it: the lines for that mistake give their names new
+values, requirements are not read, and an attribute has, under the mistake,
+every type some production then gives it. A use that can take none of
+those types is reported as `under the mistake 'NAME', ...`, since
+generation would stop there every time the mistake was tried. This reading
+takes no part in the inference of the right working.
+
+**Messages.** Types are checked last, on a file that has passed every
+other check, so an undeclared name is not reported again for its missing
+type; type errors therefore appear only once the others are gone. There is
+one message for each wrong use (an operator with two wrong sides gives
+two), and none for what is built on a wrong use. A message points at the
+operand when it is a name, a child or a function call; a literal or an
+expression in brackets has no position of its own, and the message then
+points at the call around it or at the start of the line.
+
+**What changes for existing files.** A file with none of these uses is
+checked and generated as before: the library's output is byte-identical.
+A file that generated before is refused now in two cases:
+
+- a wrong type where nothing was ever evaluated: an unchosen branch, a
+  short-circuited side, a production never chosen, the lines below a
+  requirement that never holds, an unused symbol of an included or
+  imported file, or a budget update of the wrong type, whose production
+  the engine silently never chose;
+- an answer that is an equation or text holding a blank: `rhema run` listed
+  such a question, and the PG writer stopped on it with an exception.
+
+On this machine there are 98 other `.rhm` files outside the library (66
+distinct: grammars written earlier, probes written for a language
+description, the extension's test workspace, examples in other
+worktrees). The old and new checkers agree on 95. The three now refused
+each stopped at their first question before, for the same reason.
+
+**What is not checked**, and still stops generation with a message:
+whether a number is whole, a divisor zero, the shapes of matrices and
+vectors, a function's domain, whether an equation has exact solutions, a
+use that only some types allow, in the right working or under a mistake,
+and requirements and budgets that cannot be met. Passing `rhema check` does not mean a file cannot fail.
+
+**Found on the way, not changed.** Nine functions let a library's
+complaint about a variable name through as an uncaught exception, where
+the others report an error: `polynomial_variable`, `polynomial_constant`,
+`polynomial_linear`, `polynomial_quadratic`, `formula_to_polynomial`, and
+`equation_has_exact_solutions`, `equation_solution_count`,
+`equation_solution_set`, `equation_unique_solution`. A number passes the
+check wherever text is taken, since the engine writes it out, so
+`polynomial_variable(2)` is accepted and ends this way. And the PG writer
+still stops with an exception on an equation that reaches an answer
+through `cond`, which the checker cannot rule out.
+
+Tests: `rhema_types_test.ml`. (1) The table against the engine: each of
+the 148 functions that take values is called with each of the eighteen
+types in each argument, the others being right, 4662 calls; the checker
+refuses a call exactly when the table does, the engine never accepts what
+the table refuses nor refuses for its type what the table allows, and a
+call that succeeds gives a type the table lists. `infix` and `prefix`,
+which take children, and the four functions without arguments are tried
+separately; every operator is tried with every type or pair of types,
+where the checker's verdict must be the engine's. (2) Inference against
+generation: 25 questions of every question type of the library, where each
+synthesized attribute of each node built by a rule, in the file or a
+module, and each random and let of the file, has one of the types inferred
+for it (about 20000 and 7700 values). (3) The checker on small grammars:
+the errors with their wording, and the position for three of them; what
+must be accepted (several types by production and by `cond`, a number as
+text, answer wrappers, errors that depend on the value); recursion, the
+wrong leaf and the order of the rules; imports; mistake lines. Four older
+tests that expected these errors during generation now expect them from
+the checker, and keep a variant written through `cond` that still reaches
+the engine.
+
+Generation is unchanged: 47 question types of the library on 40-question
+papers, the library's set with and without a student, seven PG files and a
+LaTeX paper are byte-identical to the commit before.
 
 ## What this allows
 

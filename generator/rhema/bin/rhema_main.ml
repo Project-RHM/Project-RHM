@@ -473,7 +473,15 @@ let doc options =
       match List.find_opt (fun (_, n, _, _) -> n = name) entries with
       | Some (group, name, arity, kind) ->
           Printf.printf "%s: %s builtin of the %s group, %d argument%s\n" name kind group arity
-            (if arity = 1 then "" else "s")
+            (if arity = 1 then "" else "s");
+          (match Rhema_types.signature name with
+          | Some entry when kind = "expression" ->
+              let takes, gives = Rhema_types.signature_words entry in
+              Printf.printf "  takes: %s\n  gives: %s\n" takes gives
+          | _ ->
+              if kind = "generator" then
+                Printf.printf "  takes: %s\n  gives: number\n"
+                  (String.concat ", " (List.init arity (fun _ -> "number"))))
       | None ->
           prerr_endline (Printf.sprintf "%s: error: no builtin named '%s'" program name);
           exit 1)
@@ -487,8 +495,16 @@ let doc options =
           List.iter
             (fun (g, name, arity, kind) ->
               if g = group then
-                Printf.printf "  %-28s %d arg%s%s\n" name arity (if arity = 1 then "" else "s")
-                  (if kind = "generator" then "   (a leaf that draws a value)" else ""))
+                Printf.printf "  %-28s %d arg%s%s\n" name arity (if arity = 1 then " " else "s")
+                  (if kind = "generator" then
+                     Printf.sprintf "   %s -> number   (a leaf that draws a value)"
+                       (String.concat ", " (List.init arity (fun _ -> "number")))
+                   else
+                     match Rhema_types.signature name with
+                     | Some entry ->
+                         let takes, gives = Rhema_types.signature_words entry in
+                         Printf.sprintf "   %s -> %s" takes gives
+                     | None -> ""))
             entries)
         groups;
       print_endline "\nWhat each one does: https://project-rhm.github.io/reference/builtins/"

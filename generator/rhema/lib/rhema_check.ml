@@ -92,6 +92,12 @@ type spec = {
   (* The mistakes the file declares, each with what the student does, in
      declaration order. Every one has a line in some rule. *)
   mistakes : (string * string) list;
+  (* The types the checker inferred: of each synthesized attribute, by
+     nonterminal and name, and of each random and let. An importer reads
+     them to check what it does with `alias.F` and `alias.NAME`; nothing in
+     the language declares them. *)
+  attribute_types : ((string * string) * Rhema_types.set) list;
+  value_types : (string * Rhema_types.set) list;
 }
 
 (* Make another of the file's questions the one the engine generates. *)
@@ -174,172 +180,13 @@ let with_initial spec name value =
             spec.inherited;
       }
 
-(* Builtins usable inside an attribute equation. *)
+(* Builtins usable inside an attribute equation, with how many arguments each
+   takes. The names, the arities and the types all come from one table, in
+   Rhema_types, which the tests hold against the engine. *)
 let expression_builtins =
-  [
-    ("str", 1);   (* str($1.value)          number -> text            *)
-    ("paren", 1); (* paren($1)              force surrounding parens  *)
-    ("infix", 3); (* infix($1, "+", $3)     precedence-aware rendering*)
-    ("prefix", 2);(* prefix("\\neg", $2)    the same for a unary operator  *)
-    ("cond", 3);  (* cond(A, "T", "F")      pick between two values        *)
-    ("abs", 1);
-    ("min", 2);
-    ("max", 2);
-    ("complex", 2);
-    ("complex_latex", 2);
-    ("formula_constant", 1);
-    ("formula_variable", 1);
-    ("formula_add", 2);
-    ("formula_subtract", 2);
-    ("formula_multiply", 2);
-    ("formula_divide", 2);
-    ("formula_power", 2);
-    ("formula_negate", 1);
-    ("formula_sin", 1);
-    ("formula_cos", 1);
-    ("formula_tan", 1);
-    ("formula_exp", 1);
-    ("formula_ln", 1);
-    ("formula_sqrt", 1);
-    ("formula_substitute", 3);
-    ("differentiate", 2);
-    ("formula_latex", 1);
-    ("formula_is_zero", 1);
-    ("formula_pi", 0);
-    ("formula_value", 1);
-    ("exact_sin", 2);
-    ("exact_cos", 2);
-    ("exact_tan", 2);
-    ("formula_to_polynomial", 2);
-    ("polynomial_constant", 2);
-    ("polynomial_variable", 1);
-    ("polynomial_monomial", 3);
-    ("polynomial_linear", 3);
-    ("polynomial_quadratic", 4);
-    ("polynomial_add", 2);
-    ("polynomial_subtract", 2);
-    ("polynomial_multiply", 2);
-    ("polynomial_scale", 2);
-    ("polynomial_power", 2);
-    ("polynomial_derivative", 1);
-    ("polynomial_evaluate", 2);
-    ("polynomial_coefficient", 2);
-    ("polynomial_degree", 1);
-    ("polynomial_truncate", 2);
-    ("polynomial_is_zero", 1);
-    ("polynomial_formula", 1);
-    ("polynomial_latex", 1);
-    ("equation", 2);
-    ("polynomial_equation", 2);
-    ("equation_normal_form", 1);
-    ("equation_latex", 1);
-    ("equation_is_satisfied", 3);
-    ("equation_has_exact_solutions", 2);
-    ("equation_solution_count", 2);
-    ("equation_solution_set", 2);
-    ("equation_unique_solution", 2);
-    ("bool_var", 1);
-    ("bool_true", 0);
-    ("bool_false", 0);
-    ("bool_not", 1);
-    ("bool_and", 2);
-    ("bool_or", 2);
-    ("bool_xor", 2);
-    ("bool_imp", 2);
-    ("bool_iff", 2);
-    ("bool_latex", 1);
-    ("bool_equivalent", 2);
-    ("bool_evaluate", 3);
-    ("bool_sensitivity", 3);
-    ("bool_is_tautology", 1);
-    ("bool_is_contradiction", 1);
-    ("bool_is_tidy", 1);
-    ("bool_is_atom", 1);
-    ("bool_top", 1);
-    ("bool_size", 1);
-    ("bool_negations", 1);
-    ("bool_depth", 1);
-    ("bool_count", 2);
-    ("bool_variable_count", 1);
-    ("bool_model_count", 1);
-    ("bool_without_conditionals", 1);
-    ("matrix2", 4);
-    ("matrix3", 9);
-    ("matrix_identity", 1);
-    ("matrix_add", 2);
-    ("matrix_subtract", 2);
-    ("matrix_multiply", 2);
-    ("matrix_scale", 2);
-    ("matrix_transpose", 1);
-    ("matrix_determinant", 1);
-    ("matrix_inverse", 1);
-    ("matrix_is_invertible", 1);
-    ("matrix_entry", 3);
-    ("matrix_vector", 2);
-    ("matrix_latex", 1);
-    ("matrix_row_latex", 2);
-    ("matrix_row", 1);
-    ("matrix_column", 1);
-    ("matrix_stack", 2);
-    ("matrix_augment", 2);
-    ("matrix_rows", 1);
-    ("matrix_columns", 1);
-    ("matrix_rank", 1);
-    ("matrix_rref", 1);
-    ("matrix_null_space", 1);
-    ("point2", 2);
-    ("point3", 3);
-    ("point_latex", 1);
-    ("base_digits", 2);
-    ("base_number", 2);
-    ("blank", 1);
-    ("blank_wide", 2);
-    ("plain", 1);
-    ("exactly", 1);
-    ("vector_entry", 2);
-    ("set_empty", 0);
-    ("set_insert", 2);
-    ("set_interval", 4);
-    ("set_above", 2);
-    ("set_below", 2);
-    ("set_union", 2);
-    ("set_intersection", 2);
-    ("set_difference", 2);
-    ("set_latex", 1);
-    ("vector2", 2);
-    ("vector3", 3);
-    ("vector4", 4);
-    ("vector_add", 2);
-    ("vector_subtract", 2);
-    ("vector_scale", 2);
-    ("vector_dot", 2);
-    ("vector_cross", 2);
-    ("vector_latex", 1);
-    ("vector_is_zero", 1);
-    ("vector_norm_answer", 1);
-    ("vector_unit_answer", 1);
-    ("vector_parallel_answer", 1);
-    ("vector_same_direction_answer", 1);
-    (* Bitwise operations on whole numbers. A question that asks whether two
-       expressions are equivalent has to compare them under every assignment,
-       not just one; the usual way to carry that is a truth table, and a truth
-       table over n variables is exactly a 2^n-bit number. *)
-    ("bit_and", 2);
-    ("bit_or", 2);
-    ("bit_xor", 2);
-    (* Whole-number functions for counting and number theory. They work on
-       exact integers and stop generation, with a message, outside their
-       range (a factorial above 20!, a modulus that is not positive, an
-       inverse that does not exist). *)
-    ("number_latex", 1);
-    ("factorial", 1);
-    ("choose", 2);
-    ("permutations", 2);
-    ("gcd", 2);
-    ("lcm", 2);
-    ("pow_mod", 3);
-    ("mod_inverse", 2);
-  ]
+  List.map
+    (fun (entry : Rhema_types.signature) -> (entry.builtin, List.length entry.parameters))
+    Rhema_types.builtins
 
 (* Builtins usable as a right-hand side symbol, i.e. leaves that draw a random
    value during generation. *)
@@ -493,6 +340,188 @@ let parse_template position text =
   scan 0;
   flush ();
   (List.rev !pieces, List.rev !errors)
+
+(* ------------------------------------------------------------------ *)
+(* Types                                                               *)
+(* ------------------------------------------------------------------ *)
+
+(* What an expression can see, as types. Each lookup answers None for a name
+   that carries no type here (the checks above have already refused names
+   that do not exist), and the expression is then taken to be of any type. *)
+type type_scope = {
+  here : string -> Rhema_types.set option;  (* a bare name *)
+  child : int -> string -> Rhema_types.set option;  (* $n.NAME *)
+  named : string -> string -> Rhema_types.set option;  (* S.NAME, alias.NAME *)
+  target : string;  (* the attribute being computed, which infix joins *)
+}
+
+(* How an expression is named in a message. *)
+let rec expression_subject = function
+  | At (_, body) -> expression_subject body
+  | Int value -> string_of_int value
+  | Str text ->
+      if String.length text <= 20 then "\"" ^ text ^ "\"" else "this text"
+  | Bool truth -> string_of_bool truth
+  | Attr_here name -> "'" ^ name ^ "'"
+  | Attr_child (index, name) -> Printf.sprintf "$%d.%s" index name
+  | Attr_child_named (owner, name) -> owner ^ "." ^ name
+  | Child index -> Printf.sprintf "$%d" index
+  | Call (name, _) -> name ^ "(...)"
+  | Unary _ | Binary _ -> "this expression"
+
+let expression_position ~position = function At (here, _) -> here | _ -> position
+
+let ordinal index =
+  match index with 1 -> "first" | 2 -> "second" | 3 -> "third" | 4 -> "fourth"
+  | n -> string_of_int n ^ "th"
+
+(* The types [expression] can have, and a report of every use in it that no
+   type its operand can have allows. A use that some type allows is left to
+   the engine, and so is anything about the value itself: whether a number
+   is whole, a divisor zero, a matrix the right shape.
+
+   An operator or function gives its result only when each operand can have
+   a type it takes; otherwise the expression has no type at all (the empty
+   set), as an expression that can never be evaluated. Two things follow.
+   What is built on a wrong use is not reported again, since nothing is ever
+   refused for having no type. And a set never loses a type as the sets it
+   is computed from grow, which is what makes the result the same whatever
+   order the rules are read in: a wrong leaf in a recursive rule is found
+   because the rule's own operator does not vouch for it. *)
+let rec infer_type ~report ~position scope expression : Rhema_types.set =
+  let open Rhema_types in
+  let recurse = infer_type ~report ~position scope in
+  match expression with
+  | At (here, body) -> infer_type ~report ~position:here scope body
+  | Int _ -> [ Number ]
+  | Str _ -> [ Text ]
+  | Bool _ -> [ Truth ]
+  | Attr_here name -> Option.value ~default:any (scope.here name)
+  | Attr_child (index, name) -> Option.value ~default:any (scope.child index name)
+  | Attr_child_named (owner, name) -> Option.value ~default:any (scope.named owner name)
+  | Child index ->
+      (* Only infix and prefix take a child itself; they do not come here. *)
+      report position
+        (Printf.sprintf "$%d is a node, not a value; write $%d.value, or pass it to infix()" index
+           index);
+      unknown
+  | Unary (operator, body) -> (
+      let actual = recurse body in
+      match unary operator with
+      | None -> any
+      | Some (accepted, result) ->
+          if never actual accepted then
+            report
+              (expression_position ~position body)
+              (Printf.sprintf "'%s' takes %s, but %s is %s" operator (describe accepted)
+                 (expression_subject body) (describe actual));
+          if inter actual accepted = [] then unknown else result)
+  | Binary (operator, left, right) -> (
+      let left_type = recurse left and right_type = recurse right in
+      let side which body actual accepted =
+        if never actual accepted then
+          report
+            (expression_position ~position body)
+            (Printf.sprintf "'%s' takes %s on its %s, but %s is %s" operator
+               (describe accepted) which (expression_subject body) (describe actual))
+      in
+      match binary operator with
+      | None -> any
+      | Some (Both (accepted, result)) ->
+          side "left" left left_type accepted;
+          side "right" right right_type accepted;
+          if inter left_type accepted = [] || inter right_type accepted = [] then unknown
+          else result
+      | Some Join ->
+          side "left" left left_type joinable;
+          side "right" right right_type joinable;
+          (* Blanks on either side make text with blanks; text needs both
+             sides without them. *)
+          let left_type = inter left_type joinable and right_type = inter right_type joinable in
+          if left_type = [] || right_type = [] then unknown
+          else
+            let plain actual = without actual [ Blanked ] <> [] in
+            union
+              (if List.mem Blanked left_type || List.mem Blanked right_type then [ Blanked ]
+               else [])
+              (if plain left_type && plain right_type then [ Text ] else [])
+      | Some Same ->
+          if
+            left_type <> [] && right_type <> []
+            && inter (inter left_type right_type) comparable = []
+          then
+            report
+              (expression_position ~position left)
+              (if inter left_type comparable = [] then
+                 Printf.sprintf "'%s' cannot compare %s (%s)" operator (describe left_type)
+                   (expression_subject left)
+               else if inter right_type comparable = [] then
+                 Printf.sprintf "'%s' cannot compare %s (%s)" operator (describe right_type)
+                   (expression_subject right)
+               else
+                 Printf.sprintf
+                   "'%s' compares two values of one type, but %s is %s and %s is %s" operator
+                   (expression_subject left) (describe left_type) (expression_subject right)
+                   (describe right_type));
+          if inter (inter left_type right_type) comparable = [] then unknown else [ Truth ])
+  | Call (name, arguments) -> (
+      match signature name with
+      | Some entry when List.length entry.parameters = List.length arguments -> (
+          (* For each argument: the types it can have, and whether one of
+             them is taken. *)
+          let actuals =
+            List.mapi
+              (fun index (parameter, argument) ->
+                match parameter with
+                | Node -> (
+                    (* infix and prefix write a child's own copy of the
+                       attribute being computed, as text. *)
+                    match argument with
+                    | Child child | At (_, Child child) -> (
+                        match scope.child child scope.target with
+                        | Some actual ->
+                            if never actual textual then
+                              report
+                                (expression_position ~position argument)
+                                (Printf.sprintf
+                                   "%s writes the '%s' of $%d as text, but $%d.%s is %s" name
+                                   scope.target child child scope.target (describe actual));
+                            (any, inter actual textual <> [])
+                        | None -> (any, true))
+                    | _ ->
+                        report
+                          (expression_position ~position argument)
+                          (Printf.sprintf
+                             "%s takes a child written $n as its %s argument, for example \
+                              %s, but %s is a value"
+                             name (ordinal (index + 1))
+                             (if name = "infix" then "infix($1, \"+\", $3)"
+                              else "prefix(\"-\", $2)")
+                             (expression_subject argument));
+                        (any, false))
+                | Takes accepted ->
+                    let actual = recurse argument in
+                    if never actual accepted then
+                      report
+                        (expression_position ~position argument)
+                        (Printf.sprintf "%s takes %s as its %s argument, but %s is %s" name
+                           (describe accepted) (ordinal (index + 1))
+                           (expression_subject argument) (describe actual));
+                    (actual, inter actual accepted <> []))
+              (List.combine entry.parameters arguments)
+          in
+          match entry.result with
+          | Gives result -> if List.for_all snd actuals then result else unknown
+          | Either ->
+              (* Only the test decides whether cond has a value; a branch
+                 that has none simply adds nothing. *)
+              if snd (List.nth actuals 0) then
+                union (fst (List.nth actuals 1)) (fst (List.nth actuals 2))
+              else unknown)
+      | _ ->
+          (* An unknown name or a wrong count is reported elsewhere. *)
+          List.iter (fun argument -> ignore (recurse argument)) arguments;
+          any)
 
 (* ------------------------------------------------------------------ *)
 (* Checking                                                            *)
@@ -1279,7 +1308,12 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
       let found = ref false in
       iter_expr ~position:dummy_position
         (fun _ node ->
-          match node with Call (("blank" | "blank_wide"), _) -> found := true | _ -> ())
+          match node with
+          | Call (name, _) -> (
+              match Rhema_types.signature name with
+              | Some { result = Rhema_types.Gives [ Rhema_types.Blanked ]; _ } -> found := true
+              | _ -> ())
+          | _ -> ())
         expression;
       !found
     in
@@ -1640,6 +1674,341 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
         }
   in
 
+  (* ---- types ----
+     Only a file that passes everything above is typed: an undeclared name
+     has no type, and guessing one would report the same mistake twice.
+
+     The type of a synthesized attribute is the set of types its equations
+     can give it, over every rule of its nonterminal, and it is kept by
+     nonterminal: `value` on E and `value` on Q are different attributes.
+     The sets start empty and the rules are read until none grows, so a
+     recursive rule and the order of declarations make no difference. *)
+  let attribute_types : (string * string, Rhema_types.set) Hashtbl.t = Hashtbl.create 64 in
+  let value_types = ref [] in
+  if !errors = [] then begin
+    let module T = Rhema_types in
+    let silent _ _ = () in
+    (* A hole written twice in one prompt is one mistake, not two. *)
+    let said = ref [] in
+    let report position message =
+      if not (List.mem (position, message) !said) then begin
+        said := (position, message) :: !said;
+        report position message
+      end
+    in
+    let module_value alias name =
+      match module_of alias with
+      | Some module_spec -> List.assoc_opt name module_spec.value_types
+      | None -> None
+    in
+    (* A random is a truth value or a drawn number; a let is whatever its
+       expression gives, read in order. *)
+    List.iter
+      (fun (name, how) ->
+        value_types :=
+          !value_types @ [ (name, match how with Draw_boolean -> [ T.Truth ] | Draw_generator _ -> [ T.Number ]) ])
+      randoms;
+    let value_scope () =
+      let known = !value_types in
+      {
+        here = (fun name -> List.assoc_opt name known);
+        child = (fun _ _ -> None);
+        named = module_value;
+        target = "";
+      }
+    in
+    List.iter
+      (fun (name, body) ->
+        let position =
+          match
+            List.find_opt (function Let_decl (other, _, _) -> other = name | _ -> false) declarations
+          with
+          | Some declaration -> declaration_position declaration
+          | None -> dummy_position
+        in
+        let inferred = infer_type ~report ~position (value_scope ()) body in
+        value_types := !value_types @ [ (name, inferred) ])
+      lets;
+    let value_types = !value_types in
+    let attribute_type nonterminal name =
+      if List.mem name (synthesized_of nonterminal) then
+        Some (Option.value ~default:T.unknown (Hashtbl.find_opt attribute_types (nonterminal, name)))
+      else None
+    in
+    (* Before the children exist: the question-level values and the
+       budgets, which are whole numbers. *)
+    let downward =
+      {
+        here =
+          (fun name ->
+            match List.assoc_opt name value_types with
+            | Some known -> Some known
+            | None -> if is_inherited name then Some [ T.Number ] else None);
+        child = (fun _ _ -> None);
+        named = module_value;
+        target = "";
+      }
+    in
+    (* After them: what this rule has computed so far, then the same. The
+       children's attributes are read through [attribute_type], which is the
+       right working's or a mistake's. *)
+    let upward_with attribute_type rule known target =
+      {
+        here =
+          (fun name ->
+            match List.assoc_opt name known with
+            | Some computed -> Some computed
+            | None -> downward.here name);
+        child =
+          (fun index name ->
+            match List.nth_opt rule.rhs (index - 1) with
+            | Some (Symbol symbol) when is_nonterminal symbol -> attribute_type symbol name
+            | Some (Symbol _ | Literal _) -> if name = "value" then Some T.terminal_value else None
+            | Some (Generator _) -> if name = "value" then Some T.generator_value else None
+            | Some (Module_symbol (alias, nonterminal, _)) -> (
+                match module_of alias with
+                | Some module_spec -> List.assoc_opt (nonterminal, name) module_spec.attribute_types
+                | None -> None)
+            | None -> None);
+        named = module_value;
+        target;
+      }
+    in
+    let upward = upward_with attribute_type in
+    (* One reading of a rule's body, as the right working. [report] is silent
+       while the sets are still growing. A mistake line is no part of it. *)
+    let read_rule ~report rule =
+      let grew = ref false in
+      let known = ref [] in
+      List.iter
+        (fun equation ->
+          match equation with
+          | Assign (name, body, position) when is_inherited name ->
+              let actual = infer_type ~report ~position downward body in
+              if T.never actual [ T.Number ] then
+                report position
+                  (Printf.sprintf
+                     "the budget '%s' changes by a whole number, but this update is %s" name
+                     (T.describe actual))
+          | Assign (name, body, position) ->
+              let inferred = infer_type ~report ~position (upward rule !known name) body in
+              known := (name, inferred) :: List.remove_assoc name !known;
+              let before =
+                Option.value ~default:T.unknown (Hashtbl.find_opt attribute_types (rule.lhs, name))
+              in
+              let after = T.union before inferred in
+              if after <> before then begin
+                Hashtbl.replace attribute_types (rule.lhs, name) after;
+                grew := true
+              end
+          | Local (name, body, position) ->
+              let inferred = infer_type ~report ~position (upward rule !known name) body in
+              known := (name, inferred) :: List.remove_assoc name !known
+          | Require (condition, position) ->
+              let actual = infer_type ~report ~position (upward rule !known "") condition in
+              if T.never actual [ T.Truth ] then
+                report position
+                  (Printf.sprintf "a 'require' must be true or false, but this one is %s"
+                     (T.describe actual))
+          | Mistake _ -> ())
+        rule.equations;
+      !grew
+    in
+    let growing = ref true in
+    while !growing do
+      growing := false;
+      List.iter (fun rule -> if read_rule ~report:silent rule then growing := true) rules
+    done;
+    (* The same grammar as each mistake works it out. The engine evaluates a
+       finished tree again with that mistake's lines read and no requirement
+       checked, so the types are found the same way: every rule is read with
+       the lines for the mistake giving their names new values, and an
+       attribute has, under the mistake, every type some rule then gives it.
+       A mistake line may give a value of any kind: one root where a set of
+       roots is the answer, the words "no solution" where a number is. What
+       is refused is a use that, under the mistake, can never be evaluated,
+       because generation stops there every time the mistake is tried. *)
+    let read_under ~report mistake table rule =
+      let lookup nonterminal name =
+        if List.mem name (synthesized_of nonterminal) then
+          Some (Option.value ~default:T.unknown (Hashtbl.find_opt table (nonterminal, name)))
+        else None
+      in
+      let known = ref [] in
+      let bind name body position =
+        let inferred = infer_type ~report ~position (upward_with lookup rule !known name) body in
+        known := (name, inferred) :: List.remove_assoc name !known
+      in
+      List.iter
+        (fun equation ->
+          match equation with
+          | Assign (name, _, _) when is_inherited name -> ()
+          | Require _ -> ()
+          | Assign (name, body, position) | Local (name, body, position) -> bind name body position
+          | Mistake (made, name, body, position) -> if made = mistake then bind name body position)
+        rule.equations;
+      List.fold_left
+        (fun grew (name, inferred) ->
+          if List.mem name (synthesized_of rule.lhs) then begin
+            let before = Option.value ~default:T.unknown (Hashtbl.find_opt table (rule.lhs, name)) in
+            let after = T.union before inferred in
+            if after <> before then Hashtbl.replace table (rule.lhs, name) after;
+            grew || after <> before
+          end
+          else grew)
+        false !known
+    in
+    let mistakes_read =
+      List.map
+        (fun (mistake, _, _) ->
+          let table = Hashtbl.create 64 in
+          let growing = ref true in
+          while !growing do
+            growing := false;
+            List.iter (fun rule -> if read_under ~report:silent mistake table rule then growing := true) rules
+          done;
+          (mistake, table))
+        mistakes
+    in
+    (* The sets are final: read everything once more, aloud. *)
+    List.iter
+      (fun rule ->
+        let position = rule.rule_position in
+        (match rule.guard with
+        | None -> ()
+        | Some condition ->
+            let actual = infer_type ~report ~position downward condition in
+            if T.never actual [ T.Truth ] then
+              report
+                (expression_position ~position condition)
+                (Printf.sprintf "a 'when' condition must be true or false, but this one is %s"
+                   (T.describe actual)));
+        List.iter
+          (fun symbol ->
+            match symbol with
+            | Generator (name, arguments) ->
+                List.iteri
+                  (fun index argument ->
+                    let actual = infer_type ~report ~position downward argument in
+                    if T.never actual [ T.Number ] then
+                      report
+                        (expression_position ~position argument)
+                        (Printf.sprintf "%s takes a number as its %s argument, but %s is %s" name
+                           (ordinal (index + 1)) (expression_subject argument) (T.describe actual)))
+                  arguments
+            | Module_symbol (alias, nonterminal, arguments) ->
+                List.iter
+                  (fun (name, body) ->
+                    let actual = infer_type ~report ~position downward body in
+                    if T.never actual [ T.Number ] then
+                      report
+                        (expression_position ~position body)
+                        (Printf.sprintf
+                           "%s.%s starts '%s' at a whole number, but %s is %s" alias nonterminal
+                           name (expression_subject body) (T.describe actual)))
+                  arguments
+            | Symbol _ | Literal _ -> ())
+          rule.rhs;
+        ignore (read_rule ~report rule))
+      rules;
+    (* Then as each mistake reads it. What the right working already
+       reported at the same place is not said again. *)
+    List.iter
+      (fun (mistake, table) ->
+        let report position message =
+          if not (List.mem (position, message) !said) then
+            report position (Printf.sprintf "under the mistake '%s', %s" mistake message)
+        in
+        List.iter (fun rule -> ignore (read_under ~report mistake table rule)) rules)
+      mistakes_read;
+    (* Each question: what its prompt shows, what its blanks are graded
+       against, and the attributes the start symbol answers WeBWorK with. *)
+    List.iter2
+      (fun (draft : draft) (question : question) ->
+        let start = question.q_start in
+        let prompt_position =
+          match draft.d_prompt with Some (_, position) -> position | None -> draft.d_position
+        in
+        let value_type name =
+          match String.index_opt name '.' with
+          | Some dot ->
+              module_value (String.sub name 0 dot)
+                (String.sub name (dot + 1) (String.length name - dot - 1))
+          | None -> List.assoc_opt name value_types
+        in
+        let shown written = function
+          | Some actual when T.never actual T.showable ->
+              report prompt_position
+                (Printf.sprintf "{%s} is %s, which a prompt cannot show; a prompt shows text and numbers%s"
+                   written (T.describe actual)
+                   (if
+                      List.exists
+                        (fun ty ->
+                          List.mem ty
+                            T.[ Formula; Polynomial; Equation; Proposition; Matrix; Set; Vector; Point ])
+                        actual
+                    then ", so write it out first, with the function ending in _latex for its type"
+                    else ""))
+          | _ -> ()
+        and graded position written = function
+          | Some actual when T.never actual T.answerable ->
+              report position
+                (Printf.sprintf
+                   "%s is %s, which cannot be graded%s" written (T.describe actual)
+                   (if List.mem T.Equation actual then
+                      "; ask for its solutions with equation_solution_set or \
+                       equation_unique_solution"
+                    else "; it already holds its own blanks"))
+          | _ -> ()
+        in
+        List.iter
+          (function
+            | Text _ -> ()
+            | Hole (owner, name) -> shown (owner ^ "." ^ name) (attribute_type start name)
+            | Value_hole name -> shown name (value_type name)
+            | Answer_hole (owner, name) ->
+                graded prompt_position
+                  (Printf.sprintf "{answer %s.%s}" owner name)
+                  (attribute_type start name)
+            | Answer_value_hole name ->
+                graded prompt_position (Printf.sprintf "{answer %s}" name) (value_type name))
+          question.q_prompt;
+        (match (question.q_answer, draft.d_answer) with
+        | Some body, Some (_, position) ->
+            let scope =
+              {
+                here = (fun _ -> None);
+                child = (fun _ _ -> None);
+                named =
+                  (fun owner name ->
+                    if owner = start then attribute_type start name else module_value owner name);
+                target = "";
+              }
+            in
+            graded position "the answer" (Some (infer_type ~report ~position scope body))
+        | _ -> ());
+        let reserved name accepted =
+          let actual =
+            match attribute_type start name with
+            | Some actual -> Some actual
+            | None -> if name = "pg_variables" then List.assoc_opt name value_types else None
+          in
+          match actual with
+          | Some actual when T.never actual accepted ->
+              report
+                (if draft.d_position = dummy_position then prompt_position else draft.d_position)
+                (Printf.sprintf "'%s' must be %s, but %s computes it as %s" name
+                   (T.describe accepted)
+                   (if attribute_type start name <> None then "'" ^ start ^ "'" else "the file")
+                   (T.describe actual))
+          | _ -> ()
+        in
+        reserved "pg_context" T.textual;
+        reserved "pg_width" [ T.Number ];
+        reserved "pg_variables" T.textual)
+      drafts questions
+  end;
+
   match List.rev !errors with
   | [] ->
       let spec =
@@ -1663,6 +2032,10 @@ let check ?(source = "") ?(modules : (string * spec) list = []) (declarations : 
           questions;
           sets = !sets;
           mistakes = List.map (fun (name, description, _) -> (name, description)) mistakes;
+          attribute_types =
+            Hashtbl.fold (fun key types collected -> (key, types) :: collected) attribute_types []
+            |> List.sort compare;
+          value_types = !value_types;
         }
       in
       (* The selected question's starting budgets apply; a library has none. *)

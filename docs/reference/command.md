@@ -127,7 +127,10 @@ itself is wrong.
 ## Other commands
 
 `rhema check FILE...`
-:   Checks each file and prints `OK` with what it declares, or its problems.
+:   Checks each file and prints `OK` with what it declares, or its problems,
+    each as `FILE:LINE:COLUMN: error: ...`. The check includes the
+    [types](language.md#types) of every expression, so a text added to a
+    number is found here and not in the middle of generating a paper.
 
 `rhema run FILE`
 :   Generates and prints questions with their answers, instead of writing
@@ -139,4 +142,5 @@ itself is wrong.
     and sets.
 
 `rhema doc [NAME]`
-:   Lists the builtin functions grouped by value type, or describes one.
+:   Lists the builtin functions grouped by value type, each with the types
+    it takes and gives (`formula, formula -> formula`), or describes one.

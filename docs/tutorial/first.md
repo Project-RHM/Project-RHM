@@ -103,7 +103,9 @@ Before any question is generated, `rhema check` makes sure that
 - every synthesized attribute is computed by every production that must
   carry it,
 - the prompt and answer name attributes that exist,
-- every builtin function is called with the right number of arguments.
+- every builtin function is called with the right number of arguments,
+- no operator or function is given a value that cannot have a type it takes
+  (text added to a number, a number where a formula is wanted).
 
 These are checked once, for the file, not for each question drawn. A file
 that checks will not fail half way through a paper for one of these reasons.

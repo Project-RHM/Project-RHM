@@ -155,7 +155,7 @@ GROUPS = [
 ]
 
 DESCRIPTIONS = {
-    "str": "The text of a number or other value.",
+    "str": "A number written out as text; text is left as it is.",
     "paren": "Its argument with brackets around it.",
     "infix": "`infix($1, \"+\", $3)`: the two children joined by the operator text, bracketed as the precedence table requires.",
     "prefix": "`prefix(\"\\neg\", $2)`: the operator text before the child, bracketed as the precedence table requires.",
@@ -243,16 +243,22 @@ def _builtins_markdown():
             continue
         parts = line.split()
         name, count = parts[0], int(parts[1])
-        entries[group].append((name, count))
+        # After the count: "takes -> gives", or a note in brackets.
+        rest = line.split(None, 3)[3].strip() if len(parts) > 3 else ""
+        takes, _, gives = rest.partition(" -> ") if " -> " in rest else ("", "", "")
+        # A generator's line ends with a note in brackets after its types.
+        gives = gives.split("   (")[0].strip()
+        entries[group].append((name, count, takes, gives))
 
     out = [
         "# Builtin functions",
         "",
         "The functions an expression may call, grouped by the kind of value they work",
         "on. This page is generated from `rhema doc`, so it lists exactly what the",
-        "compiler accepts; calling one with the wrong number of arguments is an",
-        "error the checker reports. A function given the wrong kind of value stops",
-        "generation with a message naming both.",
+        "compiler accepts, with the types each function takes and gives. Calling one",
+        "with the wrong number of arguments, or with a value that cannot have a type",
+        "it takes, is an error the checker reports ([Types](language.md#types)).",
+        "Where text is taken, a number is written out.",
         "",
     ]
     known = [key for key, _, _ in GROUPS]
@@ -263,12 +269,15 @@ def _builtins_markdown():
         out += [f"## {title}", ""]
         if intro:
             out += [intro, ""]
-        out += ["| Function | Arguments | |", "|---|---|---|"]
-        for name, count in names:
-            out.append(f"| `{name}` | {count} | {DESCRIPTIONS.get(name, '')} |")
+        out += ["| Function | Takes | Gives | |", "|---|---|---|---|"]
+        for name, count, takes, gives in names:
+            # An older rhema prints no types; say how many arguments instead.
+            taken = takes if takes else f"{count} argument{'' if count == 1 else 's'}"
+            out.append(f"| `{name}` | {taken} | {gives} | {DESCRIPTIONS.get(name, '')} |")
         out.append("")
     total = sum(len(v) for v in entries.values())
-    out.append(f"{total} functions in all.")
+    generators = len(entries.get("generators", []))
+    out.append(f"{total - generators} functions and {generators} generators in all.")
     return "\n".join(out) + "\n"
 
 
