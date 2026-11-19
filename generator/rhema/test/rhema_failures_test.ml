@@ -317,12 +317,18 @@ prompt "Go. {answer Q.v}"
 
 (* Checked arithmetic must not stop a question that was right: every
    question type of the library is generated and written as PG and LaTeX. *)
+(* The files of the library, given by name on the command line (see the
+   dune file). The suites run side by side in this directory and write
+   temporary grammars into it, so listing the directory would pick up a file
+   of another suite that is malformed on purpose, or gone a moment later. *)
+let library_files =
+  Array.to_list Sys.argv |> List.tl |> List.map Filename.basename
+  |> List.filter (fun name -> Filename.check_suffix name ".rhm")
+  |> List.sort_uniq String.compare
+
 let () =
-  let files =
-    Sys.readdir "." |> Array.to_list
-    |> List.filter (fun name -> Filename.check_suffix name ".rhm")
-    |> List.sort String.compare
-  in
+  let files = library_files in
+  check "the library's files were given by name" (List.length files > 40);
   let asked = ref 0 in
   List.iter
     (fun filename ->
