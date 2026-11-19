@@ -509,7 +509,7 @@ let doc options =
         groups;
       print_endline "\nWhat each one does: https://project-rhm.github.io/reference/builtins/"
 
-let () =
+let main () =
   match Array.to_list Sys.argv |> List.tl with
   | [] | [ "--help" ] | [ "-h" ] | [ "help" ] ->
       print_endline usage;
@@ -521,3 +521,22 @@ let () =
   | "list" :: rest -> list (parse_options rest)
   | "doc" :: rest -> doc (parse_options rest)
   | arguments -> compile (parse_options arguments)
+
+(* Each command reports the errors it expects where they happen. This is
+   for the rest: whatever is raised while a paper is generated or written
+   ends as one line and status 1, like any other error, never as OCaml's
+   "Fatal error: exception ...". *)
+let () =
+  let stop message =
+    prerr_endline (program ^ ": error: " ^ message);
+    exit 1
+  in
+  try main () with
+  | Rhema_engine.Generation_error message
+  | Rhema_number.Arithmetic_error message
+  | Invalid_argument message
+  | Failure message
+  | Sys_error message ->
+      stop message
+  | Stack_overflow -> stop "a value grew too large to be computed"
+  | Not_found -> stop "internal error: something that was looked up is missing; please report this file"

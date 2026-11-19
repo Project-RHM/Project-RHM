@@ -391,9 +391,24 @@ let weighted_pick rules =
   in
   choose 0 rules
 
+(* A whole number from 0 up to, not including, [bound]. Random.int refuses
+   a bound above 2^30 - 1, which a ten-digit number or a range such as
+   0 to 2000000000 exceeds; Random.full_int takes any positive bound. For a
+   bound Random.int takes, it is used as before, so that no paper already
+   generated changes. *)
+let random_below bound =
+  if bound <= 0x3FFFFFFF then Random.int bound else Random.full_int bound
+
+(* An integer holds every number of up to 18 digits. *)
+let most_digits = 18
+
 let draw_integer digits =
   chose ();
   if digits <= 1 then Random.int 10
+  else if digits > most_digits then
+    error
+      (Printf.sprintf "a whole number of %d digits is asked for; at most %d can be kept exact"
+         digits most_digits)
   else
     let rec power_of_ten accumulator exponent =
       if exponent <= 0 then accumulator
@@ -401,7 +416,7 @@ let draw_integer digits =
     in
     let lower = power_of_ten 1 (digits - 1) in
     let upper = (power_of_ten 1 digits) - 1 in
-    lower + Random.int (upper - lower + 1)
+    lower + random_below (upper - lower + 1)
 
 let draw_integer_between name lower upper =
   if lower > upper then
@@ -411,7 +426,7 @@ let draw_integer_between name lower upper =
   let width = upper - lower + 1 in
   if width <= 0 then error (Printf.sprintf "%s range is too wide" name);
   if width > 1 then chose ();
-  lower + Random.int width
+  lower + random_below width
 
 let draw_nonzero_integer_between lower upper =
   if lower > upper then
@@ -426,8 +441,10 @@ let draw_nonzero_integer_between lower upper =
   else
     let negative_count = -lower in
     let positive_count = upper in
+    if negative_count + positive_count <= 0 then
+      error "nonzero_integer_between range is too wide";
     if negative_count + positive_count > 1 then chose ();
-    let choice = Random.int (negative_count + positive_count) in
+    let choice = random_below (negative_count + positive_count) in
     if choice < negative_count then lower + choice
     else 1 + (choice - negative_count)
 
@@ -715,11 +732,13 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
       let body = as_formula "formula_substitute" (recurse body)
       and variable = as_text "formula_substitute" (recurse variable)
       and replacement = as_formula "formula_substitute" (recurse replacement) in
-      Formula (Rhema_formula.substitute ~variable ~replacement body)
+      (try Formula (Rhema_formula.substitute ~variable ~replacement body)
+       with Invalid_argument message -> error ("formula_substitute: " ^ message))
   | Call ("differentiate", [ body; variable ]) ->
       let expression = as_formula "differentiate" (recurse body) in
       let variable = as_text "differentiate" (recurse variable) in
-      Formula (Rhema_formula.differentiate ~variable expression)
+      (try Formula (Rhema_formula.differentiate ~variable expression)
+       with Invalid_argument message -> error ("differentiate: " ^ message))
   | Call ("formula_latex", [ body ]) ->
       Text (Rhema_formula.to_latex (as_formula "formula_latex" (recurse body)))
   | Call ("formula_is_zero", [ body ]) ->
@@ -763,14 +782,18 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
       and variable = as_text "formula_to_polynomial" (recurse variable) in
       (match Rhema_polynomial.of_formula ~variable body with
       | Some polynomial -> Polynomial polynomial
-      | None -> error "formula_to_polynomial received a non-polynomial formula")
+      | None -> error "formula_to_polynomial received a non-polynomial formula"
+      | exception Invalid_argument message -> error ("formula_to_polynomial: " ^ message))
   | Call ("polynomial_constant", [ value; variable ]) ->
-      Polynomial
-        (Rhema_polynomial.constant
-           ~variable:(as_text "polynomial_constant" (recurse variable))
-           (as_number "polynomial_constant" (recurse value)))
+      (try
+         Polynomial
+           (Rhema_polynomial.constant
+              ~variable:(as_text "polynomial_constant" (recurse variable))
+              (as_number "polynomial_constant" (recurse value)))
+       with Invalid_argument message -> error ("polynomial_constant: " ^ message))
   | Call ("polynomial_variable", [ variable ]) ->
-      Polynomial (Rhema_polynomial.variable (as_text "polynomial_variable" (recurse variable)))
+      (try Polynomial (Rhema_polynomial.variable (as_text "polynomial_variable" (recurse variable)))
+       with Invalid_argument message -> error ("polynomial_variable: " ^ message))
   | Call ("polynomial_monomial", [ coefficient; degree; variable ]) ->
       let degree =
         Rhema_number.require_integer "polynomial_monomial"
@@ -783,20 +806,24 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
               (as_number "polynomial_monomial" (recurse coefficient)) degree)
        with Invalid_argument message -> error message)
   | Call ("polynomial_linear", [ coefficient; constant_term; variable ]) ->
-      Polynomial
-        (Rhema_polynomial.linear
-           ~variable:(as_text "polynomial_linear" (recurse variable))
-           (as_number "polynomial_linear" (recurse coefficient))
-           (as_number "polynomial_linear" (recurse constant_term)))
+      (try
+         Polynomial
+           (Rhema_polynomial.linear
+              ~variable:(as_text "polynomial_linear" (recurse variable))
+              (as_number "polynomial_linear" (recurse coefficient))
+              (as_number "polynomial_linear" (recurse constant_term)))
+       with Invalid_argument message -> error ("polynomial_linear: " ^ message))
   | Call
       ( "polynomial_quadratic",
         [ quadratic_coefficient; linear_coefficient; constant_term; variable ] ) ->
-      Polynomial
-        (Rhema_polynomial.quadratic
-           ~variable:(as_text "polynomial_quadratic" (recurse variable))
-           (as_number "polynomial_quadratic" (recurse quadratic_coefficient))
-           (as_number "polynomial_quadratic" (recurse linear_coefficient))
-           (as_number "polynomial_quadratic" (recurse constant_term)))
+      (try
+         Polynomial
+           (Rhema_polynomial.quadratic
+              ~variable:(as_text "polynomial_quadratic" (recurse variable))
+              (as_number "polynomial_quadratic" (recurse quadratic_coefficient))
+              (as_number "polynomial_quadratic" (recurse linear_coefficient))
+              (as_number "polynomial_quadratic" (recurse constant_term)))
+       with Invalid_argument message -> error ("polynomial_quadratic: " ^ message))
   | Call ("polynomial_add", [ left; right ]) ->
       (try
          Polynomial
@@ -900,26 +927,30 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
         | Rhema_equation.Finite (_ :: _) -> true
         | Rhema_equation.No_solution | Rhema_equation.All_values | Rhema_equation.Finite []
         | Rhema_equation.Unsupported ->
-            false)
+            false
+        | exception Invalid_argument message -> error ("equation_has_exact_solutions: " ^ message))
   | Call ("equation_solution_count", [ equation; variable ]) ->
       let equation = as_equation "equation_solution_count" (recurse equation)
       and variable = as_text "equation_solution_count" (recurse variable) in
       (match Rhema_equation.exact_solutions ~variable equation with
       | Some roots -> Num (Rhema_number.of_int (List.length roots))
-      | None -> error "equation_solution_count requires a finite exact solution set")
+      | None -> error "equation_solution_count requires a finite exact solution set"
+      | exception Invalid_argument message -> error ("equation_solution_count: " ^ message))
   | Call ("equation_solution_set", [ equation; variable ]) ->
       let equation = as_equation "equation_solution_set" (recurse equation)
       and variable = as_text "equation_solution_set" (recurse variable) in
       (match Rhema_equation.exact_solutions ~variable equation with
       | Some roots -> Set (List.fold_left Rhema_set.insert Rhema_set.empty roots)
-      | None -> error "equation_solution_set requires a finite exact solution set")
+      | None -> error "equation_solution_set requires a finite exact solution set"
+      | exception Invalid_argument message -> error ("equation_solution_set: " ^ message))
   | Call ("equation_unique_solution", [ equation; variable ]) ->
       let equation = as_equation "equation_unique_solution" (recurse equation)
       and variable = as_text "equation_unique_solution" (recurse variable) in
       (match Rhema_equation.exact_solutions ~variable equation with
       | Some [ root ] -> Num root
       | Some _ -> error "equation_unique_solution requires exactly one solution"
-      | None -> error "equation_unique_solution requires an exact supported equation")
+      | None -> error "equation_unique_solution requires an exact supported equation"
+      | exception Invalid_argument message -> error ("equation_unique_solution: " ^ message))
   | Call ("bool_var", [ name ]) ->
       let name = as_text "bool_var" (recurse name) in
       (try Boolean (Rhema_boolean.variable name) with Invalid_argument message -> error message)
@@ -1000,7 +1031,11 @@ let rec evaluate ?(self = []) ~globals ~is_inherited ~rule_precedence ~environme
       let n x = as_number "matrix3" (recurse x) in
       Matrix (Rhema_matrix.make [ [ n a; n b; n c ]; [ n d; n e; n f ]; [ n g; n h; n i ] ])
   | Call ("matrix_identity", [ size ]) ->
-      Matrix (Rhema_matrix.identity (Rhema_number.require_integer "matrix_identity" (as_number "matrix_identity" (recurse size))))
+      let size =
+        Rhema_number.require_integer "matrix_identity" (as_number "matrix_identity" (recurse size))
+      in
+      if size < 0 then error (Printf.sprintf "matrix_identity: a size of %d is negative" size);
+      Matrix (Rhema_matrix.identity size)
   | Call (("matrix_add" | "matrix_subtract" | "matrix_multiply") as name, [ left; right ]) -> (
       let operation =
         match name with
@@ -1927,6 +1962,17 @@ let generate_once (spec : Rhema_check.spec) =
   in
   let pieces, _ = read_question tree in
   let answers = List.filter_map blank_value pieces in
+  (* blank() refuses these itself; an `answer` line and an {answer ...} hole
+     come here unseen, and the writers had no way to say no but to stop. *)
+  List.iter
+    (function
+      | Equation _ ->
+          error
+            "the answer is an equation, which cannot be graded; ask for its solutions with \
+             equation_solution_set or equation_unique_solution"
+      | Rich _ -> error "the answer is text that holds an answer blank, and cannot itself be graded"
+      | _ -> ())
+    answers;
   let answer =
     match answers with
     | first :: _ -> first
@@ -2086,5 +2132,10 @@ let generate spec =
           if !choice_points = before then
             error ("this grammar always fails the same way: " ^ message)
           else attempt (remaining - 1)
+      (* Every builtin is meant to say what is wrong in its own words. These
+         two are for the one that does not: the question stops with what the
+         library below said, and the command goes on to report it. *)
+      | exception Invalid_argument message -> error message
+      | exception Stack_overflow -> error "a value grew too large to be computed"
   in
   attempt retries_per_question

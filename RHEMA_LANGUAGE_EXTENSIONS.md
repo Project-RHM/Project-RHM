@@ -3,7 +3,8 @@
 *Six additions to the Rhema language that let one file hold whatever
 question types its author wants, four smaller ones (section 7), blanks
 in text with formulas beyond x (section 8), mistakes (section 9), and
-static types (section 10). A
+static types (section 10), and failures that end with a message
+(section 11). A
 Chinese version is in
 `RHEMA_LANGUAGE_EXTENSIONS.zh.md`; the language itself is described in
 `RHEMA_LANGUAGE_GUIDE.md`.*
@@ -727,7 +728,8 @@ vectors, a function's domain, whether an equation has exact solutions, a
 use that only some types allow, in the right working or under a mistake,
 and requirements and budgets that cannot be met. Passing `rhema check` does not mean a file cannot fail.
 
-**Found on the way, not changed.** Nine functions let a library's
+**Found on the way**, and fixed in the change that followed (section 11).
+Nine functions let a library's
 complaint about a variable name through as an uncaught exception, where
 the others report an error: `polynomial_variable`, `polynomial_constant`,
 `polynomial_linear`, `polynomial_quadratic`, `formula_to_polynomial`, and
@@ -762,6 +764,69 @@ the engine.
 Generation is unchanged: 47 question types of the library on 40-question
 papers, the library's set with and without a student, seven PG files and a
 LaTeX paper are byte-identical to the commit before.
+
+## 11. Failures end with a message
+
+Section 10 listed places where the engine ended with OCaml's
+`Fatal error: exception ...` instead of a message. Looking for more turned
+up two that were not on the list, and they are fixed together.
+
+**A message at each place.** A name that is not a variable name, given to
+`polynomial_variable`, `polynomial_constant`, `polynomial_linear`,
+`polynomial_quadratic`, `formula_to_polynomial`,
+`equation_has_exact_solutions`, `equation_solution_count`,
+`equation_solution_set` or `equation_unique_solution`; a zero divisor met
+inside `differentiate` or `formula_substitute`; a negative size for
+`matrix_identity`. Each now stops generation in the function's own name:
+
+```
+quiz.rhm: error: polynomial_variable: "2" is not a valid formula variable
+```
+
+**What is graded is an answer.** `blank` refused an equation and text that
+holds a blank; an `answer` line and an `{answer ...}` hole did not, so one
+that got there through `cond`, past the checker, was listed by `rhema run`
+and stopped the PG writer. The engine now refuses it when the question is
+generated, in every output.
+
+**Generators draw from a range of any width.** OCaml's `Random.int` takes a
+bound of at most 2^30 - 1, so `integer(10)`, a ten-digit number, and
+`integer_between(0, 2000000000)` ended in a fatal error. A wider range is
+now drawn with `Random.full_int`; a range `Random.int` takes is drawn with
+it as before, so no paper already generated changes, and a test compares
+the two draw by draw. `integer(DIGITS)` takes up to 18 digits, which is
+what an integer holds, and says so beyond.
+
+**Exact numbers do not wrap round.** A number is a fraction of two OCaml
+integers, of 63 bits. A sum or a product that did not fit wrapped round
+silently: the answer was a wrong number, or, in
+`polynomial_power(polynomial_linear(1, 2, "x"), 100)`, a pair of numbers on
+which the next step did not end before the stack did. Every operation of
+`rhema_number.ml` is now checked, and one that does not fit raises the
+error a division by zero raises: the question is drawn again, and a grammar
+that always overflows is told that a number grew too large. This is the
+one change here that could have altered a question that generated; it does
+not, for any question of the library (below).
+
+**Two nets.** `Rhema_engine.generate` turns an `Invalid_argument` or a
+stack overflow from any builtin into a generation error, for a function
+that is added later without a message of its own; and the command reports
+whatever is still raised while a paper is generated or written as one line
+with status 1.
+
+**Not changed.** Numbers stay 63-bit: a grammar that needs larger ones is
+told so and is not served. `formula_substitute`, `differentiate` and
+`bool_count` still accept a name that is not a variable name and find no
+such variable, which is harmless.
+
+Tests: `rhema_failures_test.ml`, where every case above is generated from
+and must raise a generation error with the expected words, any other
+exception being a failure; the arithmetic inside and outside the range; the
+wide ranges; and every question type of the library generated and written
+as PG. Against the commit before: 47 question types of the library on 150-
+and 40-question papers, the set with and without a student, 43 PG files
+and 43 LaTeX files with answers are byte-identical, and so are the check
+verdict and 30 questions of each of 98 other grammar files on this machine.
 
 ## What this allows
 
