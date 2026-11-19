@@ -357,13 +357,13 @@ Whatever depends on the value and not on its type. A file that passes
   variable named `2`;
 - an equation with no exact solutions where one is asked for;
 - a use that only some of an expression's types allow, as above;
+- a number too large to be kept exact: numbers are fractions of 63-bit
+  integers, and a sum or product that does not fit stops the question, as a
+  division by zero does, where it would otherwise be a wrong number;
 - a requirement that cannot be met, or a budget no production can spend.
 
-Each of these stops generation with a message. A few still end the command
-with a bare `Fatal error` line instead: a name that is not a variable name
-given to a polynomial constructor or to an equation's solving functions, a
-zero divisor met inside `differentiate` or `formula_substitute`, a negative
-size for `matrix_identity`.
+Each of these stops generation with a message of one line, and the command
+ends with status 1.
 
 ## Mistakes
 

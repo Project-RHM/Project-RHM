@@ -95,7 +95,9 @@ GROUPS = [
      "right brackets."),
     ("generators", "Generators",
      "Leaves that draw a whole number. They appear on the right of a production, "
-     "or after `random NAME =`; their arguments are whole numbers."),
+     "or after `random NAME =`; their arguments are whole numbers. A range may be "
+     "of any width that fits in an integer, and `integer(DIGITS)` draws numbers of "
+     "up to 18 digits."),
     ("integers", "Whole numbers",
      "Counting and number theory on whole numbers: factorials, binomial "
      "coefficients and permutations, greatest common divisors and least common "

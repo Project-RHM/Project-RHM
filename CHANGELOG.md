@@ -29,6 +29,29 @@ is announced one version before the removal.
   expansions are the same questions as in 0.2.0. A derivative answer of
   `calculus.rhm` is the same function as before and is sometimes written
   differently in PG.
+- **Failures end with a message.** Several things a grammar can ask for
+  ended the command with OCaml's `Fatal error: exception ...` and status 2.
+  Each now stops with a message of one line and status 1: a name that is
+  not a variable name given to `polynomial_variable`,
+  `polynomial_constant`, `polynomial_linear`, `polynomial_quadratic`,
+  `formula_to_polynomial` or one of the four functions that solve an
+  equation; a zero divisor met inside `differentiate` or
+  `formula_substitute`; a negative size for `matrix_identity`; an equation,
+  or text holding a blank, that reaches an `answer` through `cond`, which
+  `rhema run` listed and the PG writer stopped on. Whatever else is raised
+  while a paper is generated or written is reported the same way.
+- **Generators draw from a range of any width.** A range of more than
+  1073741823 values, such as `integer(10)` or
+  `integer_between(0, 2000000000)`, ended in the same fatal error. It is
+  now drawn from; `integer(DIGITS)` takes up to 18 digits and says so
+  beyond. A narrower range is drawn exactly as before.
+- **Exact numbers no longer wrap round.** A number is a fraction of two
+  63-bit integers, and a sum or product that did not fit gave a wrong
+  number without a word, or, as in
+  `polynomial_power(polynomial_linear(1, 2, "x"), 100)`, a stack overflow.
+  Every operation is now checked; one that does not fit stops the question
+  like a division by zero, with "a number grew too large to be kept exact".
+  No question of the library is affected: its output is byte-identical.
 - **Static types.** `rhema check`, and every command that reads a file, now
   infers the types every expression can have and reports a use that none of
   them allows: text in arithmetic, a number where a formula is wanted, a

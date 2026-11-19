@@ -1,6 +1,6 @@
 # 语言扩展：include、import、有名字的题型、套题、每题一个上下文、多个答案空
 
-*Rhema 语言的六项新增，让一个文件可以容纳作者想要的任何题型；另有几处小的补充（第 7 节）、文本中的答案空（第 8 节）、错误规则（第 9 节）和静态类型（第 10 节）。英文原版见 `RHEMA_LANGUAGE_EXTENSIONS.md`，以英文版为准；语言本身见 `RHEMA_LANGUAGE_GUIDE.md`。*
+*Rhema 语言的六项新增，让一个文件可以容纳作者想要的任何题型；另有几处小的补充（第 7 节）、文本中的答案空（第 8 节）、错误规则（第 9 节）、静态类型（第 10 节）和失败时给出信息（第 11 节）。英文原版见 `RHEMA_LANGUAGE_EXTENSIONS.md`，以英文版为准；语言本身见 `RHEMA_LANGUAGE_GUIDE.md`。*
 
 ## 1. `include "file.rhm"`：文件之间的复用
 
@@ -367,11 +367,33 @@ quiz.rhm:5:14: error: '+' takes a number on its left, but 'label' is text
 
 **不检查的内容**（它们仍然会让生成停下并给出信息）：一个数是否为整数，除数是否为零，矩阵和向量的形状，函数的定义域，方程是否有精确解，只有部分类型允许的用法（无论是在正确的演算中还是在某种错误之下），以及无法满足的 `require` 和花不掉的预算。通过 `rhema check` 并不意味着文件不会失败。
 
-**顺带发现、未作改动的问题。** 有九个函数在变量名不合法时，会把底层库的异常原样抛出，而其他函数会报告为错误：`polynomial_variable`、`polynomial_constant`、`polynomial_linear`、`polynomial_quadratic`、`formula_to_polynomial`，以及 `equation_has_exact_solutions`、`equation_solution_count`、`equation_solution_set`、`equation_unique_solution`。凡是接受文本的地方，数都能通过检查（因为引擎会把它写成文本），所以 `polynomial_variable(2)` 会被接受，并以这种方式终止。另外，方程经由 `cond` 成为答案时，PG 输出仍会因异常而中止，这是检查器无法排除的。
+**顺带发现的问题**（已在随后的改动中修正，见第 11 节）。 有九个函数在变量名不合法时，会把底层库的异常原样抛出，而其他函数会报告为错误：`polynomial_variable`、`polynomial_constant`、`polynomial_linear`、`polynomial_quadratic`、`formula_to_polynomial`，以及 `equation_has_exact_solutions`、`equation_solution_count`、`equation_solution_set`、`equation_unique_solution`。凡是接受文本的地方，数都能通过检查（因为引擎会把它写成文本），所以 `polynomial_variable(2)` 会被接受，并以这种方式终止。另外，方程经由 `cond` 成为答案时，PG 输出仍会因异常而中止，这是检查器无法排除的。
 
 测试：`rhema_types_test.ml`。（1）用引擎核对类型表：148 个带参数的函数，每个参数位置分别代入十八种类型中的每一种，其余参数保持正确，共 4662 次调用；检查器拒绝某次调用，当且仅当表拒绝它；引擎从不接受表所拒绝的调用，也不会因为类型而拒绝表所允许的调用；调用成功时得到的类型是表中列出的类型。以子结点为参数的 `infix` 和 `prefix`，以及四个无参数的函数另行测试；每个运算符与每种类型、每一对类型都试过，检查器的结论必须与引擎一致。（2）用生成结果核对推断：文法库每种题型各生成 25 道题，由产生式建出的每个结点（无论在文件本身还是在模块里）的每个综合属性，以及文件自己的每个 random 和 let，其实际类型都在为它推断出的集合之内（分别约 20000 个和 7700 个值）。（3）在小文法上测试检查器本身：各种错误的措辞，其中三处还核对了位置；每种必须接受的写法（因产生式或 `cond` 而具有多种类型、把数当文本用、答案包装、取决于值的错误）；递归、写错的叶子和产生式的顺序；导入；错误行。原有四个测试期望这些错误在生成时出现，现在改为期望由检查器报告，并各保留一个经由 `cond` 书写、仍会到达引擎的版本。
 
 生成结果没有变化：文法库的 47 种题型（各 40 道题）、文法库里的套题（指定和不指定学生两种情况）、七个 PG 文件和一份 LaTeX 试卷，与改动之前的提交逐字节相同。
+
+## 11. 失败时给出一条信息
+
+第 10 节列出了引擎以 OCaml 的 `Fatal error: exception ...` 结束、而没有给出信息的几处。继续排查时又发现了两处不在那张清单上的问题，这次一并修正。
+
+**每一处都有自己的信息。** 把不合法的变量名交给 `polynomial_variable`、`polynomial_constant`、`polynomial_linear`、`polynomial_quadratic`、`formula_to_polynomial`、`equation_has_exact_solutions`、`equation_solution_count`、`equation_solution_set` 或 `equation_unique_solution`；在 `differentiate` 或 `formula_substitute` 内部遇到零除数；给 `matrix_identity` 一个负的阶数。现在每一处都以该函数的名义停止生成：
+
+```
+quiz.rhm: error: polynomial_variable: "2" is not a valid formula variable
+```
+
+**用来判分的必须是答案。** `blank` 本来就拒绝方程和带有答案空的文本；`answer` 行和 `{answer ...}` 却不拒绝，所以经由 `cond` 绕过检查器到达那里的方程，会被 `rhema run` 列出来，并使 PG 输出中止。现在引擎在生成题目时就拒绝它，各种输出都一样。
+
+**生成器可以从任意宽度的范围中抽取。** OCaml 的 `Random.int` 只接受不超过 2^30 - 1 的上界，所以 `integer(10)`（十位数）和 `integer_between(0, 2000000000)` 会以致命错误结束。现在较宽的范围用 `Random.full_int` 抽取；`Random.int` 能接受的范围仍像以前一样用它抽取，因此已经生成过的试卷不会改变，并有一项测试逐次比较两者的抽取结果。`integer(DIGITS)` 最多接受 18 位，这是整数能容纳的位数；超过时会明确说明。
+
+**精确数不再溢出回绕。** 一个数是两个 OCaml 整数（63 位）构成的分数。以前，放不下的和或积会悄悄回绕：答案成了一个错误的数；或者像 `polynomial_power(polynomial_linear(1, 2, "x"), 100)` 那样，得到一对让下一步运算在栈耗尽之前都结束不了的数。现在 `rhema_number.ml` 的每个运算都经过检查，放不下时抛出与除以零相同的错误：这道题重新抽取，而总是溢出的文法会被告知“数太大”。这是本次改动中唯一可能改变原本能生成的题目的地方；对文法库的任何题目，它都没有造成改变（见下文）。
+
+**两道保险。** `Rhema_engine.generate` 把任何内建函数抛出的 `Invalid_argument` 或栈溢出转成生成错误，以防将来新增的函数没有自己的报错信息；命令行则把生成或输出试卷时仍然抛出的任何异常报告为一行信息，退出状态为 1。
+
+**没有改动的。** 数仍然是 63 位的：需要更大的数的文法会被明确告知，但不会得到支持。`formula_substitute`、`differentiate` 和 `bool_count` 仍然接受不合法的变量名，只是找不到这样的变量，这没有害处。
+
+测试：`rhema_failures_test.ml`。上述每种情况都实际生成一次，必须抛出带有预期措辞的生成错误，出现任何其他异常都算失败；还测试了范围之内和之外的算术、宽范围的抽取，以及文法库每种题型的生成和 PG 输出。与改动之前的提交相比：文法库的 47 种题型（150 道题和 40 道题的试卷）、指定和不指定学生的套题、43 个 PG 文件和 43 个带答案的 LaTeX 文件逐字节相同；这台机器上另外 98 个文法文件的检查结论和各 30 道题的输出也完全相同。
 
 ## 这带来了什么
 

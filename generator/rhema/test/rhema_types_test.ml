@@ -327,12 +327,17 @@ let rec owner (spec : Rhema_check.spec) rule =
   if List.memq rule spec.rules then Some spec
   else List.find_map (fun (_, imported) -> owner imported rule) spec.imports
 
+(* The files of the library, given by name on the command line (see the
+   dune file). The suites run side by side in this directory and write
+   temporary grammars into it, so listing the directory would pick up a file
+   of another suite that is malformed on purpose, or gone a moment later. *)
+let library_files =
+  Array.to_list Sys.argv |> List.tl |> List.map Filename.basename
+  |> List.filter (fun name -> Filename.check_suffix name ".rhm")
+  |> List.sort_uniq String.compare
+
 let () =
-  let files =
-    Sys.readdir "." |> Array.to_list
-    |> List.filter (fun name -> Filename.check_suffix name ".rhm")
-    |> List.sort String.compare
-  in
+  let files = library_files in
   let attributes = ref 0 and values = ref 0 and files_run = ref 0 in
   List.iter
     (fun filename ->
