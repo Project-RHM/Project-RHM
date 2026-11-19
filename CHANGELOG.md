@@ -78,6 +78,40 @@ is announced one version before the removal.
   page of the site, generated from it, shows the same.
 - `mistake` is now a reserved word. A grammar that used it as a name must
   rename it.
+- **A presentation at a terminal.** When `rhema` writes to a terminal,
+  compiling and running show the file, the assignment and the seed, the
+  steps as they are reached, the progress of the generation and a summary
+  of what was written; a problem is shown with its line of the file and a
+  mark under the column. It all goes to standard error, and it is off when
+  anything is redirected or piped, when `CI` is set and when PG goes to
+  standard output, so what a program reads from `rhema` has not changed.
+  `--plain` turns it off, `--no-color` (or `NO_COLOR`) and `--no-emoji`
+  tone it down, and `-v` / `--verbose` adds each question's derivation.
+  It has a few jokes in it, and three hidden options (`--hello`,
+  `--nailong`, `--coffee`).
+- **`rhema try FILE`.** A session that shows the questions of a file one
+  at a time and takes a command a line: `a` for the answer and what each
+  mistake gives, `= NUMBER` to compare a number with the answer exactly
+  (a number that is the answer of a declared mistake is told so),
+  `BUDGET = N`, `question NAME` and `seed N` to change what is generated,
+  `t` and `pg` to look at the derivation and the PG, and `how` for the
+  `rhema run` command that prints the questions shown so far. A session
+  shows exactly the questions that command does. It reads standard input,
+  from a terminal or not.
+- **A missing name is asked for, at a terminal.** A file of sets run
+  without `--run`, a `--run` that names no set and a `--question` that
+  names no question list the file's own names and ask which is meant. The
+  answer is a number or a name of the list, never a guess, and the run is
+  the one the same command gives with that name on it. Without somebody to
+  ask (a pipe, a redirection, `--plain`) these are the errors they were.
+- **Hints.** An unknown option or command is reported with the one it is
+  nearest to: `unknown option --studnt (did you mean --student?)`.
+- **Changed.** `--count` with a negative number is an error of the command
+  line (status 2); it was `rhema: error: List.init`. The "not run through
+  WeBWorK" line of the summary is said only where PG was written. In the
+  OCaml library, the record `Rhema_load.failure` has a third field,
+  `kind`, which says whether a failure is of the syntax, of the meaning or
+  of something else; code that builds such a record must give it.
 
 ## 0.2.0 (2026-11-16)
 

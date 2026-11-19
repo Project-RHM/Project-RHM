@@ -20,7 +20,7 @@ type t = {
   unicode : bool;
   links : bool;
   verbose : bool;
-  started : float;
+  mutable started : float;
   mutable last_redraw : float;
   mutable progress_open : bool;
   mutable pending_progress : (int * int) option;
@@ -195,14 +195,15 @@ let finish_progress t =
     t.progress_open <- false
   end
 
-let summary t ~count ~variant ~explicit_seed ~paths =
+let summary t ?(webwork = false) ~count ~variant ~explicit_seed ~paths () =
   if t.interactive then begin
     let elapsed = max 0. (Unix.gettimeofday () -. t.started) in
     let mark = if t.unicode then "\u{2713}" else "OK" in
     Printf.eprintf "\n %s Generated %d question%s in %.2fs (seed %d).\n"
       (paint t "1;32" mark) count (if count = 1 then "" else "s") elapsed variant;
     List.iter (fun (kind, path) -> Printf.eprintf "   %-15s %s\n" kind (path_link t path)) paths;
-    Printf.eprintf "   WeBWorK rendering and grading were not run.\n";
+    (* said only where PG was written: nothing else goes to WeBWorK *)
+    if webwork then Printf.eprintf "   WeBWorK rendering and grading were not run.\n";
     if count > 0 && explicit_seed = Some 42 then
       quip t ~tag:"[42]" "The universe has the answer. Rhema brought the questions."
     else if count = 0 then
@@ -278,33 +279,84 @@ let specification_errors t ?note failures =
   if has Rhema_load.Syntax then quip t "You shall not parse!"
   else if has Rhema_load.Semantic then quip t "Not even wrong. This one didn't reach generation."
 
+(* The accepted rules of one question and the attribute values at each
+   node, indented by depth, on [out]. *)
+let derivation out (question : Rhema_engine.question) =
+  let attributes values describe =
+    List.map (fun (name, value) -> name ^ "=" ^ describe value) values |> String.concat ", "
+  in
+  let show depth name value =
+    Printf.fprintf out "%s%s%s\n" (String.make (2 * depth) ' ') name (safe_text value)
+  in
+  let rec walk depth (node : Rhema_engine.node) =
+    let rule =
+      match node.applied_rule with
+      | Some rule -> Rhema_visualization.rule_text rule
+      | None -> node.symbol
+    in
+    show depth "" rule;
+    if node.inherited_attributes <> [] then
+      show (depth + 1) "Inherited: " (attributes node.inherited_attributes string_of_int);
+    if node.attributes <> [] then
+      show (depth + 1) "Synthesized: " (attributes node.attributes Rhema_engine.describe_value);
+    List.iter (walk (depth + 1)) node.children
+  in
+  if question.globals <> [] then
+    show 1 "Globals: " (attributes question.globals Rhema_engine.describe_value);
+  walk 1 question.tree
+
 let trace t questions =
   if t.verbose then begin
-    let attributes values describe =
-      List.map (fun (name, value) -> name ^ "=" ^ describe value) values |> String.concat ", "
-    in
-    let show depth name value =
-      Printf.eprintf "%s%s%s\n" (String.make (2 * depth) ' ') name (safe_text value)
-    in
-    let rec walk depth (node : Rhema_engine.node) =
-      let rule =
-        match node.applied_rule with
-        | Some rule -> Rhema_visualization.rule_text rule
-        | None -> node.symbol
-      in
-      show depth "" rule;
-      if node.inherited_attributes <> [] then
-        show (depth + 1) "Inherited: " (attributes node.inherited_attributes string_of_int);
-      if node.attributes <> [] then
-        show (depth + 1) "Synthesized: " (attributes node.attributes Rhema_engine.describe_value);
-      List.iter (walk (depth + 1)) node.children
-    in
     List.iteri
       (fun i (question : Rhema_engine.question) ->
         Printf.eprintf "\n Question %d: accepted derivation\n" (i + 1);
-        if question.globals <> [] then
-          show 1 "Globals: " (attributes question.globals Rhema_engine.describe_value);
-        walk 1 question.tree)
+        derivation stderr question)
       questions;
     flush stderr
+  end
+
+(* ------------------------------------------------------------------ *)
+(* Asking                                                              *)
+(* ------------------------------------------------------------------ *)
+
+(* A question is put to a person only: the presentation is on, and what is
+   typed comes from a terminal too. Everywhere else the command keeps to
+   its arguments, and what would have been asked is an error as before. *)
+let can_ask t = t.interactive && Unix.isatty Unix.stdin
+
+let note t message = if t.interactive then Printf.eprintf "   %s\n%!" (safe_text message)
+
+(* Offer [names] and read which one is meant: its number in the list or the
+   name itself. None when nobody can be asked, when the line is empty or the
+   input ends, or after three answers that are neither. Nothing is guessed:
+   an answer that is not on the list is never taken for one that is. *)
+let choose t ~what names =
+  if (not (can_ask t)) || names = [] then None
+  else begin
+    finish_progress t;
+    List.iteri
+      (fun index name ->
+        Printf.eprintf "   %s %s\n" (orange t brand_orange (Printf.sprintf "[%d]" (index + 1))) (safe_text name))
+      names;
+    let rec ask tries =
+      Printf.eprintf "   Which %s? A number or a name; Enter alone stops: %!" what;
+      (* the time a person takes to answer is not time the run took *)
+      let asked = Unix.gettimeofday () in
+      let line = In_channel.input_line stdin in
+      t.started <- t.started +. (Unix.gettimeofday () -. asked);
+      match line with
+      | None -> None
+      | Some line -> (
+          let line = String.trim line in
+          if line = "" then None
+          else
+            match int_of_string_opt line with
+            | Some number when number >= 1 && number <= List.length names ->
+                Some (List.nth names (number - 1))
+            | _ when List.mem line names -> Some line
+            | _ ->
+                Printf.eprintf "   '%s' is not one of them.\n%!" (safe_text line);
+                if tries >= 2 then None else ask (tries + 1))
+    in
+    ask 0
   end

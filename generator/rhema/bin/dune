@@ -2,7 +2,7 @@
  (name rhema_main)
  (public_name rhema)
  (package rhema)
- (modules rhema_main rhema_terminal)
+ (modules rhema_main rhema_terminal rhema_session)
  (libraries rhema unix))
 
 (executable

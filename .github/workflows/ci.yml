@@ -125,8 +125,23 @@ jobs:
           python tools/test_grammar_creation.py
           python tools/test_teacher_builder.py
           python tools/test_webwork_preview.py
+          python tools/test_rhema_terminal.py
+          python tools/test_rhema_try.py
+          python tools/test_source_configure.py
+          python tools/test_visual_builder.py
+          python tools/test_boolean_demo.py
+          python tools/test_generation_history.py
+          python tools/test_api_keys.py
+          python tools/test_rhema_ai.py
+          python tools/test_editor_ui.py
           python tools/rhema_difficulty.py report generator/stdlib/boolean.rhm --at 6 --count 50
           python tools/rhema_stats.py generator/stdlib/boolean.rhm --count 20
+
+      - name: JavaScript checks of the web editor
+        run: |
+          for test in tools/test_*.js; do
+            node "$test"
+          done
 
       # The site built above is published to Project-RHM/project-rhm.github.io
       # on every push to main, once that repository has a deploy key whose
