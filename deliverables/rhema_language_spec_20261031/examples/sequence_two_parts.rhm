@@ -1,0 +1,19 @@
+random first = integer_between(-5, 8)
+random difference = nonzero_integer_between(-4, 5)
+random n = integer_between(3, 8)
+
+let nth = first + (n - 1) * difference
+let total = n * (2 * first + (n - 1) * difference) / 2
+
+synth kind on Q
+start Q
+Q -> "arithmetic_sequence" {
+  kind = "arithmetic_sequence"
+}
+
+prompt "An arithmetic sequence has [`a_1 = {first}`] and [`d = {difference}`].
+
+(a) Find [`a_{{{n}}}`]: {answer nth}
+
+(b) Find [`S_{{{n}}}`]: {answer total}"
+width 12

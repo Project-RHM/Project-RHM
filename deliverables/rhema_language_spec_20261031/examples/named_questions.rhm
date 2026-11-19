@@ -1,0 +1,20 @@
+random a = integer_between(2, 9)
+random b = integer_between(2, 9)
+synth sum on Q
+synth product on Q
+start Q
+
+Q -> "pair" {
+  sum = a + b
+  product = a * b
+}
+
+prompt "Find the sum of {a} and {b}."
+answer Q.sum
+
+question multiplication {
+  start Q
+  prompt "Find the product of {a} and {b}."
+  answer Q.product
+  width 12
+}

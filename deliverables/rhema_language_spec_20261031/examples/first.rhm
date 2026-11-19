@@ -1,0 +1,13 @@
+synth value on E
+synth latex on E
+
+start E
+
+E -> integer_between(10, 99) "+" integer_between(10, 99) {
+  value = $1.value + $3.value
+  latex = str($1.value) ++ " + " ++ str($3.value)
+}
+
+prompt "Compute [`{E.latex}`]."
+answer E.value
+width 12

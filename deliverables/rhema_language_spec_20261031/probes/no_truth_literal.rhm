@@ -1,0 +1,8 @@
+
+synth value on Q
+start Q
+Q -> "marker" {
+value = true
+}
+prompt "Answer the question."
+answer Q.value

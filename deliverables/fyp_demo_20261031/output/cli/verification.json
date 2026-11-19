@@ -1,0 +1,203 @@
+{
+  "time_utc": "2026-10-31T09:41:25.798292+00:00",
+  "commit": "5545aa182494797ce7d2859bacd15353a620d921",
+  "extension": {
+    "id": "rhema.rhema-language",
+    "version": "0.1.1",
+    "gui_verified_this_run": false,
+    "note": "Installed extension code was inspected and its CLI invocations reproduced. Native VS Code UI control permission was unavailable."
+  },
+  "seed": {
+    "identity": "demo_budget.rhm:main/FYP2026",
+    "digest": "727e5037a05fff12fecef00f15d63c67",
+    "first_eight_hex": "727e5037",
+    "integer": 1920880695
+  },
+  "records": [
+    {
+      "step": "check",
+      "cwd": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031",
+      "command": [
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/_build/install/default/bin/rhema",
+        "check",
+        "demo_budget.rhm",
+        "-I",
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/stdlib"
+      ],
+      "exit_code": 0,
+      "stdout": "demo_budget.rhm: OK (4 rules; questions: main; sets: none)\n",
+      "stderr": ""
+    },
+    {
+      "step": "list",
+      "cwd": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031",
+      "command": [
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/_build/install/default/bin/rhema",
+        "list",
+        "demo_budget.rhm",
+        "-I",
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/stdlib"
+      ],
+      "exit_code": 0,
+      "stdout": "questions:\n  main           start E, context Numeric\nbudgets: cost = 4\n",
+      "stderr": ""
+    },
+    {
+      "step": "extension_run_equivalent",
+      "cwd": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031",
+      "command": [
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/_build/install/default/bin/rhema",
+        "run",
+        "--question",
+        "main",
+        "-I",
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/stdlib",
+        "demo_budget.rhm"
+      ],
+      "exit_code": 0,
+      "stdout": " 1. Evaluate [`8 + 3 + (2 - 7)`].\n    answer: 6\n 2. Evaluate [`2 + (3 - 7 + 4)`].\n    answer: 2\n 3. Evaluate [`(9 + 3) \\cdot 2`].\n    answer: 24\n 4. Evaluate [`4 + 4 + 4 + (8 + 6)`].\n    answer: 26\n 5. Evaluate [`3 + 5 + 5 - 9`].\n    answer: 4\n",
+      "stderr": ""
+    },
+    {
+      "step": "extension_compile_equivalent",
+      "cwd": "/var/folders/dr/hbzkf_0d2j924z7ch9xnqrd80000gn/T/rhema-extension-compile-7mkymhp_",
+      "command": [
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/_build/install/default/bin/rhema",
+        "--question",
+        "main",
+        "-I",
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/stdlib",
+        "demo_budget.rhm"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "step": "personalized_run",
+      "cwd": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031",
+      "command": [
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/_build/install/default/bin/rhema",
+        "run",
+        "demo_budget.rhm",
+        "-I",
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/stdlib",
+        "--question",
+        "main",
+        "--count",
+        "1",
+        "--assignment",
+        "demo_budget.rhm:main",
+        "--student",
+        "FYP2026",
+        "--set",
+        "cost=10"
+      ],
+      "exit_code": 0,
+      "stdout": " 1. Evaluate [`3 + 9 + (4 - (8 + 6)) \\cdot (9 - 8)`].\n    answer: 2\n",
+      "stderr": ""
+    },
+    {
+      "step": "compile_with_debug_artifacts",
+      "cwd": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031",
+      "command": [
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/_build/install/default/bin/rhema",
+        "demo_budget.rhm",
+        "-I",
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/stdlib",
+        "--question",
+        "main",
+        "--count",
+        "1",
+        "--assignment",
+        "demo_budget.rhm:main",
+        "--student",
+        "FYP2026",
+        "--set",
+        "cost=10",
+        "-o",
+        "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031/output/cli/cost10.pg",
+        "--ast-out",
+        "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031/output/cli/cost10_ast.txt",
+        "--visualization-out",
+        "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031/output/cli/cost10_trees.html"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "step": "reproducible_replay",
+      "cwd": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031",
+      "command": [
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/_build/install/default/bin/rhema",
+        "demo_budget.rhm",
+        "-I",
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/stdlib",
+        "--question",
+        "main",
+        "--count",
+        "1",
+        "--assignment",
+        "demo_budget.rhm:main",
+        "--student",
+        "FYP2026",
+        "--set",
+        "cost=10",
+        "-o",
+        "-"
+      ],
+      "exit_code": 0,
+      "stdout": "DOCUMENT();\nloadMacros(\"PGstandard.pl\", \"MathObjects.pl\", \"PGML.pl\");\nContext(\"Numeric\");\n\nBEGIN_PGML\nEvaluate [`3 + 9 + (4 - (8 + 6)) \\cdot (9 - 8)`].[_____]{2}\nEND_PGML\nENDDOCUMENT();\n",
+      "stderr": ""
+    },
+    {
+      "step": "other_student_variant",
+      "cwd": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031",
+      "command": [
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/_build/install/default/bin/rhema",
+        "run",
+        "demo_budget.rhm",
+        "-I",
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/stdlib",
+        "--question",
+        "main",
+        "--count",
+        "1",
+        "--assignment",
+        "demo_budget.rhm:main",
+        "--student",
+        "FYP2027",
+        "--set",
+        "cost=10"
+      ],
+      "exit_code": 0,
+      "stdout": " 1. Evaluate [`(7 - 6) \\cdot (4 - 5 \\cdot 3)`].\n    answer: -11\n",
+      "stderr": ""
+    },
+    {
+      "step": "assignment_set",
+      "cwd": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031",
+      "command": [
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/_build/install/default/bin/rhema",
+        "run",
+        "demo_assignment.rhm",
+        "-I",
+        "/Users/ray/Desktop/Project-RHM_latest 2/generator/stdlib",
+        "--run",
+        "defense",
+        "--assignment",
+        "demo_assignment.rhm:main",
+        "--student",
+        "FYP2026"
+      ],
+      "exit_code": 0,
+      "stdout": "demo_assignment.rhm:main for FYP2026: 5 questions in 3 parts\n\n1. Sequences\n\n1  [seq.main; cost 2]\nAn arithmetic sequence has first term [`a_1 = -7`] and common difference [`d = -6`].\n(a) Find [`a_{5}`]: [___]\n(b) Find the sum [`S_{5}`]: [___]\n    answers: -31; -95\n\n2. Logic\n  2(a)  [logic.main; cost 8]\nEvaluate [`(r \\to p) \\to q`] when [`p = \\mathsf{F}`], [`q = \\mathsf{F}`] and [`r = \\mathsf{T}`].\nEnter 1 for true and 0 for false.\n    answer: true\n  2(b)  [logic.main; cost 10]\nEvaluate [`(q \\land \\neg r) \\leftrightarrow \\neg p`] when [`p = \\mathsf{F}`], [`q = \\mathsf{T}`] and [`r = \\mathsf{F}`].\nEnter 1 for true and 0 for false.\n    answer: true\n  2(c)  [logic.main; cost 12]\nSuppose [`p = \\mathsf{F}`], [`q = \\mathsf{T}`] and [`r = \\mathsf{T}`]. What is the truth value of [`(q \\lor \\neg r) \\to ((\\neg q \\lor p) \\land r)`]?\nEnter 1 for true and 0 for false.\n    answer: false\n\n3. Linear algebra\n\n3  [eigen.main; cost 2]\nFind the eigenvalues of [`A = \\begin{pmatrix} 36 & 12 \\\\ -120 & -40 \\end{pmatrix}`]. Enter the eigenvalues as a set, such as [`\\{-1, 4\\}`].\n    answer: Set({-4, 0})\n\nbudget means:\n  part 1 Sequences: cost 2.00 over 1\n  part 2 Logic: cost 10.00 over 3\n  part 3 Linear algebra: cost 2.00 over 1\n",
+      "stderr": ""
+    }
+  ],
+  "replay_identical": true,
+  "answer": "2",
+  "other_student_answer": "-11",
+  "scope": "CLI behavior and extension-equivalent invocations, not native VS Code button execution or source-token/AST dumps."
+}

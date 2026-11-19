@@ -1,0 +1,32 @@
+Attribute Grammar Generated Derivations
+
+Question 1
+Prompt: An arithmetic sequence satisfies [`a_{{3}} = 3`] and [`a_{{6}} = 6`]. Find its common difference.
+Expected answer: 1
+Question values:
+  first = 1
+  difference = 1
+  first_index = 3
+  gap = 3
+  second_index = 6
+  first_given = 3
+  second_given = 6
+Derivation:
+  Q
+    production: Q -> "recover_difference" [line 19]
+    equation: cost = - 1
+    equation: require (second_index > first_index)
+    equation: require (first_given != second_given)
+    equation: value = ((second_given - first_given) / (second_index - first_index))
+    equation: require (value = difference)
+    equation: text = ("An arithmetic sequence satisfies [`a_{{" ++ (str(first_index) ++ ("}} = " ++ (str(first_given) ++ ("`] and [`a_{{" ++ (str(second_index) ++ ("}} = " ++ (str(second_given) ++ "`]. Find its common difference."))))))))
+    inherited:
+      cost = 1
+    synthesized:
+      value = 1
+      text = An arithmetic sequence satisfies [`a_{{3}} = 3`] and [`a_{{6}} = 6`]. Find its common difference.
+    recover_difference
+      inherited: (none)
+      synthesized:
+        value = recover_difference
+

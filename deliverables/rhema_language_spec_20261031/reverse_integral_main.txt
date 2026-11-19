@@ -1,0 +1,10 @@
+ 1. Find an antiderivative of [`\cos\left(x\right) - 4 \cdot x^{3}`] with respect to x, with C = 0.
+    answer: Formula(sin(x)-x^4)
+ 2. Find an antiderivative of [`\cos\left(x\right) - 4 \cdot 2 \cdot x`] with respect to x, with C = 0.
+    answer: Formula(sin(x)-4*x^2)
+ 3. Find an antiderivative of [`\cos\left(x\right) - 4 \cdot 2 \cdot x`] with respect to x, with C = 0.
+    answer: Formula(sin(x)-4*x^2)
+ 4. Find an antiderivative of [`\cos\left(x\right) - 4 \cdot 4 \cdot x^{3}`] with respect to x, with C = 0.
+    answer: Formula(sin(x)-4*x^4)
+ 5. Find an antiderivative of [`3 \cdot 3 \cdot x^{2} + \cos\left(x\right)`] with respect to x, with C = 0.
+    answer: Formula(3*x^3+sin(x))

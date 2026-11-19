@@ -1,0 +1,16 @@
+import "named_questions.rhm" as pairs
+import "calculus.rhm" as calc
+import "boolean.rhm" as logic
+
+set practice {
+  part "Warm-up"
+    1 of pairs.main
+    1 of pairs.multiplication
+  part "Differentiation"
+    2 of calc.derivative(cost in {4, 6})
+  part "Logic"
+    2 of logic.main(cost ~ 9 spread 1 low 8 allowed {8, 10})
+  distinct
+  balanced
+  ordered
+}

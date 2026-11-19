@@ -1,0 +1,492 @@
+{
+  "status": "passed",
+  "time_utc": "2026-10-31T08:48:33.410585+00:00",
+  "commit": "5545aa182494797ce7d2859bacd15353a620d921",
+  "project": "/Users/ray/Desktop/Project-RHM_latest 2",
+  "student": "FYP2026",
+  "scope": "Demo fixtures only; not a rerun of every project test.",
+  "cases": [
+    {
+      "case": "teacher_sequence",
+      "answer": "11",
+      "replay_identical": true,
+      "preview": [
+        {
+          "answer": "11",
+          "context": "Numeric",
+          "operator_count": null,
+          "pieces": [
+            {
+              "text": "An arithmetic sequence has first term [`a_1 = 2`] and common difference [`d = 3`]. Find [`a_{4}`]."
+            },
+            {
+              "answer": "11"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "budget_4",
+      "source": "demo_budget.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031/demo_budget.rhm: OK (4 rules; questions: main; sets: none)",
+      "count": 2,
+      "question": "main",
+      "cost_override": null,
+      "assignment": "demo_budget.rhm:main",
+      "listing": " 1. Evaluate [`3 + 9 + (4 + 3 + 8)`].\n    answer: 27\n 2. Evaluate [`6 \\cdot (8 + 6)`].\n    answer: 84\n",
+      "pg": "budget_4.pg",
+      "replay_identical": true,
+      "other_student_changed_this_sample": true,
+      "independent_answers": [
+        27,
+        84
+      ]
+    },
+    {
+      "case": "budget_10",
+      "source": "demo_budget.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031/demo_budget.rhm: OK (4 rules; questions: main; sets: none)",
+      "count": 2,
+      "question": "main",
+      "cost_override": 10,
+      "assignment": "demo_budget.rhm:main",
+      "listing": " 1. Evaluate [`3 + 9 + (4 - (8 + 6)) \\cdot (9 - 8)`].\n    answer: 2\n 2. Evaluate [`2 + 7 + (7 - (2 - 3 + 7)) - (2 + 7)`].\n    answer: 1\n",
+      "pg": "budget_10.pg",
+      "replay_identical": true,
+      "other_student_changed_this_sample": true,
+      "independent_answers": [
+        2,
+        1
+      ]
+    },
+    {
+      "case": "sequence_gap",
+      "source": "demo_sequence_gap.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031/demo_sequence_gap.rhm: OK (1 rules; questions: main; sets: none)",
+      "count": 1,
+      "question": "main",
+      "cost_override": null,
+      "assignment": "demo_sequence_gap.rhm:main",
+      "listing": " 1. An arithmetic sequence satisfies [`a_{{3}} = 3`] and [`a_{{6}} = 6`]. Find its common difference.\n    answer: 1\n",
+      "pg": "sequence_gap.pg",
+      "replay_identical": true,
+      "other_student_changed_this_sample": true,
+      "independent_answer": "1"
+    },
+    {
+      "case": "polynomial_main",
+      "source": "demo_polynomial.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031/demo_polynomial.rhm: OK (8 rules; questions: main, value; sets: none)",
+      "count": 1,
+      "question": "main",
+      "cost_override": null,
+      "assignment": "demo_polynomial.rhm:main",
+      "listing": " 1. Let [`P(x) = (x + 6)^{2}(x - 5)`].\n(a) Expand and collect like terms: [___]\n(b) Find [`P(-3)`]: [___]\n    answers: Polynomial(x^3+7*x^2-24*x-180); -72\n",
+      "pg": "polynomial_main.pg",
+      "replay_identical": true,
+      "other_student_changed_this_sample": true
+    },
+    {
+      "case": "polynomial_value",
+      "source": "demo_polynomial.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031/demo_polynomial.rhm: OK (8 rules; questions: main, value; sets: none)",
+      "count": 1,
+      "question": "value",
+      "cost_override": null,
+      "assignment": "demo_polynomial.rhm:value",
+      "listing": " 1. Let [`P(x) = (2 \\cdot x + 3)(x + 5)`]. Find [`P(1)`]: [___]\n    answer: 30\n",
+      "pg": "polynomial_value.pg",
+      "replay_identical": true,
+      "other_student_changed_this_sample": true
+    },
+    {
+      "case": "assignment",
+      "source": "demo_assignment.rhm",
+      "check": "/Users/ray/Desktop/Project-RHM_latest 2/deliverables/fyp_demo_20261031/demo_assignment.rhm: OK (0 rules; questions: none; sets: defense)",
+      "count": 1,
+      "question": "main",
+      "cost_override": null,
+      "assignment": "demo_assignment.rhm:main",
+      "listing": "demo_assignment.rhm:main for FYP2026: 5 questions in 3 parts\n\n1. Sequences\n\n1  [seq.main; cost 2]\nAn arithmetic sequence has first term [`a_1 = -7`] and common difference [`d = -6`].\n(a) Find [`a_{5}`]: [___]\n(b) Find the sum [`S_{5}`]: [___]\n    answers: -31; -95\n\n2. Logic\n  2(a)  [logic.main; cost 8]\nEvaluate [`(r \\to p) \\to q`] when [`p = \\mathsf{F}`], [`q = \\mathsf{F}`] and [`r = \\mathsf{T}`].\nEnter 1 for true and 0 for false.\n    answer: true\n  2(b)  [logic.main; cost 10]\nEvaluate [`(q \\land \\neg r) \\leftrightarrow \\neg p`] when [`p = \\mathsf{F}`], [`q = \\mathsf{T}`] and [`r = \\mathsf{F}`].\nEnter 1 for true and 0 for false.\n    answer: true\n  2(c)  [logic.main; cost 12]\nSuppose [`p = \\mathsf{F}`], [`q = \\mathsf{T}`] and [`r = \\mathsf{T}`]. What is the truth value of [`(q \\lor \\neg r) \\to ((\\neg q \\lor p) \\land r)`]?\nEnter 1 for true and 0 for false.\n    answer: false\n\n3. Linear algebra\n\n3  [eigen.main; cost 2]\nFind the eigenvalues of [`A = \\begin{pmatrix} 36 & 12 \\\\ -120 & -40 \\end{pmatrix}`]. Enter the eigenvalues as a set, such as [`\\{-1, 4\\}`].\n    answer: Set({-4, 0})\n\nbudget means:\n  part 1 Sequences: cost 2.00 over 1\n  part 2 Logic: cost 10.00 over 3\n  part 3 Linear algebra: cost 2.00 over 1\n",
+      "pg": "assignment.pg",
+      "replay_identical": true,
+      "other_student_changed_this_sample": true
+    }
+  ],
+  "live": {
+    "status": "passed",
+    "graded": [
+      {
+        "case": "teacher_sequence",
+        "answers": {
+          "AnSwEr0001": "11"
+        },
+        "correct": {
+          "answer_count": 1,
+          "answers": [
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 1.0
+            }
+          ],
+          "correct_count": 1,
+          "score": 1.0,
+          "success": true
+        },
+        "wrong": {
+          "answer_count": 1,
+          "answers": [
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 0.0
+            }
+          ],
+          "correct_count": 0,
+          "score": 0.0,
+          "success": true
+        }
+      },
+      {
+        "case": "budget_4",
+        "answers": {
+          "AnSwEr0001": "27",
+          "AnSwEr0002": "84"
+        },
+        "correct": {
+          "answer_count": 2,
+          "answers": [
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 1.0
+            },
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0002",
+              "score": 1.0
+            }
+          ],
+          "correct_count": 2,
+          "score": 1.0,
+          "success": true
+        },
+        "wrong": {
+          "answer_count": 2,
+          "answers": [
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 0.0
+            },
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0002",
+              "score": 0.0
+            }
+          ],
+          "correct_count": 0,
+          "score": 0.0,
+          "success": true
+        }
+      },
+      {
+        "case": "budget_10",
+        "answers": {
+          "AnSwEr0001": "2",
+          "AnSwEr0002": "1"
+        },
+        "correct": {
+          "answer_count": 2,
+          "answers": [
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 1.0
+            },
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0002",
+              "score": 1.0
+            }
+          ],
+          "correct_count": 2,
+          "score": 1.0,
+          "success": true
+        },
+        "wrong": {
+          "answer_count": 2,
+          "answers": [
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 0.0
+            },
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0002",
+              "score": 0.0
+            }
+          ],
+          "correct_count": 0,
+          "score": 0.0,
+          "success": true
+        }
+      },
+      {
+        "case": "sequence_gap",
+        "answers": {
+          "AnSwEr0001": "1"
+        },
+        "correct": {
+          "answer_count": 1,
+          "answers": [
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 1.0
+            }
+          ],
+          "correct_count": 1,
+          "score": 1.0,
+          "success": true
+        },
+        "wrong": {
+          "answer_count": 1,
+          "answers": [
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 0.0
+            }
+          ],
+          "correct_count": 0,
+          "score": 0.0,
+          "success": true
+        }
+      },
+      {
+        "case": "polynomial_main",
+        "answers": {
+          "AnSwEr0001": "x^3+7*x^2-24*x-180",
+          "AnSwEr0002": "-72"
+        },
+        "correct": {
+          "answer_count": 2,
+          "answers": [
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 1.0
+            },
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0002",
+              "score": 1.0
+            }
+          ],
+          "correct_count": 2,
+          "score": 1.0,
+          "success": true
+        },
+        "wrong": {
+          "answer_count": 2,
+          "answers": [
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 0.0
+            },
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0002",
+              "score": 0.0
+            }
+          ],
+          "correct_count": 0,
+          "score": 0.0,
+          "success": true
+        }
+      },
+      {
+        "case": "polynomial_value",
+        "answers": {
+          "AnSwEr0001": "30"
+        },
+        "correct": {
+          "answer_count": 1,
+          "answers": [
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 1.0
+            }
+          ],
+          "correct_count": 1,
+          "score": 1.0,
+          "success": true
+        },
+        "wrong": {
+          "answer_count": 1,
+          "answers": [
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 0.0
+            }
+          ],
+          "correct_count": 0,
+          "score": 0.0,
+          "success": true
+        }
+      },
+      {
+        "case": "assignment",
+        "answers": {
+          "AnSwEr0001": "-31",
+          "AnSwEr0002": "-95",
+          "AnSwEr0003": "1",
+          "AnSwEr0004": "1",
+          "AnSwEr0005": "0",
+          "AnSwEr0006": "{-4,0}"
+        },
+        "correct": {
+          "answer_count": 6,
+          "answers": [
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 1.0
+            },
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0002",
+              "score": 1.0
+            },
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0003",
+              "score": 1.0
+            },
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0004",
+              "score": 1.0
+            },
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0005",
+              "score": 1.0
+            },
+            {
+              "correct": true,
+              "feedback": "",
+              "name": "AnSwEr0006",
+              "score": 1.0
+            }
+          ],
+          "correct_count": 6,
+          "score": 1.0,
+          "success": true
+        },
+        "wrong": {
+          "answer_count": 6,
+          "answers": [
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0001",
+              "score": 0.0
+            },
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0002",
+              "score": 0.0
+            },
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0003",
+              "score": 0.0
+            },
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0004",
+              "score": 0.0
+            },
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0005",
+              "score": 0.0
+            },
+            {
+              "correct": false,
+              "feedback": "",
+              "name": "AnSwEr0006",
+              "score": 0.0
+            }
+          ],
+          "correct_count": 0,
+          "score": 0.0,
+          "success": true
+        }
+      }
+    ],
+    "polynomial_partial_credit": {
+      "answer_count": 2,
+      "answers": [
+        {
+          "correct": true,
+          "feedback": "",
+          "name": "AnSwEr0001",
+          "score": 1.0
+        },
+        {
+          "correct": false,
+          "feedback": "",
+          "name": "AnSwEr0002",
+          "score": 0.0
+        }
+      ],
+      "correct_count": 1,
+      "score": 0.5,
+      "success": true
+    },
+    "app_url": "http://127.0.0.1:5003",
+    "limits": "Local Docker WeBWorK rendering/grading; no course gradebook integration."
+  },
+  "source_sha256": {
+    "demo_budget.rhm": "e33f88240becd14272aa324053644f725c1cb1660849df9d38a727dae3fab744",
+    "demo_polynomial.rhm": "17a6aaa7a63ef911db127fbd4fb813e68c36167d21a242005df2a7838241a1f7",
+    "demo_sequence_gap.rhm": "97742159a4d1550eaadf2ce37e4a45dd621883ac9cb79deb0fcb986477bb92c3",
+    "demo_assignment.rhm": "fc0627531a315ae812aa17aa56f40a26a733f6c64b4a4bfb6ec751f518b7be26"
+  }
+}

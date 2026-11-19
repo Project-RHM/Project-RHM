@@ -1,0 +1,10 @@
+ 1. Find the product of 8 and 4.
+    answer: 32
+ 2. Find the product of 5 and 6.
+    answer: 30
+ 3. Find the product of 5 and 2.
+    answer: 10
+ 4. Find the product of 9 and 4.
+    answer: 36
+ 5. Find the product of 7 and 3.
+    answer: 21

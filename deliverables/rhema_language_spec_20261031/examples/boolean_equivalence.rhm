@@ -1,0 +1,17 @@
+random use_equivalent = boolean
+
+let a = bool_var("A")
+let b = bool_var("B")
+let lhs_expr = bool_or(a, bool_and(a, b))
+let rhs_expr = cond(use_equivalent, a, bool_not(a))
+let lhs_text = bool_latex(lhs_expr)
+let rhs_text = bool_latex(rhs_expr)
+
+synth value on Q
+start Q
+Q -> "equivalence" {
+  value = bool_equivalent(lhs_expr, rhs_expr)
+}
+
+prompt "Are [`{lhs_text}`] and [`{rhs_text}`] equivalent? Enter 1 for yes and 0 for no."
+answer Q.value

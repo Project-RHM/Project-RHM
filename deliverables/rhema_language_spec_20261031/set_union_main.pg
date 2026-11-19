@@ -1,0 +1,16 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Interval");
+
+BEGIN_PGML
+Given [`A = \{1, 5\}`] and [`B = [-2, 4)`], find [`A \cup B`].[_____]{answer=>Compute("{1, 5} U [-2, 4)"),width=>24}
+
+Given [`A = \{-3, 5\}`] and [`B = [-2, 4)`], find [`A \cup B`].[_____]{answer=>Compute("{-3, 5} U [-2, 4)"),width=>24}
+
+Given [`A = \{3, 5\}`] and [`B = [-2, 4)`], find [`A \cup B`].[_____]{answer=>Compute("{3, 5} U [-2, 4)"),width=>24}
+
+Given [`A = \{-1, 5\}`] and [`B = [-2, 4)`], find [`A \cup B`].[_____]{answer=>Compute("{-1, 5} U [-2, 4)"),width=>24}
+
+Given [`A = \{1, 5\}`] and [`B = [-2, 4)`], find [`A \cup B`].[_____]{answer=>Compute("{1, 5} U [-2, 4)"),width=>24}
+END_PGML
+ENDDOCUMENT();

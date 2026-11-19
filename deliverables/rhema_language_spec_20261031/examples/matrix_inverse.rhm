@@ -1,0 +1,15 @@
+context "Matrix"
+random k = nonzero_integer_between(-4, 4)
+let a = matrix2(1, k, 0, 1)
+let a_text = matrix_latex(a)
+
+synth value on Q
+start Q
+Q -> "inverse" {
+  require matrix_is_invertible(a)
+  value = matrix_inverse(a)
+}
+
+prompt "Find the inverse of [`A = {a_text}`]."
+answer Q.value
+width 30

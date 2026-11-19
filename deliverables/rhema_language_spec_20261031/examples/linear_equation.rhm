@@ -1,0 +1,29 @@
+random root = integer_between(-5, 5)
+random a = nonzero_integer_between(-4, 4)
+random b = integer_between(-4, 4)
+random gap = nonzero_integer_between(-3, 3)
+
+let c = a + gap
+let d = (a - c) * root + a * b
+let x = formula_variable("x")
+let lhs_expr = formula_multiply(
+  formula_constant(a), formula_add(x, formula_constant(b))
+)
+let rhs_expr = formula_add(
+  formula_multiply(formula_constant(c), x), formula_constant(d)
+)
+let problem = equation(lhs_expr, rhs_expr)
+
+synth text on Q
+synth value on Q
+start Q
+Q -> "linear" {
+  require equation_has_exact_solutions(problem, "x")
+  require equation_solution_count(problem, "x") = 1
+  value = equation_unique_solution(problem, "x")
+  require value = root
+  text = equation_latex(problem)
+}
+
+prompt "Solve [`{Q.text}`] for x."
+answer Q.value

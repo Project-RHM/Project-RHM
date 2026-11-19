@@ -95,3 +95,17 @@
     .workspace-app .rhema-editor-status { align-items:center; }
     .workspace-app .rhema-editor-shell { height:330px; }
 }
+.rhema-completion-menu { position:fixed; z-index:3000; max-height:240px; overflow:auto; border:1px solid #c5c5c5; border-radius:2px; background:#fff; color:#242424; box-shadow:0 3px 8px #0002; font:12px/1.5 Menlo,Consolas,monospace; }
+.rhema-completion-menu[hidden] { display:none; }
+.rhema-completion-menu [role="option"] { display:flex; justify-content:space-between; gap:16px; padding:5px 9px; cursor:pointer; }
+.rhema-completion-menu [aria-selected="true"] { background:#e8f0f8; }
+.rhema-completion-menu strong { font-weight:400; overflow-wrap:anywhere; }
+.rhema-completion-menu span { color:#777; flex:0 0 auto; }
+.api-config-import { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+.workspace-app .rhema-ai-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:6px 10px; border-bottom:1px solid var(--code-border); font-size:11px; }
+.rhema-ai-toolbar label { display:flex; align-items:center; gap:6px; margin:0; white-space:nowrap; }
+.rhema-ai-toolbar input[type="checkbox"] { width:14px; height:14px; margin:0; accent-color:#555; }
+#rhemaAiStatus { flex:1; min-width:70px; color:#707070; overflow-wrap:anywhere; }
+.workspace-app #rhemaAiSettingsBtn { padding:3px 5px; min-height:26px; font-size:11px; }
+.workspace-app .rhema-ghost { z-index:1; background:var(--code-background); }
+.rhema-ghost-insertion { color:#888; -webkit-text-fill-color:#888; }

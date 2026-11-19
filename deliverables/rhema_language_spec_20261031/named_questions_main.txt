@@ -1,0 +1,10 @@
+ 1. Find the sum of 8 and 4.
+    answer: 12
+ 2. Find the sum of 5 and 6.
+    answer: 11
+ 3. Find the sum of 5 and 2.
+    answer: 7
+ 4. Find the sum of 9 and 4.
+    answer: 13
+ 5. Find the sum of 7 and 3.
+    answer: 10

@@ -1,0 +1,16 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+Are [`A \lor (A \land B)`] and [`\neg A`] equivalent? Enter 1 for yes and 0 for no.[_____]{0}
+
+Are [`A \lor (A \land B)`] and [`A`] equivalent? Enter 1 for yes and 0 for no.[_____]{1}
+
+Are [`A \lor (A \land B)`] and [`\neg A`] equivalent? Enter 1 for yes and 0 for no.[_____]{0}
+
+Are [`A \lor (A \land B)`] and [`A`] equivalent? Enter 1 for yes and 0 for no.[_____]{1}
+
+Are [`A \lor (A \land B)`] and [`\neg A`] equivalent? Enter 1 for yes and 0 for no.[_____]{0}
+END_PGML
+ENDDOCUMENT();

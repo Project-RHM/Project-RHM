@@ -1,0 +1,36 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Vector");
+
+BEGIN_PGML
+Given [`u = \langle 1, 1, 2 \rangle`] and [`v = \langle 3, 1, -1 \rangle`]:
+
+(a) Find [`u \cdot v`]: [_____]{answer=>2,width=>24}
+
+(b) Find [`u \times v`]: [_____]{answer=>Compute("<-3, 7, -2>"),width=>24}
+
+Given [`u = \langle 1, -3, 2 \rangle`] and [`v = \langle 3, 1, -1 \rangle`]:
+
+(a) Find [`u \cdot v`]: [_____]{answer=>-2,width=>24}
+
+(b) Find [`u \times v`]: [_____]{answer=>Compute("<1, 7, 10>"),width=>24}
+
+Given [`u = \langle 1, 3, 2 \rangle`] and [`v = \langle 3, 1, -1 \rangle`]:
+
+(a) Find [`u \cdot v`]: [_____]{answer=>4,width=>24}
+
+(b) Find [`u \times v`]: [_____]{answer=>Compute("<-5, 7, -8>"),width=>24}
+
+Given [`u = \langle 1, -1, 2 \rangle`] and [`v = \langle 3, 1, -1 \rangle`]:
+
+(a) Find [`u \cdot v`]: [_____]{answer=>0,width=>24}
+
+(b) Find [`u \times v`]: [_____]{answer=>Compute("<-1, 7, 4>"),width=>24}
+
+Given [`u = \langle 1, 1, 2 \rangle`] and [`v = \langle 3, 1, -1 \rangle`]:
+
+(a) Find [`u \cdot v`]: [_____]{answer=>2,width=>24}
+
+(b) Find [`u \times v`]: [_____]{answer=>Compute("<-3, 7, -2>"),width=>24}
+END_PGML
+ENDDOCUMENT();

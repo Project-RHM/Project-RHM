@@ -1,0 +1,2 @@
+ 1. Let [`P(x) = (2 \cdot x + 3)(x + 5)`]. Find [`P(1)`]: [___]
+    answer: 30

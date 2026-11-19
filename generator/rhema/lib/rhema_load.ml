@@ -18,7 +18,9 @@
    that `name.F`, `name.cost` and `name.given` can be resolved. A file that
    imports itself, directly or through others, is refused. *)
 
-type failure = { where : string; what : string }
+type failure_kind = Syntax | Semantic | Other
+
+type failure = { where : string; what : string; kind : failure_kind }
 
 let string_of_failure failure = failure.where ^ ": " ^ failure.what
 
@@ -33,13 +35,14 @@ let parse_declarations ~filename source : (Rhema_ast.file, failure list) result 
   match Rhema_parser.file Rhema_lexer.token lexbuf with
   | declarations -> Ok declarations
   | exception Rhema_lexer.Lexing_error (message, position) ->
-      Error [ { where = describe_position filename position; what = message } ]
+      Error [ { where = describe_position filename position; what = message; kind = Syntax } ]
   | exception Rhema_ast.Syntax_error (message, position) ->
       Error
         [
           {
             where = Printf.sprintf "%s:%d:%d" filename position.Rhema_ast.line position.Rhema_ast.column;
             what = message;
+            kind = Syntax;
           };
         ]
   | exception Rhema_parser.Error ->
@@ -49,7 +52,7 @@ let parse_declarations ~filename source : (Rhema_ast.file, failure list) result 
         if token = "" then "unexpected end of file"
         else Printf.sprintf "unexpected %s" (String.escaped token)
       in
-      Error [ { where = describe_position filename position; what } ]
+      Error [ { where = describe_position filename position; what; kind = Syntax } ]
 
 let read_file filename =
   let channel = open_in_bin filename in
@@ -139,6 +142,7 @@ let rec load_declarations ~stack filename : (Rhema_ast.file, failure list) resul
       [
         {
           where = filename;
+          kind = Other;
           what =
             "this file includes itself: "
             ^ String.concat " -> " (List.rev (filename :: stack));
@@ -147,8 +151,8 @@ let rec load_declarations ~stack filename : (Rhema_ast.file, failure list) resul
   else
     match read_file filename with
     | exception Sys_error _ when not (Sys.file_exists filename) ->
-        Error [ { where = filename; what = describe_missing filename } ]
-    | exception Sys_error message -> Error [ { where = filename; what = message } ]
+        Error [ { where = filename; what = describe_missing filename; kind = Other } ]
+    | exception Sys_error message -> Error [ { where = filename; what = message; kind = Other } ]
     | source -> (
         match parse_declarations ~filename source with
         | Error failures -> Error failures
@@ -198,6 +202,7 @@ let describe_errors ~filename errors =
           (if position.Rhema_ast.line = 0 then file
            else Printf.sprintf "%s:%d:%d" file position.Rhema_ast.line position.Rhema_ast.column);
         what = error.Rhema_check.message;
+        kind = Semantic;
       })
     errors
 
@@ -219,6 +224,7 @@ let rec check ~stack ~cache ~filename ~source declarations =
             [
               {
                 where;
+                kind = Other;
                 what =
                   Printf.sprintf "import \"%s\" as %s closes a cycle: %s" path alias
                     (String.concat " -> " (List.rev (path :: stack)));
@@ -231,6 +237,7 @@ let rec check ~stack ~cache ~filename ~source declarations =
               Error
                 ({
                    where;
+                   kind = Other;
                    what =
                      Printf.sprintf "import \"%s\" as %s: the module has problems of its own"
                        path alias;

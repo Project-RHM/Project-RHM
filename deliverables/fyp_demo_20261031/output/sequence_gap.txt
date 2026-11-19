@@ -1,0 +1,2 @@
+ 1. An arithmetic sequence satisfies [`a_{{3}} = 3`] and [`a_{{6}} = 6`]. Find its common difference.
+    answer: 1

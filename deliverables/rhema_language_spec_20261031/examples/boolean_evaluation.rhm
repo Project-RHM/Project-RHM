@@ -1,0 +1,19 @@
+random p_value = boolean
+random q_value = boolean
+
+let p = bool_var("p")
+let q = bool_var("q")
+let proposition = bool_and(bool_or(p, q), bool_not(q))
+let mask = cond(p_value, 1, 0) + cond(q_value, 2, 0)
+let p_text = cond(p_value, "T", "F")
+let q_text = cond(q_value, "T", "F")
+let expression_text = bool_latex(proposition)
+
+synth value on Q
+start Q
+Q -> "evaluation" {
+  value = bool_evaluate(proposition, "p,q", mask)
+}
+
+prompt "Evaluate [`{expression_text}`] when [`p = {p_text}`] and [`q = {q_text}`]. Enter 1 for true and 0 for false."
+answer Q.value

@@ -1,0 +1,36 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+Let [`P(x) = (x^{2} + 9)^{2}`].
+
+(a) Give an expanded equivalent expression: [_____]{answer=>Formula('x^4+18*x^2+81'),width=>24}
+
+(b) Evaluate [`P(1)`]: [_____]{answer=>100,width=>24}
+
+Let [`P(x) = (x + 4)(x + 5)^{2}`].
+
+(a) Give an expanded equivalent expression: [_____]{answer=>Formula('x^3+14*x^2+65*x+100'),width=>24}
+
+(b) Evaluate [`P(1)`]: [_____]{answer=>180,width=>24}
+
+Let [`P(x) = (x^{2} + 4)^{2}`].
+
+(a) Give an expanded equivalent expression: [_____]{answer=>Formula('x^4+8*x^2+16'),width=>24}
+
+(b) Evaluate [`P(3)`]: [_____]{answer=>169,width=>24}
+
+Let [`P(x) = (x - 2)^{2}(x + 1)`].
+
+(a) Give an expanded equivalent expression: [_____]{answer=>Formula('x^3-3*x^2+4'),width=>24}
+
+(b) Evaluate [`P(1)`]: [_____]{answer=>2,width=>24}
+
+Let [`P(x) = (x^{2} + 6)^{2}`].
+
+(a) Give an expanded equivalent expression: [_____]{answer=>Formula('x^4+12*x^2+36'),width=>24}
+
+(b) Evaluate [`P(-2)`]: [_____]{answer=>100,width=>24}
+END_PGML
+ENDDOCUMENT();

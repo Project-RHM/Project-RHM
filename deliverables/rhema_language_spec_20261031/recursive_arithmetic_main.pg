@@ -1,0 +1,16 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+Evaluate [`(3 + 9) \cdot (1 + 7)`].[_____]{answer=>96,width=>16}
+
+Evaluate [`4 - 1 + 1 \cdot 5`].[_____]{answer=>8,width=>16}
+
+Evaluate [`1 / (1 + 3)`].[_____]{answer=>Formula('1/4'),width=>16}
+
+Evaluate [`(9 + 8) \cdot (2 + 8)`].[_____]{answer=>170,width=>16}
+
+Evaluate [`2 + 6 - (4 - 9 + 3)`].[_____]{answer=>10,width=>16}
+END_PGML
+ENDDOCUMENT();

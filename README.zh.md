@@ -128,6 +128,7 @@ rhema homework_set.rhm --run homework     # a whole assignment -> homework.pg
 rhema homework_set.rhm --run homework -o homework.pdf --answers   # a paper to print, with a key
 rhema run boolean.rhm --set cost=6        # questions and answers in the terminal
 rhema run calculus.rhm --question integral  # one named question of the file
+rhema try calculus.rhm                    # a session: one question at a time
 rhema list calculus.rhm                   # questions, budgets, sets, imports
 rhema doc                                 # the builtin functions
 ```
@@ -136,6 +137,27 @@ rhema doc                                 # the builtin functions
 一份试卷。输出文件名以 `.tex` 或 `.pdf` 结尾时，写出的是这份试卷的 LaTeX 源文件或
 PDF（生成 PDF 需要本机装有 TeX 引擎）。被导入的文件依次在以下位置查找：导入它的文件
 所在目录、`-I` 指定的目录、`RHEMA_PATH`，以及已安装的文法库（`share/rhema`）。
+
+在交互终端中，编译和运行会显示 RHEMA 标识、按已完成题数更新的进度，以及包含 seed、
+耗时和输出文件的摘要。支持终端链接时可以点击路径。导出 PG 不代表已经完成 WeBWorK 判题。
+
+```bash
+rhema boolean.rhm --count 6 --student demo-01 -o boolean.pg
+rhema run boolean.rhm --count 1 --verbose
+rhema --plain boolean.rhm --count 6 -o - > boolean.pg
+```
+
+`--verbose` 把最终采纳的 production rules 和 inherited / synthesized attributes 输出到
+stderr。`--plain` 关闭交互样式；`--no-color` 或 `NO_COLOR=1` 关闭颜色；`--no-emoji`
+改用 ASCII 标记。CI、重定向和 PG 输出到 stdout 时自动关闭交互样式，保留原有诊断格式，
+供 VS Code 和脚本使用。
+
+`rhema try FILE` 针对一个文件打开会话：直接按回车显示下一道题，`a` 显示答案，
+`= 3/4` 把一个数与答案作精确比较，`cost = 8` 修改预算，`how` 打印出能够重新生成
+目前已显示各题的 `rhema run` 命令，因此会话中看到的题目都可以再次得到。在终端中，
+如果缺少集合名或题目名，或者名称拼写有误，命令会列出文件中已有的名称供选择；
+遇到未知选项时，会提示与之最接近的选项。详见
+[命令参考](https://project-rhm.github.io/reference/command/)（英文）。
 
 ## 文法库
 

@@ -2,7 +2,8 @@
 const webworkPreviews = {
     generate: {source: null, requestId: 0, checkId: 0, ready: false, checking: false},
     history: {source: null, requestId: 0, checkId: 0, ready: false, checking: false},
-    import: {source: null, requestId: 0, checkId: 0, ready: false, checking: false}
+    import: {source: null, requestId: 0, checkId: 0, ready: false, checking: false},
+    visual: {source: null, requestId: 0, checkId: 0, ready: false, checking: false}
 };
 const renderedPgCache = new Map();
 window.fetchRenderedPg = function(source, force = false, seed = 1) {
@@ -29,9 +30,9 @@ window.fetchRenderedPg = function(source, force = false, seed = 1) {
     return pending;
 };
 function previewElements(area) {
-    const prefix = {generate:'generated', history:'history', import:'import'}[area];
+    const prefix = {generate:'generated', history:'history', import:'import', visual:'visual'}[area];
     return {
-        source: document.getElementById({generate:'output', history:'historyOutput', import:'pgImportSource'}[area]),
+        source: document.getElementById({generate:'output', history:'historyOutput', import:'pgImportSource', visual:'visualPgSource'}[area]),
         seed: area === 'import' ? document.getElementById('pgImportSeed') : null,
         frame: document.getElementById(`${prefix}RenderedFrame`),
         status: document.getElementById(`${prefix}RenderedStatus`),

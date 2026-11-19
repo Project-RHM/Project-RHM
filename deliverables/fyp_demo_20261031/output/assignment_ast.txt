@@ -1,0 +1,505 @@
+Attribute Grammar Generated Derivations
+
+Question 1
+Prompt: An arithmetic sequence has first term [`a_1 = -7`] and common difference [`d = -6`].
+(a) Find [`a_{5}`]: [___]
+(b) Find the sum [`S_{5}`]: [___]
+Expected answer: -31; -95
+Question values:
+  first = -7
+  difference = -6
+  ratio = -4
+  index = 5
+  first_text = -7
+  difference_text = -6
+  ratio_text = -4
+  index_text = 5
+Derivation:
+  Q
+    production: Q -> "arithmetic" [line 31]
+    equation: cost = - 2
+    equation: kind = "arithmetic"
+    equation: text = ("An arithmetic sequence has first term [`a_1 = " ++ (first_text ++ ("`] and common difference [`d = " ++ (difference_text ++ "`]."))))
+    equation: nth = (first + ((index - 1) * difference))
+    equation: sum = ((index * ((2 * first) + ((index - 1) * difference))) / 2)
+    inherited:
+      cost = 2
+    synthesized:
+      kind = arithmetic
+      text = An arithmetic sequence has first term [`a_1 = -7`] and common difference [`d = -6`].
+      nth = -31
+      sum = -95
+    arithmetic
+      inherited: (none)
+      synthesized:
+        value = arithmetic
+
+Question 2
+Prompt: Evaluate [`(r \to p) \to q`] when [`p = \mathsf{F}`], [`q = \mathsf{F}`] and [`r = \mathsf{T}`].
+Enter 1 for true and 0 for false.
+Expected answer: true
+Question values:
+  p = false
+  q = false
+  r = true
+  phrasing = 3
+  target = true
+  names = p,q,r
+  mask = 4
+  tp = \mathsf{F}
+  tq = \mathsf{F}
+  tr = \mathsf{T}
+  given = [`p = \mathsf{F}`], [`q = \mathsf{F}`] and [`r = \mathsf{T}`]
+  given_one = [`p = \mathsf{F},\; q = \mathsf{F},\; r = \mathsf{T}`]
+Derivation:
+  Q
+    production: Q -> E [line 72]
+    equation: require ((tp != tq) or (tq != tr))
+    equation: require (bool_top($1.f) != "not")
+    equation: require (bool_negations($1.f) <= 2)
+    equation: require ((bool_variable_count($1.f) = 3) or (bool_size($1.f) < 2))
+    equation: require ((bool_variable_count($1.f) < 2) or (bool_sensitivity($1.f, names, mask) >= 2))
+    equation: value = bool_evaluate($1.f, names, mask)
+    equation: require (value = target)
+    equation: text = cond((phrasing = 1), ("Suppose " ++ (given ++ (". What is the truth value of [`" ++ (bool_latex($1.f) ++ "`]?")))), cond((phrasing = 2), ("Let " ++ (given_one ++ (". Is the proposition [`" ++ (bool_latex($1.f) ++ "`] true or false?")))), ("Evaluate [`" ++ (bool_latex($1.f) ++ ("`] when " ++ (given ++ "."))))))
+    inherited:
+      cost = 8
+    synthesized:
+      value = true
+      text = Evaluate [`(r \to p) \to q`] when [`p = \mathsf{F}`], [`q = \mathsf{F}`] and [`r = \mathsf{T}`].
+    E
+      production: E -> E "\\to" E [line 120]
+      equation: cost = - 4
+      equation: f = bool_imp($1.f, $3.f)
+      equation: require bool_is_tidy(f)
+      inherited:
+        cost = 8
+      synthesized:
+        f = Boolean((r \to p) \to q)
+      E
+        production: E -> E "\\to" E [line 120]
+        equation: cost = - 4
+        equation: f = bool_imp($1.f, $3.f)
+        equation: require bool_is_tidy(f)
+        inherited:
+          cost = 4
+        synthesized:
+          f = Boolean(r \to p)
+        E
+          production: E -> V [line 147]
+          equation: f = $1.f
+          inherited:
+            cost = 0
+          synthesized:
+            f = Boolean(r)
+          V
+            production: V -> "r" [line 152]
+            equation: f = bool_var("r")
+            inherited:
+              cost = 0
+            synthesized:
+              f = Boolean(r)
+            r
+              inherited: (none)
+              synthesized:
+                value = r
+        \to
+          inherited: (none)
+          synthesized:
+            value = \to
+        E
+          production: E -> V [line 147]
+          equation: f = $1.f
+          inherited:
+            cost = 0
+          synthesized:
+            f = Boolean(p)
+          V
+            production: V -> "p" [line 150]
+            equation: f = bool_var("p")
+            inherited:
+              cost = 0
+            synthesized:
+              f = Boolean(p)
+            p
+              inherited: (none)
+              synthesized:
+                value = p
+      \to
+        inherited: (none)
+        synthesized:
+          value = \to
+      E
+        production: E -> V [line 147]
+        equation: f = $1.f
+        inherited:
+          cost = 0
+        synthesized:
+          f = Boolean(q)
+        V
+          production: V -> "q" [line 151]
+          equation: f = bool_var("q")
+          inherited:
+            cost = 0
+          synthesized:
+            f = Boolean(q)
+          q
+            inherited: (none)
+            synthesized:
+              value = q
+
+Question 3
+Prompt: Evaluate [`(q \land \neg r) \leftrightarrow \neg p`] when [`p = \mathsf{F}`], [`q = \mathsf{T}`] and [`r = \mathsf{F}`].
+Enter 1 for true and 0 for false.
+Expected answer: true
+Question values:
+  p = false
+  q = true
+  r = false
+  phrasing = 3
+  target = true
+  names = p,q,r
+  mask = 2
+  tp = \mathsf{F}
+  tq = \mathsf{T}
+  tr = \mathsf{F}
+  given = [`p = \mathsf{F}`], [`q = \mathsf{T}`] and [`r = \mathsf{F}`]
+  given_one = [`p = \mathsf{F},\; q = \mathsf{T},\; r = \mathsf{F}`]
+Derivation:
+  Q
+    production: Q -> E [line 72]
+    equation: require ((tp != tq) or (tq != tr))
+    equation: require (bool_top($1.f) != "not")
+    equation: require (bool_negations($1.f) <= 2)
+    equation: require ((bool_variable_count($1.f) = 3) or (bool_size($1.f) < 2))
+    equation: require ((bool_variable_count($1.f) < 2) or (bool_sensitivity($1.f, names, mask) >= 2))
+    equation: value = bool_evaluate($1.f, names, mask)
+    equation: require (value = target)
+    equation: text = cond((phrasing = 1), ("Suppose " ++ (given ++ (". What is the truth value of [`" ++ (bool_latex($1.f) ++ "`]?")))), cond((phrasing = 2), ("Let " ++ (given_one ++ (". Is the proposition [`" ++ (bool_latex($1.f) ++ "`] true or false?")))), ("Evaluate [`" ++ (bool_latex($1.f) ++ ("`] when " ++ (given ++ "."))))))
+    inherited:
+      cost = 10
+    synthesized:
+      value = true
+      text = Evaluate [`(q \land \neg r) \leftrightarrow \neg p`] when [`p = \mathsf{F}`], [`q = \mathsf{T}`] and [`r = \mathsf{F}`].
+    E
+      production: E -> E "\\leftrightarrow" E [line 126]
+      equation: cost = - 6
+      equation: f = bool_iff($1.f, $3.f)
+      equation: require bool_is_tidy(f)
+      inherited:
+        cost = 10
+      synthesized:
+        f = Boolean((q \land \neg r) \leftrightarrow \neg p)
+      E
+        production: E -> E "\\land" E [line 105]
+        equation: cost = - 2
+        equation: f = bool_and($1.f, $3.f)
+        equation: require bool_is_tidy(f)
+        inherited:
+          cost = 3
+        synthesized:
+          f = Boolean(q \land \neg r)
+        E
+          production: E -> V [line 147]
+          equation: f = $1.f
+          inherited:
+            cost = 0
+          synthesized:
+            f = Boolean(q)
+          V
+            production: V -> "q" [line 151]
+            equation: f = bool_var("q")
+            inherited:
+              cost = 0
+            synthesized:
+              f = Boolean(q)
+            q
+              inherited: (none)
+              synthesized:
+                value = q
+        \land
+          inherited: (none)
+          synthesized:
+            value = \land
+        E
+          production: E -> "\\neg" V [line 148]
+          equation: cost = - 1
+          equation: f = bool_not($2.f)
+          inherited:
+            cost = 1
+          synthesized:
+            f = Boolean(\neg r)
+          \neg
+            inherited: (none)
+            synthesized:
+              value = \neg
+          V
+            production: V -> "r" [line 152]
+            equation: f = bool_var("r")
+            inherited:
+              cost = 0
+            synthesized:
+              f = Boolean(r)
+            r
+              inherited: (none)
+              synthesized:
+                value = r
+      \leftrightarrow
+        inherited: (none)
+        synthesized:
+          value = \leftrightarrow
+      E
+        production: E -> "\\neg" V [line 148]
+        equation: cost = - 1
+        equation: f = bool_not($2.f)
+        inherited:
+          cost = 1
+        synthesized:
+          f = Boolean(\neg p)
+        \neg
+          inherited: (none)
+          synthesized:
+            value = \neg
+        V
+          production: V -> "p" [line 150]
+          equation: f = bool_var("p")
+          inherited:
+            cost = 0
+          synthesized:
+            f = Boolean(p)
+          p
+            inherited: (none)
+            synthesized:
+              value = p
+
+Question 4
+Prompt: Suppose [`p = \mathsf{F}`], [`q = \mathsf{T}`] and [`r = \mathsf{T}`]. What is the truth value of [`(q \lor \neg r) \to ((\neg q \lor p) \land r)`]?
+Enter 1 for true and 0 for false.
+Expected answer: false
+Question values:
+  p = false
+  q = true
+  r = true
+  phrasing = 1
+  target = false
+  names = p,q,r
+  mask = 6
+  tp = \mathsf{F}
+  tq = \mathsf{T}
+  tr = \mathsf{T}
+  given = [`p = \mathsf{F}`], [`q = \mathsf{T}`] and [`r = \mathsf{T}`]
+  given_one = [`p = \mathsf{F},\; q = \mathsf{T},\; r = \mathsf{T}`]
+Derivation:
+  Q
+    production: Q -> E [line 72]
+    equation: require ((tp != tq) or (tq != tr))
+    equation: require (bool_top($1.f) != "not")
+    equation: require (bool_negations($1.f) <= 2)
+    equation: require ((bool_variable_count($1.f) = 3) or (bool_size($1.f) < 2))
+    equation: require ((bool_variable_count($1.f) < 2) or (bool_sensitivity($1.f, names, mask) >= 2))
+    equation: value = bool_evaluate($1.f, names, mask)
+    equation: require (value = target)
+    equation: text = cond((phrasing = 1), ("Suppose " ++ (given ++ (". What is the truth value of [`" ++ (bool_latex($1.f) ++ "`]?")))), cond((phrasing = 2), ("Let " ++ (given_one ++ (". Is the proposition [`" ++ (bool_latex($1.f) ++ "`] true or false?")))), ("Evaluate [`" ++ (bool_latex($1.f) ++ ("`] when " ++ (given ++ "."))))))
+    inherited:
+      cost = 12
+    synthesized:
+      value = false
+      text = Suppose [`p = \mathsf{F}`], [`q = \mathsf{T}`] and [`r = \mathsf{T}`]. What is the truth value of [`(q \lor \neg r) \to ((\neg q \lor p) \land r)`]?
+    E
+      production: E -> E "\\to" E [line 120]
+      equation: cost = - 4
+      equation: f = bool_imp($1.f, $3.f)
+      equation: require bool_is_tidy(f)
+      inherited:
+        cost = 12
+      synthesized:
+        f = Boolean((q \lor \neg r) \to ((\neg q \lor p) \land r))
+      E
+        production: E -> E "\\lor" E [line 111]
+        equation: cost = - 2
+        equation: f = bool_or($1.f, $3.f)
+        equation: require bool_is_tidy(f)
+        inherited:
+          cost = 3
+        synthesized:
+          f = Boolean(q \lor \neg r)
+        E
+          production: E -> V [line 147]
+          equation: f = $1.f
+          inherited:
+            cost = 0
+          synthesized:
+            f = Boolean(q)
+          V
+            production: V -> "q" [line 151]
+            equation: f = bool_var("q")
+            inherited:
+              cost = 0
+            synthesized:
+              f = Boolean(q)
+            q
+              inherited: (none)
+              synthesized:
+                value = q
+        \lor
+          inherited: (none)
+          synthesized:
+            value = \lor
+        E
+          production: E -> "\\neg" V [line 148]
+          equation: cost = - 1
+          equation: f = bool_not($2.f)
+          inherited:
+            cost = 1
+          synthesized:
+            f = Boolean(\neg r)
+          \neg
+            inherited: (none)
+            synthesized:
+              value = \neg
+          V
+            production: V -> "r" [line 152]
+            equation: f = bool_var("r")
+            inherited:
+              cost = 0
+            synthesized:
+              f = Boolean(r)
+            r
+              inherited: (none)
+              synthesized:
+                value = r
+      \to
+        inherited: (none)
+        synthesized:
+          value = \to
+      E
+        production: E -> E "\\land" E [line 105]
+        equation: cost = - 2
+        equation: f = bool_and($1.f, $3.f)
+        equation: require bool_is_tidy(f)
+        inherited:
+          cost = 5
+        synthesized:
+          f = Boolean((\neg q \lor p) \land r)
+        E
+          production: E -> E "\\lor" E [line 111]
+          equation: cost = - 2
+          equation: f = bool_or($1.f, $3.f)
+          equation: require bool_is_tidy(f)
+          inherited:
+            cost = 3
+          synthesized:
+            f = Boolean(\neg q \lor p)
+          E
+            production: E -> "\\neg" V [line 148]
+            equation: cost = - 1
+            equation: f = bool_not($2.f)
+            inherited:
+              cost = 1
+            synthesized:
+              f = Boolean(\neg q)
+            \neg
+              inherited: (none)
+              synthesized:
+                value = \neg
+            V
+              production: V -> "q" [line 151]
+              equation: f = bool_var("q")
+              inherited:
+                cost = 0
+              synthesized:
+                f = Boolean(q)
+              q
+                inherited: (none)
+                synthesized:
+                  value = q
+          \lor
+            inherited: (none)
+            synthesized:
+              value = \lor
+          E
+            production: E -> V [line 147]
+            equation: f = $1.f
+            inherited:
+              cost = 0
+            synthesized:
+              f = Boolean(p)
+            V
+              production: V -> "p" [line 150]
+              equation: f = bool_var("p")
+              inherited:
+                cost = 0
+              synthesized:
+                f = Boolean(p)
+              p
+                inherited: (none)
+                synthesized:
+                  value = p
+        \land
+          inherited: (none)
+          synthesized:
+            value = \land
+        E
+          production: E -> V [line 147]
+          equation: f = $1.f
+          inherited:
+            cost = 0
+          synthesized:
+            f = Boolean(r)
+          V
+            production: V -> "r" [line 152]
+            equation: f = bool_var("r")
+            inherited:
+              cost = 0
+            synthesized:
+              f = Boolean(r)
+            r
+              inherited: (none)
+              synthesized:
+                value = r
+
+Question 5
+Prompt: Find the eigenvalues of [`A = \begin{pmatrix} 36 & 12 \\ -120 & -40 \end{pmatrix}`]. Enter the eigenvalues as a set, such as [`\{-1, 4\}`].
+Expected answer: Set({-4, 0})
+Question values:
+  l1 = 0
+  l2 = -4
+  l3 = -1
+  p = -3
+  q = -3
+  b = 6
+  u1 = 0
+  u2 = -2
+  u3 = -2
+  v1 = 0
+  v2 = 2
+  v3 = 0
+  p2 = Matrix([[1,-3],[-3,10]])
+  a2 = Matrix([[36,12],[-120,-40]])
+  p3 = Matrix([[1,0,2],[0,1,0],[-2,-2,-3]])
+  a3 = Matrix([[-4,-4,-2],[0,-4,0],[6,14,3]])
+  values2 = Set({-4, 0})
+  values3 = Set({-4, -1, 0})
+  as_set = Enter the eigenvalues as a set, such as [`\{-1, 4\}`].
+Derivation:
+  Q
+    production: Q -> "eigenvalues2" [line 69]
+    equation: cost = - 2
+    equation: kind = "eigenvalues2"
+    equation: require (l1 != l2)
+    equation: require ((matrix_entry(a2, 1, 2) != 0) and (matrix_entry(a2, 2, 1) != 0))
+    equation: pg_context = "Interval"
+    equation: text = ("Find the eigenvalues of [`A = " ++ (matrix_latex(a2) ++ ("`]. " ++ as_set)))
+    equation: answer_value = values2
+    inherited:
+      cost = 2
+    synthesized:
+      kind = eigenvalues2
+      pg_context = Interval
+      text = Find the eigenvalues of [`A = \begin{pmatrix} 36 & 12 \\ -120 & -40 \end{pmatrix}`]. Enter the eigenvalues as a set, such as [`\{-1, 4\}`].
+      answer_value = Set({-4, 0})
+    eigenvalues2
+      inherited: (none)
+      synthesized:
+        value = eigenvalues2
+

@@ -1,0 +1,10 @@
+ 1. Differentiate [`f(x) = \sin\left(x\right) - x^{4}`] with respect to x.
+    answer: Formula(cos(x)-4*x^3)
+ 2. Differentiate [`f(x) = \sin\left(x\right) - 4 \cdot x^{2}`] with respect to x.
+    answer: Formula(cos(x)-4*2*x)
+ 3. Differentiate [`f(x) = \sin\left(x\right) - 4 \cdot x^{2}`] with respect to x.
+    answer: Formula(cos(x)-4*2*x)
+ 4. Differentiate [`f(x) = \sin\left(x\right) - 4 \cdot x^{4}`] with respect to x.
+    answer: Formula(cos(x)-4*4*x^3)
+ 5. Differentiate [`f(x) = 3 \cdot x^{3} + \sin\left(x\right)`] with respect to x.
+    answer: Formula(3*3*x^2+cos(x))

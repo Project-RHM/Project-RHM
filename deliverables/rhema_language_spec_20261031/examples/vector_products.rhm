@@ -1,0 +1,21 @@
+context "Vector"
+random k = integer_between(-3, 3)
+let u = vector3(1, k, 2)
+let v = vector3(3, 1, -1)
+let u_text = vector_latex(u)
+let v_text = vector_latex(v)
+
+synth dot_value on Q
+synth cross_value on Q
+start Q
+Q -> "products" {
+  dot_value = vector_dot(u, v)
+  cross_value = vector_cross(u, v)
+}
+
+prompt "Given [`u = {u_text}`] and [`v = {v_text}`]:
+
+(a) Find [`u \cdot v`]: {answer Q.dot_value}
+
+(b) Find [`u \times v`]: {answer Q.cross_value}"
+width 24

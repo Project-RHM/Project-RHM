@@ -1,0 +1,23 @@
+random complex_mode = boolean
+synth value on Q
+synth text on Q
+synth pg_context on Q
+synth pg_width on Q
+start Q
+
+Q -> "numeric" when not complex_mode {
+  value = 5
+  text = "Compute [`2+3`]."
+  pg_context = "Numeric"
+  pg_width = 10
+}
+
+Q -> "complex" when complex_mode {
+  value = complex(3, 2)
+  text = "Compute [`(1+i)+(2+i)`]."
+  pg_context = "Complex"
+  pg_width = 20
+}
+
+prompt "{Q.text}"
+answer Q.value

@@ -1,0 +1,17 @@
+context "Interval"
+random element = integer_between(-3, 3)
+
+let a = set_insert(set_insert(set_empty(), element), 5)
+let b = set_interval(-2, 4, (1 = 1), (1 = 0))
+let a_text = set_latex(a)
+let b_text = set_latex(b)
+
+synth value on Q
+start Q
+Q -> "union" {
+  value = set_union(a, b)
+}
+
+prompt "Given [`A = {a_text}`] and [`B = {b_text}`], find [`A \cup B`]."
+answer Q.value
+width 24

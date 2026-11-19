@@ -133,6 +133,7 @@ rhema homework_set.rhm --run homework     # a whole assignment -> homework.pg
 rhema homework_set.rhm --run homework -o homework.pdf --answers   # a paper to print, with a key
 rhema run boolean.rhm --set cost=6        # questions and answers in the terminal
 rhema run calculus.rhm --question integral  # one named question of the file
+rhema try calculus.rhm                    # a session: one question at a time
 rhema list calculus.rhm                   # questions, budgets, sets, imports
 rhema doc                                 # the builtin functions
 ```
@@ -142,6 +143,33 @@ One assignment is one paper, the same every time it is generated;
 or `.pdf` is that paper in LaTeX or as a PDF (a PDF needs a TeX engine on the
 machine). Imported files are found beside the importing file, then in `-I`
 directories, `RHEMA_PATH` and the installed library (`share/rhema`).
+
+In an interactive terminal, compile and run show a RHEMA banner, actual
+question progress, and a summary with the seed and files written. Paths are
+clickable in supported terminals. A successful PG export does not run WeBWorK.
+For example:
+
+```bash
+rhema boolean.rhm --count 6 --student demo-01 -o boolean.pg
+rhema run boolean.rhm --count 1 --verbose
+rhema --plain boolean.rhm --count 6 -o - > boolean.pg
+```
+
+`--verbose` prints accepted productions and inherited/synthesized attributes
+to stderr. Use `--plain` to disable the interactive presentation, `--no-color`
+(or `NO_COLOR=1`) to turn off colors, and `--no-emoji` for ASCII markers.
+The presentation is automatically off in CI, with redirected output, and
+when compiling to stdout. Plain diagnostics keep the original
+`file:line:column: error: ...` format for editor integrations.
+
+`rhema try FILE` opens a session on a file: Enter shows the next question,
+`a` its answer, `= 3/4` compares a number with the answer exactly, `cost = 8`
+changes a budget, and `how` prints the `rhema run` command that gives the
+questions shown so far, so nothing seen in a session is lost. At a terminal,
+a set or a question name that is missing or misspelt is asked for from the
+file's own list; an unknown option is reported with the one it is nearest to.
+The [command reference](https://project-rhm.github.io/reference/command/)
+has the details.
 
 ## The question library
 

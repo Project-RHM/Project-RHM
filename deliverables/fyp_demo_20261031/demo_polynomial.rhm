@@ -1,0 +1,27 @@
+# Reuse one factor tree for two independently graded answer blanks.
+include "polynomial_core.rhm"
+attribute cost = 3 split
+
+random point = nonzero_integer_between(-3, 3)
+
+synth latex on Q
+synth expanded on Q
+synth at_point on Q
+
+start Q
+
+Q -> E {
+  require $1.factors >= 2
+  latex = $1.latex
+  expanded = $1.poly
+  at_point = polynomial_evaluate($1.poly, point)
+}
+
+prompt "Let [`P(x) = {Q.latex}`].
+(a) Expand and collect like terms: {answer Q.expanded}
+(b) Find [`P({point})`]: {answer Q.at_point}"
+
+question value {
+  start Q
+  prompt "Let [`P(x) = {Q.latex}`]. Find [`P({point})`]: {answer Q.at_point}"
+}

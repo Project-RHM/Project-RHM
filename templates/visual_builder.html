@@ -1,0 +1,65 @@
+<div id="visualBuilderContent" class="content-area">
+    <header class="page-hero">
+        <div><h1>Create question type</h1><span id="visualDraftStatus" role="status">Visual builder</span></div>
+        <div class="workspace-header-actions"><span class="renderer-connection" data-renderer-connection role="status">Checking renderer</span><button type="button" class="btn btn-secondary language-toggle" data-language-toggle aria-label="Switch language">中文</button></div>
+    </header>
+    <div class="authoring-layout visual-authoring-layout" data-splitter="visualDivider" data-settings="visualDefinitionPanel" data-split-storage="rhema.visualBuilderSplit" data-settings-label="Question definition">
+        <form id="visualDefinitionPanel" class="visual-definition" novalidate>
+            <div class="visual-definition-scroll">
+                <div class="visual-heading"><h2>Visual builder</h2><span id="visualContext" class="visual-type">Numeric</span></div>
+                <div id="visualMessage" class="teacher-message" role="alert" hidden></div>
+                <div class="visual-top-fields">
+                    <label for="visualTitle">Question type name<input id="visualTitle" maxlength="100" required></label>
+                    <label for="visualFilename">File name<input id="visualFilename" maxlength="84" placeholder="my_question.rhm" autocomplete="off" required></label>
+                    <label for="visualStarter">Starting point<select id="visualStarter"><option value="blank">Empty definition</option></select></label>
+                </div>
+                <section class="visual-section" aria-labelledby="visualParametersTitle">
+                    <div class="visual-section-heading"><h3 id="visualParametersTitle">1. Random parameters</h3><button id="visualAddParameter" type="button" class="btn btn-secondary"><i data-lucide="plus" aria-hidden="true"></i><span>Add parameter</span></button></div>
+                    <div id="visualParameters"></div>
+                </section>
+                <section class="visual-section" aria-labelledby="visualStepsTitle">
+                    <div class="visual-section-heading"><h3 id="visualStepsTitle">2. Mathematical steps</h3><button id="visualAddStep" type="button" class="btn btn-secondary"><i data-lucide="plus" aria-hidden="true"></i><span>Add step</span></button></div>
+                    <div id="visualSteps"></div>
+                </section>
+                <section class="visual-section" aria-labelledby="visualPromptTitle">
+                    <h3 id="visualPromptTitle">3. Question text</h3>
+                    <label class="visual-sr" for="visualPrompt">Question wording</label>
+                    <textarea id="visualPrompt" rows="4" maxlength="2000" required spellcheck="false"></textarea>
+                    <div class="visual-insert-row"><label class="visual-sr" for="visualInsertValue">Value to insert</label><select id="visualInsertValue"></select><button id="visualInsert" type="button" class="btn btn-secondary"><i data-lucide="text-cursor-input" aria-hidden="true"></i><span>Insert value</span></button></div>
+                </section>
+                <section class="visual-section" aria-labelledby="visualAnswerTitle">
+                    <h3 id="visualAnswerTitle">4. Answer and constraints</h3>
+                    <div class="visual-answer-fields"><label for="visualAnswer">Use result from<select id="visualAnswer" required></select></label><label for="visualWidth">Answer box width<input id="visualWidth" type="number" min="1" max="100" value="12" required></label></div>
+                    <div id="visualConstraints"></div>
+                    <button id="visualAddConstraint" type="button" class="btn btn-secondary"><i data-lucide="list-checks" aria-hidden="true"></i><span>Add constraint</span></button>
+                </section>
+            </div>
+            <div class="visual-save-actions">
+                <button id="visualCheck" type="button" class="btn btn-secondary"><i data-lucide="check" aria-hidden="true"></i><span>Check</span></button>
+                <button id="visualSave" type="button" class="btn btn-primary"><i data-lucide="save" aria-hidden="true"></i><span>Save question type</span></button>
+                <button id="visualOpenConfigure" type="button" class="btn btn-secondary" hidden><i data-lucide="settings-2" aria-hidden="true"></i><span>Open in Configure</span></button>
+                <button id="visualOpenSource" type="button" class="btn btn-secondary" hidden><i data-lucide="file-code-2" aria-hidden="true"></i><span>Open in Source</span></button>
+            </div>
+        </form>
+        <div id="visualDivider" class="workspace-divider" role="separator" aria-orientation="vertical" aria-label="Resize definition and preview" aria-controls="visualDefinitionPanel visualPreviewPanel" tabindex="0" title="Resize panels"><span class="workspace-divider-handle" aria-hidden="true"><i data-lucide="grip-vertical"></i></span></div>
+        <section id="visualPreviewPanel" class="preview-workspace visual-preview" aria-label="Question preview">
+            <h2>Question preview</h2>
+            <div class="visual-generation-fields"><label for="visualStudent">Student ID (optional for Rhema)<input id="visualStudent" maxlength="64" autocomplete="off" placeholder="Optional student ID"></label><label for="visualCount">Number of questions<input id="visualCount" type="number" min="1" max="20" value="2"></label><button id="visualGenerate" type="button" class="btn btn-primary"><i data-lucide="play" aria-hidden="true"></i><span>Generate questions</span></button></div>
+            <div class="visual-result-tabs" role="tablist" aria-label="Visual builder output">
+                <button id="visualQuestionsTab" type="button" role="tab" aria-controls="visualQuestionsPanel" aria-selected="true" data-visual-view="questions">Questions</button>
+                <button id="visualRhemaTab" type="button" role="tab" aria-controls="visualRhemaPanel" aria-selected="false" data-visual-view="rhema">Rhema</button>
+                <button id="visualPgmlTab" type="button" role="tab" aria-controls="visualPgmlPanel" aria-selected="false" data-visual-view="pgml">PGML</button>
+                <button id="visualTreeTab" type="button" role="tab" aria-controls="visualTreePanel" aria-selected="false" data-visual-view="tree">Generation tree</button>
+            </div>
+            <div id="visualQuestionsPanel" role="tabpanel" aria-labelledby="visualQuestionsTab">
+                <div class="rendered-preview-toolbar"><span id="visualRenderedStatus" class="rendered-preview-status" role="status">No questions generated</span><div class="preview-tools"><button id="visualCheckAnswers" type="button" class="btn btn-primary" disabled><i data-lucide="check-check" aria-hidden="true"></i><span>Check answers</span></button></div></div>
+                <section id="visualAnswerFeedback" class="answer-feedback" aria-live="polite" aria-label="Answer results" hidden></section>
+                <iframe id="visualRenderedFrame" class="rendered-view-frame" title="Visual builder WeBWorK question preview" sandbox="allow-scripts" referrerpolicy="no-referrer" hidden></iframe>
+                <details id="visualStandardAnswers" class="visual-standard-answers" hidden><summary>Standard answers</summary><ol id="visualAnswerList" data-no-translate></ol></details>
+            </div>
+            <div id="visualRhemaPanel" role="tabpanel" aria-labelledby="visualRhemaTab" hidden><div class="code-panel-heading"><h3>Generated Rhema</h3><button id="visualCopyRhema" type="button" class="btn icon-button" title="Copy Rhema" aria-label="Copy Rhema"><i data-lucide="copy" aria-hidden="true"></i></button></div><textarea id="visualRhemaSource" readonly spellcheck="false" aria-label="Generated Rhema specification"></textarea></div>
+            <div id="visualPgmlPanel" role="tabpanel" aria-labelledby="visualPgmlTab" hidden><div class="code-panel-heading"><h3>Generated PGML</h3></div><textarea id="visualPgSource" readonly spellcheck="false" aria-label="Generated visual question PGML"></textarea></div>
+            <div id="visualTreePanel" role="tabpanel" aria-labelledby="visualTreeTab" hidden><p id="visualTreeEmpty">No generation tree available</p><iframe id="visualTreeFrame" class="tree-view-frame" title="Visual question generation tree" hidden></iframe></div>
+        </section>
+    </div>
+</div>

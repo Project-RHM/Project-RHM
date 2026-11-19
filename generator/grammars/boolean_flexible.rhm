@@ -1,0 +1,71 @@
+# A Boolean evaluation demo. Budget is operator count, not an exam grade.
+# variables_mode is the available pool: p,q; p,q,r; or p,q,r,s.
+# quality_mode=1 rejects constant-valued questions; 0 permits them.
+context "Numeric"
+attribute cost = 3 split
+attribute variables_mode = 3 copy
+attribute negation_limit = 3 copy
+attribute quality_mode = 1 copy
+
+random p_value = boolean
+random q_value = boolean
+random r_value = boolean
+random s_value = boolean
+let p_text = cond(p_value, "1", "0")
+let q_text = cond(q_value, "1", "0")
+let r_text = cond(r_value, "1", "0")
+let s_text = cond(s_value, "1", "0")
+let mask = cond(p_value, 1, 0) + cond(q_value, 2, 0)
+         + cond(r_value, 4, 0) + cond(s_value, 8, 0)
+
+synth expr on E
+synth text on Q
+synth value on Q
+start Q
+
+Q -> E when (variables_mode = 2 or variables_mode = 3 or variables_mode = 4)
+        and (quality_mode = 0 or quality_mode = 1) and cost >= 1 and cost <= 10 {
+  require bool_variable_count($1.expr) >= min(cost + 1, variables_mode)
+  require bool_negations($1.expr) <= negation_limit
+  require quality_mode = 0 or
+          (not bool_is_tautology($1.expr) and not bool_is_contradiction($1.expr))
+  text = "Given [`p = " ++ p_text ++ "`], [`q = " ++ q_text ++ "`]"
+      ++ cond(variables_mode >= 3, ", [`r = " ++ r_text ++ "`]", "")
+      ++ cond(variables_mode >= 4, ", [`s = " ++ s_text ++ "`]", "")
+      ++ ", evaluate [`" ++ bool_latex($1.expr) ++ "`]. Enter 1 for true and 0 for false."
+  value = cond(bool_evaluate($1.expr, "p,q,r,s", mask), 1, 0)
+}
+
+E -> "p" when cost = 0 { expr = bool_var("p") }
+E -> "q" when cost = 0 { expr = bool_var("q") }
+E -> "r" when cost = 0 and variables_mode >= 3 { expr = bool_var("r") }
+E -> "s" when cost = 0 and variables_mode >= 4 { expr = bool_var("s") }
+
+E -> E "AND" E when cost >= 1 weight 3 {
+  cost = -1
+  expr = bool_and($1.expr, $3.expr)
+  require quality_mode = 0 or (not bool_is_tautology(expr) and not bool_is_contradiction(expr))
+  require quality_mode = 0 or not bool_equivalent(expr, $1.expr)
+  require quality_mode = 0 or not bool_equivalent(expr, $3.expr)
+}
+E -> E "OR" E when cost >= 1 weight 3 {
+  cost = -1
+  expr = bool_or($1.expr, $3.expr)
+  require quality_mode = 0 or (not bool_is_tautology(expr) and not bool_is_contradiction(expr))
+  require quality_mode = 0 or not bool_equivalent(expr, $1.expr)
+  require quality_mode = 0 or not bool_equivalent(expr, $3.expr)
+}
+E -> E "XOR" E when cost >= 1 weight 2 {
+  cost = -1
+  expr = bool_xor($1.expr, $3.expr)
+  require quality_mode = 0 or (not bool_is_tautology(expr) and not bool_is_contradiction(expr))
+}
+E -> "NOT" E when cost >= 1 weight 1 {
+  cost = -1
+  require bool_top($2.expr) != "not"
+  expr = bool_not($2.expr)
+}
+
+prompt "{Q.text}"
+answer Q.value
+width 8

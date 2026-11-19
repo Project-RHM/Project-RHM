@@ -1,0 +1,16 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+Compute [`14 + 92`].[_____]{answer=>106,width=>12}
+
+Compute [`18 + 84`].[_____]{answer=>102,width=>12}
+
+Compute [`36 + 82`].[_____]{answer=>118,width=>12}
+
+Compute [`82 + 19`].[_____]{answer=>101,width=>12}
+
+Compute [`79 + 86`].[_____]{answer=>165,width=>12}
+END_PGML
+ENDDOCUMENT();

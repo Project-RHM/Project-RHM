@@ -1,0 +1,16 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+Find the product of 8 and 4.[_____]{answer=>32,width=>12}
+
+Find the product of 5 and 6.[_____]{answer=>30,width=>12}
+
+Find the product of 5 and 2.[_____]{answer=>10,width=>12}
+
+Find the product of 9 and 4.[_____]{answer=>36,width=>12}
+
+Find the product of 7 and 3.[_____]{answer=>21,width=>12}
+END_PGML
+ENDDOCUMENT();

@@ -1,0 +1,22 @@
+{
+  "grammar": "sequence.rhm",
+  "count": 1,
+  "student_id": "FYP2026",
+  "configuration": {
+    "values": {
+      "root:a:cost": 1,
+      "root:r:first": [
+        2,
+        2
+      ],
+      "root:r:difference": [
+        3,
+        3
+      ],
+      "root:r:index": [
+        4,
+        4
+      ]
+    }
+  }
+}

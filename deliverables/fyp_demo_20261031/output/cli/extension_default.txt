@@ -1,0 +1,10 @@
+ 1. Evaluate [`8 + 3 + (2 - 7)`].
+    answer: 6
+ 2. Evaluate [`2 + (3 - 7 + 4)`].
+    answer: 2
+ 3. Evaluate [`(9 + 3) \cdot 2`].
+    answer: 24
+ 4. Evaluate [`4 + 4 + 4 + (8 + 6)`].
+    answer: 26
+ 5. Evaluate [`3 + 5 + 5 - 9`].
+    answer: 4

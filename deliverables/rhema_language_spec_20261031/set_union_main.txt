@@ -1,0 +1,10 @@
+ 1. Given [`A = \{1, 5\}`] and [`B = [-2, 4)`], find [`A \cup B`].
+    answer: Set({1, 5} U [-2, 4))
+ 2. Given [`A = \{-3, 5\}`] and [`B = [-2, 4)`], find [`A \cup B`].
+    answer: Set({-3, 5} U [-2, 4))
+ 3. Given [`A = \{3, 5\}`] and [`B = [-2, 4)`], find [`A \cup B`].
+    answer: Set({3, 5} U [-2, 4))
+ 4. Given [`A = \{-1, 5\}`] and [`B = [-2, 4)`], find [`A \cup B`].
+    answer: Set({-1, 5} U [-2, 4))
+ 5. Given [`A = \{1, 5\}`] and [`B = [-2, 4)`], find [`A \cup B`].
+    answer: Set({1, 5} U [-2, 4))

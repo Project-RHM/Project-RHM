@@ -10,6 +10,8 @@
         byId('apiKeyInfo').style.display = 'flex';
         byId('apiKeyStatusText').textContent = text;
         byId('apiKeyStatusText').style.color = hasApiKey ? '#315c46' : '#7a343b';
+        byId('apiKeyModel').value = status.model || 'deepseek-flash';
+        document.dispatchEvent(new CustomEvent('rhema:api-key-status',{detail:{...status}}));
         byId('editApiKeyBtn').style.display = status.has_api_key ? 'inline-block' : 'none';
         byId('removeApiKeyBtn').hidden = !status.has_api_key;
         byId('apiKeyVerifiedAt').textContent = status.verified_at ? 'Verified at: ' + new Date(status.verified_at).toLocaleString() : '';
@@ -21,7 +23,7 @@
     }
     function pending(value) {
         busy = value;
-        for (const id of ['saveApiKeyBtn','removeApiKeyBtn','cancelApiKeyBtn','apiKeyInput']) byId(id).disabled = value;
+        for (const id of ['saveApiKeyBtn','removeApiKeyBtn','cancelApiKeyBtn','apiKeyInput','apiKeyModel','importApiKeyBtn','apiKeyConfigFile']) byId(id).disabled = value;
         byId('apiKeyModal').querySelector('.api-close-btn').disabled = value;
         byId('saveApiKeyBtn').textContent = value ? 'Validating...' : 'Validate and save';
     }
@@ -49,7 +51,7 @@
         pending(true); message('Validating with DeepSeek...');
         try {
             const response = await fetch('/save_api_key', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-                body:new URLSearchParams({api_key:key})});
+                body:new URLSearchParams({api_key:key,model:byId('apiKeyModel').value})});
             const data = await response.json();
             if (!response.ok || !data.success) throw new Error(data.error || 'Validation failed.');
             status = data; update(); byId('apiKeyInput').value = ''; message(data.message);
@@ -57,6 +59,21 @@
         finally { pending(false); }
     };
     document.addEventListener('DOMContentLoaded', () => {
+        byId('importApiKeyBtn').addEventListener('click',()=>byId('apiKeyConfigFile').click());
+        byId('apiKeyConfigFile').addEventListener('change',async()=>{
+            const input=byId('apiKeyConfigFile'),file=input.files[0];
+            if(!file||busy)return;
+            if(file.size>8192||!file.size){input.value='';message('Choose a JSON configuration file of at most 8 KB.',true);return;}
+            pending(true);message('Validating with DeepSeek...');
+            try {
+                const body=new FormData();body.append('config',file);
+                const response=await fetch('/import_api_key',{method:'POST',headers:{'X-Rhema-Request':'1'},body});
+                const data=await response.json();
+                if(!response.ok||!data.success)throw new Error(data.error||'Configuration import failed.');
+                status=data;update();byId('apiKeyInput').value='';message(data.message);
+            }catch(error){message(error.message,true);}
+            finally{input.value='';pending(false);}
+        });
         byId('removeApiKeyBtn').addEventListener('click', async () => {
             if (busy || !confirm('Remove the saved API key from this application? This does not revoke it at DeepSeek.')) return;
             pending(true);

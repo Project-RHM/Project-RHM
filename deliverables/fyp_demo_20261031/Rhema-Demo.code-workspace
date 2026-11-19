@@ -1,0 +1,16 @@
+{
+  "folders": [
+    {
+      "name": "Project-RHM latest",
+      "path": "../.."
+    }
+  ],
+  "settings": {
+    "rhema.path": "generator/_build/install/default/bin/rhema",
+    "rhema.includePaths": ["generator/stdlib"],
+    "rhema.check.trigger": "onType"
+  },
+  "extensions": {
+    "recommendations": ["rhema.rhema-language"]
+  }
+}

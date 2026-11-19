@@ -1,0 +1,33 @@
+# A new question form, built only from existing numeric primitives.
+# Choose a valid sequence first; derive its two given terms afterwards.
+attribute cost = 1 split
+
+random first = integer_between(-5, 5)
+random difference = nonzero_integer_between(-4, 4)
+random first_index = integer_between(2, 4)
+random gap = integer_between(2, 4)
+
+let second_index = first_index + gap
+let first_given = first + (first_index - 1) * difference
+let second_given = first + (second_index - 1) * difference
+
+synth text on Q
+synth value on Q
+
+start Q
+
+Q -> "recover_difference" when cost = 1 {
+  cost = -1
+  require second_index > first_index
+  require first_given != second_given
+  value = (second_given - first_given) / (second_index - first_index)
+  require value = difference
+  text = "An arithmetic sequence satisfies [`a_{{" ++ str(first_index)
+         ++ "}} = " ++ str(first_given) ++ "`] and [`a_{{"
+         ++ str(second_index) ++ "}} = " ++ str(second_given)
+         ++ "`]. Find its common difference."
+}
+
+prompt "{Q.text}"
+answer Q.value
+width 10

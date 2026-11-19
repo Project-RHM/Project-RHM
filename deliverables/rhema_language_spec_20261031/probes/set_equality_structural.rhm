@@ -1,0 +1,8 @@
+let a = set_insert(set_empty(),1)
+synth value on Q
+start Q
+Q -> "marker" {
+value = set_union(a,set_empty()) = a
+}
+prompt "Answer the question."
+answer Q.value

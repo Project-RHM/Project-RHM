@@ -1,0 +1,16 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+Find an antiderivative of [`\cos\left(x\right) - 4 \cdot x^{3}`] with respect to x, with C = 0.[_____]{answer=>Formula('sin(x)-x^4'),width=>24}
+
+Find an antiderivative of [`\cos\left(x\right) - 4 \cdot 2 \cdot x`] with respect to x, with C = 0.[_____]{answer=>Formula('sin(x)-4*x^2'),width=>24}
+
+Find an antiderivative of [`\cos\left(x\right) - 4 \cdot 2 \cdot x`] with respect to x, with C = 0.[_____]{answer=>Formula('sin(x)-4*x^2'),width=>24}
+
+Find an antiderivative of [`\cos\left(x\right) - 4 \cdot 4 \cdot x^{3}`] with respect to x, with C = 0.[_____]{answer=>Formula('sin(x)-4*x^4'),width=>24}
+
+Find an antiderivative of [`3 \cdot 3 \cdot x^{2} + \cos\left(x\right)`] with respect to x, with C = 0.[_____]{answer=>Formula('3*x^3+sin(x)'),width=>24}
+END_PGML
+ENDDOCUMENT();

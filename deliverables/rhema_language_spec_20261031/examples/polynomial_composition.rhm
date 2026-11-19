@@ -1,0 +1,22 @@
+include "polynomial_core.rhm"
+attribute cost = 3 split
+random point = integer_between(-3, 3)
+
+synth text on Q
+synth expanded on Q
+synth at_point on Q
+start Q
+
+Q -> E {
+  require $1.factors >= 2
+  text = $1.latex
+  expanded = $1.poly
+  at_point = polynomial_evaluate($1.poly, point)
+}
+
+prompt "Let [`P(x) = {Q.text}`].
+
+(a) Give an expanded equivalent expression: {answer Q.expanded}
+
+(b) Evaluate [`P({point})`]: {answer Q.at_point}"
+width 24

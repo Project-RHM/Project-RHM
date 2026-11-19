@@ -1,0 +1,9 @@
+let maximum = 5
+random n = integer_between(1, maximum)
+synth value on Q
+start Q
+Q -> "marker" {
+value = n
+}
+prompt "Answer the question."
+answer Q.value

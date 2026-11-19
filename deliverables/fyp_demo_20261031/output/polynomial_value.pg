@@ -1,0 +1,8 @@
+DOCUMENT();
+loadMacros("PGstandard.pl", "MathObjects.pl", "PGML.pl");
+Context("Numeric");
+
+BEGIN_PGML
+Let [`P(x) = (2 \cdot x + 3)(x + 5)`]. Find [`P(1)`]: [_____]{30}
+END_PGML
+ENDDOCUMENT();
