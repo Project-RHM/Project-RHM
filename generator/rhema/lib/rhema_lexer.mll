@@ -26,6 +26,7 @@ let keywords = [
   "when",       WHEN;
   "weight",     WEIGHT;
   "require",    REQUIRE;
+  "mistake",    MISTAKE;
   "prompt",     PROMPT;
   "answer",     ANSWER;
   "width",      WIDTH;
@@ -37,6 +38,8 @@ let keywords = [
   "and",        AND;
   "or",         OR;
   "not",        NOT;
+  "true",       TRUE;
+  "false",      FALSE;
 ]
 
 let identifier_or_keyword text =

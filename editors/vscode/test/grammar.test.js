@@ -113,7 +113,8 @@ function rhemaFiles() {
   return files;
 }
 
-const KEYWORD_SCOPES = ["keyword", "storage"];
+// The truth literals are reserved words too, highlighted as constants.
+const KEYWORD_SCOPES = ["keyword", "storage", "constant.language"];
 
 test("every keyword of the compiler is highlighted", async () => {
   for (const word of compilerKeywords()) {

@@ -57,6 +57,12 @@ let coefficient polynomial degree =
   | Some coefficient -> coefficient
   | None -> Rhema_number.zero
 
+(* The terms of degree at most [degree]: what is left of a power series
+   written out to some higher degree. *)
+let truncate polynomial degree =
+  if degree < 0 then invalid_arg "polynomial degree must be non-negative";
+  make ~variable:polynomial.variable (List.filteri (fun index _ -> index <= degree) polynomial.coefficients)
+
 let ensure_same_variable operation left right =
   if left.variable <> right.variable then
     invalid_arg
@@ -213,8 +219,9 @@ let rec of_formula ~variable expression =
       match recurse body with
       | Some body -> Some (scale (Rhema_number.of_int (-1)) body)
       | None -> None)
-  | Rhema_formula.Divide _ | Rhema_formula.Power _ | Rhema_formula.Sin _ | Rhema_formula.Cos _
-  | Rhema_formula.Tan _ | Rhema_formula.Exp _ | Rhema_formula.Ln _ | Rhema_formula.Sqrt _ ->
+  | Rhema_formula.Pi | Rhema_formula.Divide _ | Rhema_formula.Power _ | Rhema_formula.Sin _
+  | Rhema_formula.Cos _ | Rhema_formula.Tan _ | Rhema_formula.Exp _ | Rhema_formula.Ln _
+  | Rhema_formula.Sqrt _ ->
       None
 
 let linear_root polynomial =

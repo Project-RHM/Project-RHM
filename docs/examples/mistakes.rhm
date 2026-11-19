@@ -1,0 +1,62 @@
+# Derivatives worked out rule by rule, and two mistakes students make.
+
+attribute cost = 5 split
+
+mistake factor_by_factor "differentiates a product factor by factor"
+mistake no_chain "leaves out the derivative of the inside"
+
+synth f on F        # the function
+synth d on F        # its derivative
+synth latex on F
+synth f on T
+synth d on T
+synth latex on T
+
+start F
+
+F -> F "+" F when cost >= 1 weight 2 {
+  cost = -1
+  require $1.latex != $3.latex
+  f = formula_add($1.f, $3.f)
+  d = formula_add($1.d, $3.d)
+  latex = formula_latex(f)
+}
+
+F -> F "\cdot" F when cost >= 3 weight 2 {
+  cost = -3
+  require $1.latex != $3.latex
+  f = formula_multiply($1.f, $3.f)
+  d = formula_add(formula_multiply($1.d, $3.f), formula_multiply($1.f, $3.d))
+  mistake factor_by_factor d = formula_multiply($1.d, $3.d)
+  latex = formula_latex(f)
+}
+
+F -> "sin" F when cost >= 2 {
+  cost = -2
+  f = formula_sin($2.f)
+  d = formula_multiply(formula_cos($2.f), $2.d)
+  mistake no_chain d = formula_cos($2.f)
+  latex = formula_latex(f)
+}
+
+F -> T when cost <= 1 {
+  f = $1.f
+  d = $1.d
+  latex = $1.latex
+}
+
+T -> "x" when cost = 0 {
+  f = formula_variable("x")
+  d = formula_constant(1)
+  latex = formula_latex(f)
+}
+
+T -> integer_between(2, 6) "x" when cost = 1 {
+  cost = -1
+  f = formula_multiply(formula_constant($1.value), formula_variable("x"))
+  d = formula_constant($1.value)
+  latex = formula_latex(f)
+}
+
+prompt "Differentiate [`{F.latex}`] with respect to [`x`]."
+answer F.d

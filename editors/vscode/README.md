@@ -86,7 +86,7 @@ npm run package
 ```
 
 ```bash
-code --install-extension rhema-language-0.1.0.vsix
+code --install-extension rhema-language-0.1.2.vsix
 ```
 
 `npm run package` fetches the `vsce` packaging tool with `npx` the first

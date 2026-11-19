@@ -8,6 +8,14 @@ services:
     image: ghcr.io/openwebwork/ww-renderer:main@sha256:fc301fd5fd05bc2bc8573b2f7004c303c42aa19a25de0b88123bdb79774d861b
     ports:
       - "127.0.0.1:${WEBWORK_PORT:-3000}:3000"
+    # The image starts hypnotoad through a shell and leaves its process id
+    # file behind when the container is stopped. On the next start hypnotoad
+    # reads that file, and when the number in it is its own new process id it
+    # takes itself for a running server, sends itself the reload signal and
+    # exits (code 140), over and over. So the file is emptied first, which
+    # hypnotoad reads as "not running", and hypnotoad replaces the shell, so
+    # that a stop reaches it and it can clean up after itself.
+    command: ["/bin/sh", "-c", ": > script/hypnotoad.pid && exec hypnotoad -f ./script/render_app"]
     environment:
       MOJO_MODE: development
     healthcheck:

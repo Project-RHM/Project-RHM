@@ -58,26 +58,29 @@ attribute, random and let holds one of these:
 |---|---|---|
 | Number | literals, arithmetic, generators | an exact number, or a fraction |
 | Text | strings, `++`, `str`, the `*_latex` functions | (not an answer) |
-| Truth | comparisons, `and`, `or`, `not`, `random ... = boolean` | 1 or 0 |
-| Formula | `formula_*`, `differentiate` | a formula, by equivalence |
+| Truth | `true`, `false`, comparisons, `and`, `or`, `not`, `random ... = boolean` | 1 or 0 |
+| Formula | `formula_*`, `differentiate`, `exact_sin` and its like | a formula, by equivalence, in `x` or in any variables |
 | Polynomial | `polynomial_*` | a formula |
 | Equation | `equation_*` | not directly: `equation_solution_set` gives a Set |
-| Boolean | `bool_*` | a proposition (Boolean context) |
+| Boolean | `bool_*` | a proposition, by equivalence, in any variables |
 | Matrix | `matrix_*` | a matrix (Matrix context) |
 | Set | `set_*` | an interval or union (Interval context) |
 | Vector | `vector_*` | a vector (Vector context) |
+| Point | `point2`, `point3` | a point such as `(3, -2)`, in any context |
 | Complex | `complex` | a complex number (Complex context) |
 
-The [builtin functions](../reference/builtins.md) are listed by value type.
-A function given the wrong kind of value stops generation with a message
+The [builtin functions](../reference/builtins.md) are listed by value type,
+with what each takes and gives. A function given a value it cannot take is
+found by `rhema check`, before any question is generated, with a message
 that names both:
 
 ```text
-values.rhm: error: formula_power expected a number but received "Formula(3)"
+values.rhm:8:76: error: formula_power takes a number as its second argument, but formula_constant(...) is a formula
 ```
 
 (This is what happens if the exponent is written `formula_constant(n)`:
-`formula_power` takes its exponent as a plain number.)
+`formula_power` takes its exponent as a plain number. The reference says
+what the checker can and cannot tell: [Types](../reference/language.md#types).)
 
 ## The answer is computed, not typed
 

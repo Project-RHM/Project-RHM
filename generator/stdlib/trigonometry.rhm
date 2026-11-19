@@ -1,0 +1,140 @@
+# ==========================================================================
+#  Trigonometry: exact values and equations
+#
+#  Angles in radians as multiples of pi, the exact values of sine, cosine
+#  and tangent at the multiples of pi/6 and pi/4, and equations solved on
+#  one turn. An angle is counted in twelfths of pi, so every angle here is a
+#  whole number m and is written m pi / 12 in lowest terms. An equation is
+#  built from its answers: the reference angle and the quadrants are chosen
+#  first, and the right-hand side is the value there.
+#
+#  A value or an angle is a `plain` answer: it is graded with the
+#  trigonometric functions and their inverses switched off, so sin(pi/3) is
+#  not accepted as the value of sin(pi/3), nor asin(1/2) as an angle. The
+#  forms have one or two blanks and place them in their own text.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  degrees to radians, radians to degrees, a value in the first
+#       quadrant
+#    2  a value in any quadrant or at a negative angle; the other two of
+#       sine, cosine and tangent from one of them and the quadrant
+#    3  the two solutions of sin x = v, cos x = v or tan x = v on [0, 2 pi),
+#       and the same for the argument 2x on [0, pi)
+# ==========================================================================
+
+attribute cost = 2 split
+
+let pi = formula_pi()
+
+synth kind on Q
+synth text on Q
+
+# sine, cosine or tangent.
+synth index on F
+synth name on F
+
+# A Pythagorean triple with its legs in either order.
+synth opposite on T
+synth adjacent on T
+synth hypotenuse on T
+
+start Q
+
+F -> integer_between(1, 3) {
+  index = $1.value
+  name = cond($1.value = 1, "\sin", cond($1.value = 2, "\cos", "\tan"))
+}
+
+T -> integer_between(1, 3) integer_between(0, 1) {
+  let short = cond($1.value = 1, 3, cond($1.value = 2, 5, 8))
+  let long = cond($1.value = 1, 4, cond($1.value = 2, 12, 15))
+  opposite = cond($2.value = 0, short, long)
+  adjacent = cond($2.value = 0, long, short)
+  hypotenuse = cond($1.value = 1, 5, cond($1.value = 2, 13, 17))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# 15 j degrees is j pi / 12.
+Q -> "to_radians" integer_between(1, 24) when cost = 1 {
+  cost = -1
+  kind = "to_radians"
+  text = "Convert [`" ++ str(15 * $2.value) ++ "^\circ`] to radians. "
+         ++ blank(formula_multiply(formula_constant($2.value / 12), pi))
+}
+
+Q -> "to_degrees" integer_between(1, 24) when cost = 1 {
+  cost = -1
+  kind = "to_degrees"
+  text = "Convert [`" ++ formula_latex(formula_multiply(formula_constant($2.value / 12), pi))
+         ++ "`] radians to degrees. " ++ blank(15 * $2.value)
+}
+
+# 0, pi/6, pi/4, pi/3 or pi/2; the tangent of pi/2 is left out.
+Q -> "first_quadrant" F integer_between(0, 6) when cost = 1 weight 2 {
+  cost = -1
+  kind = "first_quadrant"
+  let m = $3.value
+  require m % 2 = 0 or m % 3 = 0
+  require $2.index != 3 or m != 6
+  text = "Find the exact value of [`" ++ $2.name ++ "\left(" ++ formula_latex(formula_multiply(formula_constant(m / 12), pi))
+         ++ "\right)`]. "
+         ++ blank(plain(cond($2.index = 1, exact_sin(m, 12), cond($2.index = 2, exact_cos(m, 12), exact_tan(m, 12)))))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# Beyond the first quadrant, or a negative angle.
+Q -> "any_quadrant" F integer_between(-11, 23) when cost = 2 weight 2 {
+  cost = -2
+  kind = "any_quadrant"
+  let m = $3.value
+  require m < 0 or m > 6
+  require abs(m) % 2 = 0 or abs(m) % 3 = 0
+  require $2.index != 3 or abs(m) % 12 != 6
+  text = "Find the exact value of [`" ++ $2.name ++ "\left(" ++ formula_latex(formula_multiply(formula_constant(m / 12), pi))
+         ++ "\right)`]. "
+         ++ blank(plain(cond($2.index = 1, exact_sin(m, 12), cond($2.index = 2, exact_cos(m, 12), exact_tan(m, 12)))))
+}
+
+# In the second quadrant the sine is positive and the cosine negative, in
+# the third both are negative, in the fourth the cosine is positive.
+Q -> "from_one" T integer_between(2, 4) integer_between(1, 2) when cost = 2 weight 2 {
+  cost = -2
+  kind = "from_one"
+  let sine = cond($3.value = 2, 1, 0 - 1) * $2.opposite / $2.hypotenuse
+  let cosine = cond($3.value = 4, 1, 0 - 1) * $2.adjacent / $2.hypotenuse
+  let given_sine = $4.value = 1
+  text = "The angle [`\theta`] is in the " ++ cond($3.value = 2, "second", cond($3.value = 3, "third", "fourth"))
+         ++ " quadrant and [`" ++ cond(given_sine, "\sin", "\cos") ++ " \theta = "
+         ++ number_latex(cond(given_sine, sine, cosine)) ++ "`]. [`" ++ cond(given_sine, "\cos", "\sin") ++ " \theta = `] "
+         ++ blank(plain(cond(given_sine, cosine, sine))) ++ " [`\tan \theta = `] " ++ blank(plain(sine / cosine))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# With the reference angle a (2, 3 or 4 twelfths of pi):
+#   sin x = +v at a and 12 - a,       -v at 12 + a and 24 - a
+#   cos x = +v at a and 24 - a,       -v at 12 - a and 12 + a
+#   tan x = +v at a and 12 + a,       -v at 12 - a and 24 - a
+Q -> "equation" F integer_between(2, 4) nonzero_integer_between(-1, 1) integer_between(1, 2) when cost = 3 {
+  cost = -3
+  kind = "equation"
+  let a = $3.value
+  let positive = $4.value > 0
+  let first = cond($2.index = 1, cond(positive, a, 12 + a), cond(positive, a, 12 - a))
+  let second = cond($2.index = 1, cond(positive, 12 - a, 24 - a),
+               cond($2.index = 2, cond(positive, 24 - a, 12 + a), cond(positive, 12 + a, 24 - a)))
+  let value = cond($2.index = 1, exact_sin(first, 12), cond($2.index = 2, exact_cos(first, 12), exact_tan(first, 12)))
+  # the argument is x on one turn, or 2x on half a turn
+  let double = $5.value = 2
+  let scale = cond(double, 24, 12)
+  text = "Find the two solutions of [`" ++ $2.name ++ cond(double, " 2x", " x") ++ " = " ++ formula_latex(value)
+         ++ "`] with [`0 \le x < " ++ cond(double, "\pi", "2\pi") ++ "`]. The smaller: "
+         ++ blank(plain(formula_multiply(formula_constant(first / scale), pi))) ++ " The larger: "
+         ++ blank(plain(formula_multiply(formula_constant(second / scale), pi)))
+}
+
+prompt "{Q.text}"

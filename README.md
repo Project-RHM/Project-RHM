@@ -1,14 +1,28 @@
-# RHM — Reversible Hierarchical Mathesis
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="The Rhema icon: a derivation tree, one node and its two children" width="112">
+</p>
 
-**Math Question Generation** · *Regula · Hierarchia · Mathesis*
+<h1 align="center">RHM — Reversible Hierarchical Mathesis</h1>
 
-[![CI](https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml/badge.svg)](https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml)
+<p align="center">
+  <b>Math Question Generation</b> · <i>Regula · Hierarchia · Mathesis</i>
+</p>
 
-[Documentation](https://project-rhm.github.io/) ·
-[opam package](https://opam.ocaml.org/packages/rhema/) ·
-[VS Code extension](https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language) ·
-[Changelog](CHANGELOG.md) ·
-[中文说明](README.zh.md)
+<p align="center">
+  <a href="https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml"><img src="https://github.com/Project-RHM/Project-RHM/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://opam.ocaml.org/packages/rhema/"><img src="https://img.shields.io/badge/opam-rhema-orange" alt="opam package"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language"><img src="https://img.shields.io/badge/VS_Code-Marketplace-007ACC" alt="VS Code Marketplace"></a>
+  <a href="https://project-rhm.github.io/"><img src="https://img.shields.io/badge/Docs-guide-blue" alt="Documentation"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Project-RHM/Project-RHM" alt="License"></a>
+</p>
+
+<p align="center">
+  <a href="https://project-rhm.github.io/">Documentation</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#the-question-library">Question library</a> ·
+  <a href="CHANGELOG.md">Changelog</a> ·
+  <a href="README.zh.md">中文说明</a>
+</p>
 
 RHM generates mathematics questions for [WeBWorK](https://openwebwork.org/).
 It has three parts:
@@ -81,8 +95,14 @@ The compiler and its library, on OCaml 4.14 or later:
 opam install rhema
 ```
 
-This installs 0.1.1, the current release. The repository is ahead of it: the
-Unreleased section of the [changelog](CHANGELOG.md) lists what is newer.
+This installs the current release, 0.2.0; the [changelog](CHANGELOG.md) says
+what each release brought. 0.2.0 was released on 2026-11-16: until the opam
+repository has accepted it, the command above gives 0.1.1, and `opam update`
+followed by `opam upgrade rhema` brings 0.2.0 once it is there.
+
+If you do not have opam yet,
+[Installing with opam](https://project-rhm.github.io/tutorial/install/) goes
+through every step, starting with opam itself.
 
 For VS Code, install **Rhema Language** from the
 [Marketplace](https://marketplace.visualstudio.com/items?itemName=rhema.rhema-language).
@@ -110,6 +130,7 @@ a file by its path; the search below applies to the files it imports.
 rhema check calculus.rhm                  # file:line:col: error: ... or OK
 rhema calculus.rhm -o calculus.pg         # compile to WeBWorK PG
 rhema homework_set.rhm --run homework     # a whole assignment -> homework.pg
+rhema homework_set.rhm --run homework -o homework.pdf --answers   # a paper to print, with a key
 rhema run boolean.rhm --set cost=6        # questions and answers in the terminal
 rhema run calculus.rhm --question integral  # one named question of the file
 rhema list calculus.rhm                   # questions, budgets, sets, imports
@@ -117,9 +138,10 @@ rhema doc                                 # the builtin functions
 ```
 
 One assignment is one paper, the same every time it is generated;
-`--student ID` gives a student a paper of their own. Imported files are found
-beside the importing file, then in `-I` directories, `RHEMA_PATH` and the
-installed library (`share/rhema`).
+`--student ID` gives a student a paper of their own. An output named `.tex`
+or `.pdf` is that paper in LaTeX or as a PDF (a PDF needs a TeX engine on the
+machine). Imported files are found beside the importing file, then in `-I`
+directories, `RHEMA_PATH` and the installed library (`share/rhema`).
 
 In an interactive terminal, compile and run show a RHEMA banner, actual
 question progress, and a summary with the seed and files written. Paths are
@@ -141,23 +163,23 @@ when compiling to stdout. Plain diagnostics keep the original
 
 ## The question library
 
-The 0.1.1 package installs 27 grammar files. `generator/stdlib/` holds those
-and the six marked †, which will reach opam with the next release; until
-then they need a clone. [`QUESTION_TYPES.md`](QUESTION_TYPES.md) gives each
-grammar's questions, prices and WeBWorK context.
+The package installs 46 grammar files, the ones in `generator/stdlib/`.
+[`QUESTION_TYPES.md`](QUESTION_TYPES.md) gives each grammar's questions,
+prices and WeBWorK context.
 
 | Area | Grammars |
 | --- | --- |
 | Arithmetic | `arithmetic` |
-| Algebra | `polynomial_expand`, `factoring`, `polynomial_forms`, `linear_equation`, `inequality`†, `library_linear`, `library_quadratic`, `library_polynomial` |
-| Sequences and series | `sequence`, `sequence_parts`, `series`† |
-| Calculus | `calculus`, `limits`†, `library_formula` |
+| Algebra | `polynomial_expand`, `factoring`, `polynomial_forms`, `linear_equation`, `inequality`, `exponential_log`, `partial_fractions`, `library_linear`, `library_quadratic`, `library_polynomial` |
+| Sequences and series | `sequence`, `sequence_parts`, `series`, `recurrence` |
+| Calculus | `calculus`, `limits`, `definite_integral`, `derivative_applications`, `differential_equation`, `taylor`, `partial_derivatives`, `library_formula` |
 | Logic | `boolean`, `boolean_equiv`, `logic_forms` |
 | Sets | `set` |
 | Vectors | `vector`, `vector_expr` |
 | Complex numbers | `complex` |
-| Linear algebra | `matrix_expr`, `determinant`, `matrix_inverse`, `linear_system`, `eigen`† |
-| Counting and number theory | `counting`†, `number_theory`† |
+| Linear algebra | `matrix_expr`, `determinant`, `matrix_inverse`, `linear_system`, `eigen`, `row_reduction` |
+| Counting and number theory | `counting`, `number_theory`, `base_conversion` |
+| Geometry, trigonometry and statistics | `analytic_geometry`, `trigonometry`, `statistics` |
 | Combined | `derivative_or_boolean` (one question, two imported grammars), `homework_set` (a whole assignment) |
 | Shared rules, no questions of their own | `polynomial_core`, `matrix_core` |
 
@@ -169,9 +191,12 @@ own files belong in `generator/grammars/`.
 Difficulty is a budget the grammar spends. `boolean.rhm` prices each
 connective (conjunction 2, conditional 4, biconditional 6 and so on),
 `calculus.rhm` prices the differentiation rules a function calls for, and
-grammars of fixed forms offer each form at its price. Every grammar spends
-its budget exactly, so `--set cost=6` and `--set cost=14` ask for an easy and
-a hard question of the same type.
+grammars of fixed forms offer each form at its price, 1 to 3. Seven of those
+(`partial_fractions`, `taylor`, `inequality`, `partial_derivatives`,
+`row_reduction`, `base_conversion`, `definite_integral`) go on to 8, building
+larger questions from priced parts. Every grammar spends its
+budget exactly, so `--set cost=6` and `--set cost=14` ask for an easy and a
+hard question of the same type.
 
 A set can fix a budget (`cost = 6`), use a list evenly
 (`cost in {8, 10, 12}`), or hold a mean (`cost ~ 6 spread 2`).
@@ -207,7 +232,24 @@ For Docker setup, local ports, form controls, preview isolation and tests, see
 renderer with `docker compose up -d --wait webwork-renderer`. The renderer is
 optional for generation and PGML export; WeBWorK preview and grading need it.
 
-## Repository layout
+## Documentation
+
+- [The documentation site](https://project-rhm.github.io/): an eight-chapter
+  tutorial and the language reference
+- [`RHEMA_LANGUAGE_GUIDE.md`](RHEMA_LANGUAGE_GUIDE.md): the language and the
+  command, in Chinese
+- [`RHEMA_LANGUAGE_EXTENSIONS.md`](RHEMA_LANGUAGE_EXTENSIONS.md): `include`,
+  `import`, named questions, sets, per-question contexts, answer blanks in
+  text, and answers in several variables
+- [`RHEMA_MODULES_DESIGN.md`](RHEMA_MODULES_DESIGN.md): the design of the
+  module layer
+- [`QUESTION_TYPES.md`](QUESTION_TYPES.md): every grammar in the library
+- [`DIFFICULTY_BUDGET.md`](DIFFICULTY_BUDGET.md): prices, budgets and sets
+- [`RELEASING.md`](RELEASING.md): how a version is released
+
+## Development
+
+### Repository layout
 
 | Path | Contents |
 | --- | --- |
@@ -220,7 +262,7 @@ optional for generation and PGML export; WeBWorK preview and grading need it.
 | `tools/` | Difficulty, statistics and set tools; test scripts |
 | `app.py`, `templates/`, `static/`, `llm_context/` | The web application |
 
-## Testing
+### Testing
 
 ```bash
 cd generator
@@ -231,6 +273,7 @@ python3 tools/test_grammar_creation.py
 python3 tools/test_teacher_builder.py
 python3 tools/test_webwork_preview.py
 tools/check_doc_examples.sh generator/_build/install/default/bin/rhema
+tools/check_latex_output.sh generator/_build/install/default/bin/rhema   # needs a TeX engine
 ```
 
 Several suites read a generated question back and recompute its answer
@@ -272,21 +315,6 @@ engine, `generator/attribute_grammar.ml`, whose default grammar is
 `generator/arithmetic.ag`. Set `ATTRIBUTE_GRAMMAR_FILE` to load another. This
 is the ancestor of Rhema and uses its own, simpler format; see
 [`ATTRIBUTE_GRAMMAR_IMPROVEMENT.md`](ATTRIBUTE_GRAMMAR_IMPROVEMENT.md).
-
-## Documentation
-
-- [The documentation site](https://project-rhm.github.io/): an eight-chapter
-  tutorial and the language reference
-- [`RHEMA_LANGUAGE_GUIDE.md`](RHEMA_LANGUAGE_GUIDE.md): the language and the
-  command
-- [`RHEMA_LANGUAGE_EXTENSIONS.md`](RHEMA_LANGUAGE_EXTENSIONS.md): `include`,
-  `import`, named questions, sets, per-question contexts and multiple answer
-  blanks
-- [`RHEMA_MODULES_DESIGN.md`](RHEMA_MODULES_DESIGN.md): the design of the
-  module layer
-- [`QUESTION_TYPES.md`](QUESTION_TYPES.md): every grammar in the library
-- [`DIFFICULTY_BUDGET.md`](DIFFICULTY_BUDGET.md): prices, budgets and sets
-- [`RELEASING.md`](RELEASING.md): how a version is released
 
 ## The name
 

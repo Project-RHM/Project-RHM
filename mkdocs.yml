@@ -13,6 +13,7 @@ exclude_docs: |
 
 theme:
   name: readthedocs
+  logo: assets/logo.svg
   highlightjs: false
   navigation_depth: 3
   collapse_navigation: false
@@ -47,6 +48,7 @@ nav:
   - Rhema: index.md
   - Tutorial:
       - Overview: tutorial/index.md
+      - Installing with opam: tutorial/install.md
       - 1. A first question: tutorial/first.md
       - 2. Difficulty is a budget: tutorial/budget.md
       - 3. Values and answers: tutorial/values.md
@@ -55,6 +57,7 @@ nav:
       - 6. Building on the library: tutorial/import.md
       - 7. A whole assignment: tutorial/sets.md
       - 8. Into WeBWorK: tutorial/webwork.md
+      - 9. Mistakes students make: tutorial/mistakes.md
   - Reference:
       - The language: reference/language.md
       - The rhema command: reference/command.md

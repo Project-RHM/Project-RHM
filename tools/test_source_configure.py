@@ -2,6 +2,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import re
 import sys
 import tempfile
 import unittest
@@ -116,7 +117,15 @@ class SourceConfigureTests(unittest.TestCase):
     def test_completion_inventory_comes_from_compiler(self):
         response = self.client.get('/teacher/completions')
         self.assertEqual(response.status_code, 200, response.json)
-        self.assertEqual(len(response.json['keywords']), 28)
+        # The list is the lexer's own, whatever its length: a word added to
+        # the language must reach the editor without this test being edited.
+        lexer = (ROOT / 'generator/rhema/lib/rhema_lexer.mll').read_text()
+        table = lexer[lexer.index('let keywords = ['):]
+        table = table[:table.index(']')]
+        declared = re.findall(r'"([a-z_]+)"\s*,', table)
+        self.assertGreater(len(declared), 25)
+        self.assertEqual(sorted(response.json['keywords']), sorted(declared))
+        self.assertIn('mistake', response.json['keywords'])
         functions = {x['name']: x for x in response.json['functions']}
         self.assertEqual(functions['bool_and']['arity'], 2)
         self.assertEqual(functions['bool_var']['arity'], 1)

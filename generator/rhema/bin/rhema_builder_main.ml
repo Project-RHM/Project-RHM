@@ -26,7 +26,7 @@ let rhm_string text =
 
 let rec expression = function
   | At (_,body) -> expression body
-  | Int n -> int n | Str s -> rhm_string s | Attr_here s -> s
+  | Int n -> int n | Str s -> rhm_string s | Bool b -> boolean b | Attr_here s -> s
   | Attr_child (n,a) -> Printf.sprintf "$%d.%s" n a
   | Attr_child_named (n,a) -> n ^ "." ^ a | Child n -> "$" ^ int n
   | Unary (op,e) -> "(" ^ op ^ " " ^ expression e ^ ")"
@@ -41,6 +41,8 @@ let symbol = function
 let equation = function
   | Assign (name,e,_) -> "  " ^ name ^ " = " ^ expression e
   | Require (e,_) -> "  require " ^ expression e
+  | Local (name,e,_) -> "  let " ^ name ^ " = " ^ expression e
+  | Mistake (mistake,name,e,_) -> "  mistake " ^ mistake ^ " " ^ name ^ " = " ^ expression e
 let question_item = function
   | Q_start (s,_) -> "start " ^ s | Q_context (s,_) -> "context " ^ rhm_string s
   | Q_prompt (s,_) -> "prompt " ^ rhm_string s | Q_answer (e,_) -> "answer " ^ expression e
@@ -62,6 +64,7 @@ let declaration = function
   | Random_decl (s,d,_) -> "random " ^ s ^ " = " ^ (match d with
       | Draw_boolean -> "boolean" | Draw_generator (n,args) -> n ^ "(" ^ String.concat ", " (List.map expression args) ^ ")")
   | Let_decl (s,e,_) -> "let " ^ s ^ " = " ^ expression e
+  | Mistake_decl (s,text,_) -> "mistake " ^ s ^ " " ^ rhm_string text
   | Synthesized_decl (s,scope,_) -> "synth " ^ s ^ (match scope with None -> "" | Some n -> " on " ^ n)
   | Start_decl (s,_) -> "start " ^ s | Context_decl (s,_) -> "context " ^ rhm_string s
   | Prompt_decl (s,_) -> "prompt " ^ rhm_string s | Answer_decl (e,_) -> "answer " ^ expression e
@@ -259,7 +262,7 @@ let () =
       with Rhema_engine.Generation_error e -> fail e in
     print_endline (arr (List.map (fun q -> obj [
       "pieces",arr (List.map (function Rhema_engine.Piece_text s -> obj ["text",quote s]
-        | Piece_blank v -> obj ["answer",quote (Rhema_engine.describe_value v)]) q.Rhema_engine.pieces);
+        | Piece_blank v | Piece_wide_blank (v,_) -> obj ["answer",quote (Rhema_engine.describe_value v)]) q.Rhema_engine.pieces);
       "context",quote q.context;"answer",quote q.answer_text;
       "operator_count",(try match Rhema_engine.attribute q.tree counter with
         | Rhema_engine.Num n -> int (Rhema_number.require_integer "length" n) | _ -> "null"

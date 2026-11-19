@@ -1,0 +1,241 @@
+# ==========================================================================
+#  Definite integrals
+#
+#  Definite integrals of polynomials and the areas they measure. Nothing is
+#  integrated by the engine: every integrand has an antiderivative known in
+#  closed form from the numbers that built it, and the answer is that
+#  antiderivative taken between the bounds, an exact fraction. An area is
+#  built from the points where the curve crosses the axis or the other
+#  curve: for k (x - r1)(x - r2) the enclosed area is |k| (r2 - r1)^3 / 6.
+#  Polynomials are shown expanded, so the crossing points have to be found.
+#
+#  Difficulty is the budget `cost`, spent exactly. Budgets 1 to 3 are fixed
+#  forms, each offered at its price alone:
+#
+#    1  k x^n from 0 to q, a quadratic between two bounds
+#    2  a product of two linear factors to expand first, the area between a
+#       parabola and the x-axis
+#    3  the area between a parabola and a line, k x (a x^2 + c)^n by
+#       substitution
+#
+#  Budgets 4 to 8 are the integral of a sum of two or three such pieces
+#  between two bounds, priced piece by piece as above:
+#
+#    a quadratic                                  1
+#    a product of two linear factors              2
+#    k x (a x^2 + c)^2, by substitution           3
+#    k |x - m| with m between the bounds          3
+#
+#  with no two pieces of a kind, and an answer below 1000. The absolute
+#  value is the one new piece: its integral is taken on the two sides of m.
+#  A budget above 8 is refused.
+#
+#    rhema run definite_integral.rhm --set cost=2     the default
+#    rhema run definite_integral.rhm --set cost=5
+#    rhema run definite_integral.rhm --set cost=8
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# Two bounds, lower < upper.
+synth lower on B
+synth upper on B
+synth latex on B
+
+# The integral of a sum of pieces, built piece by piece for budgets 4 to 8:
+# the bounds, the integrand as written, its integral, and which kinds of
+# piece it holds.
+synth lower on I
+synth upper on I
+synth latex on I
+synth value on I
+synth has_quadratic on I
+synth has_product on I
+synth has_substitution on I
+synth has_absolute on I
+synth pieces on I
+
+start Q
+
+B -> integer_between(-3, 2) integer_between(1, 4) {
+  lower = $1.value
+  upper = $1.value + $2.value
+  latex = "\displaystyle\int_{" ++ str(lower) ++ "}^{" ++ str(upper) ++ "}"
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# k x^n from 0 to q: k q^(n+1) / (n+1).
+Q -> "power" integer_between(1, 9) integer_between(1, 4) integer_between(1, 3) when cost = 1 {
+  cost = -1
+  kind = "power"
+  text = "Evaluate [`\displaystyle\int_{0}^{" ++ str($4.value) ++ "} "
+         ++ polynomial_latex(polynomial_monomial($2.value, $3.value, "x")) ++ " \, dx`]."
+  answer_value = $2.value * $4.value ^ ($3.value + 1) / ($3.value + 1)
+}
+
+# a x^2 + b x + c: a (q^3 - p^3)/3 + b (q^2 - p^2)/2 + c (q - p).
+Q -> "quadratic" nonzero_integer_between(-6, 6) integer_between(-9, 9) integer_between(-9, 9) B when cost = 1 weight 2 {
+  cost = -1
+  kind = "quadratic"
+  text = "Evaluate [`" ++ $5.latex ++ " \left(" ++ polynomial_latex(polynomial_quadratic($2.value, $3.value, $4.value, "x"))
+         ++ "\right) dx`]."
+  answer_value = $2.value * ($5.upper ^ 3 - $5.lower ^ 3) / 3
+                 + $3.value * ($5.upper ^ 2 - $5.lower ^ 2) / 2
+                 + $4.value * ($5.upper - $5.lower)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# (x + a)(b x + c) = b x^2 + (c + a b) x + a c, left as a product.
+Q -> "product" nonzero_integer_between(-6, 6) integer_between(1, 5) nonzero_integer_between(-6, 6) B when cost = 2 weight 2 {
+  cost = -2
+  kind = "product"
+  text = "Evaluate [`" ++ $5.latex ++ " \left(" ++ polynomial_latex(polynomial_linear(1, $2.value, "x")) ++ "\right)\left("
+         ++ polynomial_latex(polynomial_linear($3.value, $4.value, "x")) ++ "\right) dx`]."
+  answer_value = $3.value * ($5.upper ^ 3 - $5.lower ^ 3) / 3
+                 + ($4.value + $2.value * $3.value) * ($5.upper ^ 2 - $5.lower ^ 2) / 2
+                 + $2.value * $4.value * ($5.upper - $5.lower)
+}
+
+# y = k (x - r)(x - r - d), written out; it crosses the axis at r and r + d.
+Q -> "area_axis" integer_between(-6, 4) integer_between(1, 6) nonzero_integer_between(-3, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "area_axis"
+  text = "Find the area of the region enclosed by the parabola [`y = "
+         ++ polynomial_latex(polynomial_multiply(polynomial_linear($4.value, 0 - $4.value * $2.value, "x"),
+                                                 polynomial_linear(1, 0 - ($2.value + $3.value), "x")))
+         ++ "`] and the [`x`]-axis."
+  answer_value = abs($4.value) * $3.value ^ 3 / 6
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# The line y = m x + c and the parabola y = m x + c + k (x - r)(x - r - d):
+# they meet at r and r + d, and their difference is the parabola of area_axis.
+Q -> "between_curves" integer_between(-5, 3) integer_between(1, 5) nonzero_integer_between(-2, 2) nonzero_integer_between(-5, 5) integer_between(-9, 9) when cost = 3 weight 2 {
+  cost = -3
+  kind = "between_curves"
+  text = "Find the area of the region enclosed by the parabola [`y = "
+         ++ polynomial_latex(polynomial_add(polynomial_linear($5.value, $6.value, "x"),
+                                            polynomial_multiply(polynomial_linear($4.value, 0 - $4.value * $2.value, "x"),
+                                                                polynomial_linear(1, 0 - ($2.value + $3.value), "x"))))
+         ++ "`] and the line [`y = " ++ polynomial_latex(polynomial_linear($5.value, $6.value, "x")) ++ "`]."
+  answer_value = abs($4.value) * $3.value ^ 3 / 6
+}
+
+# 2 a j x (a x^2 + c)^n is the derivative of j (a x^2 + c)^(n+1) / (n+1).
+Q -> "substitution" integer_between(1, 3) nonzero_integer_between(-4, 4) integer_between(2, 3) integer_between(1, 3) integer_between(1, 2) when cost = 3 weight 2 {
+  cost = -3
+  kind = "substitution"
+  text = "Evaluate [`\displaystyle\int_{0}^{" ++ str($6.value) ++ "} "
+         ++ polynomial_latex(polynomial_monomial(2 * $2.value * $5.value, 1, "x")) ++ " \left("
+         ++ polynomial_latex(polynomial_quadratic($2.value, 0, $3.value, "x")) ++ "\right)^{" ++ str($4.value) ++ "} dx`]."
+  answer_value = $5.value * (($2.value * $6.value ^ 2 + $3.value) ^ ($4.value + 1) - $3.value ^ ($4.value + 1)) / ($4.value + 1)
+}
+
+# ---- Budgets 4 to 8 ---------------------------------------------------------
+#
+# I starts from the two bounds, which cost nothing, and pays for each piece
+# it adds; every piece is integrated between those bounds as it is added.
+# The bounds are drawn here and not taken from B: a symbol of the grammar
+# would be handed part of the budget.
+
+I -> integer_between(-3, 2) integer_between(1, 4) when cost = 0 {
+  lower = $1.value
+  upper = $1.value + $2.value
+  latex = ""
+  value = 0
+  has_quadratic = 0
+  has_product = 0
+  has_substitution = 0
+  has_absolute = 0
+  pieces = 0
+}
+
+# a x^2 + b x + c
+I -> I nonzero_integer_between(-6, 6) integer_between(-9, 9) integer_between(-9, 9) when cost >= 1 weight 2 {
+  cost = -1
+  require $1.has_quadratic = 0
+  lower = $1.lower
+  upper = $1.upper
+  latex = cond($1.pieces = 0, "", $1.latex ++ " + ") ++ "\left("
+          ++ polynomial_latex(polynomial_quadratic($2.value, $3.value, $4.value, "x")) ++ "\right)"
+  value = $1.value + $2.value * (upper ^ 3 - lower ^ 3) / 3 + $3.value * (upper ^ 2 - lower ^ 2) / 2
+          + $4.value * (upper - lower)
+  has_quadratic = 1
+  has_product = $1.has_product
+  has_substitution = $1.has_substitution
+  has_absolute = $1.has_absolute
+  pieces = $1.pieces + 1
+}
+
+# (x + a)(b x + c) = b x^2 + (c + a b) x + a c, left as a product
+I -> I nonzero_integer_between(-6, 6) integer_between(1, 5) nonzero_integer_between(-6, 6) "product" when cost >= 2 weight 2 {
+  cost = -2
+  require $1.has_product = 0
+  lower = $1.lower
+  upper = $1.upper
+  latex = cond($1.pieces = 0, "", $1.latex ++ " + ") ++ "\left(" ++ polynomial_latex(polynomial_linear(1, $2.value, "x"))
+          ++ "\right)\left(" ++ polynomial_latex(polynomial_linear($3.value, $4.value, "x")) ++ "\right)"
+  value = $1.value + $3.value * (upper ^ 3 - lower ^ 3) / 3
+          + ($4.value + $2.value * $3.value) * (upper ^ 2 - lower ^ 2) / 2 + $2.value * $4.value * (upper - lower)
+  has_quadratic = $1.has_quadratic
+  has_product = 1
+  has_substitution = $1.has_substitution
+  has_absolute = $1.has_absolute
+  pieces = $1.pieces + 1
+}
+
+# 2 a j x (a x^2 + c)^2, the derivative of j (a x^2 + c)^3 / 3. The numbers
+# are smaller than in the fixed form and the bounds are kept within 2 of
+# zero, or the answer runs to many digits.
+I -> I integer_between(1, 2) nonzero_integer_between(-3, 3) integer_between(1, 2) "substitution" when cost >= 3 weight 3 {
+  cost = -3
+  require $1.has_substitution = 0
+  require abs($1.lower) <= 2 and abs($1.upper) <= 2
+  lower = $1.lower
+  upper = $1.upper
+  latex = cond($1.pieces = 0, "", $1.latex ++ " + ") ++ polynomial_latex(polynomial_monomial(2 * $2.value * $4.value, 1, "x"))
+          ++ " \left(" ++ polynomial_latex(polynomial_quadratic($2.value, 0, $3.value, "x")) ++ "\right)^{2}"
+  value = $1.value + $4.value * (($2.value * upper ^ 2 + $3.value) ^ 3 - ($2.value * lower ^ 2 + $3.value) ^ 3) / 3
+  has_quadratic = $1.has_quadratic
+  has_product = $1.has_product
+  has_substitution = 1
+  has_absolute = $1.has_absolute
+  pieces = $1.pieces + 1
+}
+
+# k |x - m| with m strictly between the bounds: k ((m - p)^2 + (q - m)^2) / 2.
+I -> I integer_between(1, 3) integer_between(1, 3) "absolute" when cost >= 3 weight 3 {
+  cost = -3
+  require $1.has_absolute = 0
+  require $3.value < $1.upper - $1.lower
+  lower = $1.lower
+  upper = $1.upper
+  let middle = lower + $3.value
+  latex = cond($1.pieces = 0, "", $1.latex ++ " + ") ++ cond($2.value = 1, "", str($2.value)) ++ "\left|"
+          ++ polynomial_latex(polynomial_linear(1, 0 - middle, "x")) ++ "\right|"
+  value = $1.value + $2.value * ((middle - lower) ^ 2 + (upper - middle) ^ 2) / 2
+  has_quadratic = $1.has_quadratic
+  has_product = $1.has_product
+  has_substitution = $1.has_substitution
+  has_absolute = 1
+  pieces = $1.pieces + 1
+}
+
+# An answer of 1000 or more is not asked for: it is long to work out.
+Q -> "sum" I when cost >= 4 and cost <= 8 {
+  kind = "sum"
+  require abs($2.value) < 1000
+  text = "Evaluate [`\displaystyle\int_{" ++ str($2.lower) ++ "}^{" ++ str($2.upper) ++ "} \left(" ++ $2.latex
+         ++ "\right) dx`]."
+  answer_value = $2.value
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

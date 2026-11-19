@@ -38,6 +38,11 @@
     "description": "A value computed from randoms and other lets",
     "body": ["let ${1:name} = ${2:expression}"]
   },
+  "Mistake": {
+    "prefix": "mistake",
+    "description": "A mistake students make; add a line 'mistake NAME ATTRIBUTE = ...' to the production where it is made",
+    "body": ["mistake ${1:name} \"${2:what the student does}\""]
+  },
   "Precedence": {
     "prefix": "precedence",
     "description": "Operator precedence and associativity",

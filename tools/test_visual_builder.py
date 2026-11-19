@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -21,8 +22,12 @@ from visual_library import OPERATIONS, RENDERERS, CONTEXTS
 
 class VisualCompilerTests(unittest.TestCase):
     def test_registry_only_uses_existing_builtins_with_the_correct_arity(self):
-        checker = (ROOT / 'generator/rhema/lib/rhema_check.ml').read_text()
-        signatures = dict((name, int(arity)) for name, arity in re.findall(r'\("([a-z_0-9]+)",\s*(\d+)\)', checker))
+        # Ask the compiler itself, as the web editor does: the table of
+        # builtins is not kept in one source file that a pattern could read.
+        bridge = ROOT / 'generator/_build/default/rhema/bin/rhema_builder_main.exe'
+        inventory = json.loads(subprocess.run([str(bridge), 'completions'], check=True,
+                                              capture_output=True, text=True).stdout)
+        signatures = {entry['name']: entry['arity'] for entry in inventory['functions']}
         self.assertGreater(len(OPERATIONS), 100)
         self.assertEqual(len(OPERATIONS), len({o['id'] for o in OPERATIONS}))
         for op in OPERATIONS:

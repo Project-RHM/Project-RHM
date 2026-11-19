@@ -550,7 +550,7 @@
           "name": "keyword.other.declaration.rhema"
         },
         {
-          "match": "\\b(when|weight|require)\\b",
+          "match": "\\b(when|weight|require|mistake)\\b",
           "name": "keyword.control.rhema"
         },
         {
@@ -568,6 +568,10 @@
         {
           "match": "\\b(boolean)\\b",
           "name": "storage.type.boolean.rhema"
+        },
+        {
+          "match": "\\b(true|false)\\b",
+          "name": "constant.language.boolean.rhema"
         }
       ]
     },

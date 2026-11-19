@@ -21,6 +21,7 @@ let usage =
   String.concat "\n"
     [
       "usage: rhema FILE.rhm [-o OUT.pg] [options]     compile FILE to WeBWorK PG";
+      "       rhema FILE.rhm -o OUT.tex | OUT.pdf      the same questions as a paper";
       "       rhema check FILE...                      check only";
       "       rhema run FILE [options]                 show the questions and answers";
       "       rhema list FILE                          the questions and sets FILE declares";
@@ -39,6 +40,9 @@ let usage =
       "  -I DIR              also look for imported and included files in DIR";
       "                      (after the file's own directory; RHEMA_PATH too)";
       "  --pg-dir DIR        with --run: one .pg file per question, in DIR";
+      "  --answers           with a .tex or .pdf output: an answer key on a last page";
+      "  --title TEXT        with a .tex or .pdf output: the paper's title (default:";
+      "                      the set's or the file's name)";
       "  --ast-out FILE, --visualization-out FILE   save the derivation trees too";
       "";
       "terminal output:";
@@ -49,6 +53,9 @@ let usage =
       "";
       "Every imported or included file is looked for beside the importing one,";
       "then in the -I directories, RHEMA_PATH, and the installed library.";
+      "";
+      "A .pdf output is the .tex output compiled by the first of pdflatex, xelatex,";
+      "lualatex and tectonic found on this machine, or by the one RHEMA_LATEX names.";
     ]
 
 let fail_usage message =
@@ -68,6 +75,8 @@ type options = {
   mutable overrides : (string * int) list;
   mutable includes : string list;
   mutable pg_dir : string option;
+  mutable answers : bool;
+  mutable title : string option;
   mutable ast_output : string option;
   mutable visualization_output : string option;
   mutable terminal : Ui.options;
@@ -85,7 +94,7 @@ let parse_override text =
 
 let known_options =
   [ "-o"; "--out"; "--question"; "--run"; "--count"; "--assignment"; "--student"; "--seed";
-    "--set"; "-I"; "--pg-dir"; "--ast-out"; "--visualization-out" ]
+    "--set"; "-I"; "--pg-dir"; "--title"; "--ast-out"; "--visualization-out" ]
 
 let parse_options terminal arguments =
   let options =
@@ -101,6 +110,8 @@ let parse_options terminal arguments =
       overrides = [];
       includes = [];
       pg_dir = None;
+      answers = false;
+      title = None;
       ast_output = None;
       visualization_output = None;
       terminal;
@@ -143,6 +154,12 @@ let parse_options terminal arguments =
         walk rest
     | "--pg-dir" :: value :: rest ->
         options.pg_dir <- Some value;
+        walk rest
+    | "--answers" :: rest ->
+        options.answers <- true;
+        walk rest
+    | "--title" :: value :: rest ->
+        options.title <- Some value;
         walk rest
     | "--ast-out" :: value :: rest ->
         options.ast_output <- Some value;
@@ -324,20 +341,46 @@ let compile options =
         | Some set -> set ^ ".pg"
         | None -> Filename.remove_extension file ^ ".pg")
   in
+  (* The extension of the output says what is wanted: a paper in LaTeX, the
+     same compiled to PDF, or (anything else) WeBWorK PG. *)
+  let pdf = Filename.check_suffix output ".pdf" in
+  let paper = Filename.check_suffix output ".tex" || pdf in
+  if (options.answers || options.title <> None) && not paper then
+    fail_usage "--answers and --title go with a .tex or .pdf output";
   if options.pg_dir <> None && options.run = None then fail_usage "--pg-dir goes with --run";
-  let pg_stdout = output = "-" in
-  let ui = Ui.create { options.terminal with plain = options.terminal.plain || pg_stdout } in
+  let to_stdout = output = "-" in
+  let ui = Ui.create { options.terminal with plain = options.terminal.plain || to_stdout } in
   let product, variant = produce ui ~compiling:true options file in
   let questions = questions_of product in
   Ui.trace ui questions;
-  Ui.stage ui 4 "Export WeBWorK PG";
+  let kind = if pdf then "PDF" else if paper then "LaTeX" else "PG" in
+  Ui.stage ui 4 (if paper then "Export " ^ kind else "Export WeBWorK PG");
   if options.pg_dir <> None then
     Ui.quip ui "Rush B! One PG file per question, coming up.";
   export ui file (fun () ->
       let document =
-        match product with
-        | Questions (spec, questions) -> Rhema_cli.questions_document spec questions
-        | Set result -> Rhema_sets.document result
+        if not paper then
+          match product with
+          | Questions (spec, questions) -> Rhema_cli.questions_document spec questions
+          | Set result -> Rhema_sets.document result
+        else
+          let student = Option.map (fun id -> "Student: " ^ id) options.student in
+          let title default = Option.value ~default options.title in
+          match product with
+          | Questions (spec, questions) ->
+              (* the assignment when one is named, else the file and its question *)
+              let named =
+                match (options.assignment, options.question) with
+                | Some assignment, _ -> assignment
+                | None, Some question -> Filename.remove_extension (Filename.basename file) ^ ": " ^ question
+                | None, None -> Filename.remove_extension (Filename.basename file)
+              in
+              Rhema_latex.document ?width:spec.Rhema_check.width ~answers:options.answers ?student
+                ~title:(title named) questions
+          | Set result ->
+              Rhema_sets.latex ~answers:options.answers ?student
+                ~title:(title (Option.value ~default:result.Rhema_sets.name options.assignment))
+                result
       in
       (match (product, options.pg_dir) with
       | Set result, Some directory ->
@@ -346,10 +389,22 @@ let compile options =
             (fun (name, text) -> Rhema_cli.write_file (Filename.concat directory name) text)
             (Rhema_sets.documents result)
       | _ -> ());
-      if pg_stdout then print_string document else Rhema_cli.write_file output document;
+      if pdf then begin
+        match Rhema_pdf.compile ~latex:document ~output with
+        | Ok _ -> ()
+        | Error message ->
+            (* the LaTeX is kept beside where the PDF would be, to look at *)
+            let kept = Filename.remove_extension output ^ ".tex" in
+            Rhema_cli.write_file kept document;
+            Ui.finish_progress ui;
+            prerr_endline (Printf.sprintf "%s: error: %s\n%s: the LaTeX source is in %s" file message file kept);
+            exit 1
+      end
+      else if to_stdout then print_string document
+      else Rhema_cli.write_file output document;
       write_trees options ~file questions);
   let paths =
-    (if pg_stdout then [] else [ ("PG", output) ])
+    (if to_stdout then [] else [ (kind, output) ])
     @ (match options.pg_dir with None -> [] | Some path -> [ ("Individual PG", path) ])
     @ tree_paths options
   in
@@ -457,13 +512,16 @@ let doc options =
     in
     match
       List.find_opt starts
-        [ "formula"; "polynomial"; "equation"; "bool"; "matrix"; "set_"; "vector"; "complex" ]
+        [ "formula"; "polynomial"; "equation"; "bool"; "matrix"; "set_"; "vector"; "complex"; "point" ]
     with
     | Some "set_" -> "set"
     | Some prefix -> prefix
     | None ->
-        if name = "differentiate" then "formula"
-        else if List.mem name [ "factorial"; "choose"; "permutations"; "gcd"; "lcm"; "pow_mod"; "mod_inverse" ]
+        if name = "differentiate" || starts "exact_" then "formula"
+        else if List.mem name [ "blank"; "blank_wide"; "plain"; "exactly" ] then "answers"
+        else if
+          List.mem name
+            [ "factorial"; "choose"; "permutations"; "gcd"; "lcm"; "pow_mod"; "mod_inverse"; "base_digits"; "base_number" ]
         then "integers"
         else "general"
   in
@@ -476,7 +534,15 @@ let doc options =
       match List.find_opt (fun (_, n, _, _) -> n = name) entries with
       | Some (group, name, arity, kind) ->
           Printf.printf "%s: %s builtin of the %s group, %d argument%s\n" name kind group arity
-            (if arity = 1 then "" else "s")
+            (if arity = 1 then "" else "s");
+          (match Rhema_types.signature name with
+          | Some entry when kind = "expression" ->
+              let takes, gives = Rhema_types.signature_words entry in
+              Printf.printf "  takes: %s\n  gives: %s\n" takes gives
+          | _ ->
+              if kind = "generator" then
+                Printf.printf "  takes: %s\n  gives: number\n"
+                  (String.concat ", " (List.init arity (fun _ -> "number"))))
       | None ->
           prerr_endline (Printf.sprintf "%s: error: no builtin named '%s'" program name);
           exit 1)
@@ -490,8 +556,16 @@ let doc options =
           List.iter
             (fun (g, name, arity, kind) ->
               if g = group then
-                Printf.printf "  %-28s %d arg%s%s\n" name arity (if arity = 1 then "" else "s")
-                  (if kind = "generator" then "   (a leaf that draws a value)" else ""))
+                Printf.printf "  %-28s %d arg%s%s\n" name arity (if arity = 1 then " " else "s")
+                  (if kind = "generator" then
+                     Printf.sprintf "   %s -> number   (a leaf that draws a value)"
+                       (String.concat ", " (List.init arity (fun _ -> "number")))
+                   else
+                     match Rhema_types.signature name with
+                     | Some entry ->
+                         let takes, gives = Rhema_types.signature_words entry in
+                         Printf.sprintf "   %s -> %s" takes gives
+                     | None -> ""))
             entries)
         groups;
       print_endline "\nWhat each one does: https://project-rhm.github.io/reference/builtins/"
@@ -529,7 +603,7 @@ let rec leading_terminal_options options = function
       | None -> (options, arguments))
   | [] -> (options, [])
 
-let () =
+let main () =
   let terminal, arguments = leading_terminal_options Ui.defaults (List.tl (Array.to_list Sys.argv)) in
   let parse_options = parse_options terminal in
   match arguments with
@@ -547,3 +621,22 @@ let () =
   | "list" :: rest -> list (parse_options rest)
   | "doc" :: rest -> doc (parse_options rest)
   | arguments -> compile (parse_options arguments)
+
+(* Each command reports the errors it expects where they happen. This is
+   for the rest: whatever is raised while a paper is generated or written
+   ends as one line and status 1, like any other error, never as OCaml's
+   "Fatal error: exception ...". *)
+let () =
+  let stop message =
+    prerr_endline (program ^ ": error: " ^ message);
+    exit 1
+  in
+  try main () with
+  | Rhema_engine.Generation_error message
+  | Rhema_number.Arithmetic_error message
+  | Invalid_argument message
+  | Failure message
+  | Sys_error message ->
+      stop message
+  | Stack_overflow -> stop "a value grew too large to be computed"
+  | Not_found -> stop "internal error: something that was looked up is missing; please report this file"

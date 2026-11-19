@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- A derivation tree: one rule, a node and its two children. -->
+  <rect width="128" height="128" rx="24" fill="#e77500"/>
+  <g stroke="#ffffff" stroke-width="7" stroke-linecap="round" fill="none">
+    <path d="M64 40 L38 86"/>
+    <path d="M64 40 L90 86"/>
+  </g>
+  <g fill="#ffffff">
+    <circle cx="64" cy="38" r="13"/>
+    <circle cx="38" cy="90" r="11"/>
+    <circle cx="90" cy="90" r="11"/>
+  </g>
+</svg>

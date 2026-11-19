@@ -34,6 +34,15 @@ TITLES = {
     "sequence": "Sequences", "sequence_parts": "Sequences: two-part questions",
     "series": "Series", "set": "Set operations", "vector": "Vector operations",
     "vector_expr": "Vector expressions",
+    "definite_integral": "Definite integrals",
+    "derivative_applications": "Applications of the derivative",
+    "exponential_log": "Exponentials and logarithms",
+    "analytic_geometry": "Lines and circles",
+    "differential_equation": "Differential equations", "statistics": "Statistics",
+    "partial_fractions": "Partial fractions", "recurrence": "Recurrence relations",
+    "taylor": "Taylor polynomials", "row_reduction": "Row reduction and rank",
+    "base_conversion": "Number bases", "trigonometry": "Trigonometry",
+    "partial_derivatives": "Partial derivatives",
 }
 
 

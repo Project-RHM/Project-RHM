@@ -2,7 +2,13 @@
    the printed question and evaluated, with exact rationals, at every point
    of a grid, at each end of the answer and just either side of it; the
    point must satisfy the inequality exactly when it is in the answer, read
-   back from the WeBWorK form of the answer ((-infinity, 2] U (5, infinity)). *)
+   back from the WeBWorK form of the answer ((-infinity, 2] U (5, infinity)).
+
+   A sign chart (budgets 4 to 8) is read into its factors, which also give
+   its price: 1 for a factor of the numerator, 2 for one of the denominator,
+   3 for a squared one. The price must be the budget. Its answer must be
+   written in its shortest form too: pieces in order that do not touch
+   where one of them is closed. *)
 
 module N = Rhema_number
 
@@ -38,6 +44,11 @@ let pieces answer =
   |> List.map (fun piece ->
          let piece = String.trim piece in
          let lc = piece.[0] = '[' and uc = piece.[String.length piece - 1] = ']' in
+         if piece.[0] = '{' then
+           (* a single point *)
+           let point = Some (number (String.sub piece 1 (String.length piece - 2))) in
+           (point, point, true, true)
+         else
          match String.split_on_char ',' (String.sub piece 1 (String.length piece - 2)) with
          | [ lo; hi ] ->
              let bound s = if String.trim s = "-infinity" || String.trim s = "infinity" then None else Some (number s) in
@@ -94,9 +105,53 @@ let linear text =
 
 let ( +: ) = N.add and ( *: ) = N.multiply and ( -: ) = N.subtract
 
+(* The factors of a product as a sign chart writes it, as (root, power):
+   \left(x - 3\right), \left(x + 1\right)^{2}, x, x^{2}, and a single factor
+   of a quotient without brackets, x - 3. *)
+let chart_factors text =
+  let text = String.trim text in
+  let length = String.length text in
+  let starts prefix position =
+    position + String.length prefix <= length && String.sub text position (String.length prefix) = prefix
+  in
+  let power position = if starts "^{2}" position then (2, position + 4) else (1, position) in
+  let root body =
+    match linear body with
+    | 1, b -> -b
+    | _ -> failwith ("a factor that is not x - r: " ^ body)
+  in
+  let rec go position found =
+    if position >= length then List.rev found
+    else if starts "\\left(" position then begin
+      let close = Str.search_forward (Str.regexp_string "\\right)") text position in
+      let body = String.sub text (position + 6) (close - position - 6) in
+      let power, next = power (close + 7) in
+      go next ((root body, power) :: found)
+    end
+    else if starts "x" position && (position + 1 = length || starts "\\left(" (position + 1) || starts "^{2}" (position + 1))
+    then
+      let power, next = power (position + 1) in
+      go next ((0, power) :: found)
+    else if position = 0 then [ (root text, 1) ]
+    else failwith ("factors " ^ text)
+  in
+  go 0 []
+
+(* A sign chart: the factors of its numerator and of its denominator. *)
+let chart math =
+  let left = Str.global_replace (Str.regexp " \\(<\\|>\\|\\\\le\\|\\\\ge\\) 0$") "" math in
+  let prefix = "\\dfrac{" in
+  if String.length left > String.length prefix && String.sub left 0 (String.length prefix) = prefix then begin
+    let inside = String.sub left (String.length prefix) (String.length left - String.length prefix - 1) in
+    let middle = Str.search_forward (Str.regexp_string "}{") inside 0 in
+    (chart_factors (String.sub inside 0 middle),
+     chart_factors (String.sub inside (middle + 2) (String.length inside - middle - 2)))
+  end
+  else (chart_factors left, [])
+
 let predicate (q : Rhema_engine.question) =
   let p = q.Rhema_engine.prompt in
-  let math = (ignore (Str.search_forward (Str.regexp "\\[`\\(.*\\)`\\]") p 0); Str.matched_group 1 p) in
+  let math = (ignore (Str.search_forward (Str.regexp "\\[`\\([^`]*\\)`\\]") p 0); Str.matched_group 1 p) in
   let op = comparison p in
   let i = N.of_int in
   match kind q with
@@ -139,7 +194,69 @@ let predicate (q : Rhema_engine.question) =
       fun x ->
         let d = (i a2 *: x) +: i b2 in
         N.compare d (i 0) <> 0 && holds op (N.divide ((i a1 *: x) +: i b1) d) (i 0)
+  | "sign_chart" | "sign_chart_rational" ->
+      let tops, bottoms = chart math in
+      (* the sign of a product of factors, -1, 0 or 1: the product itself of
+         five factors at a point such as 3001/1000 does not fit a machine
+         integer *)
+      let sign factors x =
+        List.fold_left
+          (fun total (root, power) ->
+            let factor = N.compare x (i root) in
+            let factor = if factor > 0 then 1 else if factor < 0 then -1 else 0 in
+            total * if power = 2 then factor * factor else factor)
+          1 factors
+      in
+      fun x ->
+        let d = sign bottoms x in
+        d <> 0 && holds op (i (sign tops x * d)) (i 0)
   | k -> fail ("unknown kind " ^ k); fun _ -> false
+
+(* A sign chart: its price, what it is made of, and the form of its answer. *)
+let check_chart ~cost ~shapes (q : Rhema_engine.question) =
+  let p = q.Rhema_engine.prompt and k = kind q in
+  let wrong what = fail (Printf.sprintf "%s: %s, for %S, answer %s" k what p (Rhema_engine.describe_value q.Rhema_engine.answer)) in
+  let math = (ignore (Str.search_forward (Str.regexp "\\[`\\(.*\\) 0`\\]") p 0); Str.matched_group 1 p ^ " 0") in
+  let tops, bottoms = chart math in
+  let squares = List.length (List.filter (fun (_, power) -> power = 2) tops) in
+  let price = List.length tops - squares + (3 * squares) + (2 * List.length bottoms) in
+  if price <> cost then wrong (Printf.sprintf "a chart worth %d at budget %d" price cost);
+  let roots = List.map fst (tops @ bottoms) in
+  if List.length (List.sort_uniq compare roots) <> List.length roots then wrong "two factors with one root";
+  if List.exists (fun (_, power) -> power <> 1) bottoms then wrong "a squared factor in the denominator";
+  let count = List.length roots in
+  if count < 2 || count > 5 || List.length bottoms > 2 || squares > 1 || tops = [] || count - squares < 1 then
+    wrong "outside the limits on the factors";
+  if (bottoms <> []) <> (k = "sign_chart_rational") then wrong "the kind does not say whether there is a denominator";
+  (* the answer in its shortest form *)
+  let set = pieces (Rhema_engine.describe_value q.Rhema_engine.answer) in
+  let rec in_order = function
+    | (_, Some upper, _, upper_closed) :: (((Some lower, _, lower_closed, _) :: _) as rest) ->
+        let c = N.compare upper lower in
+        if c > 0 then wrong "pieces out of order or overlapping"
+        else if c = 0 && (upper_closed || lower_closed) then wrong "two pieces that should be one";
+        in_order rest
+    | _ :: (_ :: _ as rest) -> wrong "a piece without an end inside the answer"; in_order rest
+    | _ -> ()
+  in
+  in_order set;
+  let point (lower, upper, _, _) = lower <> None && lower = upper in
+  let closed_op = match comparison p with `Le | `Ge -> true | _ -> false in
+  let asks_point = Str.string_match (Str.regexp ".*Write a single point as") p 0 in
+  if asks_point <> (squares = 1 && closed_op) then wrong "the note on single points is out of place";
+  List.iter
+    (fun (shape, present) -> if present then Hashtbl.replace shapes shape ())
+    [ ("a point on its own", List.exists point set);
+      ("an interval cut at a point",
+       let rec cut = function
+         | (_, Some upper, _, false) :: ((Some lower, _, false, _) :: _ as rest) -> N.compare upper lower = 0 || cut rest
+         | _ :: rest -> cut rest
+         | [] -> false
+       in
+       cut set);
+      ("five factors", count = 5); ("two factors below", List.length bottoms = 2); ("a squared factor", squares = 1);
+      ("a squared factor inside an interval", squares = 1 && closed_op && not (List.exists point set));
+      ("the factor x", List.mem 0 roots); ("three pieces", List.length set >= 3) ]
 
 let check (q : Rhema_engine.question) =
   let answer = Rhema_engine.describe_value q.Rhema_engine.answer in
@@ -161,6 +278,40 @@ let () =
   let base = load_file "inequality.rhm" in
   let prices = [ ("linear", 1); ("quadratic", 2); ("absolute", 2); ("absolute_linear", 3); ("rational", 3) ] in
   let seen = Hashtbl.create 8 in
+  let shapes = Hashtbl.create 8 and built_at = Hashtbl.create 8 in
+  for cost = 4 to 8 do
+    let spec = with_initial base "cost" cost in
+    for seed = 0 to 149 do
+      Random.init (seed + (1000 * cost));
+      match Rhema_engine.generate spec with
+      | exception Rhema_engine.Generation_error m -> fail (Printf.sprintf "cost %d seed %d: %s" cost seed m)
+      | q ->
+          let k = kind q in
+          if k <> "sign_chart" && k <> "sign_chart_rational" then fail (Printf.sprintf "%s at cost %d" k cost);
+          Hashtbl.replace built_at (k, cost) ();
+          if Rhema_engine.consumption q.Rhema_engine.tree "cost" <> cost then
+            fail (Printf.sprintf "%s did not spend its budget %d" k cost);
+          (try check_chart ~cost ~shapes q; check q
+           with e -> fail (Printf.sprintf "%s: %s for %S" k (Printexc.to_string e) q.Rhema_engine.prompt))
+    done
+  done;
+  (* five factors without a denominator cost at most 4 + 3, so a chart at
+     budget 8 is a quotient *)
+  List.iter
+    (fun (k, highest) ->
+      for cost = 4 to highest do
+        if not (Hashtbl.mem built_at (k, cost)) then fail (Printf.sprintf "%s never generated at budget %d" k cost)
+      done)
+    [ ("sign_chart", 7); ("sign_chart_rational", 8) ];
+  if Hashtbl.mem built_at ("sign_chart", 8) then fail "a chart without a denominator at budget 8";
+  List.iter
+    (fun shape -> if not (Hashtbl.mem shapes shape) then fail ("never generated: " ^ shape))
+    [ "a point on its own"; "an interval cut at a point"; "five factors"; "two factors below"; "a squared factor";
+      "a squared factor inside an interval"; "the factor x"; "three pieces" ];
+  (Random.init 1;
+   match Rhema_engine.generate (with_initial base "cost" 9) with
+   | exception Rhema_engine.Generation_error _ -> ()
+   | q -> fail ("budget 9 gave a question: " ^ q.Rhema_engine.prompt));
   for cost = 1 to 3 do
     let spec = with_initial base "cost" cost in
     for seed = 0 to 149 do

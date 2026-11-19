@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- `mistake` is highlighted as a keyword, and there is a snippet for
+  declaring one.
+
+## 0.1.2 (2026-11-16)
+
+- `true` and `false` are highlighted as constants, and `let` inside a
+  production's braces as the keyword it now is there.
+
 ## 0.1.1 (2026-10-29)
 
 - `.rhm` files have their own icon in the Explorer and on editor tabs: the

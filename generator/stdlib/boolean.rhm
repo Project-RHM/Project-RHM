@@ -38,6 +38,8 @@ attribute cost = 10 split      # operator cost the proposition spends exactly
 
 synth f on E                   # the proposition built so far
 synth f on V
+synth v on E                   # its truth under the assignment, worked out
+synth v on V                   # connective by connective
 synth value on Q               # its truth under the assignment
 synth text on Q                # the question
 
@@ -64,6 +66,17 @@ let given     = "[`p = " ++ tp ++ "`], [`q = " ++ tq ++ "`] and [`r = " ++ tr ++
 let given_one = "[`p = " ++ tp ++ ",\; q = " ++ tq ++ ",\; r = " ++ tr ++ "`]"
 
 
+# ---- Mistakes ---------------------------------------------------------------
+#
+# The truth value `v` is worked out connective by connective, so a misread
+# connective is carried through the right ones above it. A mistake counts
+# where it changes a value: reading "or" as "one or the other but not both"
+# changes nothing unless both sides are true. A question in which a mistake
+# changes the working always has the other answer under it.
+
+mistake false_antecedent "takes a conditional with a false antecedent to be false"
+mistake exclusive_or "reads or as one or the other but not both"
+
 start Q
 
 
@@ -82,7 +95,7 @@ Q -> E {
        # The assignment is chosen with intent: at least two variables have
        # to be read to get the answer, so no single value settles it.
        require bool_variable_count($1.f) < 2 or bool_sensitivity($1.f, names, mask) >= 2
-       value = bool_evaluate($1.f, names, mask)
+       value = $1.v
        # A person balances a set by deciding the answer first; the coin toss
        # `target` does the same, so neither answer can dominate.
        require value = target
@@ -105,12 +118,15 @@ Q -> E {
 E -> E "\land" E  when cost >= 2  weight 3 {
        cost = -2
        f = bool_and($1.f, $3.f)
+       v = $1.v and $3.v
        require bool_is_tidy(f)
      }
 
 E -> E "\lor" E  when cost >= 2  weight 3 {
        cost = -2
        f = bool_or($1.f, $3.f)
+       v = $1.v or $3.v
+       mistake exclusive_or v = $1.v != $3.v
        require bool_is_tidy(f)
      }
 
@@ -120,18 +136,22 @@ E -> E "\lor" E  when cost >= 2  weight 3 {
 E -> E "\to" E  when cost >= 4  weight 4 {
        cost = -4
        f = bool_imp($1.f, $3.f)
+       v = not $1.v or $3.v
+       mistake false_antecedent v = $1.v and $3.v
        require bool_is_tidy(f)
      }
 
 E -> E "\leftrightarrow" E  when cost >= 6  weight 1 {
        cost = -6
        f = bool_iff($1.f, $3.f)
+       v = $1.v = $3.v
        require bool_is_tidy(f)
      }
 
 E -> E "\oplus" E  when cost >= 6  weight 1 {
        cost = -6
        f = bool_xor($1.f, $3.f)
+       v = $1.v != $3.v
        require bool_is_tidy(f)
      }
 
@@ -141,15 +161,16 @@ E -> E "\oplus" E  when cost >= 6  weight 1 {
 E -> "\neg" E  when cost >= 4  weight 1 {
        cost = -3
        f = bool_not($2.f)
+       v = not $2.v
        require bool_is_tidy(f)
      }
 
-E -> V         when cost = 0  weight 3 { f = $1.f }
-E -> "\neg" V  when cost = 1  weight 1 { cost = -1  f = bool_not($2.f) }
+E -> V         when cost = 0  weight 3 { f = $1.f  v = $1.v }
+E -> "\neg" V  when cost = 1  weight 1 { cost = -1  f = bool_not($2.f)  v = not $2.v }
 
-V -> "p" { f = bool_var("p") }
-V -> "q" { f = bool_var("q") }
-V -> "r" { f = bool_var("r") }
+V -> "p" { f = bool_var("p")  v = p }
+V -> "q" { f = bool_var("q")  v = q }
+V -> "r" { f = bool_var("r")  v = r }
 
 
 # ---- Question wording ----

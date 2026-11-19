@@ -51,7 +51,20 @@ attribute, or by the budget.
 | `series.rhm` | 1 an infinite geometric series, a sum of squares; 2 a geometric series in sigma notation, the sum of a quadratic, a telescoping sum; 3 a telescoping sum with a gap (finite or infinite), the sum of two geometric series | 2 | Numeric |
 | `limits.rhm` | 1 a removable discontinuity, a ratio of quadratics at infinity; 2 a factor shared above and below, `sin(kx)/(mx)`, `(e^{kx} - 1)/(mx)`; 3 a ratio of two sines, `(1 - cos(kx))/(mx^2)` | 2 | Numeric |
 | `eigen.rhm` | 1 the eigenvalues of a triangular matrix; 2 the eigenvalues of a 2 by 2, its characteristic polynomial; 3 an eigenvector, the eigenvalues of a 3 by 3 | 2 | Interval / Numeric / Vector |
-| `inequality.rhm` | 1 linear; 2 quadratic, the absolute value of `x - a`; 3 the absolute value of `px - q`, rational | 2 | Interval |
+| `inequality.rhm` | 1 linear; 2 quadratic, the absolute value of `x - a`; 3 the absolute value of `px - q`, rational; 4 to 8 a sign chart of two to five factors: a factor of the numerator 1, of the denominator 2, a squared factor 3 | 2 | Interval |
+| `definite_integral.rhm` | 1 `k x^n` from 0 to q, a quadratic between two bounds; 2 a product of two linear factors to expand first, the area between a parabola and the x-axis; 3 the area between a parabola and a line, `k x (a x^2 + c)^n` by substitution; 4 to 8 the integral of a sum of two or three pieces, no two of a kind: a quadratic 1, a product 2, a substitution 3, `k |x - m|` 3 | 2 | Numeric |
+| `derivative_applications.rhm` | 1 the slope of a tangent to a cubic, where a parabola has a horizontal tangent; 2 the tangent line to a parabola, the critical points of a cubic; 3 the absolute maximum or minimum of a cubic on a closed interval, the interval on which it decreases or increases | 2 | Numeric / Interval |
+| `exponential_log.rhm` | 1 the logarithm of a power of its base, `b^(x + c) = b^k`; 2 two bases that are powers of one number, `log_b(p x + q) = k`; 3 a sum of two logarithms with one root rejected, a quadratic in `b^x` | 2 | Numeric |
+| `analytic_geometry.rhm` | 1 the distance between two points, their midpoint, the slope through them; 2 the line through two points, the perpendicular to a line through a point; 3 the centre and the radius of a circle given expanded (two blanks), the intersection of two lines | 2 | Numeric (a point answer carries the Point context) |
+| `differential_equation.rhm` | initial value problems: 1 `y' = 2a x + b`, `y' = k y`; 2 `y' + a y = b`, `y' = 2k x y`; 3 `y'' + p y' + q y = 0` with two real roots or one repeated | 2 | Numeric |
+| `statistics.rhm` | 1 the mean, median or range of a data set; 2 the variance of a data set, a value missing from a known mean, the expectation of a random variable; 3 the variance of a random variable, at least two successes in n trials | 2 | Numeric |
+| `partial_fractions.rhm` | the constants of a decomposition, one blank each: 1 two different factors; 2 a factor `p x + q`, a numerator of the denominator's degree with the quotient given; 3 three factors, a repeated factor; 4 to 8 built term by term, up to five constants: each further factor 2, a factor `p x + q` 1, a repeated factor 2, a quotient 1 | 2 | Numeric |
+| `recurrence.rhm` | 1 a term of a first-order or a second-order recurrence; 2 `A` and `B` in the solution `A r^n + B`, the roots of a characteristic equation; 3 `r`, `s`, `A`, `B` in `A r^n + B s^n`, and `r`, `A`, `B` in `(A + B n) r^n` | 2 | Numeric / Interval |
+| `taylor.rhm` | the Taylor polynomial at 0: 1 `e^(kx)`, `1/(1 - kx)`; 2 `sin(kx)`, `cos(kx)`, `ln(1 + kx)`; 3 `(a + bx) e^(kx)`, `e^(k x^2)`; 4 to 8 functions built from those: the argument `k x^2` 2, a linear factor 2, a sum 1, a product 3 | 2 | Numeric |
+| `row_reduction.rhm` | 1 the rank of a 3 by 3 matrix; 2 the reduced row echelon form of a 2 by 3 matrix; 3 the reduced form of a 3 by 4 matrix, a vector of a null space; 4 to 8 the same of 3 by 4 to 3 by 6 matrices: each column beyond the third 1, each free variable of a null space beyond the first 1 | 2 | Numeric / Matrix / Vector |
+| `base_conversion.rhm` | 1 binary to decimal and back; 2 hexadecimal to decimal, decimal to octal, binary to octal; 3 a sum in binary, hexadecimal to binary; 4 to 8 sums and differences of two to four numbers in binary, octal and hexadecimal: a number 1 (hexadecimal 2), adding one 1, subtracting one 2, an answer in another base 1 | 2 | Numeric |
+| `trigonometry.rhm` | 1 degrees and radians, an exact value in the first quadrant; 2 an exact value in any quadrant, the other functions from one and the quadrant; 3 the two solutions of `sin x = v`, `cos x = v` or `tan x = v` on one turn, with argument `x` or `2x` | 2 | Numeric (plain answers) |
+| `partial_derivatives.rhm` | 1 a first partial derivative; 2 both, the mixed second derivative, the gradient at a point; 3 a tangent plane, the critical point of a quadratic; 4 to 8 the same derivatives (first 1, both or a second one 2) of a function with sin, cos and e: of `ax + by` 2 each, of a product such as `x^2 y` 3, times a power of `x` or `y` 5 | 2 | Numeric (answers in `x` and `y`) |
 <!-- --8<-- [end:tables] -->
 
 ## The five general types added on this branch
@@ -162,6 +175,11 @@ it, so nothing is ever solved and every question has the answer it claims.
   inside or the outside of them, and which ends are closed, from the
   comparison and the sign of the leading coefficient. Its answers use two
   new set values, the rays `set_above(a, closed)` and `set_below(a, closed)`.
+  From budget 4 it builds a sign chart from the largest root down: each
+  factor reverses the sign or, when squared, keeps it, and an interval is
+  written down when its lower end is reached, so the answer comes out in
+  its shortest form. A squared factor gives a point left out of an interval
+  under `<` and `>`, and a solution on its own, `{r}`, under `<=` and `>=`.
 
 ```
 cost 2   eigenvalues of [[-20, 21], [-14, 15]]   {-6, 1}
@@ -176,6 +194,165 @@ difference. Each grammar has a test that checks its answers independently:
 by brute-force enumeration, by search, by numeric summation or evaluation,
 by `det(A - tI) = 0` and `Av = tv`, or by testing points on either side of
 every end of the interval.
+
+## The fourth batch: integrals, derivatives at work, exponentials, geometry, differential equations, statistics
+
+Six more fixed-form grammars with a default budget of 2, built answer first
+wherever there is something to find. None needed a change to the engine;
+they were later rewritten with local names, `true`/`false` and the point
+value (`RHEMA_LANGUAGE_EXTENSIONS.md` section 7), asking the same questions.
+
+- **Definite integrals** (`definite_integral.rhm`) are of polynomials, so
+  the antiderivative is known from the numbers that built the integrand and
+  the answer is an exact fraction. An area is built from the crossing
+  points: `k (x - r1)(x - r2)` encloses `|k| (r2 - r1)^3 / 6` with the axis,
+  and a parabola and a line that differ by it enclose the same. Both are
+  shown expanded. From budget 4 the integrand is a sum of pieces, each
+  integrated between the bounds as it is added; `k |x - m|` is new there,
+  integrated on the two sides of `m`. Answers are kept below 1000.
+- **Applications of the derivative** (`derivative_applications.rhm`) builds
+  a cubic from its critical points `r1 < r2`: the derivative is
+  `6k (x - r1)(x - r2)` and the function is
+  `2k x^3 - 3k (r1 + r2) x^2 + 6k r1 r2 x + d`, with whole coefficients. The
+  critical points are graded as a set, the interval of decrease (or
+  increase) as an open interval, and a tangent line as the right-hand side
+  of `y = mx + b`. An extreme value on a closed interval is sometimes at an
+  end and sometimes at a critical point, depending on how far the ends are.
+- **Exponentials and logarithms** (`exponential_log.rhm`) keeps every
+  equation to powers of one base. The two hardest forms have a second
+  candidate to reject: `log_b(x) + log_b(x - d) = log_b(N)` leads to a
+  quadratic whose other root is negative, and `(b^x - b^m)(b^x + c) = 0`,
+  shown expanded, has a factor that is never zero. The value of a logarithm
+  is a `plain` answer, graded with the logarithm functions switched off, so
+  `log(625)/log(5)` is not accepted for log₅(625).
+- **Lines and circles** (`analytic_geometry.rhm`) takes a distance from a
+  Pythagorean triple, expands a circle from its centre and radius, and
+  draws two lines through a chosen point. A point is answered as `(3, -2)`:
+  the answer is a point value (`point2`), which WeBWorK grades as a point
+  whatever context the question is in. Every form places its blanks in its
+  own text with `blank(...)`, so the circle can ask for its centre and its
+  radius in two blanks while the other forms have one.
+- **Differential equations** (`differential_equation.rhm`) asks initial
+  value problems only, so the solution is one function and no constant of
+  integration has to be graded. The rate, the equilibrium, or the roots of
+  the characteristic equation and the two constants are chosen first; the
+  equation and the initial values are read off them. The answer is a
+  formula in `x`.
+- **Statistics** (`statistics.rhm`) draws a data set in increasing order and
+  lists it in a mixed order, so the median and the range are known without
+  sorting; a data set for a variance is its mean plus deviations that add
+  up to zero; probabilities are whole weights over their total. Variances
+  divide by the number of values, and the question says so.
+
+```
+cost 3   area between y = x^2 + 10x + 2 and y = 4x - 3      32/3
+cost 3   log_2(x) + log_2(x - 7) = log_2(18)                 9
+cost 3   y'' - 5y' + 6y = 0, y(0) = -2, y'(0) = -2           2e^{3x} - 4e^{2x}
+cost 3   centre of x^2 + y^2 - 16x - 4y - 13 = 0             (8, 2)
+```
+
+Each grammar has a test that checks its answers independently: by
+numerical integration (Simpson's rule, between crossing points found from
+the printed coefficients), by differentiating the printed polynomial
+numerically and scanning the interval, by putting the answer back into the
+equation and counting the sign changes of "left minus right" over a wide
+range (exactly one, so a rejected root is really outside the domain), by
+the definitions of midpoint, perpendicular and circle, by differentiating
+the answer numerically and putting it into the differential equation, and
+by recomputing every summary from the printed data, with a binomial
+probability summed over all sequences of outcomes.
+
+## The fifth batch: partial fractions, recurrences, Taylor polynomials, row reduction, bases, trigonometry, partial derivatives
+
+Seven fixed-form grammars with a default budget of 2. They are the first
+written for the additions of `RHEMA_LANGUAGE_EXTENSIONS.md` sections 7 and
+8, and most could not have been written before them.
+
+- **Partial fractions** (`partial_fractions.rhm`) chooses the constants and
+  the factors, adds the fractions up and shows the result; the constants
+  are asked for, one blank each, two or three by the form. The
+  decomposition is unique, so they are the only answer. From budget 4 the
+  decomposition is built term by term, with up to four different factors
+  and five constants: adding `A / f` to `N / D` gives `(N f + A D) / (D f)`.
+- **Recurrences** (`recurrence.rhm`) asks for a term, or for a solution in
+  closed form built from its answer: the roots of the characteristic
+  equation and the constants come first, the coefficients and the first
+  terms follow. The hardest form has four blanks, `r`, `s`, `A` and `B` of
+  `A r^n + B s^n`.
+- **Taylor polynomials** (`taylor.rhm`) writes the coefficients from the
+  known series as exact fractions. The answer is a polynomial; the function
+  itself is a different function and is not accepted in its place. From
+  budget 4 the function is a sum or a product of such functions: every part
+  carries its series to degree 6, the series are added or multiplied, and
+  `polynomial_truncate` cuts the result at the degree asked for.
+- **Row reduction** (`row_reduction.rhm`) builds `A = M R` from a reduced
+  form `R` and a matrix `M` of determinant 1, so `R` is the reduced form of
+  `A`, the pivots of `R` count its rank and its free column gives the null
+  space. It uses the matrices of any shape (`matrix_row`, `matrix_stack`).
+  From budget 4 the reduced form is built column by column, a pivot column
+  or a free one, up to six columns. A null space of dimension two or three
+  is one matrix, `matrix_null_space(A)`: its columns are the basis read off
+  the reduced form, the solution for each free variable in which it is 1 and
+  the others are 0, which is the only such basis.
+- **Number bases** (`base_conversion.rhm`) writes a number in another base
+  with `base_digits`; an answer in binary or octal is the number with those
+  decimal digits (`base_number`), typed as `1011`, and graded with
+  `exactly(...)`: WeBWorK's usual tolerance of one part in a thousand would
+  accept 10110 for 10100. Hexadecimal is given, never asked for: its digits
+  are not a number WeBWorK reads. From budget 4 the question is a sum or
+  difference of numbers in several bases, built number by number; questions
+  wholly in binary or in octal have a chain of their own, so that they are
+  as common as their weight says.
+- **Trigonometry** (`trigonometry.rhm`) counts angles in twelfths of π and
+  takes its values from `exact_sin`, `exact_cos` and `exact_tan`. An
+  equation is built from its two solutions on the interval, asked for as
+  the smaller and the larger. Values and angles are `plain` answers:
+  `sin(pi/3)` and `asin(1/2)` are not accepted.
+- **Partial derivatives** (`partial_derivatives.rhm`) differentiates a
+  polynomial in `x` and `y` with respect to either. The file says
+  `let pg_variables = "x y"`, so every formula answer is entered in a blank
+  that knows both, also a derivative that comes to `6y`. A critical point
+  is built from its answer and is a point value. From budget 4 the function
+  holds sin, cos and e as well, at most three such terms and no two of a
+  kind, and a second derivative may be asked twice in `x` or in `y`.
+
+```
+cost 3   (6x^2 + 66x + 182) / ((x + 5)^2 (x + 6)) = A/(x + 5) + B/(x + 5)^2 + C/(x + 6)   4; 2; 2
+cost 3   a_0 = 2, a_1 = 10, a_n = 7a_(n-1) - 12a_(n-2);  a_n = A r^n + B s^n              3; 4; -2; 4
+cost 3   Taylor polynomial of degree 3 of (2 + 4x) e^(2x)                                 2 + 8x + 12x^2 + 32/3 x^3
+cost 3   cos 2x = sqrt(3)/2 on [0, pi)                                                    pi/12; 11pi/12
+```
+
+Each grammar has a test that checks its answers independently: the two
+sides of a decomposition compared as numbers away from the poles; the
+sequence computed term by term against the closed form; `f - T` shown to
+vanish faster than `x^n` on both sides of 0; elimination on exact fractions
+written apart from the engine's; digits converted one by one; angles and
+values recomputed in floating point and an equation's interval scanned for
+exactly the two solutions; and difference quotients of the function read
+back by a small parser for the LaTeX the engine writes.
+
+## Mistakes the library looks for
+
+Four grammars say what common mistakes lead to. `rhema run` lists them
+under each answer, and none of these grammars asks a question in which a
+mistake changes the working and still gives the right answer (section 9 of
+`RHEMA_LANGUAGE_EXTENSIONS.md`).
+
+| Grammar | Mistake | What the student does |
+|---|---|---|
+| `calculus.rhm` | `factor_by_factor` | differentiates a product factor by factor |
+| | `no_chain` | leaves out the derivative of the inside |
+| | `top_and_bottom` | differentiates the top and the bottom of a quotient separately |
+| `complex.rhm` | `i_squared_one` | takes `i` squared to be 1 |
+| | `minus_real_only` | subtracts the real parts but adds the imaginary parts |
+| `boolean.rhm` | `false_antecedent` | takes a conditional with a false antecedent to be false |
+| | `exclusive_or` | reads "or" as one or the other but not both |
+| `polynomial_expand.rhm`, `polynomial_forms.rhm` | `power_term_by_term` | raises each term of a bracket to the power on its own |
+
+An integral question of `calculus.rhm`, a modulus question of `complex.rhm`
+and a factoring question list none: their answers are not computed from the
+values these mistakes change.
 
 ## What a user can write in one file
 

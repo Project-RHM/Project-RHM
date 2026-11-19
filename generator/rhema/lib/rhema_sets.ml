@@ -364,7 +364,10 @@ let listing result =
             (match drawn.budgets with [] -> "" | budgets -> "; " ^ describe_budgets budgets)
             drawn.question.Rhema_engine.prompt
             (if List.length drawn.question.Rhema_engine.answers > 1 then "answers" else "answer")
-            drawn.question.Rhema_engine.answer_text)
+            drawn.question.Rhema_engine.answer_text;
+          List.iter
+            (fun line -> Printf.bprintf buffer "    %s\n" line)
+            (Rhema_engine.describe_mistakes drawn.question))
         members)
     result.parts;
   Buffer.add_string buffer "\nbudget means:";
@@ -383,22 +386,26 @@ let listing result =
   Buffer.add_char buffer '\n';
   Buffer.contents buffer
 
+(* The questions of the set in order, each with its label ("2(a).") and,
+   on the first of a part, the part's heading. *)
+let items result =
+  result.parts
+  |> List.concat_map (fun (heading, members) ->
+         List.mapi
+           (fun index drawn ->
+             {
+               Rhema_pgml.label = drawn.label ^ ".";
+               heading = (if index = 0 then heading else None);
+               question = drawn.question;
+             })
+           members)
+
 (* The whole set as one PG document: numbered questions, lettered parts,
    headings as paragraphs, one PGML block per run of equal contexts. *)
-let document result =
-  let items =
-    result.parts
-    |> List.concat_map (fun (heading, members) ->
-           List.mapi
-             (fun index drawn ->
-               {
-                 Rhema_pgml.label = drawn.label ^ ".";
-                 heading = (if index = 0 then heading else None);
-                 question = drawn.question;
-               })
-             members)
-  in
-  Rhema_pgml.document_items items
+let document result = Rhema_pgml.document_items (items result)
+
+(* The same set as a paper. *)
+let latex ?answers ?student ~title result = Rhema_latex.document_items ?answers ?student ~title (items result)
 
 (* One PG document per question, named by its position. *)
 let documents result =

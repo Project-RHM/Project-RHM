@@ -83,6 +83,8 @@ let same_declaration left right =
   | Rhema_ast.Inherited_decl (a, _, _, _), Rhema_ast.Inherited_decl (b, _, _, _) -> a = b
   | Rhema_ast.Random_decl (a, draw_a, _), Rhema_ast.Random_decl (b, draw_b, _) -> a = b && draw_a = draw_b
   | Rhema_ast.Let_decl (a, body_a, _), Rhema_ast.Let_decl (b, body_b, _) -> a = b && body_a = body_b
+  | Rhema_ast.Mistake_decl (a, text_a, _), Rhema_ast.Mistake_decl (b, text_b, _) ->
+      a = b && text_a = text_b
   | Rhema_ast.Import_decl (a, alias_a, _), Rhema_ast.Import_decl (b, alias_b, _) ->
       a = b && alias_a = alias_b
   | _ -> false

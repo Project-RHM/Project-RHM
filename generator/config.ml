@@ -18,7 +18,7 @@ let min_cfg_depth = 1
 *)
 (* The maximum amount of questions *)
 let min_question_num = 4
-let max_question_num = 14
+let max_question_num = 10
 
 (* Problem type:
     0 = all question type,
@@ -29,21 +29,21 @@ let max_question_num = 14
     5 = Boolean Algebra only (includes evaluation and equivalence),
     6 = Complex Number only,
     7 = Sequence only *)
-let problem_type = 0
+let problem_type = 1
 
 (* For problem type is 0 (all question type):
    you can set the amount of each question type.
    - Set question_random_amounts as true if you want the amount of each question type to be random.
    - Set question_random_amounts as false and set question_type_amounts as the amount of each question type.
    *)
-let question_random_amounts = true
+let question_random_amounts = false
 (* The amount of each question type:
      - [arithmetic_amount; set_amount; vector_amount; calculus_amount; boolean_amount; complex_amount; sequence_amount]
      - the total amount of questions should be within the interval [min_question_num, max_question_num]
    *)
-let question_type_amounts = [4; 2; 2; 2; 2; 1; 1]
+let question_type_amounts = [1; 1; 1; 2; 2; 1; 1]
 (* Set shuffle_questions_for_0_type as true if you want to shuffle the order of the questions. *)
-let shuffle_questions_for_0_type = true
+let shuffle_questions_for_0_type = false
 
 (* ----------------------------------------------- *)
 
@@ -51,7 +51,7 @@ let shuffle_questions_for_0_type = true
 (* ======= Arithmetic Question Difficulty ======= *)
 (* ============================================== *)
 (* The absolute max depth of a math expression *)
-let max_expr_depth = 2
+let max_expr_depth = 3
 
 (* Control whether to generate floats *)
 let allow_float = false (* Set to false to generate only integers *)

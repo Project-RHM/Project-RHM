@@ -2,6 +2,8 @@
 
 type t =
   | Constant of Rhema_number.t
+  | Pi
+      (* the constant pi: kept as a symbol, so that 5 pi / 6 is an exact answer *)
   | Variable of string
   | Add of t * t
   | Subtract of t * t
@@ -124,7 +126,7 @@ let sqrt = function
   | body -> Sqrt body
 
 let rec differentiate ~variable:name = function
-  | Constant _ -> zero
+  | Constant _ | Pi -> zero
   | Variable variable_name -> if variable_name = name then one else zero
   | Add (left, right) ->
       add (differentiate ~variable:name left) (differentiate ~variable:name right)
@@ -161,7 +163,7 @@ let rec differentiate ~variable:name = function
         (multiply (constant (Rhema_number.of_int 2)) (sqrt body))
 
 let rec variables = function
-  | Constant _ -> []
+  | Constant _ | Pi -> []
   | Variable name -> [ name ]
   | Add (left, right) | Subtract (left, right) | Multiply (left, right)
   | Divide (left, right) ->
@@ -171,7 +173,7 @@ let rec variables = function
       variables body
 
 let rec substitute ~variable:name ~replacement = function
-  | Constant _ as expression -> expression
+  | (Constant _ | Pi) as expression -> expression
   | Variable variable_name as expression ->
       if variable_name = name then replacement else expression
   | Add (left, right) ->
@@ -197,6 +199,7 @@ let rec substitute ~variable:name ~replacement = function
 
 let rec evaluate_with lookup = function
   | Constant value -> Rhema_number.to_float value
+  | Pi -> Float.pi
   | Variable name -> (
       match lookup name with
       | Some value -> value
@@ -220,10 +223,13 @@ let evaluate ~variable:name ~at expression =
 let precedence = function
   | Add _ | Subtract _ -> 10
   | Multiply _ | Divide _ -> 20
+  (* A fraction is written 5/6, a quotient: as a divisor or under a power it
+     needs brackets, x/(5/6) and (2/3)^2, like any other quotient. *)
+  | Constant value when not (Rhema_number.is_integer value) -> 20
   | Negate _ -> 30
   | Constant value when Rhema_number.compare value Rhema_number.zero < 0 -> 30
   | Power _ -> 40
-  | Constant _ | Variable _ | Sin _ | Cos _ | Tan _ | Exp _ | Ln _ | Sqrt _ -> 50
+  | Constant _ | Pi | Variable _ | Sin _ | Cos _ | Tan _ | Exp _ | Ln _ | Sqrt _ -> 50
 
 let parenthesize needed text = if needed then "(" ^ text ^ ")" else text
 
@@ -232,6 +238,7 @@ let rec to_pg_with_context context expression =
   let text =
     match expression with
     | Constant value -> Rhema_number.to_string value
+    | Pi -> "pi"
     | Variable name -> name
     | Add (left, right) ->
         to_pg_with_context level left ^ "+" ^ to_pg_with_context level right
@@ -260,6 +267,14 @@ let rec to_latex_with_context context expression =
   let text =
     match expression with
     | Constant value -> Rhema_number.to_string value
+    | Pi -> "\\pi"
+    (* A rational multiple of pi is written as it is read: 2\pi, \frac{\pi}{4},
+       \frac{5\pi}{6}. A negative multiple is a Negate around one of these. *)
+    | Multiply (Constant value, Pi) | Multiply (Pi, Constant value) ->
+        let numerator = value.Rhema_number.numerator
+        and denominator = value.Rhema_number.denominator in
+        let top = (if numerator = 1 then "" else string_of_int numerator) ^ "\\pi" in
+        if denominator = 1 then top else "\\frac{" ^ top ^ "}{" ^ string_of_int denominator ^ "}"
     | Variable name -> name
     | Add (left, right) ->
         to_latex_with_context level left ^ " + " ^ to_latex_with_context level right
@@ -292,3 +307,84 @@ let rec to_latex_with_context context expression =
   parenthesize (level < context) text
 
 let to_latex expression = to_latex_with_context 0 expression
+
+(* The number a formula without variables comes to, when it is rational:
+   arithmetic on constants, whole powers, and roots that come out exactly.
+   None for anything else (a variable, pi, a function value). *)
+let rec rational_value = function
+  | Constant value -> Some value
+  | Pi | Variable _ | Sin _ | Cos _ | Tan _ | Exp _ | Ln _ -> None
+  | Add (left, right) -> both Rhema_number.add left right
+  | Subtract (left, right) -> both Rhema_number.subtract left right
+  | Multiply (left, right) -> both Rhema_number.multiply left right
+  | Divide (left, right) -> (
+      match (rational_value left, rational_value right) with
+      | Some left, Some right when not (Rhema_number.is_zero right) ->
+          Some (Rhema_number.divide left right)
+      | _ -> None)
+  | Power (base, exponent) -> (
+      match rational_value base with
+      | Some base when exponent >= 0 || not (Rhema_number.is_zero base) ->
+          Some (Rhema_number.power base (Rhema_number.of_int exponent))
+      | _ -> None)
+  | Negate body -> Option.map Rhema_number.negate (rational_value body)
+  | Sqrt body -> Option.bind (rational_value body) Rhema_number.square_root_exact
+
+and both operation left right =
+  match (rational_value left, rational_value right) with
+  | Some left, Some right -> Some (operation left right)
+  | _ -> None
+
+(* ------------------------------------------------------------------ *)
+(* Exact values of sine, cosine and tangent                             *)
+(* ------------------------------------------------------------------ *)
+
+type trigonometric = Sine | Cosine | Tangent
+
+(* The value at p pi / q, for the angles whose values are known in closed
+   form in a first course: the multiples of pi/6 and of pi/4. The angle is
+   counted in twelfths of pi, so those are the even numbers and the
+   multiples of 3. Invalid_argument for any other angle, and for a tangent
+   that is not defined. *)
+let exact_value which ~numerator:p ~denominator:q =
+  if q = 0 then invalid_arg "the angle p pi / q needs q different from 0";
+  let p, q = if q < 0 then (-p, -q) else (p, q) in
+  let rec gcd a b = if b = 0 then abs a else gcd b (a mod b) in
+  let common = max 1 (gcd p q) in
+  let p = p / common and q = q / common in
+  if not (List.mem q [ 1; 2; 3; 4; 6 ]) then
+    invalid_arg
+      (Printf.sprintf
+         "no exact value is known for the angle %d pi / %d; use multiples of pi/6 and pi/4" p q);
+  let whole value = Constant (Rhema_number.of_int value) in
+  let root value = Sqrt (whole value) in
+  (* written as a quotient, so that it reads \\frac{1}{2} beside \\frac{\\sqrt{3}}{2} *)
+  let half = Divide (one, whole 2) in
+  (* sine of k twelfths of pi, for k from 0 to 6 *)
+  let first_quadrant = function
+    | 0 -> zero
+    | 2 -> half
+    | 3 -> Divide (root 2, whole 2)
+    | 4 -> Divide (root 3, whole 2)
+    | 6 -> one
+    | k -> invalid_arg (Printf.sprintf "no exact sine for %d twelfths of pi" k)
+  in
+  let rec sine k =
+    let k = ((k mod 24) + 24) mod 24 in
+    if k > 12 then negate (sine (k - 12)) else if k > 6 then first_quadrant (12 - k) else first_quadrant k
+  in
+  let twelfths = p * (12 / q) in
+  match which with
+  | Sine -> sine twelfths
+  | Cosine -> sine (twelfths + 6)
+  | Tangent -> (
+      match ((twelfths mod 12) + 12) mod 12 with
+      | 0 -> zero
+      | 2 -> Divide (root 3, whole 3)
+      | 3 -> one
+      | 4 -> root 3
+      | 6 -> invalid_arg (Printf.sprintf "the tangent of %d pi / %d is not defined" p q)
+      | 8 -> negate (root 3)
+      | 9 -> minus_one
+      | 10 -> negate (Divide (root 3, whole 3))
+      | k -> invalid_arg (Printf.sprintf "no exact tangent for %d twelfths of pi" k))

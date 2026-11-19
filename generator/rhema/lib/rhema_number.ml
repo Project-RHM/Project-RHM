@@ -10,10 +10,39 @@ exception Arithmetic_error of string
 type t = { numerator : int; denominator : int }
 (* Invariant: denominator > 0, and gcd(|numerator|, denominator) = 1. *)
 
+(* The numerator and the denominator are OCaml integers, of 63 bits. A sum or
+   a product that does not fit used to wrap round without a word: the answer
+   was then a wrong number, or a pair of numbers on which the next step never
+   ended. Every operation below is checked instead, and one whose result does
+   not fit raises Arithmetic_error, which generation treats like a division
+   by zero: the question is drawn again, and a grammar that always overflows
+   is told so. *)
+let too_large () =
+  raise (Arithmetic_error "a number grew too large to be kept exact (it needs more than 63 bits)")
+
+let checked_negate value = if value = min_int then too_large () else -value
+
+let checked_add left right =
+  let sum = left + right in
+  if left >= 0 = (right >= 0) && sum >= 0 <> (left >= 0) then too_large () else sum
+
+let checked_subtract left right =
+  let difference = left - right in
+  if left >= 0 <> (right >= 0) && difference >= 0 <> (left >= 0) then too_large () else difference
+
+let checked_multiply left right =
+  if left = 0 || right = 0 then 0
+  else if (left = -1 && right = min_int) || (right = -1 && left = min_int) then too_large ()
+  else
+    let product = left * right in
+    if product / right <> left then too_large () else product
+
 let rec greatest_common_divisor a b = if b = 0 then abs a else greatest_common_divisor b (a mod b)
 
 let make numerator denominator =
   if denominator = 0 then raise (Arithmetic_error "division by zero");
+  (* The one integer that has no negative and no absolute value. *)
+  if numerator = min_int || denominator = min_int then too_large ();
   let sign = if denominator < 0 then -1 else 1 in
   let numerator = sign * numerator and denominator = sign * denominator in
   let divisor = greatest_common_divisor numerator denominator in
@@ -27,28 +56,38 @@ let is_integer value = value.denominator = 1
 
 let add left right =
   make
-    ((left.numerator * right.denominator) + (right.numerator * left.denominator))
-    (left.denominator * right.denominator)
+    (checked_add
+       (checked_multiply left.numerator right.denominator)
+       (checked_multiply right.numerator left.denominator))
+    (checked_multiply left.denominator right.denominator)
 
 let subtract left right =
   make
-    ((left.numerator * right.denominator) - (right.numerator * left.denominator))
-    (left.denominator * right.denominator)
+    (checked_subtract
+       (checked_multiply left.numerator right.denominator)
+       (checked_multiply right.numerator left.denominator))
+    (checked_multiply left.denominator right.denominator)
 
 let multiply left right =
-  make (left.numerator * right.numerator) (left.denominator * right.denominator)
+  make
+    (checked_multiply left.numerator right.numerator)
+    (checked_multiply left.denominator right.denominator)
 
 let divide left right =
   if is_zero right then raise (Arithmetic_error "division by zero");
-  make (left.numerator * right.denominator) (left.denominator * right.numerator)
+  make
+    (checked_multiply left.numerator right.denominator)
+    (checked_multiply left.denominator right.numerator)
 
-let negate value = { value with numerator = -value.numerator }
-let absolute value = { value with numerator = abs value.numerator }
+let negate value = { value with numerator = checked_negate value.numerator }
+
+let absolute value =
+  if value.numerator < 0 then { value with numerator = checked_negate value.numerator } else value
 
 let compare left right =
   Stdlib.compare
-    (left.numerator * right.denominator)
-    (right.numerator * left.denominator)
+    (checked_multiply left.numerator right.denominator)
+    (checked_multiply right.numerator left.denominator)
 
 let equal left right = compare left right = 0
 

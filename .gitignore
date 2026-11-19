@@ -6,6 +6,10 @@ deepseek*.json
 config_setting/*.json
 generator/config.ml
 
+# --- What the web editor writes beside saved grammars ---
+generator/grammars/.teacher/
+generator/grammars/*.bak
+
 # --- Python ---
 __pycache__/
 *.py[cod]

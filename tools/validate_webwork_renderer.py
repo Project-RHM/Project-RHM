@@ -2,6 +2,12 @@
 
 Run in the application container: python3 tools/validate_webwork_renderer.py
 Test specifications and generated output live in a disposable directory.
+
+Each case is a document of several questions (--count, 10 by default), since
+a grammar's forms differ and one question shows one of them. The document is
+rendered, and then submitted once so that WeBWorK builds every answer
+evaluator: an answer it cannot read (a variable its context does not know,
+say) is reported there and not on the rendered page.
 """
 from __future__ import annotations
 
@@ -22,6 +28,7 @@ from webwork_client import WebworkClient, WebworkConfig
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--renderer-url', default='http://webwork-renderer:3000/render-api')
+    parser.add_argument('--count', type=int, default=10, help='questions in each document (1 to 50)')
     args = parser.parse_args()
     renderer = WebworkClient(WebworkConfig(url=args.renderer_url, timeout_seconds=30))
     passed = 0
@@ -47,7 +54,7 @@ def main():
                 name = grammar + ':' + (question['name'] or 'default')
                 try:
                     result = client.post('/teacher/generate', json={
-                        'grammar': grammar, 'count': 1, 'student_id': 'renderer_validation',
+                        'grammar': grammar, 'count': args.count, 'student_id': 'renderer_validation',
                         'question': question['name'],
                         'configuration': {'values': {
                             'root:a:' + key: value
@@ -60,6 +67,9 @@ def main():
                     html = renderer.render(payload['pgml_code'], 1)
                     if 'PGML' in html and 'Error caught by' in html:
                         raise RuntimeError('WeBWorK returned a PG error page.')
+                    # The grade is not looked at: check() refuses a document
+                    # whose answer evaluators WeBWorK could not build.
+                    renderer.check(payload['pgml_code'], {'AnSwEr0001': '0'}, 1)
                     passed += 1
                     print(f'PASS {name} ({len(html)} HTML chars)', flush=True)
                 except Exception as error:

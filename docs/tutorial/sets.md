@@ -84,10 +84,9 @@ question on its own: `1`, `2`, `3`.
 `distinct`
 :   No two questions have the same shape: the same productions, in the same
     places, with only the numbers different. `3 + 4` and `7 + 2` are one
-    shape. Questions of different types are never repeats of each other,
-    with one exception in the 0.1.1 release: two named questions on the same
-    rule, such as `seq.nth` and `seq.sum`, count as repeats there. The
-    repository has the fix.
+    shape. Questions of different types are never repeats of each other.
+    (In 0.1.1 two named questions on the same rule, such as `seq.nth` and
+    `seq.sum`, counted as repeats; 0.2.0 has the fix.)
 
 `balanced`
 :   No three questions in a row with the same coded answer, for questions
