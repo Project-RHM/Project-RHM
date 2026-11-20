@@ -43,6 +43,9 @@ TITLES = {
     "taylor": "Taylor polynomials", "row_reduction": "Row reduction and rank",
     "base_conversion": "Number bases", "trigonometry": "Trigonometry",
     "partial_derivatives": "Partial derivatives",
+    "probability": "Probability of events", "modular_arithmetic": "Modular arithmetic",
+    "graph_theory": "Graphs", "binomial_theorem": "The binomial theorem",
+    "numerical_methods": "Numerical methods", "lines_planes": "Lines and planes in space",
 }
 
 

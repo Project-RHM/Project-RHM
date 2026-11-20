@@ -173,23 +173,23 @@ has the details.
 
 ## The question library
 
-The package installs 46 grammar files, the ones in `generator/stdlib/`.
+The package installs 52 grammar files, the ones in `generator/stdlib/`.
 [`QUESTION_TYPES.md`](QUESTION_TYPES.md) gives each grammar's questions,
 prices and WeBWorK context.
 
 | Area | Grammars |
 | --- | --- |
 | Arithmetic | `arithmetic` |
-| Algebra | `polynomial_expand`, `factoring`, `polynomial_forms`, `linear_equation`, `inequality`, `exponential_log`, `partial_fractions`, `library_linear`, `library_quadratic`, `library_polynomial` |
+| Algebra | `polynomial_expand`, `factoring`, `polynomial_forms`, `linear_equation`, `inequality`, `exponential_log`, `partial_fractions`, `binomial_theorem`, `library_linear`, `library_quadratic`, `library_polynomial` |
 | Sequences and series | `sequence`, `sequence_parts`, `series`, `recurrence` |
-| Calculus | `calculus`, `limits`, `definite_integral`, `derivative_applications`, `differential_equation`, `taylor`, `partial_derivatives`, `library_formula` |
+| Calculus | `calculus`, `limits`, `definite_integral`, `derivative_applications`, `differential_equation`, `taylor`, `partial_derivatives`, `numerical_methods`, `library_formula` |
 | Logic | `boolean`, `boolean_equiv`, `logic_forms` |
 | Sets | `set` |
-| Vectors | `vector`, `vector_expr` |
+| Vectors and space | `vector`, `vector_expr`, `lines_planes` |
 | Complex numbers | `complex` |
 | Linear algebra | `matrix_expr`, `determinant`, `matrix_inverse`, `linear_system`, `eigen`, `row_reduction` |
-| Counting and number theory | `counting`, `number_theory`, `base_conversion` |
-| Geometry, trigonometry and statistics | `analytic_geometry`, `trigonometry`, `statistics` |
+| Counting, number theory and graphs | `counting`, `number_theory`, `modular_arithmetic`, `base_conversion`, `graph_theory` |
+| Geometry, trigonometry, probability and statistics | `analytic_geometry`, `trigonometry`, `probability`, `statistics` |
 | Combined | `derivative_or_boolean` (one question, two imported grammars), `homework_set` (a whole assignment) |
 | Shared rules, no questions of their own | `polynomial_core`, `matrix_core` |
 

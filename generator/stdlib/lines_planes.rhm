@@ -1,0 +1,172 @@
+# ==========================================================================
+#  Lines and planes in space
+#
+#  A plane from a point and its normal, a point of a line, the distance
+#  from a point to a plane, where a line meets a plane, the angle between
+#  two planes, the foot of a perpendicular and a reflection in a plane.
+#
+#  Where there is something to find it is chosen first: a line is drawn
+#  through the point where it is to meet the plane, and the point to drop a
+#  perpendicular from is the foot plus a multiple of the normal. A distance
+#  and a cosine are taken with normals of whole length, such as (1, 2, 2)
+#  and (2, 3, 6), so they are fractions with no square root.
+#
+#  Answers: a number, or a point such as (3, -2, 1). A point is a value of
+#  its own (point3), which WeBWorK grades as a point whatever context the
+#  question is in. Each form places its blank in its text with blank(...),
+#  so the file has no `answer` line.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the constant of a plane through a point with a given normal, the
+#       point of a line at a value of its parameter
+#    2  the distance from a point to a plane, the point where a line meets
+#       a plane, the cosine of the angle between two planes
+#    3  the foot of the perpendicular from a point to a plane, the
+#       reflection of a point in a plane
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+
+# A point with whole coordinates.
+synth x on P
+synth y on P
+synth z on P
+synth latex on P
+
+# A vector with no zero component and no common factor: a direction, or the
+# normal of a plane.
+# `latex` is the left side a x + b y + c z of the plane's equation and
+# `arrow` the vector itself.
+synth a on N
+synth b on N
+synth c on N
+synth latex on N
+synth arrow on N
+
+# A normal of whole length: a Pythagorean quadruple in one of its three
+# cyclic orders, the first component positive and the other two of either
+# sign.
+synth a on U
+synth b on U
+synth c on U
+synth length on U
+synth latex on U
+
+start Q
+
+P -> integer_between(-5, 5) integer_between(-5, 5) integer_between(-5, 5) {
+  x = $1.value
+  y = $2.value
+  z = $3.value
+  latex = "\left(" ++ str($1.value) ++ ", " ++ str($2.value) ++ ", " ++ str($3.value) ++ "\right)"
+}
+
+N -> nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) {
+  require gcd(gcd(abs($1.value), abs($2.value)), abs($3.value)) = 1
+  a = $1.value
+  b = $2.value
+  c = $3.value
+  latex = cond($1.value = 1, "", cond($1.value = 0 - 1, "-", str($1.value))) ++ "x"
+          ++ cond($2.value > 0, " + ", " - ") ++ cond(abs($2.value) = 1, "", str(abs($2.value))) ++ "y"
+          ++ cond($3.value > 0, " + ", " - ") ++ cond(abs($3.value) = 1, "", str(abs($3.value))) ++ "z"
+  arrow = vector_latex(vector3($1.value, $2.value, $3.value))
+}
+
+U -> integer_between(1, 4) integer_between(1, 3) nonzero_integer_between(-1, 1) nonzero_integer_between(-1, 1) {
+  let p = cond($1.value = 1, 1, cond($1.value = 2, 2, cond($1.value = 3, 1, 4)))
+  let q = cond($1.value = 1, 2, cond($1.value = 2, 3, cond($1.value = 3, 4, 4)))
+  let r = cond($1.value = 1, 2, cond($1.value = 2, 6, cond($1.value = 3, 8, 7)))
+  let first = cond($2.value = 1, p, cond($2.value = 2, q, r))
+  let second = $3.value * cond($2.value = 1, q, cond($2.value = 2, r, p))
+  let third = $4.value * cond($2.value = 1, r, cond($2.value = 2, p, q))
+  a = first
+  b = second
+  c = third
+  length = cond($1.value = 1, 3, cond($1.value = 2, 7, 9))
+  latex = cond(first = 1, "", str(first)) ++ "x"
+          ++ cond(second > 0, " + ", " - ") ++ cond(abs(second) = 1, "", str(abs(second))) ++ "y"
+          ++ cond(third > 0, " + ", " - ") ++ cond(abs(third) = 1, "", str(abs(third))) ++ "z"
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+Q -> "plane_constant" P N when cost = 1 {
+  cost = -1
+  kind = "plane_constant"
+  let ask = "The plane through the point [`" ++ $2.latex ++ "`] with normal vector [`" ++ $3.arrow
+           ++ "`] has the equation [`" ++ $3.latex ++ " = d`]. Find [`d`]."
+  text = ask ++ " " ++ blank($3.a * $2.x + $3.b * $2.y + $3.c * $2.z)
+}
+
+Q -> "point_on_line" P N nonzero_integer_between(-4, 4) when cost = 1 {
+  cost = -1
+  kind = "point_on_line"
+  let ask = "A line has the equation [`\mathbf{r} = " ++ $2.latex ++ " + t" ++ $3.arrow ++ "`]. Find the point of the line at [`t = "
+           ++ str($4.value) ++ "`]. Enter it as a point, such as [`(3, -2, 1)`]."
+  text = ask ++ " " ++ blank(point3($2.x + $4.value * $3.a, $2.y + $4.value * $3.b, $2.z + $4.value * $3.c))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+Q -> "distance" P U integer_between(-9, 9) when cost = 2 {
+  cost = -2
+  kind = "distance"
+  let side = $3.a * $2.x + $3.b * $2.y + $3.c * $2.z - $4.value
+  require side != 0
+  let ask = "Find the distance from the point [`" ++ $2.latex ++ "`] to the plane [`" ++ $3.latex ++ " = " ++ str($4.value) ++ "`]."
+  text = ask ++ " " ++ blank(abs(side) / $3.length)
+}
+
+# The line goes through the meeting point, at the parameter chosen.
+Q -> "line_meets_plane" P N N nonzero_integer_between(-3, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "line_meets_plane"
+  require $3.a * $4.a + $3.b * $4.b + $3.c * $4.c != 0
+  let mx = $2.x + $5.value * $3.a
+  let my = $2.y + $5.value * $3.b
+  let mz = $2.z + $5.value * $3.c
+  let ask = "Find the point where the line [`\mathbf{r} = " ++ $2.latex ++ " + t" ++ $3.arrow ++ "`] meets the plane [`"
+           ++ $4.latex ++ " = " ++ str($4.a * mx + $4.b * my + $4.c * mz) ++ "`]. Enter it as a point, such as [`(3, -2, 1)`]."
+  text = ask ++ " " ++ blank(point3(mx, my, mz))
+}
+
+Q -> "plane_angle" U U integer_between(-9, 9) integer_between(-9, 9) when cost = 2 {
+  cost = -2
+  kind = "plane_angle"
+  let dot = $2.a * $3.a + $2.b * $3.b + $2.c * $3.c
+  require dot != 0
+  require abs(dot) != $2.length * $3.length
+  let ask = "Find the cosine of the acute angle between the planes [`" ++ $2.latex ++ " = " ++ str($4.value) ++ "`] and [`"
+           ++ $3.latex ++ " = " ++ str($5.value) ++ "`]."
+  text = ask ++ " " ++ blank(abs(dot) / ($2.length * $3.length))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# The point is the foot plus `away` normals; the plane goes through the foot.
+Q -> "foot" P N nonzero_integer_between(-3, 3) when cost = 3 {
+  cost = -3
+  kind = "foot"
+  let ask = "Find the foot of the perpendicular from the point [`\left(" ++ str($2.x + $4.value * $3.a) ++ ", "
+           ++ str($2.y + $4.value * $3.b) ++ ", " ++ str($2.z + $4.value * $3.c) ++ "\right)`] to the plane [`" ++ $3.latex
+           ++ " = " ++ str($3.a * $2.x + $3.b * $2.y + $3.c * $2.z)
+           ++ "`], that is, the point of the plane nearest to it. Enter it as a point, such as [`(3, -2, 1)`]."
+  text = ask ++ " " ++ blank(point3($2.x, $2.y, $2.z))
+}
+
+Q -> "reflection" P N nonzero_integer_between(-3, 3) when cost = 3 {
+  cost = -3
+  kind = "reflection"
+  let ask = "Find the reflection of the point [`\left(" ++ str($2.x + $4.value * $3.a) ++ ", "
+           ++ str($2.y + $4.value * $3.b) ++ ", " ++ str($2.z + $4.value * $3.c) ++ "\right)`] in the plane [`" ++ $3.latex
+           ++ " = " ++ str($3.a * $2.x + $3.b * $2.y + $3.c * $2.z)
+           ++ "`], that is, its mirror image on the other side of the plane. Enter it as a point, such as [`(3, -2, 1)`]."
+  text = ask ++ " " ++ blank(point3($2.x - $4.value * $3.a, $2.y - $4.value * $3.b, $2.z - $4.value * $3.c))
+}
+
+prompt "{Q.text}"

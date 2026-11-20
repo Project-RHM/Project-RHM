@@ -20,7 +20,7 @@ make `x + 2x \cdot \sin x` cost at least 4.
 
 ## Mistakes
 
-Four grammars say what common mistakes lead to (chapter 9 of the tutorial).
+Six grammars say what common mistakes lead to (chapter 9 of the tutorial).
 `rhema run` lists them under each answer, and none of these grammars asks a
 question in which a mistake changes the working and still gives the right
 answer.
@@ -35,12 +35,19 @@ answer.
 | `boolean.rhm` | `false_antecedent` | takes a conditional with a false antecedent to be false |
 | | `exclusive_or` | reads "or" as one or the other but not both |
 | `polynomial_expand.rhm`, `polynomial_forms.rhm` | `power_term_by_term` | raises each term of a bracket to the power on its own |
+| `probability.rhm` | `overlap_counted_twice` | adds two probabilities and does not take off what both share |
+| | `wrong_way_round` | takes a conditional probability the wrong way round: of B given A where A given B was asked |
+| `binomial_theorem.rhm` | `bare_coefficient` | gives the binomial coefficient alone, without the powers of the numbers in the bracket |
+| | `powers_swapped` | puts each power on the other number of the bracket |
 
 The mistakes of `calculus.rhm` concern its derivative questions; an
 integral question lists none. `power_term_by_term` is declared in
 `polynomial_core.rhm` and concerns a question that asks for the expansion;
 `factoring.rhm` is built on the same productions and lists none. A modulus
-question of `complex.rhm` lists none.
+question of `complex.rhm` lists none. In `probability.rhm` and
+`binomial_theorem.rhm` a mistake is listed with the forms it can be made
+in: a product of two independent probabilities, for one, has nothing to
+count twice.
 
 ## Libraries and examples
 

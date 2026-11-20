@@ -65,6 +65,12 @@ attribute, or by the budget.
 | `base_conversion.rhm` | 1 binary to decimal and back; 2 hexadecimal to decimal, decimal to octal, binary to octal; 3 a sum in binary, hexadecimal to binary; 4 to 8 sums and differences of two to four numbers in binary, octal and hexadecimal: a number 1 (hexadecimal 2), adding one 1, subtracting one 2, an answer in another base 1 | 2 | Numeric |
 | `trigonometry.rhm` | 1 degrees and radians, an exact value in the first quadrant; 2 an exact value in any quadrant, the other functions from one and the quadrant; 3 the two solutions of `sin x = v`, `cos x = v` or `tan x = v` on one turn, with argument `x` or `2x` | 2 | Numeric (plain answers) |
 | `partial_derivatives.rhm` | 1 a first partial derivative; 2 both, the mixed second derivative, the gradient at a point; 3 a tangent plane, the critical point of a quadratic; 4 to 8 the same derivatives (first 1, both or a second one 2) of a function with sin, cos and e: of `ax + by` 2 each, of a product such as `x^2 y` 3, times a power of `x` or `y` 5 | 2 | Numeric (answers in `x` and `y`) |
+| `probability.rhm` | 1 `P(A or B)` from `P(A)`, `P(B)` and `P(A and B)`, two independent events both happening; 2 a conditional probability from a table of counts, `P(A given B)` from `P(A)`, `P(B)` and `P(A or B)`, at least one of two independent events; 3 a ball drawn from one of two bags chosen by a die: the probability of its colour, the probability of the bag given the colour | 2 | Numeric |
+| `modular_arithmetic.rhm` | 1 Euler's function of `p q` or of a prime power, the number of divisors of `p^a q^b`; 2 two simultaneous congruences, the sum of the divisors of `p^a q^b`; 3 three simultaneous congruences, an RSA key: its private exponent and a message deciphered (two blanks) | 2 | Numeric |
+| `graph_theory.rhm` | 1 the edges of a graph from its degrees, of `K_n`, of `K_{m,n}`, of a forest; 2 a degree missing from a list, the leaves of a tree, the walks of length 2 between two vertices; 3 the faces of a regular planar graph, the walks of length 3 between two vertices | 2 | Numeric |
+| `binomial_theorem.rhm` | 1 a coefficient of `(1 + x)^n`, of `(x + b)^n`; 2 a coefficient of `(ax + b)^n`, of `(ax + by)^n`, the sum of the coefficients of `(ax + b)^n`; 3 the term independent of `x` in `(a x^p + b/x^q)^n`, a coefficient of `(c + dx)(1 + ax)^n` | 2 | Numeric |
+| `numerical_methods.rhm` | 1 one step of Newton's method for `x^2 - a = 0`, the trapezoidal rule with two strips; 2 two steps of Newton's method, the third midpoint of a bisection, the trapezoidal rule with four strips, two steps of Euler's method for `y' = ax + by`; 3 Simpson's rule with four strips, two steps of Euler's method for `y' = ax + y^2` or `ax - y^2` | 2 | Numeric |
+| `lines_planes.rhm` | 1 the constant of a plane through a point with a given normal, the point of a line at a value of its parameter; 2 the distance from a point to a plane, the point where a line meets a plane, the cosine of the angle between two planes; 3 the foot of the perpendicular from a point to a plane, the reflection of a point in a plane | 2 | Numeric (a point answer carries the Point context) |
 <!-- --8<-- [end:tables] -->
 
 ## The five general types added on this branch
@@ -332,9 +338,83 @@ values recomputed in floating point and an equation's interval scanned for
 exactly the two solutions; and difference quotients of the function read
 back by a small parser for the LaTeX the engine writes.
 
+## The sixth batch: probability, modular arithmetic, graphs, the binomial theorem, numerical methods, lines and planes
+
+Six fixed-form grammars with a default budget of 2, built answer first
+wherever there is something to find. None needed a change to the engine,
+and two of them declare mistakes.
+
+- **Probability** (`probability.rhm`) counts everything out before it shows
+  a probability: two events are the four regions of a Venn diagram, a class
+  is the four cells of its table, and a bag is the balls in it. The
+  probabilities of one question therefore agree with one another, and every
+  answer is an exact fraction. The hardest forms choose one of two bags
+  with a die and ask for the colour of the ball drawn, or, the ball being
+  red, for the bag (Bayes' rule); the two bags hold red in different
+  shares, so the colour says something about the bag. A question in which
+  a conditional probability taken the wrong way round comes to the same
+  number is not asked. `counting.rhm` and
+  `statistics.rhm` ask for probabilities found by counting outcomes and for
+  random variables; this grammar asks for the rules that combine events.
+- **Modular arithmetic** (`modular_arithmetic.rhm`) goes on from
+  `number_theory.rhm`. Euler's function and the number and the sum of the
+  divisors are read off a prime factorisation that is chosen first. A
+  system of two or three congruences is built from its solution, with
+  moduli that are coprime in pairs, so it has exactly one solution below
+  their product. An RSA key has two blanks: the private exponent, and a
+  message that was chosen and enciphered with the public one, so that
+  deciphering gives it back.
+- **Graphs** (`graph_theory.rhm`) asks for counts. A list of degrees is
+  read off a graph on five vertices that was built edge by edge, so there
+  is a graph with those degrees. Walks are counted between two vertices of
+  a connected graph on four vertices, given by its adjacency matrix: an
+  entry of the matrix squared or cubed. The planar graphs are regular ones
+  that exist (the prisms and the antiprisms, the octahedron among them),
+  and the number of their faces follows from Euler's formula.
+- **The binomial theorem** (`binomial_theorem.rhm`) asks for one
+  coefficient: of `(ax + b)^n`, of `(ax + by)^n`, the term independent of
+  `x` in `(a x^p + b/x^q)^n`, where `n` is a multiple of `p + q` so that
+  there is one, and a coefficient of `(c + dx)(1 + ax)^n`, which has two
+  terms to add; the two never cancel, so the coefficient asked for is not
+  zero.
+- **Numerical methods** (`numerical_methods.rhm`) works a few steps
+  exactly: the steps are 1 or one half, nothing is rounded on the way, and
+  the answer is an exact fraction or whole number. Newton's method and
+  bisection look for a square root. The trapezoidal rule is asked of a quadratic or a cubic and
+  Simpson's rule of `c / (x + d)`; in both the estimate is not the
+  integral, so integrating gives another number. Euler's method takes two
+  steps of one half.
+- **Lines and planes** (`lines_planes.rhm`) is geometry in space with whole
+  coordinates. A line is drawn through the point where it is to meet the
+  plane; the point a perpendicular is dropped from is the foot plus a
+  multiple of the normal, and its reflection is the foot minus the same. A
+  distance and the cosine of an angle are taken with normals of whole
+  length, such as `(1, 2, 2)` and `(2, 3, 6)`, so they are fractions with
+  no square root. A point is answered as `(3, -2, 1)`, a point value
+  (`point3`).
+
+```
+cost 3   bag 1: 5 red, 6 blue; bag 2: 2 red, 5 blue; a die showing 2 or less picks bag 1; the ball is red: P(bag 1)   35/79
+cost 3   x = 1 (mod 4), x = 2 (mod 5), x = 1 (mod 7), 0 <= x < 140                                                    57
+cost 3   the term independent of x in (x + 2/x^2)^9                                                                   672
+cost 3   Simpson's rule with 4 strips for the integral of 6/(x + 2) from -1 to 3                                      146/15
+cost 3   the reflection of (0, -5, 2) in the plane x - 3y + 3z = -17                                                  (-4, 7, -10)
+```
+
+Each grammar has a test that checks its answers independently, from the
+numbers printed in the question: probabilities by counting equally likely
+outcomes; Euler's function, divisors and congruences by going through
+every number of the range, where a system must have exactly one solution
+and a deciphered message must encipher to the cipher shown; a list of
+degrees by deciding whether a graph has it, and walks by listing every
+sequence of vertices; a coefficient by multiplying the bracket out; a
+numerical method by running it as a loop on exact fractions; and a point
+or a distance by the definition of what was asked, on the plane and along
+the normal.
+
 ## Mistakes the library looks for
 
-Four grammars say what common mistakes lead to. `rhema run` lists them
+Six grammars say what common mistakes lead to. `rhema run` lists them
 under each answer, and none of these grammars asks a question in which a
 mistake changes the working and still gives the right answer (section 9 of
 `RHEMA_LANGUAGE_EXTENSIONS.md`).
@@ -349,6 +429,10 @@ mistake changes the working and still gives the right answer (section 9 of
 | `boolean.rhm` | `false_antecedent` | takes a conditional with a false antecedent to be false |
 | | `exclusive_or` | reads "or" as one or the other but not both |
 | `polynomial_expand.rhm`, `polynomial_forms.rhm` | `power_term_by_term` | raises each term of a bracket to the power on its own |
+| `probability.rhm` | `overlap_counted_twice` | adds two probabilities and does not take off what both share |
+| | `wrong_way_round` | takes a conditional probability the wrong way round: of B given A where A given B was asked |
+| `binomial_theorem.rhm` | `bare_coefficient` | gives the binomial coefficient alone, without the powers of the numbers in the bracket |
+| | `powers_swapped` | puts each power on the other number of the bracket |
 
 An integral question of `calculus.rhm`, a modulus question of `complex.rhm`
 and a factoring question list none: their answers are not computed from the
