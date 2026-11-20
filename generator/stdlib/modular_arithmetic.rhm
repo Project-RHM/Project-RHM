@@ -1,0 +1,155 @@
+# ==========================================================================
+#  Modular arithmetic
+#
+#  Euler's function and the divisors of a number from its prime
+#  factorisation, simultaneous congruences (the Chinese remainder theorem),
+#  and a small RSA key. A system of congruences is built from its solution,
+#  so it has exactly one in the range asked for; an RSA message is chosen
+#  first and enciphered, so deciphering gives it back.
+#
+#  `number_theory.rhm` asks the steps these questions are made of: a gcd, a
+#  remainder of a power, an inverse, one congruence.
+#
+#  Each form places its own blanks in its text with blank(...): most have
+#  one, the RSA key has two, so the file has no `answer` line.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  Euler's function of p q or of a prime power, the number of divisors
+#       of p^a q^b
+#    2  two simultaneous congruences, the sum of the divisors of p^a q^b
+#    3  three simultaneous congruences; the private exponent of an RSA key
+#       and a message deciphered with it (two blanks)
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+
+# One of the first six primes.
+synth value on P
+
+# A modulus and a remainder to go with it. The moduli of M are odd; a
+# system that wants a further one coprime to them takes 4 or 8.
+synth value on M
+
+start Q
+
+P -> integer_between(1, 6) {
+  value = cond($1.value = 1, 2, cond($1.value = 2, 3, cond($1.value = 3, 5,
+          cond($1.value = 4, 7, cond($1.value = 5, 11, 13)))))
+}
+
+M -> integer_between(1, 5) {
+  value = cond($1.value = 1, 3, cond($1.value = 2, 5, cond($1.value = 3, 7, cond($1.value = 4, 9, 11))))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+Q -> "totient_product" P P when cost = 1 {
+  cost = -1
+  kind = "totient_product"
+  require $2.value < $3.value
+  require $2.value * $3.value > 10
+  text = "Find [`\varphi(" ++ str($2.value * $3.value) ++ ")`], the number of integers from [`1`] to [`"
+         ++ str($2.value * $3.value) ++ "`] that have no common factor with [`" ++ str($2.value * $3.value)
+         ++ "`] other than [`1`]. " ++ blank(($2.value - 1) * ($3.value - 1))
+}
+
+Q -> "totient_power" P integer_between(2, 5) when cost = 1 {
+  cost = -1
+  kind = "totient_power"
+  let n = $2.value ^ $3.value
+  require n >= 8 and n <= 400
+  text = "Find [`\varphi(" ++ str(n) ++ ")`], the number of integers from [`1`] to [`" ++ str(n)
+         ++ "`] that have no common factor with [`" ++ str(n) ++ "`] other than [`1`]. "
+         ++ blank($2.value ^ ($3.value - 1) * ($2.value - 1))
+}
+
+Q -> "divisor_count" P P integer_between(1, 4) integer_between(1, 3) when cost = 1 weight 2 {
+  cost = -1
+  kind = "divisor_count"
+  let n = $2.value ^ $4.value * $3.value ^ $5.value
+  require $2.value < $3.value
+  require $4.value + $5.value >= 3
+  require n <= 2000
+  text = "How many positive divisors does [`" ++ str(n) ++ "`] have, counting [`1`] and [`" ++ str(n) ++ "`] itself? "
+         ++ blank(($4.value + 1) * ($5.value + 1))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The solution comes first: x0 below m n, shown through its two remainders.
+Q -> "two_congruences" M M integer_between(2, 98) when cost = 2 weight 2 {
+  cost = -2
+  kind = "two_congruences"
+  let m = $2.value
+  let n = $3.value
+  require m < n
+  require gcd(m, n) = 1
+  require $4.value < m * n
+  require $4.value % m != $4.value % n        # else the remainder itself is the answer
+  text = "Find the integer [`x`] with [`0 \le x < " ++ str(m * n) ++ "`] such that [`x \equiv " ++ str($4.value % m)
+         ++ " \pmod{" ++ str(m) ++ "}`] and [`x \equiv " ++ str($4.value % n) ++ " \pmod{" ++ str(n) ++ "}`]. "
+         ++ blank($4.value)
+}
+
+# 1 + p + ... + p^a is (p^(a+1) - 1) / (p - 1).
+Q -> "divisor_sum" P P integer_between(1, 3) integer_between(1, 2) when cost = 2 {
+  cost = -2
+  kind = "divisor_sum"
+  let n = $2.value ^ $4.value * $3.value ^ $5.value
+  require $2.value < $3.value
+  require $4.value + $5.value >= 3
+  require n <= 1000
+  text = "Find the sum of all the positive divisors of [`" ++ str(n) ++ "`], counting [`1`] and [`" ++ str(n) ++ "`] itself. "
+         ++ blank((($2.value ^ ($4.value + 1) - 1) / ($2.value - 1)) * (($3.value ^ ($5.value + 1) - 1) / ($3.value - 1)))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# Two odd moduli of M and 4 or 8, which is coprime to both.
+Q -> "three_congruences" M M integer_between(2, 3) integer_between(2, 791) when cost = 3 {
+  cost = -3
+  kind = "three_congruences"
+  let m = $2.value
+  let n = $3.value
+  let k = 2 ^ $4.value
+  require m < n
+  require gcd(m, n) = 1
+  require $5.value < k * m * n
+  require $5.value % k != $5.value % m or $5.value % m != $5.value % n
+  text = "Find the integer [`x`] with [`0 \le x < " ++ str(k * m * n) ++ "`] such that [`x \equiv " ++ str($5.value % k)
+         ++ " \pmod{" ++ str(k) ++ "}`], [`x \equiv " ++ str($5.value % m) ++ " \pmod{" ++ str(m) ++ "}`] and [`x \equiv "
+         ++ str($5.value % n) ++ " \pmod{" ++ str(n) ++ "}`]. " ++ blank($5.value)
+}
+
+# The key is n = p q with the public exponent e, coprime to (p - 1)(q - 1),
+# below it and not one of the two primes.
+# The message is chosen and enciphered; the question shows the cipher.
+Q -> "rsa" P P P integer_between(2, 30) when cost = 3 weight 2 {
+  cost = -3
+  kind = "rsa"
+  let p = $2.value
+  let q = $3.value
+  let e = $4.value
+  let n = p * q
+  let phi = (p - 1) * (q - 1)
+  let d = mod_inverse(e, phi)
+  let cipher = pow_mod($5.value, e, n)
+  require p >= 3 and p < q
+  require e >= 3 and e < phi and gcd(e, phi) = 1
+  require e != p and e != q
+  require d != e                               # else the public exponent already deciphers
+  require $5.value < n and gcd($5.value, n) = 1
+  require cipher != $5.value
+  text = "An RSA key has the modulus [`n = " ++ str(p) ++ " \cdot " ++ str(q) ++ " = " ++ str(n)
+         ++ "`] and the public exponent [`e = " ++ str(e) ++ "`]. Find the private exponent [`d`] with [`0 < d < "
+         ++ str(phi) ++ "`] and [`e d \equiv 1 \pmod{" ++ str(phi) ++ "}`]: " ++ blank(d)
+         ++ " Then decipher the ciphertext [`c = " ++ str(cipher) ++ "`]: find the remainder of [`c^{d}`] on division by [`n`]. "
+         ++ blank($5.value)
+}
+
+prompt "{Q.text}"

@@ -1,0 +1,168 @@
+# ==========================================================================
+#  Probability of events
+#
+#  The addition rule, independent events, conditional probability, the
+#  rule of total probability and Bayes' rule. Every probability is an exact
+#  fraction, and every question is built from whole numbers: two events
+#  from the four regions of a Venn diagram counted out, a class from the
+#  four cells of its table, two bags from the balls in them. The numbers
+#  shown are therefore always consistent with one another.
+#
+#  Two mistakes are looked for: adding two probabilities without taking
+#  off what is counted twice, and taking a conditional probability the
+#  wrong way round (the chance of the evidence, given the cause, where the
+#  chance of the cause, given the evidence, was asked for). A question in
+#  which the wrong way round comes to the same number is not asked.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the probability of A or B from those of A, B and both; the
+#       probability that two independent events both happen
+#    2  a conditional probability from a table of counts; P(A | B) from the
+#       probabilities of A, B and A or B; the probability that at least one
+#       of two independent events happens
+#    3  a ball drawn from one of two bags chosen by a die: the probability
+#       of its colour, and the probability of the bag given the colour
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake overlap_counted_twice "adds the two probabilities and does not take off what both share"
+mistake wrong_way_round "takes a conditional probability the wrong way round: of B given A where A given B was asked"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# Two events counted out: `a_only` outcomes in A alone, `b_only` in B alone,
+# `both` in both and at least one in neither. `a`, `b`, `both_p` and
+# `either` are the probabilities of A, of B, of both and of at least one.
+synth a on V
+synth b on V
+synth both_p on V
+synth either on V
+
+# A probability strictly between 0 and 1, in lowest terms.
+synth value on F
+synth latex on F
+
+# A bag of red and blue balls.
+synth red on B
+synth all on B
+synth latex on B
+
+start Q
+
+V -> integer_between(1, 5) integer_between(1, 5) integer_between(1, 4) integer_between(1, 5) {
+  let total = $1.value + $2.value + $3.value + $4.value
+  a = ($1.value + $3.value) / total
+  b = ($2.value + $3.value) / total
+  both_p = $3.value / total
+  either = ($1.value + $2.value + $3.value) / total
+}
+
+F -> integer_between(1, 5) integer_between(2, 6) {
+  require $1.value < $2.value
+  require gcd($1.value, $2.value) = 1
+  value = $1.value / $2.value
+  latex = number_latex($1.value / $2.value)
+}
+
+B -> integer_between(2, 6) integer_between(2, 6) {
+  red = $1.value
+  all = $1.value + $2.value
+  latex = "[`" ++ str($1.value) ++ "`] red and [`" ++ str($2.value) ++ "`] blue"
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+Q -> "union" V when cost = 1 {
+  cost = -1
+  kind = "union"
+  text = "Two events [`A`] and [`B`] have [`P(A) = " ++ number_latex($2.a) ++ "`], [`P(B) = " ++ number_latex($2.b)
+         ++ "`] and [`P(A \cap B) = " ++ number_latex($2.both_p) ++ "`]. Find [`P(A \cup B)`]."
+  answer_value = $2.a + $2.b - $2.both_p
+  mistake overlap_counted_twice answer_value = $2.a + $2.b
+}
+
+Q -> "independent" F F when cost = 1 {
+  cost = -1
+  kind = "independent"
+  text = "The events [`A`] and [`B`] are independent, with [`P(A) = " ++ $2.latex ++ "`] and [`P(B) = " ++ $3.latex
+         ++ "`]. Find the probability that both happen."
+  answer_value = $2.value * $3.value
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# A class counted in four cells. The student chosen is known to play chess
+# (or not to): the answer is a share of that column, not of the class.
+Q -> "conditional_table" integer_between(2, 9) integer_between(2, 9) integer_between(2, 9) integer_between(2, 9) integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = "conditional_table"
+  require $2.value * $5.value != $3.value * $4.value     # else knowing changes nothing
+  let plays = $6.value = 1
+  let column = cond(plays, $2.value + $4.value, $3.value + $5.value)
+  let cell = cond(plays, $4.value, $5.value)
+  let row = $4.value + $5.value
+  require column != row                                  # else the wrong way round is as large
+  text = "In a class, [`" ++ str($2.value) ++ "`] boys play chess and [`" ++ str($3.value) ++ "`] boys do not; [`"
+         ++ str($4.value) ++ "`] girls play chess and [`" ++ str($5.value) ++ "`] girls do not. A student chosen at random "
+         ++ cond(plays, "plays chess", "does not play chess") ++ ". Find the probability that the student is a girl."
+  answer_value = cell / column
+  mistake wrong_way_round answer_value = cell / row
+}
+
+# P(A and B) has to be found first, from the addition rule read backwards.
+Q -> "conditional_formula" V when cost = 2 weight 2 {
+  cost = -2
+  kind = "conditional_formula"
+  require $2.a != $2.b                                   # else P(B | A) is the same number
+  text = "Two events [`A`] and [`B`] have [`P(A) = " ++ number_latex($2.a) ++ "`], [`P(B) = " ++ number_latex($2.b)
+         ++ "`] and [`P(A \cup B) = " ++ number_latex($2.either) ++ "`]. Find [`P(A \mid B)`]."
+  answer_value = ($2.a + $2.b - $2.either) / $2.b
+  mistake wrong_way_round answer_value = ($2.a + $2.b - $2.either) / $2.a
+}
+
+Q -> "at_least_one" F F when cost = 2 {
+  cost = -2
+  kind = "at_least_one"
+  text = "The events [`A`] and [`B`] are independent, with [`P(A) = " ++ $2.latex ++ "`] and [`P(B) = " ++ $3.latex
+         ++ "`]. Find the probability that at least one of them happens."
+  answer_value = 1 - (1 - $2.value) * (1 - $3.value)
+  mistake overlap_counted_twice answer_value = $2.value + $3.value
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# The die chooses bag 1 on `faces` of its six faces. The two bags hold red
+# in different shares, so the colour says something about the bag.
+Q -> "total_probability" B B integer_between(1, 5) when cost = 3 {
+  cost = -3
+  kind = "total_probability"
+  require $2.red * $3.all != $3.red * $2.all
+  let first = $4.value / 6
+  text = "Bag 1 holds " ++ $2.latex ++ " balls, and bag 2 holds " ++ $3.latex ++ " balls. A fair die is rolled: if it shows "
+         ++ cond($4.value = 1, "[`1`]", "[`" ++ str($4.value) ++ "`] or less")
+         ++ ", a ball is drawn at random from bag 1, and otherwise from bag 2. Find the probability that the ball is red."
+  answer_value = first * $2.red / $2.all + (1 - first) * $3.red / $3.all
+}
+
+Q -> "bayes" B B integer_between(1, 5) when cost = 3 weight 2 {
+  cost = -3
+  kind = "bayes"
+  require $2.red * $3.all != $3.red * $2.all
+  let first = $4.value / 6
+  let red_from_first = first * $2.red / $2.all
+  let any_red = red_from_first + (1 - first) * $3.red / $3.all
+  require red_from_first / any_red != $2.red / $2.all    # else the wrong way round is as large
+  text = "Bag 1 holds " ++ $2.latex ++ " balls, and bag 2 holds " ++ $3.latex ++ " balls. A fair die is rolled: if it shows "
+         ++ cond($4.value = 1, "[`1`]", "[`" ++ str($4.value) ++ "`] or less")
+         ++ ", a ball is drawn at random from bag 1, and otherwise from bag 2. The ball is red. Find the probability that it came from bag 1."
+  answer_value = red_from_first / any_red
+  mistake wrong_way_round answer_value = $2.red / $2.all
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

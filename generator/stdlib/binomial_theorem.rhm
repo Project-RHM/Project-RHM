@@ -1,0 +1,141 @@
+# ==========================================================================
+#  The binomial theorem
+#
+#  One coefficient of a power of a bracket: of (1 + x)^n, (x + b)^n and
+#  (a x + b)^n, of (a x + b y)^n, the sum of all the coefficients, the term
+#  independent of x in (a x^p + b / x^q)^n, and a coefficient of a product
+#  (c + d x)(1 + a x)^n, which has two terms to add.
+#
+#  The answer is C(n, k) times the right powers of the numbers in the
+#  bracket. Two mistakes are looked for: giving the binomial coefficient
+#  alone, and putting the two powers on the wrong numbers.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  a coefficient of (1 + x)^n, a coefficient of (x + b)^n
+#    2  a coefficient of (a x + b)^n, a coefficient of (a x + b y)^n, the
+#       sum of the coefficients of (a x + b)^n
+#    3  the term independent of x in (a x^p + b / x^q)^n, a coefficient of
+#       (c + d x)(1 + a x)^n
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake bare_coefficient "gives the binomial coefficient alone, without the powers of the numbers in the bracket"
+mistake powers_swapped "puts each power on the other number of the bracket"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+start Q
+
+# ---- Price 1 --------------------------------------------------------------
+
+Q -> "plain_coefficient" integer_between(5, 10) integer_between(2, 8) when cost = 1 {
+  cost = -1
+  kind = "plain_coefficient"
+  require $3.value <= $2.value - 2
+  text = "Find the coefficient of [`x^{" ++ str($3.value) ++ "}`] in the expansion of [`\left(1 + x\right)^{"
+         ++ str($2.value) ++ "}`]."
+  answer_value = choose($2.value, $3.value)
+}
+
+Q -> "shifted_coefficient" integer_between(4, 8) integer_between(1, 6) nonzero_integer_between(-3, 3) when cost = 1 weight 2 {
+  cost = -1
+  kind = "shifted_coefficient"
+  require $3.value <= $2.value - 2
+  require abs($4.value) != 1
+  text = "Find the coefficient of [`x" ++ cond($3.value = 1, "", "^{" ++ str($3.value) ++ "}")
+         ++ "`] in the expansion of [`\left(x" ++ cond($4.value > 0, " + ", " - ") ++ str(abs($4.value)) ++ "\right)^{"
+         ++ str($2.value) ++ "}`]."
+  answer_value = choose($2.value, $3.value) * $4.value ^ ($2.value - $3.value)
+  mistake bare_coefficient answer_value = choose($2.value, $3.value)
+  mistake powers_swapped answer_value = choose($2.value, $3.value) * $4.value ^ $3.value
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+Q -> "linear_coefficient" integer_between(4, 7) integer_between(1, 5) nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "linear_coefficient"
+  require $3.value <= $2.value - 1
+  require abs($4.value) != 1
+  require gcd(abs($4.value), abs($5.value)) = 1
+  text = "Find the coefficient of [`x" ++ cond($3.value = 1, "", "^{" ++ str($3.value) ++ "}")
+         ++ "`] in the expansion of [`\left(" ++ str($4.value) ++ "x" ++ cond($5.value > 0, " + ", " - ") ++ str(abs($5.value)) ++ "\right)^{"
+         ++ str($2.value) ++ "}`]."
+  answer_value = choose($2.value, $3.value) * $4.value ^ $3.value * $5.value ^ ($2.value - $3.value)
+  mistake bare_coefficient answer_value = choose($2.value, $3.value)
+  mistake powers_swapped answer_value = choose($2.value, $3.value) * $4.value ^ ($2.value - $3.value) * $5.value ^ $3.value
+}
+
+Q -> "two_variable" integer_between(4, 7) integer_between(1, 6) integer_between(2, 3) nonzero_integer_between(-3, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "two_variable"
+  let rest = $2.value - $3.value
+  require rest >= 1
+  require gcd($4.value, abs($5.value)) = 1
+  text = "Find the coefficient of [`x" ++ cond($3.value = 1, "", "^{" ++ str($3.value) ++ "}") ++ " y"
+         ++ cond(rest = 1, "", "^{" ++ str(rest) ++ "}") ++ "`] in the expansion of [`\left(" ++ str($4.value) ++ "x"
+         ++ cond($5.value > 0, " + ", " - ") ++ cond(abs($5.value) = 1, "", str(abs($5.value))) ++ "y\right)^{"
+         ++ str($2.value) ++ "}`]."
+  answer_value = choose($2.value, $3.value) * $4.value ^ $3.value * $5.value ^ rest
+  mistake bare_coefficient answer_value = choose($2.value, $3.value)
+  mistake powers_swapped answer_value = choose($2.value, $3.value) * $4.value ^ rest * $5.value ^ $3.value
+}
+
+# Putting x = 1 adds the coefficients up.
+Q -> "coefficient_sum" integer_between(3, 7) integer_between(2, 4) nonzero_integer_between(-5, 3) when cost = 2 {
+  cost = -2
+  kind = "coefficient_sum"
+  require $3.value + $4.value != 0 and abs($3.value + $4.value) != 1
+  text = "Find the sum of all the coefficients in the expansion of [`\left("
+         ++ str($3.value) ++ "x" ++ cond($4.value > 0, " + ", " - ") ++ str(abs($4.value)) ++ "\right)^{" ++ str($2.value) ++ "}`]."
+  answer_value = ($3.value + $4.value) ^ $2.value
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# The term with b^k has x to the power p (n - k) - q k, which is zero for
+# k = p n / (p + q): n is a multiple of p + q.
+Q -> "constant_term" integer_between(1, 2) integer_between(1, 2) integer_between(2, 4) integer_between(1, 3) nonzero_integer_between(-3, 3) when cost = 3 weight 2 {
+  cost = -3
+  kind = "constant_term"
+  let p = $2.value
+  let q = $3.value
+  let n = (p + q) * cond(p + q = 2, $4.value, $4.value - 1)
+  let k = p * n / (p + q)
+  require p + q <= 3
+  require $5.value != 1 or abs($6.value) != 1
+  text = "Find the term independent of [`x`] in the expansion of [`\left("
+         ++ cond($5.value = 1, "", str($5.value)) ++ "x" ++ cond(p = 1, "", "^{" ++ str(p) ++ "}")
+         ++ cond($6.value > 0, " + ", " - ") ++ "\frac{" ++ str(abs($6.value)) ++ "}{x" ++ cond(q = 1, "", "^{" ++ str(q) ++ "}")
+         ++ "}\right)^{" ++ str(n) ++ "}`]."
+  answer_value = choose(n, k) * $5.value ^ (n - k) * $6.value ^ k
+  mistake bare_coefficient answer_value = choose(n, k)
+  mistake powers_swapped answer_value = choose(n, k) * $5.value ^ k * $6.value ^ (n - k)
+}
+
+# x^k comes from c times the x^k of the power and from d x times its x^(k-1).
+# The two can cancel, and then there is no such term to ask for; and the
+# first bracket is not a multiple of the second, which would make the
+# product a power.
+Q -> "product_coefficient" integer_between(4, 7) integer_between(2, 4) nonzero_integer_between(-3, 3) nonzero_integer_between(-4, 4) nonzero_integer_between(-4, 4) when cost = 3 weight 2 {
+  cost = -3
+  kind = "product_coefficient"
+  require $3.value <= $2.value - 1
+  require abs($4.value) != 1
+  require $6.value != $5.value * $4.value
+  let both = $5.value * choose($2.value, $3.value) * $4.value ^ $3.value
+             + $6.value * choose($2.value, $3.value - 1) * $4.value ^ ($3.value - 1)
+  require both != 0
+  text = "Find the coefficient of [`x^{" ++ str($3.value) ++ "}`] in the expansion of [`\left("
+         ++ str($5.value) ++ cond($6.value > 0, " + ", " - ") ++ cond(abs($6.value) = 1, "", str(abs($6.value)))
+         ++ "x\right)\left(1" ++ cond($4.value > 0, " + ", " - ") ++ str(abs($4.value)) ++ "x\right)^{" ++ str($2.value) ++ "}`]."
+  answer_value = both
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

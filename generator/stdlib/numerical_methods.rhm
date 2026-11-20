@@ -1,0 +1,161 @@
+# ==========================================================================
+#  Numerical methods
+#
+#  A few steps of the methods of a first course, worked exactly: Newton's
+#  method and bisection for a square root, the trapezoidal rule and
+#  Simpson's rule for an integral, and Euler's method for an initial value
+#  problem. Every answer is exact, a fraction or a whole number: the steps
+#  are 1 or 1/2 and nothing is rounded on the way.
+#
+#  Simpson's rule is asked of c / (x + d), which it does not integrate
+#  exactly, and the trapezoidal rule of a polynomial of degree 2 or 3: in
+#  both the estimate differs from the integral, so integrating instead
+#  gives another number.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  one step of Newton's method for x^2 - a = 0, the trapezoidal rule
+#       with two strips
+#    2  two steps of Newton's method, the third midpoint of a bisection,
+#       the trapezoidal rule with four strips, two steps of Euler's method
+#       for y' = a x + b y
+#    3  Simpson's rule with four strips, two steps of Euler's method for
+#       y' = a x + y^2 or a x - y^2
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# x^2 - a = 0 and a whole starting value next to the root: `radicand` is a,
+# within 3 of the square of the start and not a square itself.
+synth start_value on S
+synth radicand on S
+
+# A step: 1 or 1/2.
+synth value on H
+
+start Q
+
+S -> integer_between(2, 8) nonzero_integer_between(-3, 3) {
+  require $1.value ^ 2 + $2.value > ($1.value - 1) ^ 2
+  start_value = $1.value
+  radicand = $1.value ^ 2 + $2.value
+}
+
+H -> integer_between(1, 2) {
+  value = 1 / $1.value
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# x - (x^2 - a) / (2x) is (x^2 + a) / (2x).
+Q -> "newton_one" S when cost = 1 {
+  cost = -1
+  kind = "newton_one"
+  text = "Newton's method is used to solve [`x^{2} - " ++ str($2.radicand) ++ " = 0`], starting from [`x_0 = "
+         ++ str($2.start_value) ++ "`]. Find [`x_1`] exactly, as a fraction."
+  answer_value = ($2.start_value ^ 2 + $2.radicand) / (2 * $2.start_value)
+}
+
+Q -> "trapezoid_two" nonzero_integer_between(-3, 3) integer_between(-4, 4) integer_between(-5, 5) integer_between(-2, 2) H when cost = 1 {
+  cost = -1
+  kind = "trapezoid_two"
+  let f = polynomial_quadratic($2.value, $3.value, $4.value, "x")
+  let h = $6.value
+  let lower = $5.value
+  text = "Estimate [`\int_{" ++ number_latex(lower) ++ "}^{" ++ number_latex(lower + 2 * h) ++ "} \left(" ++ polynomial_latex(f)
+         ++ "\right) \, dx`] by the trapezoidal rule with [`2`] strips of equal width. Give the exact value of the estimate."
+  answer_value = h / 2 * (polynomial_evaluate(f, lower) + 2 * polynomial_evaluate(f, lower + h) + polynomial_evaluate(f, lower + 2 * h))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+Q -> "newton_two" S when cost = 2 {
+  cost = -2
+  kind = "newton_two"
+  let first = ($2.start_value ^ 2 + $2.radicand) / (2 * $2.start_value)
+  text = "Newton's method is used to solve [`x^{2} - " ++ str($2.radicand) ++ " = 0`], starting from [`x_0 = "
+         ++ str($2.start_value) ++ "`]. Find [`x_2`] exactly, as a fraction."
+  answer_value = (first ^ 2 + $2.radicand) / (2 * first)
+}
+
+# The root of x^2 - a lies between k and k + 1. A midpoint is never the
+# root (its square is not whole), so each step keeps one half.
+Q -> "bisection" integer_between(1, 7) integer_between(1, 14) when cost = 2 {
+  cost = -2
+  kind = "bisection"
+  require $3.value <= 2 * $2.value
+  let a = $2.value ^ 2 + $3.value
+  let first = $2.value + 1 / 2
+  let lower = cond(first ^ 2 > a, $2.value, first)
+  let second = lower + 1 / 4
+  let lower_again = cond(second ^ 2 > a, lower, second)
+  text = "The bisection method is used to find the root of [`f(x) = x^{2} - " ++ str(a) ++ "`] between [`" ++ str($2.value)
+         ++ "`] and [`" ++ str($2.value + 1) ++ "`]. The first midpoint it tries is [`" ++ number_latex(first)
+         ++ "`]. Find the third midpoint it tries, exactly."
+  answer_value = lower_again + 1 / 8
+}
+
+Q -> "trapezoid_four" nonzero_integer_between(-2, 2) integer_between(-3, 3) integer_between(-4, 4) integer_between(-5, 5) integer_between(-2, 1) H when cost = 2 {
+  cost = -2
+  kind = "trapezoid_four"
+  let f = polynomial_add(polynomial_monomial($2.value, 3, "x"), polynomial_quadratic($3.value, $4.value, $5.value, "x"))
+  let h = $7.value
+  let lower = $6.value
+  # the rule is exact for a cubic whose slope is the same at both ends
+  require 3 * $2.value * (2 * lower + 4 * h) + 2 * $3.value != 0
+  text = "Estimate [`\int_{" ++ number_latex(lower) ++ "}^{" ++ number_latex(lower + 4 * h) ++ "} \left(" ++ polynomial_latex(f)
+         ++ "\right) \, dx`] by the trapezoidal rule with [`4`] strips of equal width. Give the exact value of the estimate."
+  answer_value = h / 2 * (polynomial_evaluate(f, lower) + 2 * polynomial_evaluate(f, lower + h) + 2 * polynomial_evaluate(f, lower + 2 * h)
+                          + 2 * polynomial_evaluate(f, lower + 3 * h) + polynomial_evaluate(f, lower + 4 * h))
+}
+
+# y_1 = y_0 + h f(0, y_0) and y_2 = y_1 + h f(h, y_1), with h = 1/2. A first
+# step that lands on 0 is not asked: the second would not use y at all.
+Q -> "euler_linear" nonzero_integer_between(-3, 3) nonzero_integer_between(-2, 2) nonzero_integer_between(-3, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "euler_linear"
+  let h = 1 / 2
+  let first = $4.value + h * $3.value * $4.value
+  require first != 0
+  text = "Euler's method with the step [`h = \frac{1}{2}`] is applied to [`y' = "
+         ++ polynomial_latex(polynomial_linear($2.value, 0, "x")) ++ cond($3.value > 0, " + ", " - ")
+         ++ polynomial_latex(polynomial_linear(abs($3.value), 0, "y")) ++ "`] with [`y(0) = " ++ str($4.value)
+         ++ "`]. Find the estimate it gives for [`y(1)`], exactly."
+  answer_value = first + h * ($2.value * h + $3.value * first)
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# x + d runs over u, u + h, ..., u + 4h, all positive.
+Q -> "simpson" integer_between(1, 12) integer_between(1, 3) integer_between(0, 3) H when cost = 3 weight 2 {
+  cost = -3
+  kind = "simpson"
+  let h = $5.value
+  let u = $3.value
+  let lower = u - $4.value
+  text = "Estimate [`\int_{" ++ number_latex(lower) ++ "}^{" ++ number_latex(lower + 4 * h) ++ "} \frac{" ++ str($2.value) ++ "}{"
+         ++ cond($4.value = 0, "x", "x + " ++ str($4.value))
+         ++ "} \, dx`] by Simpson's rule with [`4`] strips of equal width. Give the exact value of the estimate."
+  answer_value = h / 3 * ($2.value / u + 4 * $2.value / (u + h) + 2 * $2.value / (u + 2 * h) + 4 * $2.value / (u + 3 * h)
+                          + $2.value / (u + 4 * h))
+}
+
+Q -> "euler_quadratic" nonzero_integer_between(-2, 2) nonzero_integer_between(-1, 1) nonzero_integer_between(-2, 2) when cost = 3 {
+  cost = -3
+  kind = "euler_quadratic"
+  let h = 1 / 2
+  let first = $4.value + h * $3.value * $4.value ^ 2
+  require first != 0
+  text = "Euler's method with the step [`h = \frac{1}{2}`] is applied to [`y' = "
+         ++ polynomial_latex(polynomial_linear($2.value, 0, "x")) ++ cond($3.value > 0, " + ", " - ")
+         ++ "y^{2}`] with [`y(0) = " ++ str($4.value) ++ "`]. Find the estimate it gives for [`y(1)`], exactly."
+  answer_value = first + h * ($2.value * h + $3.value * first ^ 2)
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

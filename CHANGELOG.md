@@ -106,6 +106,20 @@ is announced one version before the removal.
   ask (a pipe, a redirection, `--plain`) these are the errors they were.
 - **Hints.** An unknown option or command is reported with the one it is
   nearest to: `unknown option --studnt (did you mean --student?)`.
+- **Six question types.** `probability.rhm` (the addition rule,
+  independent events, conditional probability, total probability and
+  Bayes' rule), `modular_arithmetic.rhm` (Euler's function, divisors,
+  simultaneous congruences, an RSA key), `graph_theory.rhm` (edges from
+  degrees, trees and forests, walks from the adjacency matrix, the faces of
+  a planar graph), `binomial_theorem.rhm` (a coefficient of a power of a
+  bracket, a term independent of `x`, a product), `numerical_methods.rhm`
+  (Newton's method, bisection, the trapezoidal rule, Simpson's rule and
+  Euler's method, worked exactly) and `lines_planes.rhm` (planes, lines,
+  distances, feet of perpendiculars and reflections in space). Each has
+  fixed forms at prices 1 to 3 and a default budget of 2, uses the existing
+  builtins only, and has a test that recomputes its answers from the
+  printed question. `probability.rhm` and `binomial_theorem.rhm` declare
+  two mistakes each. The library now has 52 files.
 - **Changed.** `--count` with a negative number is an error of the command
   line (status 2); it was `rhema: error: List.init`. The "not run through
   WeBWorK" line of the summary is said only where PG was written. In the

@@ -37,7 +37,8 @@ from there.
 This installs version 0.2.0: the `rhema` command and a
 [library of grammars](reference/library.md) for arithmetic, algebra,
 calculus, propositional logic, sets, vectors, complex numbers, sequences,
-linear algebra, counting, number theory and statistics.
+linear algebra, counting, number theory, graphs, probability and
+statistics.
 
 !!! note
     0.2.0 was released on 2026-11-16. Until the opam repository has accepted

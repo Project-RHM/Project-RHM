@@ -1,0 +1,163 @@
+# ==========================================================================
+#  Graphs
+#
+#  Counting in graphs: edges from degrees (the handshake lemma), the edges
+#  of complete graphs and of forests, the leaves of a tree, walks counted
+#  with powers of the adjacency matrix, and the faces of a planar graph by
+#  Euler's formula.
+#
+#  A list of degrees is read off a graph that was built first, edge by
+#  edge, so there is always a graph with those degrees. An adjacency matrix
+#  is of a graph on four vertices with at least four edges, which makes it
+#  connected. The regular planar graphs asked about exist: every vertex of
+#  degree 3 on 6, 8, ..., 20 vertices (the prisms), or of degree 4 on 6, 8,
+#  10 or 12 vertices (the antiprisms, the octahedron being the first).
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the edges of a graph from its degrees, of a complete graph, of a
+#       complete bipartite graph, of a forest
+#    2  a degree missing from a list, the leaves of a tree, the walks of
+#       length 2 between two vertices
+#    3  the faces of a regular planar graph, the walks of length 3 between
+#       two vertices
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A graph on five vertices: ten places for an edge, each taken or not.
+synth edges on G
+synth d1 on G
+synth d2 on G
+synth d3 on G
+synth d4 on G
+synth d5 on G
+
+# A graph on four vertices, as its adjacency matrix.
+synth matrix on H
+
+start Q
+
+G -> integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) {
+  # the children are the edges 12 13 14 15 23 24 25 34 35 45
+  let first = $1.value + $2.value + $3.value + $4.value
+  let second = $1.value + $5.value + $6.value + $7.value
+  let third = $2.value + $5.value + $8.value + $9.value
+  let fourth = $3.value + $6.value + $8.value + $10.value
+  let fifth = $4.value + $7.value + $9.value + $10.value
+  require first >= 1 and second >= 1 and third >= 1 and fourth >= 1 and fifth >= 1
+  d1 = first
+  d2 = second
+  d3 = third
+  d4 = fourth
+  d5 = fifth
+  edges = (first + second + third + fourth + fifth) / 2
+}
+
+H -> integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) {
+  # the children are the edges 12 13 14 23 24 34; with four of the six no
+  # vertex is left out, since three vertices have only three edges between them
+  require $1.value + $2.value + $3.value + $4.value + $5.value + $6.value >= 4
+  matrix = matrix_stack(matrix_row(vector4(0, $1.value, $2.value, $3.value)),
+           matrix_stack(matrix_row(vector4($1.value, 0, $4.value, $5.value)),
+           matrix_stack(matrix_row(vector4($2.value, $4.value, 0, $6.value)),
+                        matrix_row(vector4($3.value, $5.value, $6.value, 0)))))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+Q -> "handshake" G when cost = 1 weight 2 {
+  cost = -1
+  kind = "handshake"
+  text = "A graph has five vertices, of degrees [`" ++ str($2.d1) ++ ", " ++ str($2.d2) ++ ", " ++ str($2.d3) ++ ", "
+         ++ str($2.d4) ++ ", " ++ str($2.d5) ++ "`]. How many edges does it have?"
+  answer_value = $2.edges
+}
+
+Q -> "complete" integer_between(5, 20) when cost = 1 {
+  cost = -1
+  kind = "complete"
+  text = "How many edges does the complete graph [`K_{" ++ str($2.value) ++ "}`] have?"
+  answer_value = $2.value * ($2.value - 1) / 2
+}
+
+Q -> "complete_bipartite" integer_between(2, 9) integer_between(2, 9) when cost = 1 {
+  cost = -1
+  kind = "complete_bipartite"
+  require $2.value <= $3.value
+  text = "How many edges does the complete bipartite graph [`K_{" ++ str($2.value) ++ "," ++ str($3.value) ++ "}`] have?"
+  answer_value = $2.value * $3.value
+}
+
+Q -> "forest" integer_between(8, 30) integer_between(2, 6) when cost = 1 {
+  cost = -1
+  kind = "forest"
+  text = "A forest (a graph with no cycles) has [`" ++ str($2.value) ++ "`] vertices and [`" ++ str($3.value)
+         ++ "`] connected components. How many edges does it have?"
+  answer_value = $2.value - $3.value
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+Q -> "missing_degree" G when cost = 2 {
+  cost = -2
+  kind = "missing_degree"
+  text = "A graph has five vertices and [`" ++ str($2.edges) ++ "`] edges. Four of its vertices have the degrees [`"
+         ++ str($2.d1) ++ ", " ++ str($2.d2) ++ ", " ++ str($2.d3) ++ ", " ++ str($2.d4)
+         ++ "`]. Find the degree of the fifth vertex."
+  answer_value = $2.d5
+}
+
+# The degrees of a tree add up to twice its edges, 2 (n - 1): with the
+# leaves counted as L, 4a + 3b + 2c + L = 2 (a + b + c + L - 1).
+Q -> "tree_leaves" integer_between(2, 5) integer_between(2, 6) integer_between(2, 6) when cost = 2 {
+  cost = -2
+  kind = "tree_leaves"
+  text = "A tree has [`" ++ str($2.value) ++ "`] vertices of degree [`4`], [`" ++ str($3.value)
+         ++ "`] vertices of degree [`3`] and [`" ++ str($4.value)
+         ++ "`] vertices of degree [`2`]. All its other vertices are leaves, of degree [`1`]. How many leaves does it have?"
+  answer_value = 2 * $2.value + $3.value + 2
+}
+
+Q -> "walks_two" H integer_between(1, 4) integer_between(1, 4) when cost = 2 weight 2 {
+  cost = -2
+  kind = "walks_two"
+  let count = matrix_entry(matrix_multiply($2.matrix, $2.matrix), $3.value, $4.value)
+  require count >= 1
+  text = "A graph on the vertices [`1, 2, 3, 4`] has the adjacency matrix [`A = " ++ matrix_latex($2.matrix)
+         ++ "`]. How many walks of length [`2`] are there from vertex [`" ++ str($3.value) ++ "`] to vertex [`"
+         ++ str($4.value) ++ "`]? A walk may use a vertex or an edge more than once."
+  answer_value = count
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# V - E + F = 2 with E = V d / 2.
+Q -> "planar_faces" integer_between(3, 4) integer_between(3, 10) when cost = 3 {
+  cost = -3
+  kind = "planar_faces"
+  let vertices = 2 * $3.value
+  require $2.value = 3 or vertices <= 12
+  text = "A connected graph has [`" ++ str(vertices) ++ "`] vertices, each of degree [`" ++ str($2.value)
+         ++ "`], and is drawn in the plane with no two edges crossing. Into how many regions (faces) does the drawing divide the plane, counting the unbounded one?"
+  answer_value = vertices * $2.value / 2 - vertices + 2
+}
+
+Q -> "walks_three" H integer_between(1, 4) integer_between(1, 4) when cost = 3 {
+  cost = -3
+  kind = "walks_three"
+  let count = matrix_entry(matrix_multiply($2.matrix, matrix_multiply($2.matrix, $2.matrix)), $3.value, $4.value)
+  require count >= 1
+  text = "A graph on the vertices [`1, 2, 3, 4`] has the adjacency matrix [`A = " ++ matrix_latex($2.matrix)
+         ++ "`]. How many walks of length [`3`] are there from vertex [`" ++ str($3.value) ++ "`] to vertex [`"
+         ++ str($4.value) ++ "`]? A walk may use a vertex or an edge more than once."
+  answer_value = count
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

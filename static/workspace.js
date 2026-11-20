@@ -14,13 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
         definite_integral:'Calculus and sequences', derivative_applications:'Calculus and sequences',
         differential_equation:'Calculus and sequences', recurrence:'Calculus and sequences',
         taylor:'Calculus and sequences', partial_derivatives:'Calculus and sequences',
+        numerical_methods:'Calculus and sequences',
         complex:'Vectors and linear algebra', vector:'Vectors and linear algebra', vector_expr:'Vectors and linear algebra',
         determinant:'Vectors and linear algebra', eigen:'Vectors and linear algebra', linear_system:'Vectors and linear algebra',
         matrix_expr:'Vectors and linear algebra', matrix_inverse:'Vectors and linear algebra',
-        row_reduction:'Vectors and linear algebra',
+        row_reduction:'Vectors and linear algebra', lines_planes:'Vectors and linear algebra',
         counting:'Other topics', number_theory:'Other topics', inequality:'Other topics',
         analytic_geometry:'Other topics', statistics:'Other topics',
-        base_conversion:'Other topics', trigonometry:'Other topics'
+        base_conversion:'Other topics', trigonometry:'Other topics',
+        probability:'Other topics', modular_arithmetic:'Other topics', graph_theory:'Other topics',
+        binomial_theorem:'Arithmetic and algebra'
     };
     const translated = value => window.RhemaI18n?.t(value) || value;
     function updateSelection() {
