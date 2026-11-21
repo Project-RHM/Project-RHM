@@ -1,0 +1,182 @@
+# ==========================================================================
+#  Markov chains
+#
+#  A chain with two states told as a story (a day is sunny or rainy, and
+#  tomorrow depends on today alone), a chain with three states given by its
+#  transition matrix, and a walk that stops at either end of a short line.
+#  Every probability is a fraction, and every answer is exact.
+#
+#  The two probabilities of the story are different, so today's weather
+#  says something about tomorrow's. A row of the matrix is three whole
+#  numbers of quarters that add up to one.
+#
+#  One mistake is looked for: reading the transition matrix the wrong way
+#  round, a column for where the chain goes from a state. A question is
+#  asked only where that gives another number.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the probability of the next two days in order; tomorrow from a
+#       forecast for today
+#    2  the weather two days ahead; the long-run share of sunny days; the
+#       expected length of a run of days of one kind
+#    3  the weather three days ahead; two steps of a chain with three
+#       states from its matrix; the chance that a walk on a line reaches
+#       the top before the bottom
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake transposed "reads the matrix the wrong way round: a column for where the chain goes from a state"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A probability strictly between 0 and 1, in lowest terms.
+synth value on F
+
+# The weather: `stay` is the probability of a sunny day after a sunny one
+# and `turn` that of a sunny day after a rainy one.
+synth stay on C
+synth turn on C
+synth story on C
+
+# A row of a transition matrix: three numbers of quarters.
+synth first on W
+synth second on W
+synth third on W
+
+start Q
+
+F -> integer_between(1, 4) integer_between(2, 5) {
+  require $1.value < $2.value
+  require gcd($1.value, $2.value) = 1
+  value = $1.value / $2.value
+}
+
+C -> F F {
+  require $1.value != $2.value
+  stay = $1.value
+  turn = $2.value
+  story = "Each day in a town is sunny or rainy. After a sunny day the next day is sunny with probability [`"
+          ++ number_latex($1.value) ++ "`], and after a rainy day the next day is sunny with probability [`"
+          ++ number_latex($2.value) ++ "`]."
+}
+
+W -> integer_between(0, 4) integer_between(0, 4) {
+  require $1.value + $2.value <= 4
+  first = $1.value / 4
+  second = $2.value / 4
+  third = (4 - $1.value - $2.value) / 4
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The children after the chain say whether today, tomorrow and the day
+# after are sunny (1) or rainy (0).
+Q -> "path" C integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) when cost = 1 weight 2 {
+  cost = -1
+  kind = "path"
+  let sunny_next = cond($3.value = 1, $2.stay, $2.turn)
+  let step_one = cond($4.value = 1, sunny_next, 1 - sunny_next)
+  let sunny_after = cond($4.value = 1, $2.stay, $2.turn)
+  let step_two = cond($5.value = 1, sunny_after, 1 - sunny_after)
+  text = $2.story ++ " Today is " ++ cond($3.value = 1, "sunny", "rainy") ++ ". Find the probability that tomorrow is "
+         ++ cond($4.value = 1, "sunny", "rainy") ++ " and the day after tomorrow is " ++ cond($5.value = 1, "sunny", "rainy") ++ "."
+  answer_value = step_one * step_two
+}
+
+Q -> "forecast" C F when cost = 1 {
+  cost = -1
+  kind = "forecast"
+  text = $2.story ++ " The forecast says that today is sunny with probability [`" ++ number_latex($3.value)
+         ++ "`]. Find the probability that tomorrow is sunny."
+  answer_value = $3.value * $2.stay + (1 - $3.value) * $2.turn
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+Q -> "two_days" C integer_between(0, 1) integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = "two_days"
+  let sunny_next = cond($3.value = 1, $2.stay, $2.turn)
+  let sunny_after = sunny_next * $2.stay + (1 - sunny_next) * $2.turn
+  text = $2.story ++ " Today is " ++ cond($3.value = 1, "sunny", "rainy") ++ ". Find the probability that the day after tomorrow is "
+         ++ cond($4.value = 1, "sunny", "rainy") ++ "."
+  answer_value = cond($4.value = 1, sunny_after, 1 - sunny_after)
+}
+
+# The share s of sunny days is left as it is by one more day:
+# s = s stay + (1 - s) turn.
+Q -> "long_run" C integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = "long_run"
+  let sunny_share = $2.turn / (1 - $2.stay + $2.turn)
+  text = $2.story ++ " In the long run, what fraction of the days is " ++ cond($3.value = 1, "sunny", "rainy") ++ "?"
+  answer_value = cond($3.value = 1, sunny_share, 1 - sunny_share)
+}
+
+# A run ends each day with the same probability, so its expected length is
+# one over that probability.
+Q -> "run_length" C integer_between(0, 1) when cost = 2 {
+  cost = -2
+  kind = "run_length"
+  text = $2.story ++ " Today is the first " ++ cond($3.value = 1, "sunny", "rainy") ++ " day after a "
+         ++ cond($3.value = 1, "rainy", "sunny") ++ " one. Find the expected number of " ++ cond($3.value = 1, "sunny", "rainy")
+         ++ " days in a row, today included, before the weather changes."
+  answer_value = cond($3.value = 1, 1 / (1 - $2.stay), 1 / $2.turn)
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+Q -> "three_days" C integer_between(0, 1) integer_between(0, 1) when cost = 3 {
+  cost = -3
+  kind = "three_days"
+  let sunny_next = cond($3.value = 1, $2.stay, $2.turn)
+  let sunny_after = sunny_next * $2.stay + (1 - sunny_next) * $2.turn
+  let sunny_third = sunny_after * $2.stay + (1 - sunny_after) * $2.turn
+  text = $2.story ++ " Today is " ++ cond($3.value = 1, "sunny", "rainy") ++ ". Find the probability that it is "
+         ++ cond($4.value = 1, "sunny", "rainy") ++ " three days from today."
+  answer_value = cond($4.value = 1, sunny_third, 1 - sunny_third)
+}
+
+# The entry of the square of the matrix in the row of the state now and the
+# column of the state asked for. A step that is certain, or cannot happen,
+# is not asked, nor one whose probability is the entry of the matrix
+# itself: reading one step off the matrix would then be marked right.
+Q -> "matrix_two_steps" W W W integer_between(1, 3) integer_between(1, 3) when cost = 3 weight 2 {
+  cost = -3
+  kind = "matrix_two_steps"
+  let chain = matrix3($2.first, $2.second, $2.third, $3.first, $3.second, $3.third, $4.first, $4.second, $4.third)
+  let squared = matrix_multiply(chain, chain)
+  require $5.value != $6.value
+  require matrix_entry(squared, $5.value, $6.value) > 0 and matrix_entry(squared, $5.value, $6.value) < 1
+  require matrix_entry(squared, $5.value, $6.value) != matrix_entry(chain, $5.value, $6.value)
+  require matrix_entry(squared, $5.value, $6.value) != matrix_entry(squared, $6.value, $5.value)
+  text = "A Markov chain on the states [`1`], [`2`] and [`3`] has the transition matrix [`P = " ++ matrix_latex(chain)
+         ++ "`], in which the entry in row [`i`] and column [`j`] is the probability of going from state [`i`] to state [`j`] in one step. The chain is in state [`"
+         ++ str($5.value) ++ "`] now. Find the probability that it is in state [`" ++ str($6.value) ++ "`] after two steps."
+  answer_value = matrix_entry(squared, $5.value, $6.value)
+  mistake transposed answer_value = matrix_entry(squared, $6.value, $5.value)
+}
+
+# With r = (1 - p) / p, the chance of reaching the top from position i is
+# (1 + r + ... + r^(i-1)) / (1 + r + ... + r^(n-1)); for p = 1/2 this is
+# i / n.
+Q -> "ruin" integer_between(3, 4) integer_between(1, 3) F when cost = 3 weight 2 {
+  cost = -3
+  kind = "ruin"
+  require $3.value < $2.value
+  let ratio = (1 - $4.value) / $4.value
+  let reached = cond($3.value = 1, 1, cond($3.value = 2, 1 + ratio, 1 + ratio + ratio ^ 2))
+  let all = 1 + ratio + ratio ^ 2 + cond($2.value = 4, ratio ^ 3, 0)
+  text = "A counter moves on the positions [`0, 1, \ldots, " ++ str($2.value) ++ "`]. At each step it moves up by one with probability [`"
+         ++ number_latex($4.value) ++ "`] and down by one otherwise, and it stops when it reaches [`0`] or [`" ++ str($2.value)
+         ++ "`]. It starts at [`" ++ str($3.value) ++ "`]. Find the probability that it stops at [`" ++ str($2.value) ++ "`]."
+  answer_value = reached / all
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

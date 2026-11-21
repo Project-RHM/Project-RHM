@@ -1,0 +1,208 @@
+# ==========================================================================
+#  Relations and functions on finite sets
+#
+#  Counting the relations and the functions between two finite sets, and
+#  working with one relation on {1, 2, 3} given by its pairs: what has to be
+#  added to make it symmetric, the composite of two relations, and the
+#  transitive closure. Every answer is a whole number.
+#
+#  A relation is drawn pair by pair, each of the nine pairs taken or not,
+#  and is kept when it has three to six pairs. Its pairs are listed in
+#  order, and its matrix of 0s and 1s does the work: the matrix of a
+#  composite is a product, and that of a closure a sum of powers.
+#
+#  Two mistakes are looked for: taking the two sets of a function the wrong
+#  way round, m^n for n^m, and forgetting that a symmetric relation is free
+#  to hold any pair (a, a) or not. A question is asked only where the
+#  mistake gives another number.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the number of relations, of functions and of one-to-one functions
+#       from one set to another
+#    2  the number of reflexive and of symmetric relations on a set, the
+#       number of functions onto a set of two or three, the pairs missing
+#       from a symmetric relation, the pairs of an equivalence relation
+#       from the sizes of its classes
+#    3  the number of pairs in a composite and in a transitive closure, the
+#       number of equivalence relations with exactly two classes
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake sets_swapped "takes the two sets the wrong way round: m^n functions where there are n^m"
+mistake diagonal_forgotten "counts the pairs of two different elements only, and forgets that each pair (a, a) is free as well"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A relation on {1, 2, 3}: its matrix, whose entry in row a and column b is
+# 1 when (a, b) belongs to it, its pairs written out, and how many they
+# are.
+synth matrix on R
+synth listing on R
+synth size on R
+
+start Q
+
+R -> integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) {
+  # the children are the pairs 11 12 13 21 22 23 31 32 33; `before_n` counts
+  # the pairs taken before the n-th, which says whether a comma is due
+  let before_2 = $1.value
+  let before_3 = before_2 + $2.value
+  let before_4 = before_3 + $3.value
+  let before_5 = before_4 + $4.value
+  let before_6 = before_5 + $5.value
+  let before_7 = before_6 + $6.value
+  let before_8 = before_7 + $7.value
+  let before_9 = before_8 + $8.value
+  require before_9 + $9.value >= 3 and before_9 + $9.value <= 6
+  matrix = matrix3($1.value, $2.value, $3.value, $4.value, $5.value, $6.value, $7.value, $8.value, $9.value)
+  size = before_9 + $9.value
+  listing = cond($1.value = 1, "(1, 1)", "")
+            ++ cond($2.value = 1, cond(before_2 > 0, ", ", "") ++ "(1, 2)", "")
+            ++ cond($3.value = 1, cond(before_3 > 0, ", ", "") ++ "(1, 3)", "")
+            ++ cond($4.value = 1, cond(before_4 > 0, ", ", "") ++ "(2, 1)", "")
+            ++ cond($5.value = 1, cond(before_5 > 0, ", ", "") ++ "(2, 2)", "")
+            ++ cond($6.value = 1, cond(before_6 > 0, ", ", "") ++ "(2, 3)", "")
+            ++ cond($7.value = 1, cond(before_7 > 0, ", ", "") ++ "(3, 1)", "")
+            ++ cond($8.value = 1, cond(before_8 > 0, ", ", "") ++ "(3, 2)", "")
+            ++ cond($9.value = 1, cond(before_9 > 0, ", ", "") ++ "(3, 3)", "")
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# Each of the m n pairs is in the relation or not.
+Q -> "count_relations" integer_between(2, 3) integer_between(2, 3) when cost = 1 {
+  cost = -1
+  kind = "count_relations"
+  text = "The set [`A`] has [`" ++ str($2.value) ++ "`] elements and the set [`B`] has [`" ++ str($3.value)
+         ++ "`]. How many relations are there from [`A`] to [`B`]?"
+  answer_value = 2 ^ ($2.value * $3.value)
+}
+
+# Each of the m elements of A is given one of the n elements of B.
+Q -> "count_functions" integer_between(2, 5) integer_between(2, 5) when cost = 1 weight 2 {
+  cost = -1
+  kind = "count_functions"
+  require $3.value ^ $2.value != $2.value ^ $3.value
+  text = "The set [`A`] has [`" ++ str($2.value) ++ "`] elements and the set [`B`] has [`" ++ str($3.value)
+         ++ "`]. How many functions are there from [`A`] to [`B`]?"
+  answer_value = $3.value ^ $2.value
+  mistake sets_swapped answer_value = $2.value ^ $3.value
+}
+
+Q -> "injections" integer_between(2, 4) integer_between(3, 7) when cost = 1 {
+  cost = -1
+  kind = "injections"
+  require $2.value < $3.value
+  text = "The set [`A`] has [`" ++ str($2.value) ++ "`] elements and the set [`B`] has [`" ++ str($3.value)
+         ++ "`]. How many one-to-one functions are there from [`A`] to [`B`]?"
+  answer_value = permutations($3.value, $2.value)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The n pairs (a, a) must be there; the other n^2 - n are free.
+Q -> "reflexive_count" integer_between(2, 4) when cost = 2 {
+  cost = -2
+  kind = "reflexive_count"
+  text = "How many reflexive relations are there on a set with [`" ++ str($2.value) ++ "`] elements?"
+  answer_value = 2 ^ ($2.value ^ 2 - $2.value)
+}
+
+# The n pairs (a, a) are free, and so is each of the n (n - 1) / 2 pairs of
+# two different elements, taken together with its mirror image.
+Q -> "symmetric_count" integer_between(2, 4) when cost = 2 {
+  cost = -2
+  kind = "symmetric_count"
+  text = "How many symmetric relations are there on a set with [`" ++ str($2.value) ++ "`] elements?"
+  answer_value = 2 ^ ($2.value * ($2.value + 1) / 2)
+  mistake diagonal_forgotten answer_value = 2 ^ ($2.value * ($2.value - 1) / 2)
+}
+
+# All functions, less those that miss an element: 2^m - 2 onto a set of
+# two, and 3^m - 3 * 2^m + 3 onto a set of three.
+Q -> "surjections" integer_between(2, 3) integer_between(1, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "surjections"
+  let m = $2.value + $3.value
+  text = "The set [`A`] has [`" ++ str(m) ++ "`] elements and the set [`B`] has [`" ++ str($2.value)
+         ++ "`]. How many functions from [`A`] to [`B`] are onto, so that every element of [`B`] is the image of some element of [`A`]?"
+  answer_value = cond($2.value = 2, 2 ^ m - 2, 3 ^ m - 3 * 2 ^ m + 3)
+}
+
+# A pair (a, b) whose mirror image (b, a) is missing wants it added.
+Q -> "symmetric_closure" R when cost = 2 weight 2 {
+  cost = -2
+  kind = "symmetric_closure"
+  let missing = cond(matrix_entry($2.matrix, 1, 2) != matrix_entry($2.matrix, 2, 1), 1, 0)
+                + cond(matrix_entry($2.matrix, 1, 3) != matrix_entry($2.matrix, 3, 1), 1, 0)
+                + cond(matrix_entry($2.matrix, 2, 3) != matrix_entry($2.matrix, 3, 2), 1, 0)
+  require missing >= 1
+  text = "The relation [`R = \{" ++ $2.listing
+         ++ "\}`] is on the set [`\{1, 2, 3\}`]. What is the smallest number of pairs that must be added to [`R`] to make it symmetric?"
+  answer_value = missing
+}
+
+Q -> "equivalence_pairs" integer_between(1, 4) integer_between(1, 4) integer_between(1, 4) when cost = 2 {
+  cost = -2
+  kind = "equivalence_pairs"
+  require $2.value + $3.value + $4.value >= 5
+  text = "An equivalence relation on a set of [`" ++ str($2.value + $3.value + $4.value)
+         ++ "`] elements has three equivalence classes, of sizes [`" ++ str($2.value) ++ "`], [`" ++ str($3.value) ++ "`] and [`"
+         ++ str($4.value) ++ "`]. How many ordered pairs does the relation contain?"
+  answer_value = $2.value ^ 2 + $3.value ^ 2 + $4.value ^ 2
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# (a, c) is in the composite when some b has (a, b) in R and (b, c) in S:
+# the entry of the product of the two matrices in row a and column c is
+# then not 0.
+Q -> "composition" R R when cost = 3 weight 2 {
+  cost = -3
+  kind = "composition"
+  let both = matrix_multiply($2.matrix, $3.matrix)
+  require $2.listing != $3.listing
+  text = "On the set [`\{1, 2, 3\}`], let [`R = \{" ++ $2.listing ++ "\}`] and [`S = \{" ++ $3.listing
+         ++ "\}`]. The composite of [`R`] followed by [`S`] holds the pairs [`(a, c)`] for which there is a [`b`] with [`(a, b)`] in [`R`] and [`(b, c)`] in [`S`]. How many pairs does it hold?"
+  answer_value = cond(matrix_entry(both, 1, 1) > 0, 1, 0) + cond(matrix_entry(both, 1, 2) > 0, 1, 0)
+                 + cond(matrix_entry(both, 1, 3) > 0, 1, 0) + cond(matrix_entry(both, 2, 1) > 0, 1, 0)
+                 + cond(matrix_entry(both, 2, 2) > 0, 1, 0) + cond(matrix_entry(both, 2, 3) > 0, 1, 0)
+                 + cond(matrix_entry(both, 3, 1) > 0, 1, 0) + cond(matrix_entry(both, 3, 2) > 0, 1, 0)
+                 + cond(matrix_entry(both, 3, 3) > 0, 1, 0)
+}
+
+# On three elements a path needs at most three steps, so the closure is
+# where R, its square or its cube has an entry that is not 0. A relation
+# that is transitive already is not asked.
+Q -> "transitive_closure" R when cost = 3 weight 2 {
+  cost = -3
+  kind = "transitive_closure"
+  let twice = matrix_multiply($2.matrix, $2.matrix)
+  let reach = matrix_add($2.matrix, matrix_add(twice, matrix_multiply(twice, $2.matrix)))
+  let closed = cond(matrix_entry(reach, 1, 1) > 0, 1, 0) + cond(matrix_entry(reach, 1, 2) > 0, 1, 0)
+               + cond(matrix_entry(reach, 1, 3) > 0, 1, 0) + cond(matrix_entry(reach, 2, 1) > 0, 1, 0)
+               + cond(matrix_entry(reach, 2, 2) > 0, 1, 0) + cond(matrix_entry(reach, 2, 3) > 0, 1, 0)
+               + cond(matrix_entry(reach, 3, 1) > 0, 1, 0) + cond(matrix_entry(reach, 3, 2) > 0, 1, 0)
+               + cond(matrix_entry(reach, 3, 3) > 0, 1, 0)
+  require closed > $2.size
+  text = "The relation [`R = \{" ++ $2.listing
+         ++ "\}`] is on the set [`\{1, 2, 3\}`]. How many pairs does its transitive closure, the smallest transitive relation that contains [`R`], hold?"
+  answer_value = closed
+}
+
+# The elements are shared between two classes in 2^n ways; two of them
+# leave a class empty, and each relation is counted twice.
+Q -> "two_classes" integer_between(3, 8) when cost = 3 {
+  cost = -3
+  kind = "two_classes"
+  text = "How many equivalence relations on a set of [`" ++ str($2.value) ++ "`] elements have exactly two equivalence classes?"
+  answer_value = 2 ^ ($2.value - 1) - 1
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

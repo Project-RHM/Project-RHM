@@ -1,0 +1,155 @@
+# ==========================================================================
+#  Double integrals
+#
+#  Iterated integrals of a polynomial in x and y: over a rectangle, over a
+#  region whose inner limit is a line through the origin, and over a region
+#  described in words, where the limits have to be set up first (a triangle
+#  cut off by the axes, the region between a parabola and a line). Every
+#  integrand is a monomial c x^m y^n or a sum p x + q y (p x^2 + q y where
+#  an average value is asked), so every answer is an exact fraction or a
+#  whole number.
+#
+#  An integral or an average of a sum that comes to 0 is not asked: the two
+#  parts would cancel, and a wrong sign in one of them could not be told
+#  from a right answer of the other kind.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  a monomial or p x + q y over a rectangle
+#    2  an inner limit that is x or a multiple of x; the average value of a
+#       function over a rectangle
+#    3  a region given in words: the triangle cut off by the axes and a
+#       line, and the region between y = x^2 and y = k x
+# ==========================================================================
+
+attribute cost = 2 split
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# c x^m y^n, with at least one of the two variables in it. `shown` is its
+# text as an integrand: in brackets where it starts with a minus sign.
+synth scale on M
+synth x_power on M
+synth y_power on M
+synth latex on M
+synth shown on M
+
+# p x + q y, neither coefficient zero.
+synth x_part on L
+synth y_part on L
+synth latex on L
+
+start Q
+
+M -> nonzero_integer_between(-4, 6) integer_between(0, 2) integer_between(0, 2) {
+  require $2.value + $3.value >= 1
+  scale = $1.value
+  x_power = $2.value
+  y_power = $3.value
+  latex = cond($1.value = 1, "", cond($1.value = 0 - 1, "-", str($1.value)))
+          ++ cond($2.value = 0, "", cond($2.value = 1, "x", "x^{" ++ str($2.value) ++ "}"))
+          ++ cond($3.value = 0, "", cond($3.value = 1, "y", "y^{" ++ str($3.value) ++ "}"))
+  shown = cond($1.value < 0, "\left(" ++ latex ++ "\right)", latex)
+}
+
+L -> nonzero_integer_between(-4, 6) nonzero_integer_between(-4, 6) {
+  x_part = $1.value
+  y_part = $2.value
+  latex = cond($1.value = 1, "", cond($1.value = 0 - 1, "-", str($1.value))) ++ "x"
+          ++ cond($2.value > 0, " + ", " - ") ++ cond(abs($2.value) = 1, "", str(abs($2.value))) ++ "y"
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The two integrals separate: one in x from `lower` to `upper`, one in y
+# from 0 to `top`.
+Q -> "rectangle_monomial" M integer_between(0, 1) integer_between(1, 2) integer_between(1, 3) when cost = 1 {
+  cost = -1
+  kind = "rectangle_monomial"
+  let lower = $3.value
+  let upper = $3.value + $4.value
+  let top = $5.value
+  let across = (upper ^ ($2.x_power + 1) - lower ^ ($2.x_power + 1)) / ($2.x_power + 1)
+  let along = top ^ ($2.y_power + 1) / ($2.y_power + 1)
+  text = "Evaluate [`\int_{" ++ str(lower) ++ "}^{" ++ str(upper) ++ "} \int_{0}^{" ++ str(top) ++ "} " ++ $2.shown
+         ++ " \, dy \, dx`]."
+  answer_value = $2.scale * across * along
+}
+
+# p a^2 b / 2 + q a b^2 / 2.
+Q -> "rectangle_sum" L integer_between(1, 3) integer_between(1, 3) when cost = 1 {
+  cost = -1
+  kind = "rectangle_sum"
+  let whole = $2.x_part * $3.value ^ 2 * $4.value / 2 + $2.y_part * $3.value * $4.value ^ 2 / 2
+  require whole != 0
+  text = "Evaluate [`\int_{0}^{" ++ str($3.value) ++ "} \int_{0}^{" ++ str($4.value) ++ "} \left(" ++ $2.latex
+         ++ "\right) \, dy \, dx`]."
+  answer_value = whole
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The inner integral is p x^2 + q x^2 / 2, and the outer one (2p + q) a^3 / 6.
+Q -> "inner_variable" L integer_between(1, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "inner_variable"
+  require 2 * $2.x_part + $2.y_part != 0
+  text = "Evaluate [`\int_{0}^{" ++ str($3.value) ++ "} \int_{0}^{x} \left(" ++ $2.latex ++ "\right) \, dy \, dx`]."
+  answer_value = (2 * $2.x_part + $2.y_part) * $3.value ^ 3 / 6
+}
+
+# The inner integral of c x^m y^n up to k x is c k^(n+1) x^(m+n+1) / (n+1).
+Q -> "inner_line" M integer_between(2, 3) integer_between(1, 2) when cost = 2 weight 2 {
+  cost = -2
+  kind = "inner_line"
+  let total_power = $2.x_power + $2.y_power + 2
+  text = "Evaluate [`\int_{0}^{" ++ str($4.value) ++ "} \int_{0}^{" ++ str($3.value) ++ "x} " ++ $2.shown
+         ++ " \, dy \, dx`]."
+  answer_value = $2.scale * $3.value ^ ($2.y_power + 1) / ($2.y_power + 1) * $4.value ^ total_power / total_power
+}
+
+# The integral of p x^2 + q y over the rectangle, divided by its area:
+# p a^2 / 3 + q b / 2.
+Q -> "average" nonzero_integer_between(-3, 4) nonzero_integer_between(-4, 5) integer_between(1, 3) integer_between(1, 4) when cost = 2 {
+  cost = -2
+  kind = "average"
+  let mean = $2.value * $4.value ^ 2 / 3 + $3.value * $5.value / 2
+  require mean != 0
+  text = "Find the average value of [`f(x, y) = "
+         ++ cond($2.value = 1, "", cond($2.value = 0 - 1, "-", str($2.value))) ++ "x^{2}"
+         ++ cond($3.value > 0, " + ", " - ") ++ cond(abs($3.value) = 1, "", str(abs($3.value))) ++ "y`] over the rectangle [`0 \le x \le "
+         ++ str($4.value) ++ "`], [`0 \le y \le " ++ str($5.value) ++ "`]."
+  answer_value = mean
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# Over the triangle with the corners (0, 0), (a, 0) and (0, b) the integral
+# of x is a^2 b / 6 and that of y is a b^2 / 6.
+Q -> "triangle_region" L integer_between(1, 4) integer_between(1, 4) when cost = 3 {
+  cost = -3
+  kind = "triangle_region"
+  let whole = $2.x_part * $3.value ^ 2 * $4.value / 6 + $2.y_part * $3.value * $4.value ^ 2 / 6
+  require whole != 0
+  text = "Let [`T`] be the triangle with the corners [`(0, 0)`], [`(" ++ str($3.value) ++ ", 0)`] and [`(0, "
+         ++ str($4.value) ++ ")`]. Evaluate [`\iint_{T} \left(" ++ $2.latex ++ "\right) \, dA`]."
+  answer_value = whole
+}
+
+# The curves meet at x = 0 and x = k, and the line is above the parabola
+# between them. The integral of x is k^4 / 12 and that of y is k^5 / 15.
+Q -> "parabola_region" L integer_between(1, 3) when cost = 3 weight 2 {
+  cost = -3
+  kind = "parabola_region"
+  let whole = $2.x_part * $3.value ^ 4 / 12 + $2.y_part * $3.value ^ 5 / 15
+  require whole != 0
+  text = "Let [`R`] be the region enclosed by the parabola [`y = x^{2}`] and the line [`y = "
+         ++ cond($3.value = 1, "", str($3.value)) ++ "x`]. Evaluate [`\iint_{R} \left(" ++ $2.latex ++ "\right) \, dA`]."
+  answer_value = whole
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

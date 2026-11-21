@@ -46,6 +46,9 @@ TITLES = {
     "probability": "Probability of events", "modular_arithmetic": "Modular arithmetic",
     "graph_theory": "Graphs", "binomial_theorem": "The binomial theorem",
     "numerical_methods": "Numerical methods", "lines_planes": "Lines and planes in space",
+    "double_integral": "Double integrals", "implicit_differentiation": "Implicit differentiation",
+    "markov_chain": "Markov chains", "regression": "Linear regression",
+    "complex_polar": "Complex numbers in polar form", "relations": "Relations and functions",
 }
 
 

@@ -1,0 +1,183 @@
+# ==========================================================================
+#  Complex numbers in polar form
+#
+#  The modulus and the argument of a complex number, the polar form of a
+#  product, a quotient and a power, De Moivre's theorem, and the roots of
+#  z^n = w. It goes on from complex.rhm, which works in a + bi alone.
+#
+#  An angle is counted in twelfths of pi, and only the multiples of pi/6
+#  and pi/4 are used, so every sine and cosine is exact. A number given as
+#  a + bi points in one of those directions: its parts are k and k, or
+#  k sqrt(3) and k in either order, with any signs. An argument is asked
+#  with its range written out, -pi < theta <= pi, so that the negative real
+#  axis has the argument pi and not -pi.
+#
+#  Every answer is a `plain` answer: it is graded with the trigonometric
+#  functions and their inverses switched off, so 2 cos(pi/3) is not
+#  accepted for 1, nor atan(1) for pi/4. An answer with a square root is
+#  kept in its simplest form, 2 sqrt(2) and not 4 times sqrt(2)/2. The
+#  forms have two or three blanks and place them in their own text.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the modulus and argument of a product or a quotient of two numbers
+#       in polar form; a number in polar form written as a + bi
+#    2  the modulus and argument of a + bi; those of a power of a number in
+#       polar form
+#    3  a power of a + bi by De Moivre's theorem, as a + bi; the modulus
+#       and the two smallest arguments of the roots of z^n = w
+# ==========================================================================
+
+attribute cost = 2 split
+
+let pi = formula_pi()
+
+synth kind on Q
+synth text on Q
+
+# An angle between 0 and pi, a multiple of pi/6 or pi/4.
+synth twelfths on A
+synth latex on A
+
+# a + bi in one of the twelve directions that are not along an axis.
+# `family` 1 is k + k i, 2 is k sqrt(3) + k i and 3 is k + k sqrt(3) i, each
+# with either sign on each part. `twelfths` is the principal argument and
+# `modulus` a formula: k sqrt(2) in the first family, 2k in the others.
+synth family on W
+synth scale on W
+synth twelfths on W
+synth modulus on W
+synth latex on W
+
+start Q
+
+A -> integer_between(2, 10) {
+  require $1.value % 2 = 0 or $1.value % 3 = 0
+  twelfths = $1.value
+  latex = formula_latex(formula_multiply(formula_constant($1.value / 12), pi))
+}
+
+W -> integer_between(1, 3) integer_between(1, 4) nonzero_integer_between(-1, 1) nonzero_integer_between(-1, 1) {
+  let reference = cond($1.value = 1, 3, cond($1.value = 2, 2, 4))
+  family = $1.value
+  scale = $2.value
+  twelfths = cond($3.value > 0, cond($4.value > 0, reference, 0 - reference),
+                  cond($4.value > 0, 12 - reference, reference - 12))
+  modulus = cond($1.value = 1, formula_multiply(formula_constant($2.value), formula_sqrt(formula_constant(2))),
+                 formula_constant(2 * $2.value))
+  latex = cond($3.value < 0, "-", "")
+          ++ cond($1.value = 2, cond($2.value = 1, "", str($2.value)) ++ "\sqrt{3}", str($2.value))
+          ++ cond($4.value > 0, " + ", " - ") ++ cond($2.value = 1, "", str($2.value))
+          ++ cond($1.value = 3, "\sqrt{3}\,", "") ++ "i"
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# Moduli multiply and arguments add; in a quotient they divide and
+# subtract. The sum of the two angles is at most pi.
+Q -> "product" integer_between(2, 6) A integer_between(2, 5) A integer_between(1, 2) when cost = 1 weight 2 {
+  cost = -1
+  kind = "product"
+  let times = $6.value = 1
+  require $3.twelfths != $5.twelfths
+  require not times or $3.twelfths + $5.twelfths <= 12
+  let turned = cond(times, $3.twelfths + $5.twelfths, $3.twelfths - $5.twelfths)
+  text = "Let [`z = " ++ str($2.value) ++ "\left(\cos " ++ $3.latex ++ " + i \sin " ++ $3.latex ++ "\right)`] and [`w = "
+         ++ str($4.value) ++ "\left(\cos " ++ $5.latex ++ " + i \sin " ++ $5.latex ++ "\right)`]. Find the modulus and the argument [`\theta`] of [`"
+         ++ cond(times, "zw", "\dfrac{z}{w}") ++ "`], with [`-\pi < \theta \le \pi`]. Modulus: "
+         ++ blank(plain(cond(times, $2.value * $4.value, $2.value / $4.value))) ++ " Argument: "
+         ++ blank(plain(formula_multiply(formula_constant(turned / 12), pi)))
+}
+
+# The modulus is 2k, so each part is k, k sqrt(2) or k sqrt(3) with a sign,
+# and is written so: a product of a number and a root is kept in its
+# simplest form, with no factor 1 and no root of 1. With a = |m| twelfths of pi, the cosine is sqrt(3)/2
+# at 2 and 10, sqrt(2)/2 at 3 and 9 and 1/2 at 4 and 8, negative beyond a
+# quarter turn; the sine has sqrt(3)/2 at 4 and 8 and the sign of m. An
+# angle along an axis is left out.
+Q -> "to_rectangular" integer_between(1, 4) integer_between(-11, 11) when cost = 1 weight 2 {
+  cost = -1
+  kind = "to_rectangular"
+  let m = $3.value
+  require abs(m) % 2 = 0 or abs(m) % 3 = 0
+  require abs(m) % 6 != 0
+  let angle = formula_latex(formula_multiply(formula_constant(m / 12), pi))
+  let a = abs(m)
+  let across = cond(a < 6, $2.value, 0 - $2.value)
+  let across_root = cond(a = 2 or a = 10, 3, cond(a = 3 or a = 9, 2, 1))
+  let up = cond(m > 0, $2.value, 0 - $2.value)
+  let up_root = cond(a = 4 or a = 8, 3, cond(a = 3 or a = 9, 2, 1))
+  text = "Write [`z = " ++ str(2 * $2.value) ++ "\left(\cos\left(" ++ angle ++ "\right) + i \sin\left(" ++ angle
+         ++ "\right)\right)`] in the form [`a + bi`], with exact values. [`a = `] "
+         ++ blank(plain(formula_multiply(formula_constant(across), formula_sqrt(formula_constant(across_root)))))
+         ++ " [`b = `] "
+         ++ blank(plain(formula_multiply(formula_constant(up), formula_sqrt(formula_constant(up_root)))))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+Q -> "polar_form" W when cost = 2 weight 2 {
+  cost = -2
+  kind = "polar_form"
+  text = "Find the modulus and the argument [`\theta`], with [`-\pi < \theta \le \pi`], of [`z = " ++ $2.latex
+         ++ "`]. Modulus: " ++ blank(plain($2.modulus)) ++ " Argument: "
+         ++ blank(plain(formula_multiply(formula_constant($2.twelfths / 12), pi)))
+}
+
+# The modulus is raised to the power and the argument multiplied by it,
+# then brought back by whole turns: above -pi and up to pi.
+Q -> "power" integer_between(2, 3) integer_between(-11, 11) integer_between(2, 4) when cost = 2 weight 2 {
+  cost = -2
+  kind = "power"
+  let m = $3.value
+  require m != 0
+  require abs(m) % 2 = 0 or abs(m) % 3 = 0
+  let around = (m * $4.value + 240) % 24
+  let principal = cond(around > 12, around - 24, around)
+  let angle = formula_latex(formula_multiply(formula_constant(m / 12), pi))
+  text = "Let [`z = " ++ str($2.value) ++ "\left(\cos\left(" ++ angle ++ "\right) + i \sin\left(" ++ angle
+         ++ "\right)\right)`]. Find the modulus and the argument [`\theta`], with [`-\pi < \theta \le \pi`], of [`z^{"
+         ++ str($4.value) ++ "}`]. Modulus: " ++ blank(plain($2.value ^ $4.value)) ++ " Argument: "
+         ++ blank(plain(formula_multiply(formula_constant(principal / 12), pi)))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# The number has k = 1, so its modulus is sqrt(2) or 2. The power is even in
+# the first family and a multiple of 3 in the others, which brings the
+# argument to a multiple of pi/2 and the modulus to a whole number: the
+# answer is a whole number or a whole multiple of i.
+Q -> "de_moivre" W integer_between(1, 3) when cost = 3 weight 2 {
+  cost = -3
+  kind = "de_moivre"
+  require $2.scale = 1
+  let n = cond($2.family = 1, 2 * $3.value + 2, 3 * $3.value)
+  let size = cond($2.family = 1, 2 ^ ($3.value + 1), 2 ^ n)
+  let quarter = (($2.twelfths * n + 240 * n) % 24) / 6
+  text = "Use De Moivre's theorem to write [`\left(" ++ $2.latex ++ "\right)^{" ++ str(n)
+         ++ "}`] in the form [`a + bi`]. [`a = `] "
+         ++ blank(plain(size * cond(quarter = 0, 1, cond(quarter = 2, 0 - 1, 0)))) ++ " [`b = `] "
+         ++ blank(plain(size * cond(quarter = 1, 1, cond(quarter = 3, 0 - 1, 0))))
+}
+
+# w is r^n times 1, i, -1 or -i, with the argument k pi / 2. Its roots have
+# the modulus r and the arguments (k pi / 2 + 2 pi j) / n: the smallest is
+# k pi / (2n) and the next is 2 pi / n further on.
+Q -> "roots" integer_between(2, 4) integer_between(1, 3) integer_between(0, 3) when cost = 3 weight 2 {
+  cost = -3
+  kind = "roots"
+  let n = $2.value
+  let k = $4.value
+  let size = $3.value ^ n
+  require n != 2 or k != 0
+  text = "The equation [`z^{" ++ str(n) ++ "} = "
+         ++ cond(k = 0, str(size), cond(k = 1, cond(size = 1, "", str(size)) ++ "i",
+            cond(k = 2, "-" ++ str(size), "-" ++ cond(size = 1, "", str(size)) ++ "i")))
+         ++ "`] has [`" ++ str(n) ++ "`] solutions, all of the same modulus. That modulus: " ++ blank(plain($3.value))
+         ++ " Give the two smallest of their arguments [`\theta`] with [`0 \le \theta < 2\pi`]. The smallest: "
+         ++ blank(plain(formula_multiply(formula_constant(k / (2 * n)), pi))) ++ " The next: "
+         ++ blank(plain(formula_multiply(formula_constant((k + 4) / (2 * n)), pi)))
+}
+
+prompt "{Q.text}"

@@ -71,6 +71,12 @@ attribute, or by the budget.
 | `binomial_theorem.rhm` | 1 a coefficient of `(1 + x)^n`, of `(x + b)^n`; 2 a coefficient of `(ax + b)^n`, of `(ax + by)^n`, the sum of the coefficients of `(ax + b)^n`; 3 the term independent of `x` in `(a x^p + b/x^q)^n`, a coefficient of `(c + dx)(1 + ax)^n` | 2 | Numeric |
 | `numerical_methods.rhm` | 1 one step of Newton's method for `x^2 - a = 0`, the trapezoidal rule with two strips; 2 two steps of Newton's method, the third midpoint of a bisection, the trapezoidal rule with four strips, two steps of Euler's method for `y' = ax + by`; 3 Simpson's rule with four strips, two steps of Euler's method for `y' = ax + y^2` or `ax - y^2` | 2 | Numeric |
 | `lines_planes.rhm` | 1 the constant of a plane through a point with a given normal, the point of a line at a value of its parameter; 2 the distance from a point to a plane, the point where a line meets a plane, the cosine of the angle between two planes; 3 the foot of the perpendicular from a point to a plane, the reflection of a point in a plane | 2 | Numeric (a point answer carries the Point context) |
+| `double_integral.rhm` | 1 a monomial `c x^m y^n` or `p x + q y` over a rectangle; 2 an inner limit that is `x` or `k x`, the average value of a function over a rectangle; 3 a region given in words: the triangle cut off by the axes and a line, the region between `y = x^2` and `y = k x` | 2 | Numeric |
+| `implicit_differentiation.rhm` | 1 the slope of a circle or of `p x^2 + q y^2 = c` at a point; 2 the slope of `x^2 + k x y + y^2 = c` or of `x^3 + y^3 = k x y + c` at a point, `dy/dt` from `dx/dt` for a point moving on a circle; 3 where the tangent at a point meets the `y`-axis, the second derivative at a point | 2 | Numeric |
+| `markov_chain.rhm` | 1 the probability of the next two days in order, tomorrow from a forecast for today; 2 the weather two days ahead, the long-run share of sunny days, the expected length of a run of days of one kind; 3 the weather three days ahead, two steps of a chain with three states from its matrix, the chance that a walk on a line reaches the top before the bottom | 2 | Numeric |
+| `regression.rhm` | 1 the slope from `S_xx`, `S_yy` and `S_xy`, the intercept from the slope and the two means, a residual; 2 the slope from five data points, and from the sums of `x`, `y`, `x^2` and `x y`; 3 a prediction from five data points, the coefficient of determination `r^2` | 2 | Numeric |
+| `complex_polar.rhm` | 1 the modulus and argument of a product or a quotient of two numbers in polar form, a number in polar form written as `a + bi`; 2 the modulus and principal argument of `a + bi`, and of a power of a number in polar form; 3 a power of `a + bi` by De Moivre's theorem, the modulus and the two smallest arguments of the roots of `z^n = w` | 2 | Numeric (plain answers) |
+| `relations.rhm` | 1 the number of relations, of functions and of one-to-one functions from one set to another; 2 the number of reflexive and of symmetric relations on a set, the functions onto a set of two or three, the pairs missing from a symmetric relation, the pairs of an equivalence relation from the sizes of its classes; 3 the pairs of a composite and of a transitive closure, the equivalence relations with exactly two classes | 2 | Numeric |
 <!-- --8<-- [end:tables] -->
 
 ## The five general types added on this branch
@@ -412,9 +418,111 @@ numerical method by running it as a loop on exact fractions; and a point
 or a distance by the definition of what was asked, on the plane and along
 the normal.
 
+## The seventh batch: double integrals, implicit differentiation, Markov chains, regression, polar form, relations
+
+Six more fixed-form grammars with a default budget of 2, built answer first
+wherever there is something to find. None needed a change to the engine,
+and four of them declare mistakes.
+
+- **Double integrals** (`double_integral.rhm`) integrates a monomial
+  `c x^m y^n` or a sum `p x + q y`, so every answer is an exact fraction.
+  The cheapest forms are over a rectangle; then the inner limit is `x` or a
+  multiple of it; the hardest give the region in words, the triangle cut
+  off by the axes and a line or the region between `y = x^2` and `y = k x`,
+  and the limits have to be set up first. An integral of `p x + q y` that
+  comes to 0 is not asked.
+- **Implicit differentiation** (`implicit_differentiation.rhm`) builds a
+  curve from one of its points: the point is chosen first, and the constant
+  of the equation is what the left side comes to there. It asks for the
+  slope of a circle, of `p x^2 + q y^2 = c` and of two curves with a
+  product term, for `dy/dt` from `dx/dt` on a circle, for the height at
+  which a tangent meets the `y`-axis, and for the second derivative. A
+  point where the tangent of a curve with a product term is level or
+  upright is not asked, and neither is an equation that only looks like a
+  curve: `x^2 + 2xy + y^2 = c` is a pair of lines, and
+  `x^3 + y^3 = 3xy - 1` is the line `x + y + 1 = 0` with one point beside
+  it. A slope with the wrong sign is carried into the tangent and into the
+  second derivative, so those forms list the mistake too.
+- **Markov chains** (`markov_chain.rhm`) tells a chain with two states as a
+  story: a day is sunny or rainy, and tomorrow depends on today alone. The
+  two probabilities are different, so today's weather says something about
+  tomorrow's. It asks for a sequence of days, the weather two and three
+  days ahead, the long-run share of sunny days and the expected length of a
+  run. A chain with three states is given by its matrix, each row three
+  numbers of quarters that add up to one, with the reading of rows and
+  columns said in the question; a two-step probability that is the entry of
+  the matrix itself is not asked, since reading one step off the matrix
+  would be marked right. A counter that moves up or down a short line and
+  stops at either end is asked for the chance of stopping at the top.
+- **Linear regression** (`regression.rhm`) fits the least-squares line of
+  `y` on `x`. The data are five points at `x`-values one apart, with
+  `y`-values that are a trend and a small whole disturbance on each, so the
+  slope is a number of tenths. It asks for the slope from `S_xx`, `S_yy` and
+  `S_xy` (the three are possible together: `S_xy^2` is at most
+  `S_xx S_yy`), for the intercept, for a residual that was chosen before
+  its point, for the slope from the data and from their sums, for a
+  prediction beyond the data and for `r^2`, of data that are neither on one
+  line nor without a trend, and only where its denominator in lowest terms
+  has at most two digits. The two mistakes of a slope question never lead
+  to the same number, so a wrong answer says which was made.
+- **Complex numbers in polar form** (`complex_polar.rhm`) goes on from
+  `complex.rhm`. Angles are counted in twelfths of pi, and only the
+  multiples of pi/6 and pi/4 are used. A number given as `a + bi` points in
+  one of those directions: its parts are `k` and `k`, or `k sqrt(3)` and
+  `k` in either order, with any signs. A power for De Moivre's theorem is
+  chosen so that it lands on an axis and the answer is a whole number or a
+  whole multiple of `i`; the roots of `z^n = w` are asked by their modulus
+  and their two smallest arguments. An argument is asked with its range
+  written out, `-pi < theta <= pi`, so that a number on the negative real
+  axis has the argument pi and not `-pi`. Every answer is a `plain` answer,
+  so `2 cos(pi/3)` is not accepted for 1, nor `atan(1)` for pi/4, and a part
+  with a square root is kept in its simplest form, `2 sqrt(2)`.
+- **Relations and functions** (`relations.rhm`) counts the relations, the
+  functions, the one-to-one and the onto functions between two finite sets,
+  and the reflexive and the symmetric relations on one. A relation on
+  `{1, 2, 3}` is drawn pair by pair and kept when it has three to six
+  pairs; its pairs are listed in order, and its matrix of 0s and 1s does
+  the work: the pairs missing from a symmetric relation, the composite of
+  two relations (a product) and the transitive closure (a sum of powers). A
+  relation that is transitive already is not asked for its closure.
+
+```
+cost 3   the integral of -4x - y over the region between y = x^2 and y = 2x                -112/15
+cost 3   the tangent to 3x^2 + 2y^2 = 66 at (-4, -3) meets the y-axis at (0, h)            -11
+cost 3   a counter on 0..4, up with probability 1/5, starts at 3: P(it stops at 4)          21/85
+cost 3   r^2 for the data (2, 3), (3, 3), (4, 7), (5, 9), (6, 9)                           81/92
+cost 3   (sqrt(3) - i)^3 as a + bi                                                         0; -8
+cost 3   the pairs of the transitive closure of {(1, 2), (2, 3), (3, 3)} on {1, 2, 3}      4
+```
+
+Each grammar has a test, written apart from it, that reads the numbers
+back from the printed question and finds the answer again in its own way:
+a double integral by integrating the polynomial symbolically between
+limits it derives itself from the corners or the curves printed; a slope
+from the partial derivatives of the equation read term by term, with the
+point checked to lie on the curve and a difference quotient along the
+curve beside it; a chain by listing every sequence of days or of steps,
+the long-run share by solving the balance equation, and the walk by
+solving its linear system; a regression line by solving the normal
+equations and checking that the residuals add up to 0 and are orthogonal
+to `x`, with `r^2` as 1 - SSE/SST; a complex number by multiplying it out
+in floating point, with every argument required to be a multiple of
+pi/24 inside the range printed and the roots listed in full; and a count
+of relations or functions by brute force, every relation, function or
+partition written out and tested by the definition. The mistaken answers
+are found again from what each mistake says, and must be the ones the
+engine reports.
+
+What these tests found was put right in the grammars: a third of the
+product curves and a few cubics were straight lines; one matrix question
+in ten had the one-step entry as its answer; two mistakes of a regression
+question could give the same number, and half of the `r^2` answers had a
+denominator of three or four digits; an argument of pi was asked "between
+-pi and pi", and the parts of a De Moivre answer were not `plain`.
+
 ## Mistakes the library looks for
 
-Six grammars say what common mistakes lead to. `rhema run` lists them
+Ten grammars say what common mistakes lead to. `rhema run` lists them
 under each answer, and none of these grammars asks a question in which a
 mistake changes the working and still gives the right answer (section 9 of
 `RHEMA_LANGUAGE_EXTENSIONS.md`).
@@ -433,10 +541,20 @@ mistake changes the working and still gives the right answer (section 9 of
 | | `wrong_way_round` | takes a conditional probability the wrong way round: of B given A where A given B was asked |
 | `binomial_theorem.rhm` | `bare_coefficient` | gives the binomial coefficient alone, without the powers of the numbers in the bracket |
 | | `powers_swapped` | puts each power on the other number of the bracket |
+| `implicit_differentiation.rhm` | `sign_dropped` | takes `dy/dx` to be `F_x / F_y` and leaves out the minus sign |
+| | `product_rule_missed` | differentiates `x y` as if `x` were a constant factor, so the term `x dy/dx` is lost |
+| `markov_chain.rhm` | `transposed` | reads the transition matrix the wrong way round: a column for where the chain goes from a state |
+| `regression.rhm` | `x_on_y` | divides by the spread of `y` in place of that of `x`: `S_xy / S_yy` |
+| | `through_origin` | fits a line through the origin: the sum of `x y` over the sum of `x^2` |
+| `relations.rhm` | `sets_swapped` | takes the two sets the wrong way round: `m^n` functions where there are `n^m` |
+| | `diagonal_forgotten` | counts the pairs of two different elements only, and forgets that each pair `(a, a)` is free as well |
 
 An integral question of `calculus.rhm`, a modulus question of `complex.rhm`
 and a factoring question list none: their answers are not computed from the
-values these mistakes change.
+values these mistakes change. In the grammars of the sixth and seventh
+batches a mistake is listed with the forms it can be made in: a curve with
+no product term has no product rule to miss, and only the question that
+shows a transition matrix can have it read the wrong way round.
 
 ## What a user can write in one file
 

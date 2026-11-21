@@ -20,7 +20,7 @@ make `x + 2x \cdot \sin x` cost at least 4.
 
 ## Mistakes
 
-Six grammars say what common mistakes lead to (chapter 9 of the tutorial).
+Ten grammars say what common mistakes lead to (chapter 9 of the tutorial).
 `rhema run` lists them under each answer, and none of these grammars asks a
 question in which a mistake changes the working and still gives the right
 answer.
@@ -39,6 +39,13 @@ answer.
 | | `wrong_way_round` | takes a conditional probability the wrong way round: of B given A where A given B was asked |
 | `binomial_theorem.rhm` | `bare_coefficient` | gives the binomial coefficient alone, without the powers of the numbers in the bracket |
 | | `powers_swapped` | puts each power on the other number of the bracket |
+| `implicit_differentiation.rhm` | `sign_dropped` | takes `dy/dx` to be `F_x / F_y` and leaves out the minus sign |
+| | `product_rule_missed` | differentiates `x y` as if `x` were a constant factor, so the term `x dy/dx` is lost |
+| `markov_chain.rhm` | `transposed` | reads the transition matrix the wrong way round: a column for where the chain goes from a state |
+| `regression.rhm` | `x_on_y` | divides by the spread of `y` in place of that of `x`: `S_xy / S_yy` |
+| | `through_origin` | fits a line through the origin: the sum of `x y` over the sum of `x^2` |
+| `relations.rhm` | `sets_swapped` | takes the two sets the wrong way round: `m^n` functions where there are `n^m` |
+| | `diagonal_forgotten` | counts the pairs of two different elements only, and forgets that each pair `(a, a)` is free as well |
 
 The mistakes of `calculus.rhm` concern its derivative questions; an
 integral question lists none. `power_term_by_term` is declared in
@@ -47,7 +54,10 @@ integral question lists none. `power_term_by_term` is declared in
 question of `complex.rhm` lists none. In `probability.rhm` and
 `binomial_theorem.rhm` a mistake is listed with the forms it can be made
 in: a product of two independent probabilities, for one, has nothing to
-count twice.
+count twice. The same holds for `implicit_differentiation.rhm`,
+`markov_chain.rhm`, `regression.rhm` and `relations.rhm`: a curve with no
+product term has no product rule to miss, and only the question that shows
+a transition matrix can have it read the wrong way round.
 
 ## Libraries and examples
 
