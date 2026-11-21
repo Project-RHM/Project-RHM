@@ -120,6 +120,24 @@ is announced one version before the removal.
   builtins only, and has a test that recomputes its answers from the
   printed question. `probability.rhm` and `binomial_theorem.rhm` declare
   two mistakes each. The library now has 52 files.
+- **Six more question types.** `double_integral.rhm` (iterated integrals
+  over a rectangle, with an inner limit that depends on `x`, and over a
+  region described in words), `implicit_differentiation.rhm` (the slope of
+  a curve at a point, a related rate, a tangent, the second derivative),
+  `markov_chain.rhm` (a chain with two states told as a story, two steps
+  of a chain with three states from its matrix, the long-run share, a walk
+  that stops at either end of a line), `regression.rhm` (the least-squares
+  line from summary numbers and from five data points, a residual, a
+  prediction, the coefficient of determination), `complex_polar.rhm`
+  (modulus and argument, products, quotients and powers in polar form, De
+  Moivre's theorem, the roots of `z^n = w`) and `relations.rhm` (counting
+  relations and functions between finite sets, the composite and the
+  closures of a relation given by its pairs, equivalence relations). Each
+  has fixed forms at prices 1 to 3 and a default budget of 2, uses the
+  existing builtins only, and has a test that recomputes its answers from
+  the printed question. `implicit_differentiation.rhm`, `regression.rhm`
+  and `relations.rhm` declare two mistakes each and `markov_chain.rhm`
+  one. The library now has 58 files.
 - **Changed.** `--count` with a negative number is an error of the command
   line (status 2); it was `rhema: error: List.init`. The "not run through
   WeBWorK" line of the summary is said only where PG was written. In the
