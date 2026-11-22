@@ -1,0 +1,177 @@
+# ==========================================================================
+#  Counting principles
+#
+#  Inclusion and exclusion for two and three sets, the pigeonhole
+#  principle, the number of whole-number solutions of an equation (stars
+#  and bars), and derangements. It goes on from counting.rhm, which asks
+#  for arrangements, committees and dice.
+#
+#  The sets of a question are counted out region by region before their
+#  sizes are shown, so the sizes agree with one another: an intersection
+#  is never larger than a set it lies in. A count of the numbers up to N
+#  that some number divides is the whole part of a quotient.
+#
+#  Two mistakes are looked for: adding the sizes of sets without taking
+#  off what they share, and, with three sets, correcting for what each two
+#  share and leaving out what all three share. A question is asked only
+#  where the mistake gives another number.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the size of a union of two sets, the pigeonhole principle
+#    2  the numbers up to N divisible by one of two numbers, the size of a
+#       union of three sets, the solutions of x_1 + ... + x_k = n in
+#       non-negative whole numbers
+#    3  the numbers up to N divisible by none of three primes, the
+#       solutions of x_1 + x_2 + x_3 = n with an upper limit on each,
+#       letters in envelopes with none, exactly one or at least one in
+#       its own (derangements)
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake overlap_counted_twice "adds the sizes and does not take off what the sets share"
+mistake triple_left_out "corrects for what each two of three sets share and leaves out what all three share"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+start Q
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The children are those in the first set alone, in the second alone and
+# in both; at least two are in both, so that "play both" reads well.
+Q -> "union_two" integer_between(3, 15) integer_between(3, 15) integer_between(2, 9) when cost = 1 {
+  cost = -1
+  kind = "union_two"
+  text = "In a class, [`" ++ str($2.value + $4.value) ++ "`] students play football, [`" ++ str($3.value + $4.value)
+         ++ "`] play chess and [`" ++ str($4.value) ++ "`] play both. How many play at least one of the two?"
+  answer_value = $2.value + $3.value + $4.value
+  mistake overlap_counted_twice answer_value = $2.value + $3.value + 2 * $4.value
+}
+
+# With k colours, k (r - 1) socks may still have r - 1 of each.
+Q -> "pigeonhole" integer_between(3, 7) integer_between(2, 6) when cost = 1 {
+  cost = -1
+  kind = "pigeonhole"
+  text = "A drawer holds many socks of each of [`" ++ str($2.value)
+         ++ "`] colours. How many socks must be taken out, without looking, to be sure of having at least [`" ++ str($3.value)
+         ++ "`] of the same colour?"
+  answer_value = $2.value * ($3.value - 1) + 1
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# N is a number of tens. Neither of a and b divides the other, and their
+# least common multiple is at most N, so some number is counted twice. Two
+# pairs in five pass that, and the weight makes up for it.
+Q -> "divisible_either" integer_between(5, 30) integer_between(2, 9) integer_between(3, 9) when cost = 2 weight 5 {
+  cost = -2
+  kind = "divisible_either"
+  let limit = 10 * $2.value
+  let shared = lcm($3.value, $4.value)
+  require $3.value < $4.value and $4.value % $3.value != 0
+  require shared <= limit
+  let by_first = (limit - limit % $3.value) / $3.value
+  let by_second = (limit - limit % $4.value) / $4.value
+  let by_both = (limit - limit % shared) / shared
+  text = "How many of the whole numbers from [`1`] to [`" ++ str(limit) ++ "`] are divisible by [`" ++ str($3.value)
+         ++ "`] or by [`" ++ str($4.value) ++ "`]?"
+  answer_value = by_first + by_second - by_both
+  mistake overlap_counted_twice answer_value = by_first + by_second
+}
+
+# The children are the seven regions: in one set alone (three), in two
+# sets but not the third (three), and in all three, which are at least two.
+Q -> "union_three" integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) integer_between(0, 4) integer_between(0, 4) integer_between(0, 4) integer_between(2, 4) when cost = 2 weight 2 {
+  cost = -2
+  kind = "union_three"
+  let french = $2.value + $5.value + $6.value + $8.value
+  let german = $3.value + $5.value + $7.value + $8.value
+  let spanish = $4.value + $6.value + $7.value + $8.value
+  let french_german = $5.value + $8.value
+  let french_spanish = $6.value + $8.value
+  let german_spanish = $7.value + $8.value
+  text = "In a group of students, [`" ++ str(french) ++ "`] study French, [`" ++ str(german) ++ "`] study German and [`"
+         ++ str(spanish) ++ "`] study Spanish; [`" ++ str(french_german) ++ "`] study both French and German, [`"
+         ++ str(french_spanish) ++ "`] both French and Spanish, [`" ++ str(german_spanish) ++ "`] both German and Spanish, and [`"
+         ++ str($8.value) ++ "`] study all three. How many study at least one of the three languages?"
+  answer_value = french + german + spanish - french_german - french_spanish - german_spanish + $8.value
+  mistake overlap_counted_twice answer_value = french + german + spanish
+  mistake triple_left_out answer_value = french + german + spanish - french_german - french_spanish - german_spanish
+}
+
+# n stars and k - 1 bars in a row.
+Q -> "stars_bars" integer_between(3, 4) integer_between(4, 10) when cost = 2 {
+  cost = -2
+  kind = "stars_bars"
+  text = "How many solutions in non-negative whole numbers does [`x_1 + x_2 + x_3" ++ cond($2.value = 4, " + x_4", "") ++ " = "
+         ++ str($3.value) ++ "`] have?"
+  answer_value = choose($3.value + $2.value - 1, $2.value - 1)
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# Three of the primes 2, 3, 5 and 7: the first child says which is left
+# out. N is a number of tens and at least their product.
+Q -> "divisible_none" integer_between(1, 4) integer_between(5, 30) when cost = 3 weight 2 {
+  cost = -3
+  kind = "divisible_none"
+  let limit = 10 * $3.value
+  let a = cond($2.value = 1, 3, 2)
+  let b = cond($2.value <= 2, 5, 3)
+  let c = cond($2.value = 4, 5, 7)
+  require a * b * c <= limit
+  let singles = (limit - limit % a) / a + (limit - limit % b) / b + (limit - limit % c) / c
+  let pairs = (limit - limit % (a * b)) / (a * b) + (limit - limit % (a * c)) / (a * c) + (limit - limit % (b * c)) / (b * c)
+  let triple = (limit - limit % (a * b * c)) / (a * b * c)
+  text = "How many of the whole numbers from [`1`] to [`" ++ str(limit) ++ "`] are divisible by none of [`" ++ str(a) ++ "`], [`"
+         ++ str(b) ++ "`] and [`" ++ str(c) ++ "`]?"
+  answer_value = limit - singles + pairs - triple
+  mistake triple_left_out answer_value = limit - singles + pairs
+}
+
+# All solutions, less those with a variable above the limit m, which is
+# m + 1 taken off n and the rest shared freely: n + 2 choose 2, less three
+# times n - (m + 1) + 2 choose 2, and so on with two and with three
+# variables above the limit. A term whose total would be negative is 0.
+# The limit is below n, so it rules some solution out, and 3m is above n,
+# so there is more than the one solution (m, m, m); three variables
+# cannot all be above the limit then, and the sum stops at two.
+Q -> "bounded" integer_between(6, 12) integer_between(3, 7) when cost = 3 weight 2 {
+  cost = -3
+  kind = "bounded"
+  require $3.value < $2.value and 3 * $3.value > $2.value
+  let once = $2.value - ($3.value + 1)
+  let twice = $2.value - 2 * ($3.value + 1)
+  text = "How many solutions in whole numbers does [`x_1 + x_2 + x_3 = " ++ str($2.value) ++ "`] have with [`0 \le x_i \le "
+         ++ str($3.value) ++ "`] for each [`i`]?"
+  answer_value = ($2.value + 2) * ($2.value + 1) / 2
+                 - 3 * cond(once >= 0, (once + 2) * (once + 1) / 2, 0)
+                 + 3 * cond(twice >= 0, (twice + 2) * (twice + 1) / 2, 0)
+}
+
+# The number of ways with no letter in its own envelope is
+# n! (1 - 1/1! + 1/2! - ... + (-1)^n / n!), for n from 4 to 7. With
+# exactly one letter in its own envelope, that letter is one of n and the
+# other n - 1 are all misplaced; with at least one, it is every way but
+# those with none. The second child says which of the three is asked.
+Q -> "derangements" integer_between(4, 7) integer_between(0, 2) when cost = 3 {
+  cost = -3
+  kind = "derangements"
+  let none = factorial($2.value) * (1 / 2 - 1 / 6 + 1 / 24 - cond($2.value >= 5, 1 / 120, 0) + cond($2.value >= 6, 1 / 720, 0)
+                                    - cond($2.value >= 7, 1 / 5040, 0))
+  let none_of_fewer = factorial($2.value - 1) * (1 / 2 - 1 / 6 + cond($2.value >= 5, 1 / 24, 0) - cond($2.value >= 6, 1 / 120, 0)
+                                                 + cond($2.value >= 7, 1 / 720, 0))
+  text = "[`" ++ str($2.value) ++ "`] letters are put into [`" ++ str($2.value)
+         ++ "`] addressed envelopes, one in each, at random. In how many ways can it happen that "
+         ++ cond($3.value = 0, "no letter is", cond($3.value = 1, "exactly one letter is", "at least one letter is"))
+         ++ " in its own envelope?"
+  answer_value = cond($3.value = 0, none, cond($3.value = 1, $2.value * none_of_fewer, factorial($2.value) - none))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

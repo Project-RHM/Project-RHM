@@ -1,0 +1,184 @@
+# ==========================================================================
+#  Graph algorithms
+#
+#  Weighted graphs: the length of a shortest path and the weight of a
+#  minimum spanning tree; and two counts, the spanning trees of a small
+#  graph and the edges an Euler circuit still needs. It goes on from
+#  graph_theory.rhm, which counts edges, degrees and walks.
+#
+#  The graphs are small enough to be gone through in full: a shortest path
+#  is the least of every path between its ends, and a minimum spanning tree
+#  the least of all sixteen spanning trees of four vertices joined in
+#  pairs. The number of spanning trees is a determinant (the matrix-tree
+#  theorem). A list of degrees is read off a graph built edge by edge.
+#
+#  Two mistakes are looked for: taking the edge that joins the two ends
+#  where a path through another vertex is shorter, and taking the three
+#  cheapest edges for a spanning tree where they close a triangle.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  a minimum spanning tree of a single cycle, the edges an Euler
+#       circuit still needs from a list of degrees
+#    2  a shortest path and a minimum spanning tree in a weighted graph on
+#       four vertices with every edge
+#    3  a shortest path in a weighted graph on five vertices with seven
+#       edges, the number of spanning trees of a graph on four vertices
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake direct_edge "takes the edge that joins the two ends, though a path through another vertex is shorter"
+mistake cheapest_three "takes the three cheapest edges, though they close a triangle and leave a vertex out"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# Four vertices A, B, C, D with a weighted edge between every two.
+synth ab on K
+synth ac on K
+synth ad on K
+synth bc on K
+synth bd on K
+synth cd on K
+synth listing on K
+
+# A graph on five vertices: ten places for an edge, each taken or not, no
+# vertex left alone and at least four edges, so that a connected graph has
+# the same degrees.
+synth odd on G
+synth listing on G
+
+start Q
+
+K -> integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) {
+  ab = $1.value
+  ac = $2.value
+  ad = $3.value
+  bc = $4.value
+  bd = $5.value
+  cd = $6.value
+  listing = "[`AB = " ++ str($1.value) ++ "`], [`AC = " ++ str($2.value) ++ "`], [`AD = " ++ str($3.value) ++ "`], [`BC = "
+            ++ str($4.value) ++ "`], [`BD = " ++ str($5.value) ++ "`] and [`CD = " ++ str($6.value) ++ "`]"
+}
+
+G -> integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) {
+  # the children are the edges 12 13 14 15 23 24 25 34 35 45
+  let d1 = $1.value + $2.value + $3.value + $4.value
+  let d2 = $1.value + $5.value + $6.value + $7.value
+  let d3 = $2.value + $5.value + $8.value + $9.value
+  let d4 = $3.value + $6.value + $8.value + $10.value
+  let d5 = $4.value + $7.value + $9.value + $10.value
+  require d1 >= 1 and d2 >= 1 and d3 >= 1 and d4 >= 1 and d5 >= 1
+  require d1 + d2 + d3 + d4 + d5 >= 8
+  odd = d1 % 2 + d2 % 2 + d3 % 2 + d4 % 2 + d5 % 2
+  listing = str(d1) ++ ", " ++ str(d2) ++ ", " ++ str(d3) ++ ", " ++ str(d4) ++ ", " ++ str(d5)
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# A spanning tree of a cycle leaves out one edge: the heaviest.
+Q -> "cycle_tree" integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) when cost = 1 {
+  cost = -1
+  kind = "cycle_tree"
+  let heaviest = max($2.value, max($3.value, max($4.value, max($5.value, $6.value))))
+  text = "A weighted graph is the single cycle [`A, B, C, D, E`] and back to [`A`], with the weights [`AB = " ++ str($2.value)
+         ++ "`], [`BC = " ++ str($3.value) ++ "`], [`CD = " ++ str($4.value) ++ "`], [`DE = " ++ str($5.value) ++ "`] and [`EA = "
+         ++ str($6.value) ++ "`]. Find the total weight of a minimum spanning tree."
+  answer_value = $2.value + $3.value + $4.value + $5.value + $6.value - heaviest
+}
+
+# Every vertex of odd degree needs one more end of an edge, and an edge
+# has two ends. A graph whose degrees are all even already is not asked.
+Q -> "euler_edges" G when cost = 1 {
+  cost = -1
+  kind = "euler_edges"
+  require $2.odd >= 2
+  text = "A connected graph has five vertices, of degrees [`" ++ $2.listing
+         ++ "`]. What is the smallest number of edges that must be added for it to have an Euler circuit? An added edge may join two vertices that are joined already."
+  answer_value = $2.odd / 2
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# From A to D: the edge itself, through B, through C, or through both in
+# either order. The edge itself is never the shortest; that leaves about
+# two graphs in ten, and the weight makes up for it.
+Q -> "shortest_four" K when cost = 2 weight 9 {
+  cost = -2
+  kind = "shortest_four"
+  let around = min(min($2.ab + $2.bd, $2.ac + $2.cd), min($2.ab + $2.bc + $2.cd, $2.ac + $2.bc + $2.bd))
+  require around < $2.ad
+  text = "A weighted graph has the vertices [`A, B, C, D`] and an edge between every two of them, with the weights "
+         ++ $2.listing ++ ". Find the length of a shortest path from [`A`] to [`D`]."
+  answer_value = around
+  mistake direct_edge answer_value = $2.ad
+}
+
+# The sixteen spanning trees: the four stars and the twelve paths. Three
+# edges that close a triangle are not a tree.
+Q -> "spanning_four" K when cost = 2 weight 2 {
+  cost = -2
+  kind = "spanning_four"
+  let stars = min(min($2.ab + $2.ac + $2.ad, $2.ab + $2.bc + $2.bd), min($2.ac + $2.bc + $2.cd, $2.ad + $2.bd + $2.cd))
+  let from_ab = min(min($2.ab + $2.bc + $2.cd, $2.ab + $2.bd + $2.cd), min($2.ab + $2.ac + $2.cd, $2.ab + $2.ad + $2.cd))
+  let from_ac = min(min($2.ac + $2.bc + $2.bd, $2.ac + $2.cd + $2.bd), min($2.ac + $2.ab + $2.bd, $2.ac + $2.ad + $2.bd))
+  let from_ad = min(min($2.ad + $2.bd + $2.bc, $2.ad + $2.cd + $2.bc), min($2.ad + $2.ab + $2.bc, $2.ad + $2.ac + $2.bc))
+  let lightest = min(min(stars, from_ab), min(from_ac, from_ad))
+  let triangles = min(min($2.ab + $2.ac + $2.bc, $2.ab + $2.ad + $2.bd), min($2.ac + $2.ad + $2.cd, $2.bc + $2.bd + $2.cd))
+  text = "A weighted graph has the vertices [`A, B, C, D`] and an edge between every two of them, with the weights "
+         ++ $2.listing ++ ". Find the total weight of a minimum spanning tree."
+  answer_value = lightest
+  mistake cheapest_three answer_value = min(lightest, triangles)
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# The edges are AB, AC, BC, BD, CD, CE and DE. From A to E there are seven
+# paths: ACE, ABCE, ACDE, ABDE, ABCDE, ACBDE and ABDCE.
+Q -> "shortest_five" integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) integer_between(1, 9) when cost = 3 weight 2 {
+  cost = -3
+  kind = "shortest_five"
+  let through_c = min($3.value + $7.value, $2.value + $4.value + $7.value)
+  let through_d = min(min($3.value + $6.value + $8.value, $2.value + $5.value + $8.value),
+                      min($2.value + $4.value + $6.value + $8.value, $3.value + $4.value + $5.value + $8.value))
+  let back = $2.value + $5.value + $6.value + $7.value
+  text = "A weighted graph has the vertices [`A, B, C, D, E`] and seven edges, with the weights [`AB = " ++ str($2.value)
+         ++ "`], [`AC = " ++ str($3.value) ++ "`], [`BC = " ++ str($4.value) ++ "`], [`BD = " ++ str($5.value) ++ "`], [`CD = "
+         ++ str($6.value) ++ "`], [`CE = " ++ str($7.value) ++ "`] and [`DE = " ++ str($8.value)
+         ++ "`]. Find the length of a shortest path from [`A`] to [`E`]."
+  answer_value = min(min(through_c, through_d), back)
+}
+
+# The children are the edges 12 13 14 23 24 34. The matrix has the degrees
+# of the vertices 1, 2 and 3 on its diagonal and -1 where two of them are
+# joined; its determinant is the number of spanning trees. A graph with
+# fewer than two is a tree itself, or is not connected, and is not asked;
+# about one graph in three is left, and the weight makes up for it.
+Q -> "count_trees" integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) integer_between(0, 1) when cost = 3 weight 6 {
+  cost = -3
+  kind = "count_trees"
+  let before_2 = $2.value
+  let before_3 = before_2 + $3.value
+  let before_4 = before_3 + $4.value
+  let before_5 = before_4 + $5.value
+  let before_6 = before_5 + $6.value
+  let trees = matrix_determinant(matrix3($2.value + $3.value + $4.value, 0 - $2.value, 0 - $3.value,
+                                         0 - $2.value, $2.value + $5.value + $6.value, 0 - $5.value,
+                                         0 - $3.value, 0 - $5.value, $3.value + $5.value + $7.value))
+  require trees >= 2
+  text = "A graph on the vertices [`1, 2, 3, 4`] has the edges [`"
+         ++ cond($2.value = 1, "\{1, 2\}", "")
+         ++ cond($3.value = 1, cond(before_2 > 0, ", ", "") ++ "\{1, 3\}", "")
+         ++ cond($4.value = 1, cond(before_3 > 0, ", ", "") ++ "\{1, 4\}", "")
+         ++ cond($5.value = 1, cond(before_4 > 0, ", ", "") ++ "\{2, 3\}", "")
+         ++ cond($6.value = 1, cond(before_5 > 0, ", ", "") ++ "\{2, 4\}", "")
+         ++ cond($7.value = 1, cond(before_6 > 0, ", ", "") ++ "\{3, 4\}", "")
+         ++ "`]. How many spanning trees does it have?"
+  answer_value = trees
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

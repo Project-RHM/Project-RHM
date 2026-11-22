@@ -20,7 +20,7 @@ make `x + 2x \cdot \sin x` cost at least 4.
 
 ## Mistakes
 
-Ten grammars say what common mistakes lead to (chapter 9 of the tutorial).
+Fifteen grammars say what common mistakes lead to (chapter 9 of the tutorial).
 `rhema run` lists them under each answer, and none of these grammars asks a
 question in which a mistake changes the working and still gives the right
 answer.
@@ -46,6 +46,14 @@ answer.
 | | `through_origin` | fits a line through the origin: the sum of `x y` over the sum of `x^2` |
 | `relations.rhm` | `sets_swapped` | takes the two sets the wrong way round: `m^n` functions where there are `n^m` |
 | | `diagonal_forgotten` | counts the pairs of two different elements only, and forgets that each pair `(a, a)` is free as well |
+| `vector_calculus.rhm` | `not_normalised` | takes the direction of a directional derivative as it is given and does not divide by its length |
+| `linear_programming.rhm` | `intercepts_outside` | tries every point where a line meets an axis, also those that lie outside the region |
+| `graph_algorithms.rhm` | `direct_edge` | takes the edge that joins the two ends, though a path through another vertex is shorter |
+| | `cheapest_three` | takes the three cheapest edges for a spanning tree, though they close a triangle |
+| `orthogonality.rhm` | `not_divided` | gives the dot product for a component and does not divide by the length |
+| | `length_not_squared` | divides a projection by the length where the square of the length belongs |
+| `counting_principles.rhm` | `overlap_counted_twice` | adds the sizes of sets and does not take off what they share |
+| | `triple_left_out` | corrects for what each two of three sets share and leaves out what all three share |
 
 The mistakes of `calculus.rhm` concern its derivative questions; an
 integral question lists none. `power_term_by_term` is declared in

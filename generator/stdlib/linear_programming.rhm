@@ -1,0 +1,194 @@
+# ==========================================================================
+#  Linear programming in two variables
+#
+#  The greatest or least value of p x + q y over a region of the first
+#  quadrant cut off by straight lines. The value is taken at a corner of
+#  the region, so the work is to find the corners and to try each.
+#
+#  A region is built from its corner: the point (h, k) where two slanted
+#  lines are to cross is chosen first, and the right-hand side of each
+#  constraint is what its left side comes to there. One line is flatter
+#  than the other, so (h, k) is a corner of the region and the two lines
+#  meet the axes on either side of it.
+#
+#  One mistake is looked for: trying every point where a line meets an
+#  axis, also those that lie outside the region. Under a greatest value it
+#  gives a number that is too large, under a least value one that is too
+#  small, and where a point is asked for, a point outside the region.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the greatest value over a region given by its four corners
+#    2  the greatest value under x + y <= s, x <= a and y <= b; under
+#       x + 2y <= c and 2x + y <= d
+#    3  the greatest value under two constraints with other slopes, the
+#       corner at which a greatest value is taken, the least value over the
+#       region above two lines
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake intercepts_outside "tries every point where a line meets an axis, also those that lie outside the region"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# p x + q y with p and q positive.
+synth x_part on O
+synth y_part on O
+synth latex on O
+
+# Two constraints u1 x + v1 y <= c1 and u2 x + v2 y <= c2 through the
+# corner (h, k), the first the flatter line. The steep line meets the
+# x-axis at `near_x` and the flat one the y-axis at `near_y`: these are
+# corners of the region. The other two meeting points, `far_x` and
+# `far_y`, lie outside it. `simple` is 1 for the pair x + 2y and 2x + y;
+# `whole_x` and `whole_y` are 1 where `near_x` and `near_y` are whole.
+synth simple on R
+synth whole_x on R
+synth whole_y on R
+synth corner_x on R
+synth corner_y on R
+synth near_x on R
+synth near_y on R
+synth far_x on R
+synth far_y on R
+synth latex on R
+
+start Q
+
+O -> integer_between(1, 6) integer_between(1, 6) {
+  x_part = $1.value
+  y_part = $2.value
+  latex = cond($1.value = 1, "", str($1.value)) ++ "x + " ++ cond($2.value = 1, "", str($2.value)) ++ "y"
+}
+
+# The children are the two slopes' indices and the corner. The flat line
+# is x + 2y, x + 3y or 2x + 3y and the steep one 2x + y, 3x + y or 3x + 2y.
+R -> integer_between(1, 3) integer_between(1, 3) integer_between(1, 6) integer_between(1, 6) {
+  let u1 = cond($1.value = 3, 2, 1)
+  let v1 = cond($1.value = 1, 2, 3)
+  let u2 = cond($2.value = 1, 2, 3)
+  let v2 = cond($2.value = 3, 2, 1)
+  let c1 = u1 * $3.value + v1 * $4.value
+  let c2 = u2 * $3.value + v2 * $4.value
+  simple = cond($1.value = 1 and $2.value = 1, 1, 0)
+  whole_x = cond(c2 % u2 = 0, 1, 0)
+  whole_y = cond(c1 % v1 = 0, 1, 0)
+  corner_x = $3.value
+  corner_y = $4.value
+  near_x = c2 / u2
+  near_y = c1 / v1
+  far_x = c1 / u1
+  far_y = c2 / v2
+  latex = "[`" ++ cond(u1 = 1, "", str(u1)) ++ "x + " ++ str(v1) ++ "y \le " ++ str(c1) ++ "`], [`"
+          ++ str(u2) ++ "x + " ++ cond(v2 = 1, "", str(v2)) ++ "y \le " ++ str(c2) ++ "`]"
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# (h, k) lies beyond the line from (a, 0) to (0, b), so the four points are
+# the corners of a convex region.
+Q -> "corners" O integer_between(1, 6) integer_between(1, 6) integer_between(1, 4) integer_between(1, 4) when cost = 1 {
+  cost = -1
+  kind = "corners"
+  let reach_x = $3.value + $5.value
+  let reach_y = $4.value + $6.value
+  require $3.value * reach_y + $4.value * reach_x > reach_x * reach_y
+  text = "The feasible region of a linear programming problem is the quadrilateral with the corners [`(0, 0)`], [`("
+         ++ str(reach_x) ++ ", 0)`], [`(" ++ str($3.value) ++ ", " ++ str($4.value) ++ ")`] and [`(0, " ++ str(reach_y)
+         ++ ")`]. Find the greatest value of [`P = " ++ $2.latex ++ "`] over the region."
+  answer_value = max($2.x_part * reach_x, max($2.x_part * $3.value + $2.y_part * $4.value, $2.y_part * reach_y))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The corners are (a, 0), (a, s - a), (s - b, b) and (0, b), with a and b
+# below s and a + b above it. The greatest value is at one of the two
+# corners on x + y = s; with p = q it would be p s whatever a and b are, so
+# p and q are different. The line x + y = s meets the axes at (s, 0) and
+# (0, s), outside the region.
+Q -> "box_and_sum" O integer_between(2, 7) integer_between(2, 7) integer_between(3, 12) when cost = 2 {
+  cost = -2
+  kind = "box_and_sum"
+  require $3.value < $5.value and $4.value < $5.value and $3.value + $4.value > $5.value
+  require $2.x_part != $2.y_part
+  let best = max($2.x_part * $3.value + $2.y_part * ($5.value - $3.value),
+                 $2.x_part * ($5.value - $4.value) + $2.y_part * $4.value)
+  text = "Maximise [`P = " ++ $2.latex ++ "`] subject to [`x + y \le " ++ str($5.value) ++ "`], [`x \le " ++ str($3.value)
+         ++ "`], [`y \le " ++ str($4.value) ++ "`], [`x \ge 0`] and [`y \ge 0`]. Find the greatest value of [`P`]."
+  answer_value = best
+  mistake intercepts_outside answer_value = max(best, max($2.x_part * $5.value, $2.y_part * $5.value))
+}
+
+Q -> "two_lines" O R when cost = 2 weight 2 {
+  cost = -2
+  kind = "two_lines"
+  require $3.simple = 1
+  let best = max($2.x_part * $3.near_x, max($2.x_part * $3.corner_x + $2.y_part * $3.corner_y, $2.y_part * $3.near_y))
+  text = "Maximise [`P = " ++ $2.latex ++ "`] subject to " ++ $3.latex
+         ++ ", [`x \ge 0`] and [`y \ge 0`]. Find the greatest value of [`P`]."
+  answer_value = best
+  mistake intercepts_outside answer_value = max(best, max($2.x_part * $3.far_x, $2.y_part * $3.far_y))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+Q -> "general_lines" O R when cost = 3 weight 2 {
+  cost = -3
+  kind = "general_lines"
+  require $3.simple = 0
+  let best = max($2.x_part * $3.near_x, max($2.x_part * $3.corner_x + $2.y_part * $3.corner_y, $2.y_part * $3.near_y))
+  text = "Maximise [`P = " ++ $2.latex ++ "`] subject to " ++ $3.latex
+         ++ ", [`x \ge 0`] and [`y \ge 0`]. Find the greatest value of [`P`]."
+  answer_value = best
+  mistake intercepts_outside answer_value = max(best, max($2.x_part * $3.far_x, $2.y_part * $3.far_y))
+}
+
+# One corner alone gives the greatest value, so there is one point to
+# enter: the crossing point's value is not that of a corner on an axis.
+# (Where the corner on the x-axis beats the crossing point it beats the one
+# on the y-axis too, the crossing point lying between them.) The point to
+# enter has whole coordinates. Under the mistake, a meeting point outside
+# the region is given where it has a greater value.
+Q -> "optimal_point" O R when cost = 3 weight 4 {
+  cost = -3
+  kind = "optimal_point"
+  let at_x = $2.x_part * $3.near_x
+  let at_corner = $2.x_part * $3.corner_x + $2.y_part * $3.corner_y
+  let at_y = $2.y_part * $3.near_y
+  let out_x = $2.x_part * $3.far_x
+  let out_y = $2.y_part * $3.far_y
+  require at_x != at_corner and at_corner != at_y
+  require at_x < at_corner or $3.whole_x = 1
+  require at_y < at_corner or $3.whole_y = 1
+  let best = max(at_x, max(at_corner, at_y))
+  let best_point = cond(at_x > at_corner, point2($3.near_x, 0),
+                        cond(at_corner > at_y, point2($3.corner_x, $3.corner_y), point2(0, $3.near_y)))
+  text = "Maximise [`P = " ++ $2.latex ++ "`] subject to " ++ $3.latex
+         ++ ", [`x \ge 0`] and [`y \ge 0`]. At which point of the region is [`P`] greatest? Enter the point as [`(x, y)`]."
+  answer_value = best_point
+  mistake intercepts_outside answer_value = cond(out_x > best and out_x >= out_y, point2($3.far_x, 0),
+                                                 cond(out_y > best, point2(0, $3.far_y), best_point))
+}
+
+# The region above x + 2y = c and 2x + y = d has the corners (c, 0), (h, k)
+# and (0, d); below them it is cut off, and beyond them it is unbounded,
+# where a cost with positive coefficients only grows. The lines meet the
+# axes below the region too, at (d / 2, 0) and (0, c / 2).
+Q -> "minimise" O integer_between(1, 6) integer_between(1, 6) when cost = 3 weight 2 {
+  cost = -3
+  kind = "minimise"
+  let c1 = $3.value + 2 * $4.value
+  let c2 = 2 * $3.value + $4.value
+  text = "Minimise [`C = " ++ $2.latex ++ "`] subject to [`x + 2y \ge " ++ str(c1) ++ "`], [`2x + y \ge " ++ str(c2)
+         ++ "`], [`x \ge 0`] and [`y \ge 0`]. Find the least value of [`C`]."
+  let least = min($2.x_part * c1, min($2.x_part * $3.value + $2.y_part * $4.value, $2.y_part * c2))
+  answer_value = least
+  mistake intercepts_outside answer_value = min(least, min($2.x_part * c2 / 2, $2.y_part * c1 / 2))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

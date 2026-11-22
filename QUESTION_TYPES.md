@@ -77,6 +77,12 @@ attribute, or by the budget.
 | `regression.rhm` | 1 the slope from `S_xx`, `S_yy` and `S_xy`, the intercept from the slope and the two means, a residual; 2 the slope from five data points, and from the sums of `x`, `y`, `x^2` and `x y`; 3 a prediction from five data points, the coefficient of determination `r^2` | 2 | Numeric |
 | `complex_polar.rhm` | 1 the modulus and argument of a product or a quotient of two numbers in polar form, a number in polar form written as `a + bi`; 2 the modulus and principal argument of `a + bi`, and of a power of a number in polar form; 3 a power of `a + bi` by De Moivre's theorem, the modulus and the two smallest arguments of the roots of `z^n = w` | 2 | Numeric (plain answers) |
 | `relations.rhm` | 1 the number of relations, of functions and of one-to-one functions from one set to another; 2 the number of reflexive and of symmetric relations on a set, the functions onto a set of two or three, the pairs missing from a symmetric relation, the pairs of an equivalence relation from the sizes of its classes; 3 the pairs of a composite and of a transitive closure, the equivalence relations with exactly two classes | 2 | Numeric |
+| `vector_calculus.rhm` | 1 the gradient of a function at a point, the divergence of a field at a point; 2 the curl of a field at a point, a directional derivative, the Laplacian at a point; 3 the work of a field along a straight segment, a circulation round a rectangle by Green's theorem | 2 | Numeric / Vector |
+| `improper_integral.rhm` | 1 `k / x^p` from `a` to infinity, an exponential tail; 2 `k / (x + a)^p` and `k x e^(-ax)` from 0 to infinity, `k / sqrt(x)` from 0 to `b`; 3 `k x^2 e^(-ax)` and `k x e^(-a x^2)` from 0 to infinity, `k / (x^2 + a^2)` over a half line or the whole line (a multiple of pi) | 2 | Numeric (the multiple of pi is a plain answer) |
+| `linear_programming.rhm` | 1 the greatest value of `p x + q y` over a region given by its corners; 2 the greatest value under `x + y <= s`, `x <= a`, `y <= b`, and under `x + 2y <= c`, `2x + y <= d`; 3 the greatest value under two constraints with other slopes, the corner at which it is taken, the least value over the region above two lines | 2 | Numeric (a point answer carries the Point context) |
+| `graph_algorithms.rhm` | 1 a minimum spanning tree of a weighted cycle, the edges an Euler circuit still needs from a list of degrees; 2 a shortest path and a minimum spanning tree in a weighted graph on four vertices with every edge; 3 a shortest path in a weighted graph on five vertices with seven edges, the number of spanning trees of a graph on four vertices | 2 | Numeric |
+| `orthogonality.rhm` | 1 the component of one vector along another, the entry that makes two vectors orthogonal; 2 the projection of one vector onto another, the part of a vector orthogonal to another; 3 the second vector of a Gram-Schmidt process, the projection of a vector onto a plane, the matrix of the projection onto a line | 2 | Numeric / Vector / Matrix |
+| `counting_principles.rhm` | 1 the size of a union of two sets, the pigeonhole principle; 2 the numbers up to `N` divisible by one of two numbers, the size of a union of three sets, the solutions of `x_1 + ... + x_k = n` in non-negative whole numbers; 3 the numbers up to `N` divisible by none of three primes, the solutions of `x_1 + x_2 + x_3 = n` with an upper limit on each, letters in envelopes with none, exactly one or at least one in its own | 2 | Numeric |
 <!-- --8<-- [end:tables] -->
 
 ## The five general types added on this branch
@@ -520,9 +526,105 @@ question could give the same number, and half of the `r^2` answers had a
 denominator of three or four digits; an argument of pi was asked "between
 -pi and pi", and the parts of a De Moivre answer were not `plain`.
 
+## The eighth batch: vector calculus, improper integrals, linear programming, graph algorithms, projections, counting principles
+
+Six more fixed-form grammars with a default budget of 2, built answer first
+wherever there is something to find. None needed a change to the engine,
+and five of them declare mistakes.
+
+- **Vector calculus** (`vector_calculus.rhm`) makes a field of monomials
+  `c x^i y^j z^k`, differentiates it with the engine's `differentiate` and
+  puts the point in afterwards, so a gradient or a curl is a vector of
+  whole numbers. A direction has whole length, such as `(1, 2, 2)`, so a
+  directional derivative has no square root. The work along a straight
+  segment is asked of a field that is linear in `x` and `y`, and a
+  circulation by Green's theorem round a rectangle with a corner at the
+  origin. A question is asked only where the point matters and every part
+  of the field takes part: a gradient of a function that is not linear, a
+  Laplacian of two terms that each have a square in them, a circulation in
+  which both `P` and `Q` contribute; and an answer of 0 is not asked.
+- **Improper integrals** (`improper_integral.rhm`) asks only integrals that
+  converge: a power of `x` beyond a positive number, an exponential along
+  the side on which it decays, a power of `x` times an exponential (by
+  parts, or by `u = x^2`), and `k / sqrt(x)` down to 0, where the integrand
+  is unbounded and its antiderivative is not. All of these come to a whole
+  number or a fraction; `k / (x^2 + a^2)` comes to a multiple of pi and is
+  answered so, as a `plain` answer in which `atan` is not accepted.
+- **Linear programming** (`linear_programming.rhm`) asks for the greatest
+  or least value of `p x + q y` over a region of the first quadrant. A
+  region is built from its corner: the point where two slanted lines are
+  to cross is chosen first, and each right-hand side is what its left side
+  comes to there; one line is flatter than the other, so that point is a
+  corner and the lines meet the axes on either side of it. The corner at
+  which the value is taken is asked only where one corner alone takes it
+  and its coordinates are whole. The mistake of trying the points where a
+  line meets an axis outside the region gives a greatest value that is too
+  large, a least value that is too small, or a point outside the region.
+- **Graph algorithms** (`graph_algorithms.rhm`) goes on from
+  `graph_theory.rhm` with weighted graphs. The graphs are small enough to
+  be gone through in full: a shortest path is the least of every path
+  between its ends, and a minimum spanning tree the least of the sixteen
+  spanning trees of four vertices joined in pairs. The number of spanning
+  trees of a graph is a determinant (the matrix-tree theorem), and the
+  edges an Euler circuit still needs are half the vertices of odd degree,
+  read off a list of degrees that a connected graph has.
+- **Orthogonality and projections** (`orthogonality.rhm`) goes on from
+  `vector.rhm`: the component of a vector along another, the projection
+  onto a line and onto a plane through the origin, the part of a vector
+  orthogonal to another, one step of the Gram-Schmidt process and the
+  matrix of a projection. A vector that is projected onto has whole
+  length where its length is divided by, so the mistake of dividing by
+  the length once is a vector that can be told from the right one. A
+  vector or a matrix answer may have fractions among its entries.
+- **Counting principles** (`counting_principles.rhm`) goes on from
+  `counting.rhm`: inclusion and exclusion for two and three sets, the
+  pigeonhole principle, stars and bars with and without an upper limit,
+  and letters put into envelopes with none, exactly one or at least one in
+  its own (derangements). The sets of a question are counted out region by
+  region before their sizes are shown, so an intersection is never larger
+  than a set it lies in; the numbers up to `N` that a number divides are
+  the whole part of a quotient.
+
+```
+cost 3   the circulation of (x^2, 4x^2) round the rectangle 0 <= x <= 3, 0 <= y <= 1          36
+cost 3   the integral of 4/(x^2 + 4) from 0 to infinity                                      pi
+cost 3   maximise 5x + 3y under x + 2y <= 8, 3x + y <= 19, x >= 0, y >= 0: where?            (6, 1)
+cost 3   the spanning trees of the graph with the edges {1,2}, {1,3}, {2,4}, {3,4}           4
+cost 3   Gram-Schmidt on (4, -4, -1) and (1, 2, -1): the second vector                       (15/11, 18/11, -12/11)
+cost 3   the solutions of x_1 + x_2 + x_3 = 9 with 0 <= x_i <= 4                             10
+```
+
+Each grammar has a test, written apart from it, that reads the numbers
+back from the printed question and finds the answer again in its own way:
+a field by differentiating its own polynomial term by term, with the work
+along a segment as an integral in the parameter and a circulation as four
+line integrals along the sides, no theorem used; an improper integral
+twice, numerically after a change of variable that brings infinity in, and
+exactly by an antiderivative or a reduction formula that refuses an
+integral that diverges; a linear programme by intersecting every two
+boundary lines, keeping the feasible points and trying each, with a grid
+of points inside the region that none may beat; a shortest path by
+Dijkstra's algorithm and by listing every path, a spanning tree by
+Kruskal's algorithm and by trying every set of edges, and a list of
+degrees by finding a connected graph that has it; a projection by the
+properties that define it (the answer is along the vector and what is left
+is orthogonal to it), not by the formula; and a count by brute force,
+every sock, number, solution or permutation written out. The mistaken
+answers are found again from what each mistake says.
+
+What these tests found was put right in the grammars: a Laplacian
+question whose answer is 0 at every point (`4x^2 y - 4y z^2`), a
+divergence that is the same at every point because two parts cancel, and
+many vector questions in which the point or one part of the field played
+no part; a projection onto a parallel vector, which is the vector itself; a
+bounded count with the single solution `(m, m, m)`, and only three
+different derangement questions; an example point, `(3, 2)`, that was
+sometimes the answer, and a quarter of the points to enter with awkward
+fractions; and a multiple of pi in which `atan` was accepted.
+
 ## Mistakes the library looks for
 
-Ten grammars say what common mistakes lead to. `rhema run` lists them
+Fifteen grammars say what common mistakes lead to. `rhema run` lists them
 under each answer, and none of these grammars asks a question in which a
 mistake changes the working and still gives the right answer (section 9 of
 `RHEMA_LANGUAGE_EXTENSIONS.md`).
@@ -548,11 +650,19 @@ mistake changes the working and still gives the right answer (section 9 of
 | | `through_origin` | fits a line through the origin: the sum of `x y` over the sum of `x^2` |
 | `relations.rhm` | `sets_swapped` | takes the two sets the wrong way round: `m^n` functions where there are `n^m` |
 | | `diagonal_forgotten` | counts the pairs of two different elements only, and forgets that each pair `(a, a)` is free as well |
+| `vector_calculus.rhm` | `not_normalised` | takes the direction of a directional derivative as it is given and does not divide by its length |
+| `linear_programming.rhm` | `intercepts_outside` | tries every point where a line meets an axis, also those that lie outside the region |
+| `graph_algorithms.rhm` | `direct_edge` | takes the edge that joins the two ends, though a path through another vertex is shorter |
+| | `cheapest_three` | takes the three cheapest edges for a spanning tree, though they close a triangle |
+| `orthogonality.rhm` | `not_divided` | gives the dot product for a component and does not divide by the length |
+| | `length_not_squared` | divides a projection by the length where the square of the length belongs |
+| `counting_principles.rhm` | `overlap_counted_twice` | adds the sizes of sets and does not take off what they share |
+| | `triple_left_out` | corrects for what each two of three sets share and leaves out what all three share |
 
 An integral question of `calculus.rhm`, a modulus question of `complex.rhm`
 and a factoring question list none: their answers are not computed from the
-values these mistakes change. In the grammars of the sixth and seventh
-batches a mistake is listed with the forms it can be made in: a curve with
+values these mistakes change. In the grammars from the sixth batch on a
+mistake is listed with the forms it can be made in: a curve with
 no product term has no product rule to miss, and only the question that
 shows a transition matrix can have it read the wrong way round.
 

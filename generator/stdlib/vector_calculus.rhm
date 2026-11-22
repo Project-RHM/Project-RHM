@@ -1,0 +1,321 @@
+# ==========================================================================
+#  Vector calculus
+#
+#  The gradient, the divergence, the curl and the Laplacian at a point, a
+#  directional derivative, the work of a field along a straight segment and
+#  a circulation by Green's theorem. A field is made of monomials
+#  c x^i y^j z^k of degree 1 to 3; its derivatives are taken by the engine's
+#  differentiate, and the point is put in afterwards, so every answer is a
+#  whole number, a fraction or a vector of whole numbers.
+#
+#  A direction has whole length, such as (1, 2, 2), so a directional
+#  derivative has no square root. The work along a segment is asked of a
+#  field that is linear in x and y: it is the field at the midpoint times
+#  the displacement. A circulation is asked round a rectangle with a corner
+#  at the origin, where the double integral of Green's theorem is a
+#  difference of two products.
+#
+#  A question is asked only where the point matters and every part of the
+#  field takes part: a gradient or a directional derivative of a function
+#  that is not linear, a divergence that changes from point to point, a
+#  Laplacian of two terms that each have a square in them, and a
+#  circulation in which both P and Q contribute. An answer of 0 is not
+#  asked.
+#
+#  One mistake is looked for: taking the direction as it is given, without
+#  dividing by its length.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the gradient of a function at a point, the divergence of a field at
+#       a point
+#    2  the curl of a field at a point, a directional derivative, the
+#       Laplacian at a point
+#    3  the work along a straight segment, a circulation round a rectangle
+#       by Green's theorem
+# ==========================================================================
+
+attribute cost = 2 split
+
+let x = formula_variable("x")
+let y = formula_variable("y")
+let z = formula_variable("z")
+
+mistake not_normalised "takes the direction as it is given and does not divide by its length"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+synth pg_context on Q
+
+# c x^i y^j z^k of degree 1 to 3. `body` is the variables alone and `latex`
+# the term with its coefficient and sign; `xs`, `ys` and `zs` are the three
+# powers, `degree` their sum, and `squared` is 1 where one of them is 2.
+synth scale on T
+synth xs on T
+synth ys on T
+synth zs on T
+synth degree on T
+synth squared on T
+synth body on T
+synth formula on T
+synth latex on T
+
+# A function of two different terms. `squares` counts the terms with a
+# square in them and `top` is the higher of the two degrees.
+synth formula on S
+synth latex on S
+synth squares on S
+synth top on S
+
+# A field of three terms. `present` counts the components that hold their
+# own variable (x in the first, y in the second, z in the third), the ones
+# that take part in the divergence.
+synth present on F
+synth one on F
+synth two on F
+synth three on F
+synth latex on F
+
+# A point with whole coordinates.
+synth first on N
+synth second on N
+synth third on N
+synth latex on N
+
+# A direction of whole length: a Pythagorean quadruple in one of its three
+# cyclic orders, the first component positive and the other two of either
+# sign.
+synth first on U
+synth second on U
+synth third on U
+synth length on U
+
+# c x^i y^j in the plane, of degree 1 to 3; `shown` is in brackets where it
+# starts with a minus sign.
+synth scale on M
+synth x_power on M
+synth y_power on M
+synth shown on M
+
+start Q
+
+T -> nonzero_integer_between(-4, 4) integer_between(0, 2) integer_between(0, 2) integer_between(0, 2) {
+  require $2.value + $3.value + $4.value >= 1 and $2.value + $3.value + $4.value <= 3
+  scale = $1.value
+  xs = $2.value
+  ys = $3.value
+  zs = $4.value
+  degree = $2.value + $3.value + $4.value
+  squared = cond($2.value = 2 or $3.value = 2 or $4.value = 2, 1, 0)
+  body = cond($2.value = 0, "", cond($2.value = 1, "x", "x^{" ++ str($2.value) ++ "}"))
+         ++ cond($3.value = 0, "", cond($3.value = 1, "y", "y^{" ++ str($3.value) ++ "}"))
+         ++ cond($4.value = 0, "", cond($4.value = 1, "z", "z^{" ++ str($4.value) ++ "}"))
+  formula = formula_multiply(formula_constant($1.value),
+                             formula_multiply(formula_power(x, $2.value),
+                                              formula_multiply(formula_power(y, $3.value), formula_power(z, $4.value))))
+  latex = cond($1.value = 1, "", cond($1.value = 0 - 1, "-", str($1.value))) ++ body
+}
+
+S -> T T {
+  require $1.body != $2.body
+  formula = formula_add($1.formula, $2.formula)
+  squares = $1.squared + $2.squared
+  top = max($1.degree, $2.degree)
+  latex = $1.latex ++ cond($2.scale > 0, " + ", " - ") ++ cond(abs($2.scale) = 1, "", str(abs($2.scale))) ++ $2.body
+}
+
+F -> T T T {
+  present = cond($1.xs >= 1, 1, 0) + cond($2.ys >= 1, 1, 0) + cond($3.zs >= 1, 1, 0)
+  one = $1.formula
+  two = $2.formula
+  three = $3.formula
+  latex = "\left\langle " ++ $1.latex ++ ",\; " ++ $2.latex ++ ",\; " ++ $3.latex ++ " \right\rangle"
+}
+
+N -> integer_between(-2, 2) integer_between(-2, 2) integer_between(-2, 2) {
+  first = $1.value
+  second = $2.value
+  third = $3.value
+  latex = "\left(" ++ str($1.value) ++ ", " ++ str($2.value) ++ ", " ++ str($3.value) ++ "\right)"
+}
+
+U -> integer_between(1, 3) integer_between(1, 3) nonzero_integer_between(-1, 1) nonzero_integer_between(-1, 1) {
+  let p = cond($1.value = 1, 1, cond($1.value = 2, 2, 4))
+  let q = cond($1.value = 1, 2, cond($1.value = 2, 3, 4))
+  let r = cond($1.value = 1, 2, cond($1.value = 2, 6, 7))
+  first = cond($2.value = 1, p, cond($2.value = 2, q, r))
+  second = $3.value * cond($2.value = 1, q, cond($2.value = 2, r, p))
+  third = $4.value * cond($2.value = 1, r, cond($2.value = 2, p, q))
+  length = cond($1.value = 1, 3, cond($1.value = 2, 7, 9))
+}
+
+M -> nonzero_integer_between(-4, 5) integer_between(0, 2) integer_between(0, 2) {
+  require $2.value + $3.value >= 1 and $2.value + $3.value <= 3
+  let plain_term = cond($1.value = 1, "", cond($1.value = 0 - 1, "-", str($1.value)))
+                   ++ cond($2.value = 0, "", cond($2.value = 1, "x", "x^{" ++ str($2.value) ++ "}"))
+                   ++ cond($3.value = 0, "", cond($3.value = 1, "y", "y^{" ++ str($3.value) ++ "}"))
+  scale = $1.value
+  x_power = $2.value
+  y_power = $3.value
+  shown = cond($1.value < 0, "\left(" ++ plain_term ++ "\right)", plain_term)
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The function is not linear, so its gradient depends on the point.
+Q -> "gradient" S N when cost = 1 {
+  cost = -1
+  kind = "gradient"
+  require $2.top >= 2
+  let ax = formula_constant($3.first)
+  let ay = formula_constant($3.second)
+  let az = formula_constant($3.third)
+  let gx = formula_value(formula_substitute(formula_substitute(formula_substitute(differentiate($2.formula, "x"), "x", ax), "y", ay), "z", az))
+  let gy = formula_value(formula_substitute(formula_substitute(formula_substitute(differentiate($2.formula, "y"), "x", ax), "y", ay), "z", az))
+  let gz = formula_value(formula_substitute(formula_substitute(formula_substitute(differentiate($2.formula, "z"), "x", ax), "y", ay), "z", az))
+  require gx != 0 or gy != 0 or gz != 0
+  text = "Find the gradient of [`f(x, y, z) = " ++ $2.latex ++ "`] at the point [`" ++ $3.latex
+         ++ "`]. Enter it as a vector, such as [`\langle 1, -2, 3 \rangle`]."
+  answer_value = vector3(gx, gy, gz)
+  pg_context = "Vector"
+}
+
+# P_x + Q_y + R_z; at least two of the three components take part, and the
+# sum is not 0 at the point. It changes from point to point: the sum is
+# also taken at two other points, and a field for which all three values
+# agree is turned away. That covers a field of terms of degree 1, and one
+# whose shares cancel, as in (x^2, -2xy, 4z), whose divergence is 4
+# everywhere.
+Q -> "divergence" F N when cost = 1 {
+  cost = -1
+  kind = "divergence"
+  let ax = formula_constant($3.first)
+  let ay = formula_constant($3.second)
+  let az = formula_constant($3.third)
+  let px = differentiate($2.one, "x")
+  let qy = differentiate($2.two, "y")
+  let rz = differentiate($2.three, "z")
+  require $2.present >= 2
+  let spread = formula_value(formula_substitute(formula_substitute(formula_substitute(formula_add(px, formula_add(qy, rz)), "x", ax), "y", ay), "z", az))
+  require spread != 0
+  let elsewhere = formula_value(formula_substitute(formula_substitute(formula_substitute(formula_add(px, formula_add(qy, rz)),
+                    "x", formula_constant($3.first + 1)), "y", formula_constant($3.second + 2)), "z", formula_constant($3.third + 3)))
+  let further = formula_value(formula_substitute(formula_substitute(formula_substitute(formula_add(px, formula_add(qy, rz)),
+                  "x", formula_constant($3.first + 2)), "y", formula_constant($3.second - 1)), "z", formula_constant($3.third + 1)))
+  require elsewhere != spread or further != spread
+  text = "Find the divergence of [`\mathbf{F}(x, y, z) = " ++ $2.latex ++ "`] at the point [`" ++ $3.latex ++ "`]."
+  answer_value = spread
+  pg_context = "Numeric"
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# (R_y - Q_z, P_z - R_x, Q_x - P_y); a curl that vanishes at the point is
+# not asked.
+Q -> "curl" F N when cost = 2 weight 2 {
+  cost = -2
+  kind = "curl"
+  let ax = formula_constant($3.first)
+  let ay = formula_constant($3.second)
+  let az = formula_constant($3.third)
+  let cx = formula_value(formula_substitute(formula_substitute(formula_substitute(
+             formula_subtract(differentiate($2.three, "y"), differentiate($2.two, "z")), "x", ax), "y", ay), "z", az))
+  let cy = formula_value(formula_substitute(formula_substitute(formula_substitute(
+             formula_subtract(differentiate($2.one, "z"), differentiate($2.three, "x")), "x", ax), "y", ay), "z", az))
+  let cz = formula_value(formula_substitute(formula_substitute(formula_substitute(
+             formula_subtract(differentiate($2.two, "x"), differentiate($2.one, "y")), "x", ax), "y", ay), "z", az))
+  require cond(cx = 0, 0, 1) + cond(cy = 0, 0, 1) + cond(cz = 0, 0, 1) >= 2
+  text = "Find the curl of [`\mathbf{F}(x, y, z) = " ++ $2.latex ++ "`] at the point [`" ++ $3.latex
+         ++ "`]. Enter it as a vector, such as [`\langle 1, -2, 3 \rangle`]."
+  answer_value = vector3(cx, cy, cz)
+  pg_context = "Vector"
+}
+
+# The gradient dotted with the direction, divided by the direction's length.
+Q -> "directional" S N U when cost = 2 weight 2 {
+  cost = -2
+  kind = "directional"
+  let ax = formula_constant($3.first)
+  let ay = formula_constant($3.second)
+  let az = formula_constant($3.third)
+  let gx = formula_value(formula_substitute(formula_substitute(formula_substitute(differentiate($2.formula, "x"), "x", ax), "y", ay), "z", az))
+  let gy = formula_value(formula_substitute(formula_substitute(formula_substitute(differentiate($2.formula, "y"), "x", ax), "y", ay), "z", az))
+  let gz = formula_value(formula_substitute(formula_substitute(formula_substitute(differentiate($2.formula, "z"), "x", ax), "y", ay), "z", az))
+  let along = gx * $4.first + gy * $4.second + gz * $4.third
+  require $2.top >= 2
+  require along != 0
+  text = "Find the directional derivative of [`f(x, y, z) = " ++ $2.latex ++ "`] at the point [`" ++ $3.latex
+         ++ "`] in the direction of the vector [`" ++ vector_latex(vector3($4.first, $4.second, $4.third)) ++ "`]."
+  answer_value = along / $4.length
+  mistake not_normalised answer_value = along
+  pg_context = "Numeric"
+}
+
+# f_xx + f_yy + f_zz. Each term has a square in it, so each takes part,
+# and one of them is of degree 3, so the sum depends on the point; it is
+# not 0 there. (A sum such as 4x^2 y - 4y z^2 is 0 everywhere, and is
+# turned away by that.)
+Q -> "laplacian" S N when cost = 2 weight 6 {
+  cost = -2
+  kind = "laplacian"
+  require $2.squares = 2 and $2.top = 3
+  let ax = formula_constant($3.first)
+  let ay = formula_constant($3.second)
+  let az = formula_constant($3.third)
+  let total = formula_add(differentiate(differentiate($2.formula, "x"), "x"),
+                          formula_add(differentiate(differentiate($2.formula, "y"), "y"),
+                                      differentiate(differentiate($2.formula, "z"), "z")))
+  let curvature = formula_value(formula_substitute(formula_substitute(formula_substitute(total, "x", ax), "y", ay), "z", az))
+  require curvature != 0
+  text = "Find the Laplacian [`\nabla^{2} f = f_{xx} + f_{yy} + f_{zz}`] of [`f(x, y, z) = " ++ $2.latex
+         ++ "`] at the point [`" ++ $3.latex ++ "`]."
+  answer_value = curvature
+  pg_context = "Numeric"
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# F = (a x + b y, c x + d y) is linear, so its integral along the segment is
+# its value at the midpoint dotted with the displacement. The children are
+# a, b, c, d, the starting point and the displacement.
+Q -> "segment_work" nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) integer_between(-2, 2) integer_between(-2, 2) nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) when cost = 3 weight 2 {
+  cost = -3
+  kind = "segment_work"
+  let mid_x = $6.value + $8.value / 2
+  let mid_y = $7.value + $9.value / 2
+  let work = ($2.value * mid_x + $3.value * mid_y) * $8.value + ($4.value * mid_x + $5.value * mid_y) * $9.value
+  require work != 0
+  text = "Find the work done by the force [`\mathbf{F}(x, y) = \left\langle "
+         ++ cond($2.value = 1, "", cond($2.value = 0 - 1, "-", str($2.value))) ++ "x"
+         ++ cond($3.value > 0, " + ", " - ") ++ cond(abs($3.value) = 1, "", str(abs($3.value))) ++ "y,\; "
+         ++ cond($4.value = 1, "", cond($4.value = 0 - 1, "-", str($4.value))) ++ "x"
+         ++ cond($5.value > 0, " + ", " - ") ++ cond(abs($5.value) = 1, "", str(abs($5.value))) ++ "y"
+         ++ " \right\rangle`] along the straight line segment from [`(" ++ str($6.value) ++ ", " ++ str($7.value)
+         ++ ")`] to [`(" ++ str($6.value + $8.value) ++ ", " ++ str($7.value + $9.value)
+         ++ ")`], that is, [`\int_{C} \mathbf{F} \cdot d\mathbf{r}`]."
+  answer_value = work
+  pg_context = "Numeric"
+}
+
+# The circulation of (P, Q) is the double integral of Q_x - P_y. Over the
+# rectangle from the origin to (m, n), the integral of the derivative in x
+# of q x^k y^l is q m^k n^(l+1) / (l+1), and that of the derivative in y
+# of p x^i y^j is p m^(i+1) n^j / (i+1). P has y in it and Q has x, so
+# both contribute.
+Q -> "green" M M integer_between(1, 3) integer_between(1, 3) when cost = 3 weight 4 {
+  cost = -3
+  kind = "green"
+  require $2.y_power >= 1 and $3.x_power >= 1
+  let from_q = $3.scale * $4.value ^ $3.x_power * $5.value ^ ($3.y_power + 1) / ($3.y_power + 1)
+  let from_p = $2.scale * $4.value ^ ($2.x_power + 1) * $5.value ^ $2.y_power / ($2.x_power + 1)
+  require from_q - from_p != 0
+  text = "Let [`C`] be the boundary of the rectangle [`0 \le x \le " ++ str($4.value) ++ "`], [`0 \le y \le " ++ str($5.value)
+         ++ "`], taken anticlockwise. Evaluate [`\oint_{C} " ++ $2.shown ++ " \, dx + " ++ $3.shown ++ " \, dy`]."
+  answer_value = from_q - from_p
+  pg_context = "Numeric"
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

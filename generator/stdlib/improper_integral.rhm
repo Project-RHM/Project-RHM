@@ -1,0 +1,134 @@
+# ==========================================================================
+#  Improper integrals
+#
+#  Integrals over an unbounded interval, and one whose integrand is
+#  unbounded at an end of the interval. All of them converge, and all but
+#  one come to a whole number or a fraction: a power of x, an exponential,
+#  a power of x times an exponential (by parts, or by the substitution
+#  u = x^2), and the reciprocal of a square root near 0. The one with
+#  x^2 + a^2 below the line comes to a multiple of pi, and is answered so:
+#  it is a `plain` answer, graded with the inverse trigonometric functions
+#  switched off, so atan is not accepted in it.
+#
+#  The ranges of the numbers keep every integral convergent: a power of at
+#  least 2 under the line, a positive rate in every exponent.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  k / x^p from a to infinity, k e^(-a x) from 0 to infinity or
+#       k e^(a x) from minus infinity to 0
+#    2  k / (x + a)^p from 0 to infinity, k x e^(-a x) from 0 to infinity,
+#       k / sqrt(x) from 0 to b
+#    3  k x^2 e^(-a x) and k x e^(-a x^2) from 0 to infinity, k / (x^2 + a^2)
+#       from 0 to infinity or over the whole line
+# ==========================================================================
+
+attribute cost = 2 split
+
+let pi = formula_pi()
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# a x in an exponent, written without a 1.
+synth value on A
+synth latex on A
+
+# A coefficient in front of an exponential or a power, written without a 1.
+synth value on K
+synth latex on K
+
+start Q
+
+A -> integer_between(1, 5) {
+  value = $1.value
+  latex = cond($1.value = 1, "", str($1.value))
+}
+
+K -> integer_between(1, 9) {
+  value = $1.value
+  latex = cond($1.value = 1, "", str($1.value))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The antiderivative is -k / ((p - 1) x^(p-1)), which vanishes at infinity.
+Q -> "power_tail" integer_between(1, 9) integer_between(2, 4) integer_between(1, 3) when cost = 1 {
+  cost = -1
+  kind = "power_tail"
+  text = "Evaluate the improper integral [`\int_{" ++ str($4.value) ++ "}^{\infty} \frac{" ++ str($2.value) ++ "}{x^{"
+         ++ str($3.value) ++ "}} \, dx`]."
+  answer_value = $2.value / (($3.value - 1) * $4.value ^ ($3.value - 1))
+}
+
+# Either tail of an exponential that decays along it comes to k / a.
+Q -> "exponential_tail" K A integer_between(0, 1) when cost = 1 {
+  cost = -1
+  kind = "exponential_tail"
+  text = "Evaluate the improper integral [`"
+         ++ cond($4.value = 0, "\int_{0}^{\infty} " ++ $2.latex ++ "e^{-" ++ $3.latex ++ "x}",
+                 "\int_{-\infty}^{0} " ++ $2.latex ++ "e^{" ++ $3.latex ++ "x}")
+         ++ " \, dx`]."
+  answer_value = $2.value / $3.value
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+Q -> "shifted_power" integer_between(1, 9) integer_between(1, 4) integer_between(2, 3) when cost = 2 {
+  cost = -2
+  kind = "shifted_power"
+  text = "Evaluate the improper integral [`\int_{0}^{\infty} \frac{" ++ str($2.value) ++ "}{(x + " ++ str($3.value) ++ ")^{"
+         ++ str($4.value) ++ "}} \, dx`]."
+  answer_value = $2.value / (($4.value - 1) * $3.value ^ ($4.value - 1))
+}
+
+# By parts: the integral of x e^(-a x) from 0 to infinity is 1 / a^2.
+Q -> "first_moment" K A when cost = 2 weight 2 {
+  cost = -2
+  kind = "first_moment"
+  text = "Evaluate the improper integral [`\int_{0}^{\infty} " ++ $2.latex ++ "x e^{-" ++ $3.latex ++ "x} \, dx`]."
+  answer_value = $2.value / $3.value ^ 2
+}
+
+# The integrand is unbounded at 0, and its antiderivative 2 k sqrt(x) is
+# not. The upper limit is a square.
+Q -> "root_singularity" integer_between(1, 9) integer_between(1, 4) when cost = 2 {
+  cost = -2
+  kind = "root_singularity"
+  text = "Evaluate the improper integral [`\int_{0}^{" ++ str($3.value ^ 2) ++ "} \frac{" ++ str($2.value)
+         ++ "}{\sqrt{x}} \, dx`]."
+  answer_value = 2 * $2.value * $3.value
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# By parts twice: the integral of x^2 e^(-a x) is 2 / a^3.
+Q -> "second_moment" K A when cost = 3 {
+  cost = -3
+  kind = "second_moment"
+  text = "Evaluate the improper integral [`\int_{0}^{\infty} " ++ $2.latex ++ "x^{2} e^{-" ++ $3.latex ++ "x} \, dx`]."
+  answer_value = 2 * $2.value / $3.value ^ 3
+}
+
+# With u = x^2 the integral of x e^(-a x^2) is 1 / (2a).
+Q -> "square_exponent" K A when cost = 3 {
+  cost = -3
+  kind = "square_exponent"
+  text = "Evaluate the improper integral [`\int_{0}^{\infty} " ++ $2.latex ++ "x e^{-" ++ $3.latex ++ "x^{2}} \, dx`]."
+  answer_value = $2.value / (2 * $3.value)
+}
+
+# The antiderivative is (k / a) arctan(x / a), which goes to pi / 2 times
+# k / a at infinity and to minus that at minus infinity.
+Q -> "arctangent" integer_between(1, 9) integer_between(1, 5) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = "arctangent"
+  text = "Evaluate the improper integral [`\int_{" ++ cond($4.value = 0, "0", "-\infty") ++ "}^{\infty} \frac{" ++ str($2.value)
+         ++ "}{x^{2} + " ++ str($3.value ^ 2) ++ "} \, dx`]. Give the exact value, with [`\pi`] written as pi."
+  answer_value = plain(formula_multiply(formula_constant(cond($4.value = 0, $2.value / (2 * $3.value), $2.value / $3.value)), pi))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
