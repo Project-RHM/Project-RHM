@@ -138,6 +138,24 @@ is announced one version before the removal.
   the printed question. `implicit_differentiation.rhm`, `regression.rhm`
   and `relations.rhm` declare two mistakes each and `markov_chain.rhm`
   one. The library now has 58 files.
+- **Six more question types (an eighth batch).** `vector_calculus.rhm`
+  (the gradient, divergence, curl and Laplacian at a point, a directional
+  derivative, the work along a segment, Green's theorem round a
+  rectangle), `improper_integral.rhm` (integrals over an unbounded
+  interval of powers and of exponentials, one with a singularity at an
+  end, one that comes to a multiple of pi), `linear_programming.rhm` (the
+  greatest or least value of `p x + q y` over a region of the first
+  quadrant, and the corner at which it is taken), `graph_algorithms.rhm`
+  (a shortest path and a minimum spanning tree in a weighted graph, the
+  number of spanning trees, the edges an Euler circuit still needs),
+  `orthogonality.rhm` (components, projections onto a line and a plane, a
+  Gram-Schmidt step, the matrix of a projection) and
+  `counting_principles.rhm` (inclusion and exclusion for two and three
+  sets, the pigeonhole principle, stars and bars, derangements). Each has
+  fixed forms at prices 1 to 3 and a default budget of 2, uses the
+  existing builtins only, and has a test that recomputes its answers from
+  the printed question. Five of the six declare mistakes, eight in all.
+  The library now has 64 files.
 - **Changed.** `--count` with a negative number is an error of the command
   line (status 2); it was `rhema: error: List.init`. The "not run through
   WeBWorK" line of the summary is said only where PG was written. In the

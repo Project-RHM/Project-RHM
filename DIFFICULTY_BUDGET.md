@@ -26,6 +26,7 @@ this document is in `DIFFICULTY_BUDGET.zh.md`.
 | `recurrence.rhm`, `trigonometry.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
 | `probability.rhm`, `modular_arithmetic.rhm`, `graph_theory.rhm`, `binomial_theorem.rhm`, `numerical_methods.rhm`, `lines_planes.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
 | `double_integral.rhm`, `implicit_differentiation.rhm`, `markov_chain.rhm`, `regression.rhm`, `complex_polar.rhm`, `relations.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
+| `vector_calculus.rhm`, `improper_integral.rhm`, `linear_programming.rhm`, `graph_algorithms.rhm`, `orthogonality.rhm`, `counting_principles.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
 | `partial_fractions.rhm`, `taylor.rhm`, `inequality.rhm`, `partial_derivatives.rhm`, `row_reduction.rhm`, `base_conversion.rhm`, `definite_integral.rhm` | fixed forms at prices 1 to 3, questions built from priced parts at 4 to 8 | 2 | 12 |
 
 > **Sets in the language.** Since the `set` declaration

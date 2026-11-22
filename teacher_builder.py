@@ -49,6 +49,9 @@ TITLES = {
     "double_integral": "Double integrals", "implicit_differentiation": "Implicit differentiation",
     "markov_chain": "Markov chains", "regression": "Linear regression",
     "complex_polar": "Complex numbers in polar form", "relations": "Relations and functions",
+    "vector_calculus": "Vector calculus", "improper_integral": "Improper integrals",
+    "linear_programming": "Linear programming", "graph_algorithms": "Graph algorithms",
+    "orthogonality": "Orthogonality and projections", "counting_principles": "Counting principles",
 }
 
 

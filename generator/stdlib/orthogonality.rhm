@@ -1,0 +1,172 @@
+# ==========================================================================
+#  Orthogonality and projections
+#
+#  The component of a vector along another, the projection onto a line and
+#  onto a plane, the part of a vector that is orthogonal to another, one
+#  step of the Gram-Schmidt process, and the matrix of a projection. It
+#  goes on from vector.rhm, which asks for dot and cross products.
+#
+#  A vector that is projected onto has whole length, such as (1, 2, 2) or
+#  (2, 3, 6), where its length is divided by: a component then has no
+#  square root, and the mistake of dividing by the length once, where its
+#  square belongs, is a vector that can be told from the right one.
+#
+#  Two mistakes are looked for: leaving a component undivided by the
+#  length, and dividing a projection by the length where the square of the
+#  length belongs.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the component of one vector along another, the entry that makes
+#       two vectors orthogonal
+#    2  the projection of one vector onto another, the part of a vector
+#       orthogonal to another
+#    3  the second vector of a Gram-Schmidt process, the projection of a
+#       vector onto a plane through the origin, the matrix of the
+#       projection onto a line of the plane
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake not_divided "gives the dot product and does not divide by the length"
+mistake length_not_squared "divides by the length where the square of the length belongs"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+synth pg_context on Q
+
+# A vector of whole length: a Pythagorean quadruple in one of its three
+# cyclic orders, the first component positive and the other two of either
+# sign.
+synth arrow on U
+synth length on U
+
+# A vector with whole components, not all zero.
+synth arrow on W
+
+start Q
+
+U -> integer_between(1, 3) integer_between(1, 3) nonzero_integer_between(-1, 1) nonzero_integer_between(-1, 1) {
+  let p = cond($1.value = 1, 1, cond($1.value = 2, 2, 4))
+  let q = cond($1.value = 1, 2, cond($1.value = 2, 3, 4))
+  let r = cond($1.value = 1, 2, cond($1.value = 2, 6, 7))
+  arrow = vector3(cond($2.value = 1, p, cond($2.value = 2, q, r)),
+                  $3.value * cond($2.value = 1, q, cond($2.value = 2, r, p)),
+                  $4.value * cond($2.value = 1, r, cond($2.value = 2, p, q)))
+  length = cond($1.value = 1, 3, cond($1.value = 2, 7, 9))
+}
+
+W -> integer_between(-4, 4) integer_between(-4, 4) integer_between(-4, 4) {
+  require $1.value != 0 or $2.value != 0 or $3.value != 0
+  arrow = vector3($1.value, $2.value, $3.value)
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+Q -> "component" W U when cost = 1 {
+  cost = -1
+  kind = "component"
+  let dot = vector_dot($2.arrow, $3.arrow)
+  require dot != 0
+  text = "Find the component (the scalar projection) of [`\mathbf{u} = " ++ vector_latex($2.arrow) ++ "`] along [`\mathbf{v} = "
+         ++ vector_latex($3.arrow) ++ "`]."
+  answer_value = dot / $3.length
+  mistake not_divided answer_value = dot
+  pg_context = "Numeric"
+}
+
+# a c + b d + t e = 0. An entry of 0 is not asked: the first two entries
+# would be orthogonal on their own.
+Q -> "orthogonal_entry" nonzero_integer_between(-5, 5) nonzero_integer_between(-5, 5) nonzero_integer_between(-5, 5) nonzero_integer_between(-5, 5) nonzero_integer_between(-4, 4) when cost = 1 {
+  cost = -1
+  kind = "orthogonal_entry"
+  require $2.value * $4.value + $3.value * $5.value != 0
+  text = "Find the number [`t`] for which [`\langle " ++ str($2.value) ++ ", " ++ str($3.value) ++ ", t \rangle`] is orthogonal to [`"
+         ++ vector_latex(vector3($4.value, $5.value, $6.value)) ++ "`]."
+  answer_value = 0 - ($2.value * $4.value + $3.value * $5.value) / $6.value
+  pg_context = "Numeric"
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# (u . v) / (v . v) times v. u is not along v, where the projection would
+# be u itself.
+Q -> "projection" W U when cost = 2 weight 2 {
+  cost = -2
+  kind = "projection"
+  let dot = vector_dot($2.arrow, $3.arrow)
+  require dot != 0
+  require not vector_is_zero(vector_cross($2.arrow, $3.arrow))
+  text = "Find the projection of [`\mathbf{u} = " ++ vector_latex($2.arrow) ++ "`] onto [`\mathbf{v} = " ++ vector_latex($3.arrow)
+         ++ "`]. Enter it as a vector, such as [`\langle 1, -2, 3 \rangle`]; its entries may be fractions."
+  answer_value = vector_scale(dot / $3.length ^ 2, $3.arrow)
+  mistake length_not_squared answer_value = vector_scale(dot / $3.length, $3.arrow)
+  pg_context = "Vector"
+}
+
+# u less its projection onto v. u is neither along v nor orthogonal to it.
+Q -> "orthogonal_part" W U when cost = 2 weight 2 {
+  cost = -2
+  kind = "orthogonal_part"
+  let dot = vector_dot($2.arrow, $3.arrow)
+  require dot != 0
+  require not vector_is_zero(vector_cross($2.arrow, $3.arrow))
+  text = "The vector [`\mathbf{u} = " ++ vector_latex($2.arrow) ++ "`] is written as [`\mathbf{p} + \mathbf{w}`], with [`\mathbf{p}`] parallel to [`\mathbf{v} = "
+         ++ vector_latex($3.arrow) ++ "`] and [`\mathbf{w}`] orthogonal to it. Find [`\mathbf{w}`]. Enter it as a vector, such as [`\langle 1, -2, 3 \rangle`]; its entries may be fractions."
+  answer_value = vector_subtract($2.arrow, vector_scale(dot / $3.length ^ 2, $3.arrow))
+  mistake length_not_squared answer_value = vector_subtract($2.arrow, vector_scale(dot / $3.length, $3.arrow))
+  pg_context = "Vector"
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# u2 = v2 - (v2 . v1) / (v1 . v1) v1. The two vectors are not parallel and
+# not orthogonal already.
+Q -> "gram_schmidt" W W when cost = 3 weight 2 {
+  cost = -3
+  kind = "gram_schmidt"
+  let dot = vector_dot($3.arrow, $2.arrow)
+  require dot != 0
+  require not vector_is_zero(vector_cross($2.arrow, $3.arrow))
+  text = "The Gram-Schmidt process is applied to [`\mathbf{v}_1 = " ++ vector_latex($2.arrow) ++ "`] and [`\mathbf{v}_2 = "
+         ++ vector_latex($3.arrow) ++ "`], in that order, without making the vectors unit vectors: [`\mathbf{u}_1 = \mathbf{v}_1`]. Find [`\mathbf{u}_2`]. Enter it as a vector, such as [`\langle 1, -2, 3 \rangle`]; its entries may be fractions."
+  answer_value = vector_subtract($3.arrow, vector_scale(dot / vector_dot($2.arrow, $2.arrow), $2.arrow))
+  pg_context = "Vector"
+}
+
+# u less its projection onto the normal. u is neither in the plane nor
+# along the normal.
+Q -> "plane_projection" W U when cost = 3 weight 2 {
+  cost = -3
+  kind = "plane_projection"
+  let dot = vector_dot($2.arrow, $3.arrow)
+  let n1 = vector_entry($3.arrow, 1)
+  let n2 = vector_entry($3.arrow, 2)
+  let n3 = vector_entry($3.arrow, 3)
+  require dot != 0
+  require not vector_is_zero(vector_cross($2.arrow, $3.arrow))
+  text = "Find the orthogonal projection of [`\mathbf{u} = " ++ vector_latex($2.arrow) ++ "`] onto the plane [`"
+         ++ cond(n1 = 1, "", str(n1)) ++ "x" ++ cond(n2 > 0, " + ", " - ") ++ cond(abs(n2) = 1, "", str(abs(n2))) ++ "y"
+         ++ cond(n3 > 0, " + ", " - ") ++ cond(abs(n3) = 1, "", str(abs(n3))) ++ "z"
+         ++ " = 0`]. Enter it as a vector, such as [`\langle 1, -2, 3 \rangle`]; its entries may be fractions."
+  answer_value = vector_subtract($2.arrow, vector_scale(dot / $3.length ^ 2, $3.arrow))
+  mistake length_not_squared answer_value = vector_subtract($2.arrow, vector_scale(dot / $3.length, $3.arrow))
+  pg_context = "Vector"
+}
+
+# v v^T / (v . v) for v = (a, b), with a and b sharing no factor.
+Q -> "projection_matrix" integer_between(1, 4) nonzero_integer_between(-4, 4) when cost = 3 {
+  cost = -3
+  kind = "projection_matrix"
+  require gcd($2.value, abs($3.value)) = 1
+  text = "Find the matrix of the orthogonal projection of the [`xy`]-plane onto its line through the origin in the direction of [`"
+         ++ vector_latex(vector2($2.value, $3.value)) ++ "`]. Its entries may be fractions."
+  answer_value = matrix_scale(1 / ($2.value ^ 2 + $3.value ^ 2),
+                              matrix2($2.value ^ 2, $2.value * $3.value, $2.value * $3.value, $3.value ^ 2))
+  pg_context = "Matrix"
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
