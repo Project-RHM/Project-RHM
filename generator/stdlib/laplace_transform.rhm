@@ -1,0 +1,230 @@
+# ==========================================================================
+#  Laplace transforms
+#
+#  The transform of a power of t, of an exponential, of a sine and a
+#  cosine, of a sum of such functions and of a function multiplied by an
+#  exponential (the shift), and the way back: the function of t that a
+#  given function of s is the transform of, with partial fractions for a
+#  denominator that has two roots.
+#
+#  A transform is a formula in s and its inverse a formula in t. WeBWorK's
+#  Numeric context knows only x, so `pg_variables` below declares both for
+#  every blank. An inverse is built from its answer: the constants and the
+#  rates of A e^(at) + B e^(bt) are chosen first, and the numerator and the
+#  denominator shown are what the two fractions add up to.
+#
+#  Three mistakes are looked for: leaving out the factorial in the
+#  transform of a power, shifting the wrong way (s + a for e^(at)), and
+#  giving the transform of the cosine for the sine or the other way round.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the transform of k t^n, of k e^(at)
+#    2  the transform of k sin(bt) or k cos(bt), of p + q t + k e^(at); the
+#       inverse of c / s^n, of k / (s - a)
+#    3  the transform of k t^n e^(at), of e^(at) sin(bt) or e^(at) cos(bt);
+#       the inverse of (p s + q) / ((s - a)(s - b)), shown multiplied out,
+#       and of (p s + q) / (s^2 + b^2)
+# ==========================================================================
+
+attribute cost = 2 split
+
+let s = formula_variable("s")
+let t = formula_variable("t")
+
+# Every formula answer of this file is entered in a blank that knows both
+# s and t.
+let pg_variables = "s t"
+
+let forward = "Find the Laplace transform [`F(s)`] of [`f(t) = "
+let backward = "Find the function [`f(t)`] whose Laplace transform is [`F(s) = "
+
+mistake factorial_forgotten "writes 1 / s^(n+1) for the transform of t^n and leaves out the factorial n!"
+mistake shift_sign "shifts the wrong way: s + a where s - a belongs, or e^(-at) where e^(at) belongs"
+mistake sine_cosine_swapped "gives the transform of the cosine for the sine, or the other way round"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A positive coefficient in front of a function, written without a 1.
+synth value on K
+synth latex on K
+
+# A rate a, not 0: the exponent a t as LaTeX and as a formula, s - a as
+# LaTeX and as a formula, and s + a, which is the shift made the wrong way.
+synth value on A
+synth exponent on A
+synth rate on A
+synth bracket on A
+synth shifted on A
+synth unshifted on A
+
+# A frequency b: b t as LaTeX and as a formula.
+synth value on B
+synth latex on B
+synth angle on B
+
+start Q
+
+K -> integer_between(1, 6) {
+  value = $1.value
+  latex = cond($1.value = 1, "", str($1.value))
+}
+
+A -> nonzero_integer_between(-4, 4) {
+  value = $1.value
+  exponent = cond($1.value = 1, "", cond($1.value = -1, "-", str($1.value))) ++ "t"
+  rate = formula_multiply(formula_constant($1.value), t)
+  bracket = cond($1.value > 0, "s - " ++ str($1.value), "s + " ++ str(-$1.value))
+  shifted = cond($1.value > 0, formula_subtract(s, formula_constant($1.value)), formula_add(s, formula_constant(-$1.value)))
+  unshifted = cond($1.value > 0, formula_add(s, formula_constant($1.value)), formula_subtract(s, formula_constant(-$1.value)))
+}
+
+B -> integer_between(1, 5) {
+  value = $1.value
+  latex = cond($1.value = 1, "", str($1.value)) ++ "t"
+  angle = formula_multiply(formula_constant($1.value), t)
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# k n! / s^(n+1). The power is at least 2, so the factorial is not 1.
+Q -> "power" K integer_between(2, 4) when cost = 1 {
+  cost = -1
+  kind = "power"
+  text = forward ++ $2.latex ++ "t^{" ++ str($3.value) ++ "}`]."
+  answer_value = formula_divide(formula_constant($2.value * factorial($3.value)), formula_power(s, $3.value + 1))
+  mistake factorial_forgotten answer_value = formula_divide(formula_constant($2.value), formula_power(s, $3.value + 1))
+}
+
+# k / (s - a).
+Q -> "exponential" K A when cost = 1 {
+  cost = -1
+  kind = "exponential"
+  text = forward ++ $2.latex ++ "e^{" ++ $3.exponent ++ "}`]."
+  answer_value = formula_divide(formula_constant($2.value), $3.shifted)
+  mistake shift_sign answer_value = formula_divide(formula_constant($2.value), $3.unshifted)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# k b / (s^2 + b^2) for the sine and k s / (s^2 + b^2) for the cosine. The
+# last child says which is asked.
+Q -> "trigonometric" K B integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = cond($4.value = 0, "sine", "cosine")
+  let below = formula_add(formula_power(s, 2), formula_constant($3.value ^ 2))
+  let of_sine = formula_divide(formula_constant($2.value * $3.value), below)
+  let of_cosine = formula_divide(formula_multiply(formula_constant($2.value), s), below)
+  text = forward ++ $2.latex ++ cond($4.value = 0, "\sin(", "\cos(") ++ $3.latex ++ ")`]."
+  answer_value = cond($4.value = 0, of_sine, of_cosine)
+  mistake sine_cosine_swapped answer_value = cond($4.value = 0, of_cosine, of_sine)
+}
+
+# p / s + q / s^2 + k / (s - a): the transform is taken term by term.
+Q -> "combination" integer_between(1, 9) nonzero_integer_between(-6, 6) K A when cost = 2 weight 2 {
+  cost = -2
+  kind = "combination"
+  let in_t = formula_divide(formula_constant(abs($3.value)), formula_power(s, 2))
+  let polynomial_part = cond($3.value > 0, formula_add(formula_divide(formula_constant($2.value), s), in_t),
+                             formula_subtract(formula_divide(formula_constant($2.value), s), in_t))
+  text = forward ++ str($2.value) ++ cond($3.value > 0, " + ", " - ") ++ cond(abs($3.value) = 1, "", str(abs($3.value))) ++ "t + "
+         ++ $4.latex ++ "e^{" ++ $5.exponent ++ "}`]."
+  answer_value = formula_add(polynomial_part, formula_divide(formula_constant($4.value), $5.shifted))
+  mistake shift_sign answer_value = formula_add(polynomial_part, formula_divide(formula_constant($4.value), $5.unshifted))
+}
+
+# c / s^n comes from c t^(n-1) / (n - 1)!. The number above the line is a
+# multiple of that factorial, so the answer has a whole coefficient.
+Q -> "inverse_power" K integer_between(2, 4) when cost = 2 {
+  cost = -2
+  kind = "inverse_power"
+  text = backward ++ "\frac{" ++ str($2.value * factorial($3.value - 1)) ++ "}{s^{" ++ str($3.value) ++ "}}`]."
+  answer_value = formula_multiply(formula_constant($2.value), formula_power(t, $3.value - 1))
+  mistake factorial_forgotten answer_value = formula_multiply(formula_constant($2.value * factorial($3.value - 1)),
+                                                              formula_power(t, $3.value - 1))
+}
+
+# k / (s - a) comes from k e^(at).
+Q -> "inverse_exponential" K A when cost = 2 {
+  cost = -2
+  kind = "inverse_exponential"
+  text = backward ++ "\frac{" ++ str($2.value) ++ "}{" ++ $3.bracket ++ "}`]."
+  answer_value = formula_multiply(formula_constant($2.value), formula_exp($3.rate))
+  mistake shift_sign answer_value = formula_multiply(formula_constant($2.value), formula_exp(formula_negate($3.rate)))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# Multiplying by e^(at) puts s - a where s was: k n! / (s - a)^(n+1).
+Q -> "shifted_power" K integer_between(1, 2) A when cost = 3 {
+  cost = -3
+  kind = "shifted_power"
+  text = forward ++ $2.latex ++ cond($3.value = 1, "t", "t^{2}") ++ " e^{" ++ $4.exponent ++ "}`]."
+  answer_value = formula_divide(formula_constant($2.value * factorial($3.value)), formula_power($4.shifted, $3.value + 1))
+  mistake factorial_forgotten answer_value = formula_divide(formula_constant($2.value), formula_power($4.shifted, $3.value + 1))
+  mistake shift_sign answer_value = formula_divide(formula_constant($2.value * factorial($3.value)),
+                                                   formula_power($4.unshifted, $3.value + 1))
+}
+
+# b / ((s - a)^2 + b^2) for the sine and (s - a) / ((s - a)^2 + b^2) for
+# the cosine. The last child says which is asked.
+Q -> "shifted_trigonometric" A B integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = cond($4.value = 0, "shifted_sine", "shifted_cosine")
+  let below = formula_add(formula_power($2.shifted, 2), formula_constant($3.value ^ 2))
+  let wrong_below = formula_add(formula_power($2.unshifted, 2), formula_constant($3.value ^ 2))
+  let of_sine = formula_divide(formula_constant($3.value), below)
+  let of_cosine = formula_divide($2.shifted, below)
+  text = forward ++ "e^{" ++ $2.exponent ++ "} " ++ cond($4.value = 0, "\sin(", "\cos(") ++ $3.latex ++ ")`]."
+  answer_value = cond($4.value = 0, of_sine, of_cosine)
+  mistake shift_sign answer_value = cond($4.value = 0, formula_divide(formula_constant($3.value), wrong_below),
+                                         formula_divide($2.unshifted, wrong_below))
+  mistake sine_cosine_swapped answer_value = cond($4.value = 0, of_cosine, of_sine)
+}
+
+# The constants m and n and the rates a and b of m e^(at) + n e^(bt) are
+# chosen, with a below b. Then m / (s - a) + n / (s - b) is
+# ((m + n) s - (m b + n a)) / (s^2 - (a + b) s + a b), which is shown.
+Q -> "inverse_partial_fractions" nonzero_integer_between(-5, 5) nonzero_integer_between(-5, 5) A A when cost = 3 weight 4 {
+  cost = -3
+  kind = "inverse_partial_fractions"
+  require $4.value < $5.value
+  # m e^(at) + m e^(-at) is the same with both shifts made the wrong way.
+  require $4.value + $5.value != 0 or $2.value != $3.value
+  let above_s = $2.value + $3.value
+  let above_1 = -($2.value * $5.value + $3.value * $4.value)
+  let below_s = -($4.value + $5.value)
+  let below_1 = $4.value * $5.value
+  let above = cond(above_s = 0, str(above_1),
+                   cond(above_s = 1, "", cond(above_s = -1, "-", str(above_s))) ++ "s"
+                   ++ cond(above_1 = 0, "", cond(above_1 > 0, " + ", " - ") ++ str(abs(above_1))))
+  let below = "s^{2}" ++ cond(below_s = 0, "", cond(below_s > 0, " + ", " - ") ++ cond(abs(below_s) = 1, "", str(abs(below_s))) ++ "s")
+              ++ cond(below_1 > 0, " + ", " - ") ++ str(abs(below_1))
+  text = backward ++ "\frac{" ++ above ++ "}{" ++ below ++ "}`]."
+  answer_value = formula_add(formula_multiply(formula_constant($2.value), formula_exp($4.rate)),
+                             formula_multiply(formula_constant($3.value), formula_exp($5.rate)))
+  mistake shift_sign answer_value = formula_add(formula_multiply(formula_constant($2.value), formula_exp(formula_negate($4.rate))),
+                                                formula_multiply(formula_constant($3.value), formula_exp(formula_negate($5.rate))))
+}
+
+# (p s + q b) / (s^2 + b^2) comes from p cos(bt) + q sin(bt). The two
+# constants are different, so the answer with sine and cosine exchanged is
+# another function.
+Q -> "inverse_trigonometric" nonzero_integer_between(-5, 5) nonzero_integer_between(-5, 5) B when cost = 3 weight 2 {
+  cost = -3
+  kind = "inverse_trigonometric"
+  require $2.value != $3.value
+  let above_1 = $3.value * $4.value
+  text = backward ++ "\frac{" ++ cond($2.value = 1, "", cond($2.value = -1, "-", str($2.value))) ++ "s"
+         ++ cond(above_1 > 0, " + ", " - ") ++ str(abs(above_1)) ++ "}{s^{2} + " ++ str($4.value ^ 2) ++ "}`]."
+  answer_value = formula_add(formula_multiply(formula_constant($2.value), formula_cos($4.angle)),
+                             formula_multiply(formula_constant($3.value), formula_sin($4.angle)))
+  mistake sine_cosine_swapped answer_value = formula_add(formula_multiply(formula_constant($2.value), formula_sin($4.angle)),
+                                                         formula_multiply(formula_constant($3.value), formula_cos($4.angle)))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

@@ -1,0 +1,195 @@
+# ==========================================================================
+#  Power series
+#
+#  The radius and the interval of convergence of a power series, and a sum
+#  found by differentiating the geometric series. It goes on from
+#  series.rhm, which adds up series of numbers, and from taylor.rhm, which
+#  writes the first terms of a series.
+#
+#  A series is made from its radius: the numbers in it are chosen so that
+#  the ratio test ends in a fraction. Where an interval is asked for, the
+#  ends are known from the kind of series: with 1/n at the ends the series
+#  is the harmonic series at one end and the alternating one at the other,
+#  with 1/n^2 it converges at both, and with n it diverges at both.
+#
+#  An interval is entered in interval notation, such as [-1, 3) or (2, 6).
+#
+#  Four mistakes are looked for: giving the limit of the ratio test itself,
+#  which is the reciprocal of the radius; ignoring the number in front of x
+#  inside a bracket; leaving a radius squared where the series has only
+#  even powers; and giving an open interval without testing its ends. A
+#  mistake is listed only where it gives another answer: a series that
+#  diverges at both ends has the open interval for its answer, and whoever
+#  did not test the ends is right there.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the radius of a geometric series in p (x - c) / q, the interval of
+#       convergence of a geometric series
+#    2  the radius of a series in (p x + q)^n / r^n with a power of n in
+#       front, the radius of a series in even powers, the interval of
+#       convergence of the series of (x - c)^n / (n r^n)
+#    3  an interval of convergence with (-1)^n, with n^2 or sqrt(n) below
+#       the line or n above it; the radius of a series with (2n)! and
+#       (n!)^2; the sum of n p^n / q^n
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake reciprocal_taken "gives the limit found by the ratio test, which is the reciprocal of the radius"
+mistake inner_factor_ignored "ignores the number in front of x inside the bracket"
+mistake root_not_taken "leaves the radius squared: with only even powers the ratio test gives the square of the radius"
+mistake ends_not_tested "gives the open interval and does not test its two ends"
+
+let as_interval = " Enter it as an interval: a round bracket for an end that is left out, a square bracket for an end that belongs to it."
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+synth pg_context on Q
+
+# The centre c of a series: its value, and x - c as LaTeX, with brackets
+# when it is not x alone.
+synth value on C
+synth latex on C
+
+start Q
+
+C -> integer_between(-5, 5) {
+  value = $1.value
+  latex = cond($1.value = 0, "x", cond($1.value > 0, "(x - " ++ str($1.value) ++ ")", "(x + " ++ str(-$1.value) ++ ")"))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The sum of (p (x - c) / q)^n converges for |x - c| < q / p. The two
+# numbers share no factor and are different.
+Q -> "geometric_radius" integer_between(1, 7) integer_between(1, 7) C when cost = 1 weight 3 {
+  cost = -1
+  kind = "geometric_radius"
+  require $2.value != $3.value and gcd($2.value, $3.value) = 1
+  let above = cond($2.value = 1, "", str($2.value) ++ "^{n} ") ++ $4.latex ++ "^{n}"
+  text = "Find the radius of convergence of the power series [`\sum_{n=0}^{\infty} "
+         ++ cond($3.value = 1, above, "\frac{" ++ above ++ "}{" ++ str($3.value) ++ "^{n}}") ++ "`]."
+  answer_value = $3.value / $2.value
+  mistake reciprocal_taken answer_value = $2.value / $3.value
+  pg_context = "Numeric"
+}
+
+# The sum of ((x - c) / r)^n converges exactly for |x - c| < r: at both
+# ends its terms do not tend to 0.
+Q -> "geometric_interval" C integer_between(2, 6) when cost = 1 weight 2 {
+  cost = -1
+  kind = "geometric_interval"
+  text = "Find the interval of convergence of the power series [`\sum_{n=0}^{\infty} \frac{" ++ $2.latex ++ "^{n}}{" ++ str($3.value)
+         ++ "^{n}}`]." ++ as_interval
+  answer_value = set_interval($2.value - $3.value, $2.value + $3.value, false, false)
+  pg_context = "Interval"
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The power of n in front makes no difference to the radius, which is
+# r / p: the series converges for |p x + q| < r. The last child is the
+# power of n: 0 for none, 1 or 2 above the line, 3 for n below the line.
+Q -> "scaled_radius" integer_between(2, 5) nonzero_integer_between(-9, 9) integer_between(1, 7) integer_between(0, 3) when cost = 2 weight 3 {
+  cost = -2
+  kind = "scaled_radius"
+  require gcd($2.value, $4.value) = 1
+  let bracket = "(" ++ str($2.value) ++ "x" ++ cond($3.value > 0, " + ", " - ") ++ str(abs($3.value)) ++ ")^{n}"
+  let above = cond($5.value = 1, "n \, ", cond($5.value = 2, "n^{2} \, ", "")) ++ bracket
+  let below = cond($5.value = 3, "n", "") ++ cond($4.value = 1, "", cond($5.value = 3, " \, ", "") ++ str($4.value) ++ "^{n}")
+  text = "Find the radius of convergence of the power series [`\sum_{n=1}^{\infty} "
+         ++ cond(below = "", above, "\frac{" ++ above ++ "}{" ++ below ++ "}") ++ "`]."
+  answer_value = $4.value / $2.value
+  mistake reciprocal_taken answer_value = $2.value / $4.value
+  mistake inner_factor_ignored answer_value = $4.value
+  pg_context = "Numeric"
+}
+
+# The sum of (x - c)^(2n) / m^n is geometric in (x - c)^2 / m and converges
+# for (x - c)^2 < m. The number m is a square.
+Q -> "even_powers" C integer_between(2, 6) when cost = 2 weight 2 {
+  cost = -2
+  kind = "even_powers"
+  text = "Find the radius of convergence of the power series [`\sum_{n=0}^{\infty} \frac{" ++ $2.latex ++ "^{2n}}{" ++ str($3.value ^ 2)
+         ++ "^{n}}`]."
+  answer_value = $3.value
+  mistake root_not_taken answer_value = $3.value ^ 2
+  pg_context = "Numeric"
+}
+
+# At x = c + r the series is the harmonic series, which diverges; at
+# x = c - r it is the alternating harmonic series, which converges.
+Q -> "half_open_interval" C integer_between(2, 5) when cost = 2 weight 2 {
+  cost = -2
+  kind = "half_open_interval"
+  text = "Find the interval of convergence of the power series [`\sum_{n=1}^{\infty} \frac{" ++ $2.latex ++ "^{n}}{n \, " ++ str($3.value)
+         ++ "^{n}}`]." ++ as_interval
+  answer_value = set_interval($2.value - $3.value, $2.value + $3.value, true, false)
+  mistake ends_not_tested answer_value = set_interval($2.value - $3.value, $2.value + $3.value, false, false)
+  pg_context = "Interval"
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# The radius is r whatever stands beside r^n. The third child says what
+# does, and the fourth whether the terms have the factor (-1)^n:
+#
+#   0  n below the line: the end c + r is left out and c - r belongs;
+#      with (-1)^n it is the other way round
+#   1  n^2 below the line: both ends belong
+#   2  n above the line: both ends are left out
+#   3  sqrt(n) below the line: as with n
+#
+# The series with n below the line and no (-1)^n is the one of price 2.
+Q -> "interval_ends" C integer_between(2, 5) integer_between(0, 3) integer_between(0, 1) when cost = 3 weight 3 {
+  cost = -3
+  kind = "interval_ends"
+  require $4.value != 0 or $5.value = 1
+  let alternating = $5.value = 1
+  let above = cond(alternating, "(-1)^{n} \, ", "") ++ cond($4.value = 2, "n \, ", "") ++ $2.latex ++ "^{n}"
+  let below = cond($4.value = 0, "n \, ", cond($4.value = 1, "n^{2} \, ", cond($4.value = 3, "\sqrt{n} \, ", ""))) ++ str($3.value) ++ "^{n}"
+  let lower_belongs = $4.value = 1 or (($4.value = 0 or $4.value = 3) and not alternating)
+  let upper_belongs = $4.value = 1 or (($4.value = 0 or $4.value = 3) and alternating)
+  text = "Find the interval of convergence of the power series [`\sum_{n=1}^{\infty} \frac{" ++ above ++ "}{" ++ below ++ "}`]."
+         ++ as_interval
+  answer_value = set_interval($2.value - $3.value, $2.value + $3.value, lower_belongs, upper_belongs)
+  mistake ends_not_tested answer_value = set_interval($2.value - $3.value, $2.value + $3.value, false, false)
+  pg_context = "Interval"
+}
+
+# The ratio of the coefficients (2n)! / (n!)^2 tends to 4. With k^n below
+# the line the radius is k / 4; turned over, with k^n above the line, it
+# is 4 / k. The last child says which.
+Q -> "central_binomial" integer_between(1, 7) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = "central_binomial"
+  require $2.value != 4
+  let power_of_k = cond($2.value = 1, "", str($2.value) ++ "^{n}")
+  text = "Find the radius of convergence of the power series [`\sum_{n=0}^{\infty} "
+         ++ cond($3.value = 0,
+                 "\frac{(2n)!}{(n!)^{2}" ++ cond($2.value = 1, "", " \, " ++ power_of_k) ++ "} \, x^{n}",
+                 "\frac{(n!)^{2}" ++ cond($2.value = 1, "", " \, " ++ power_of_k) ++ "}{(2n)!} \, x^{n}")
+         ++ "`]."
+  answer_value = cond($3.value = 0, $2.value / 4, 4 / $2.value)
+  mistake reciprocal_taken answer_value = cond($3.value = 0, 4 / $2.value, $2.value / 4)
+  pg_context = "Numeric"
+}
+
+# Differentiating the geometric series gives the sum of n x^(n-1), which
+# is 1 / (1 - x)^2; times x, and at x = p / q, the sum of n p^n / q^n is
+# p q / (q - p)^2.
+Q -> "differentiated_sum" integer_between(1, 5) integer_between(2, 6) when cost = 3 weight 4 {
+  cost = -3
+  kind = "differentiated_sum"
+  require $2.value < $3.value and gcd($2.value, $3.value) = 1
+  text = "Find the sum of the series [`\sum_{n=1}^{\infty} \frac{n" ++ cond($2.value = 1, "", " \, " ++ str($2.value) ++ "^{n}") ++ "}{"
+         ++ str($3.value) ++ "^{n}}`]. (Differentiate the geometric series.)"
+  answer_value = $2.value * $3.value / ($3.value - $2.value) ^ 2
+  pg_context = "Numeric"
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

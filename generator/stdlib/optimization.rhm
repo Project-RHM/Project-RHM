@@ -1,0 +1,200 @@
+# ==========================================================================
+#  Optimisation in two and three variables
+#
+#  The second-derivative test, the least or greatest value of a quadratic
+#  function of x and y, a local extreme value of a cubic, and greatest and
+#  least values under a constraint, as found with a Lagrange multiplier. It
+#  goes on from partial_derivatives.rhm, which asks for the derivatives and
+#  for the critical point itself.
+#
+#  A quadratic is built from its critical point: the point is chosen first,
+#  and the terms in x and in y are set so that both partial derivatives
+#  vanish there. Its second-degree part is positive (or negative) definite,
+#  so the value at that point is the least (or the greatest) of all. The
+#  constrained questions have their answers in closed form: the product
+#  x y under p x + q y = c is greatest where p x = q y, the sum of squares
+#  on a line is least at the foot of the perpendicular, and a x + b y on a
+#  circle is extreme where (x, y) is along (a, b), with a and b the legs of
+#  a right triangle with whole sides.
+#
+#  Two mistakes are looked for: taking the coefficients of x^2 and y^2 for
+#  the second derivatives in the test, and taking the value at a saddle
+#  point for a local extreme value. A question is asked only where the
+#  mistake gives another number.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  D = f_xx f_yy - f_xy^2 of a quadratic, the least or greatest value
+#       of a quadratic with no term in x y
+#    2  the least or greatest value of a quadratic with a term in x y, the
+#       greatest value of x y under p x + q y = c, the least value of
+#       x^2 + y^2 on a line
+#    3  the greatest or least value of a x + b y on a circle, the local
+#       extreme value of x^3 + y^3 - 3k x y + c, the greatest value of
+#       x y z under p x + q y + r z = c
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake coefficients_for_derivatives "takes the coefficients of x^2 and y^2 for the second derivatives, which are twice as large"
+mistake saddle_taken "takes the value at the saddle point for the local extreme value"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A term after the first of a sum: its coefficient, and the term as LaTeX
+# with its sign in front, or nothing when the coefficient is 0. The
+# productions differ in what the coefficient multiplies.
+synth value on S
+synth in_xy on S
+synth in_x on S
+synth in_y on S
+synth alone on S
+
+# The legs and the hypotenuse of a right triangle with whole sides.
+synth leg1 on T
+synth leg2 on T
+synth hypotenuse on T
+
+start Q
+
+S -> integer_between(-9, 9) {
+  value = $1.value
+  in_xy = cond($1.value = 0, "", cond($1.value > 0, " + ", " - ") ++ cond(abs($1.value) = 1, "", str(abs($1.value))) ++ "xy")
+  in_x = cond($1.value = 0, "", cond($1.value > 0, " + ", " - ") ++ cond(abs($1.value) = 1, "", str(abs($1.value))) ++ "x")
+  in_y = cond($1.value = 0, "", cond($1.value > 0, " + ", " - ") ++ cond(abs($1.value) = 1, "", str(abs($1.value))) ++ "y")
+  alone = cond($1.value = 0, "", cond($1.value > 0, " + ", " - ") ++ str(abs($1.value)))
+}
+
+T -> integer_between(1, 4) integer_between(0, 1) {
+  leg1 = cond($1.value = 1, 3, cond($1.value = 2, 6, cond($1.value = 3, 5, 8))) * cond($2.value = 0, 1, 0)
+         + cond($1.value = 1, 4, cond($1.value = 2, 8, cond($1.value = 3, 12, 15))) * cond($2.value = 0, 0, 1)
+  leg2 = cond($1.value = 1, 4, cond($1.value = 2, 8, cond($1.value = 3, 12, 15))) * cond($2.value = 0, 1, 0)
+         + cond($1.value = 1, 3, cond($1.value = 2, 6, cond($1.value = 3, 5, 8))) * cond($2.value = 0, 0, 1)
+  hypotenuse = cond($1.value = 1, 5, cond($1.value = 2, 10, cond($1.value = 3, 13, 17)))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# f = a x^2 + b x y + c y^2 + d x + e y has f_xx = 2a, f_yy = 2c and
+# f_xy = b, so D = 4 a c - b^2, the same at every point.
+Q -> "discriminant" integer_between(1, 5) S nonzero_integer_between(-5, 5) S S when cost = 1 {
+  cost = -1
+  kind = "discriminant"
+  require $3.value != 0
+  text = "For [`f(x, y) = " ++ cond($2.value = 1, "", str($2.value)) ++ "x^{2}" ++ $3.in_xy
+         ++ cond($4.value > 0, " + ", " - ") ++ cond(abs($4.value) = 1, "", str(abs($4.value))) ++ "y^{2}" ++ $5.in_x ++ $6.in_y
+         ++ "`], find [`D = f_{xx} f_{yy} - (f_{xy})^{2}`], the number that the second-derivative test looks at."
+  answer_value = 4 * $2.value * $4.value - $3.value ^ 2
+  mistake coefficients_for_derivatives answer_value = $2.value * $4.value - $3.value ^ 2
+}
+
+# a (x - h)^2 + b (y - k)^2 + m, multiplied out, with a and b positive. The
+# first child turns every sign over, and the least value into the greatest.
+# The point is not the origin, so the constant shown is not the answer.
+Q -> "square_completed" integer_between(0, 1) integer_between(1, 4) integer_between(1, 4) integer_between(-4, 4) integer_between(-4, 4) integer_between(-9, 9) when cost = 1 {
+  cost = -1
+  kind = "square_completed"
+  require $5.value != 0 or $6.value != 0
+  let sign = cond($2.value = 0, 1, -1)
+  let term_x = -2 * sign * $3.value * $5.value
+  let term_y = -2 * sign * $4.value * $6.value
+  let constant = sign * ($3.value * $5.value ^ 2 + $4.value * $6.value ^ 2 + $7.value)
+  text = "Find the " ++ cond($2.value = 0, "least", "greatest") ++ " value of [`f(x, y) = "
+         ++ cond(sign * $3.value = 1, "", cond(sign * $3.value = -1, "-", str(sign * $3.value))) ++ "x^{2}"
+         ++ cond(sign > 0, " + ", " - ") ++ cond($4.value = 1, "", str($4.value)) ++ "y^{2}"
+         ++ cond(term_x = 0, "", cond(term_x > 0, " + ", " - ") ++ str(abs(term_x)) ++ "x")
+         ++ cond(term_y = 0, "", cond(term_y > 0, " + ", " - ") ++ str(abs(term_y)) ++ "y")
+         ++ cond(constant = 0, "", cond(constant > 0, " + ", " - ") ++ str(abs(constant))) ++ "`]."
+  answer_value = sign * $7.value
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# a x^2 + b x y + c y^2 with a and c positive and 4 a c above b^2, so it is
+# positive away from the origin. The critical point (h, k) is chosen, and
+# the terms in x and y are those that make both derivatives vanish there:
+# d = -(2 a h + b k) and e = -(b h + 2 c k). The first child turns every
+# sign over.
+Q -> "quadratic_extreme" integer_between(0, 1) integer_between(1, 4) nonzero_integer_between(-3, 3) integer_between(1, 4) integer_between(-3, 3) integer_between(-3, 3) integer_between(-9, 9) when cost = 2 weight 3 {
+  cost = -2
+  kind = "quadratic_extreme"
+  require 4 * $3.value * $5.value > $4.value ^ 2
+  require $6.value != 0 or $7.value != 0
+  let sign = cond($2.value = 0, 1, -1)
+  let term_xy = sign * $4.value
+  let term_x = -sign * (2 * $3.value * $6.value + $4.value * $7.value)
+  let term_y = -sign * ($4.value * $6.value + 2 * $5.value * $7.value)
+  let constant = sign * $8.value
+  text = "Find the " ++ cond($2.value = 0, "least", "greatest") ++ " value of [`f(x, y) = "
+         ++ cond(sign * $3.value = 1, "", cond(sign * $3.value = -1, "-", str(sign * $3.value))) ++ "x^{2}"
+         ++ cond(term_xy > 0, " + ", " - ") ++ cond(abs(term_xy) = 1, "", str(abs(term_xy))) ++ "xy"
+         ++ cond(sign > 0, " + ", " - ") ++ cond($5.value = 1, "", str($5.value)) ++ "y^{2}"
+         ++ cond(term_x = 0, "", cond(term_x > 0, " + ", " - ") ++ cond(abs(term_x) = 1, "", str(abs(term_x))) ++ "x")
+         ++ cond(term_y = 0, "", cond(term_y > 0, " + ", " - ") ++ cond(abs(term_y) = 1, "", str(abs(term_y))) ++ "y")
+         ++ cond(constant = 0, "", cond(constant > 0, " + ", " - ") ++ str(abs(constant))) ++ "`]."
+  answer_value = sign * ($3.value * $6.value ^ 2 + $4.value * $6.value * $7.value + $5.value * $7.value ^ 2) + term_x * $6.value
+                 + term_y * $7.value + constant
+}
+
+# With p x = q y = c / 2 the product is c^2 / (4 p q).
+Q -> "product_on_line" integer_between(1, 5) integer_between(1, 5) integer_between(2, 20) when cost = 2 weight 2 {
+  cost = -2
+  kind = "product_on_line"
+  text = "Find the greatest value of [`xy`] for positive numbers [`x`] and [`y`] with [`" ++ cond($2.value = 1, "", str($2.value)) ++ "x + "
+         ++ cond($3.value = 1, "", str($3.value)) ++ "y = " ++ str($4.value) ++ "`]."
+  answer_value = $4.value ^ 2 / (4 * $2.value * $3.value)
+}
+
+# The least value is the square of the distance from the origin to the
+# line, c^2 / (a^2 + b^2). The line does not pass through the origin.
+Q -> "squares_on_line" integer_between(1, 5) nonzero_integer_between(-5, 5) nonzero_integer_between(-12, 12) when cost = 2 weight 2 {
+  cost = -2
+  kind = "squares_on_line"
+  text = "Find the least value of [`x^{2} + y^{2}`] for numbers [`x`] and [`y`] with [`" ++ cond($2.value = 1, "", str($2.value)) ++ "x"
+         ++ cond($3.value > 0, " + ", " - ") ++ cond(abs($3.value) = 1, "", str(abs($3.value))) ++ "y = " ++ str($4.value) ++ "`]."
+  answer_value = $4.value ^ 2 / ($2.value ^ 2 + $3.value ^ 2)
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# On the circle of radius r, a x + b y is between -r sqrt(a^2 + b^2) and
+# r sqrt(a^2 + b^2). The signs of a and b are drawn; the last child says
+# which end is asked for.
+Q -> "linear_on_circle" T integer_between(0, 1) integer_between(0, 1) integer_between(1, 5) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = "linear_on_circle"
+  let first = $2.leg1 * cond($3.value = 0, 1, -1)
+  let second = $2.leg2 * cond($4.value = 0, 1, -1)
+  text = "Find the " ++ cond($6.value = 0, "greatest", "least") ++ " value of [`" ++ str(first) ++ "x" ++ cond(second > 0, " + ", " - ")
+         ++ str(abs(second)) ++ "y`] on the circle [`x^{2} + y^{2} = " ++ str($5.value ^ 2) ++ "`]."
+  answer_value = cond($6.value = 0, 1, -1) * $5.value * $2.hypotenuse
+}
+
+# x^3 + y^3 - 3 k x y + c has the critical points (0, 0), a saddle, and
+# (k, k), where it has the value c - k^3: a local minimum for positive k
+# and a local maximum for negative k.
+Q -> "cubic_extreme" nonzero_integer_between(-4, 4) S when cost = 3 weight 2 {
+  cost = -3
+  kind = "cubic_extreme"
+  text = "The function [`f(x, y) = x^{3} + y^{3}" ++ cond($2.value > 0, " - ", " + ") ++ str(3 * abs($2.value)) ++ "xy" ++ $3.alone
+         ++ "`] has one local " ++ cond($2.value > 0, "minimum", "maximum") ++ ". Find the value of [`f`] there."
+  answer_value = $3.value - $2.value ^ 3
+  mistake saddle_taken answer_value = $3.value
+}
+
+# The product is greatest where p x = q y = r z = c / 3, and is
+# c^3 / (27 p q r) there.
+Q -> "product_on_plane" integer_between(1, 3) integer_between(1, 3) integer_between(1, 3) integer_between(3, 12) when cost = 3 weight 2 {
+  cost = -3
+  kind = "product_on_plane"
+  text = "Find the greatest value of [`xyz`] for positive numbers [`x`], [`y`] and [`z`] with [`" ++ cond($2.value = 1, "", str($2.value))
+         ++ "x + " ++ cond($3.value = 1, "", str($3.value)) ++ "y + " ++ cond($4.value = 1, "", str($4.value)) ++ "z = " ++ str($5.value)
+         ++ "`]."
+  answer_value = $5.value ^ 3 / (27 * $2.value * $3.value * $4.value)
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

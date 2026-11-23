@@ -1,0 +1,241 @@
+# ==========================================================================
+#  Random variables
+#
+#  The rules for the mean and the variance of a random variable, the
+#  binomial, geometric and uniform distributions, a probability density on
+#  an interval, and a covariance. It goes on from statistics.rhm, which
+#  asks for the mean and the variance of a random variable given by its
+#  table of probabilities.
+#
+#  Every answer is a whole number or an exact fraction. A density is
+#  c x^n on the interval from 0 to b, with the constant c that makes its
+#  integral 1, so its probabilities, its mean and its variance are
+#  fractions.
+#
+#  Three mistakes are looked for: multiplying a variance by the factor in
+#  front of the variable where the square of the factor belongs, subtracting
+#  the variances of a difference of independent variables, and taking the
+#  mean off E(X^2) where the square of the mean belongs. A question is asked
+#  only where the mistake gives another number.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  E(aX + b) from E(X), the mean of a binomial variable, a probability
+#       of a uniform variable, the expected number of attempts up to the
+#       first success
+#    2  Var(aX + b) from Var(X), a variance from E(X) and E(X^2), the
+#       variance of a binomial variable, the variance of aX + bY or aX - bY
+#       for independent X and Y, the probability that the first success
+#       comes at a given attempt
+#    3  a density c x^n on [0, b]: its constant, a probability, its mean and
+#       its variance; the covariance of two variables that take the values
+#       0 and 1
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake not_squared "multiplies a variance by the factor in front of the variable where the square of the factor belongs"
+mistake variances_subtracted "subtracts the variances of a difference of independent variables where they are added"
+mistake mean_not_squared "takes the mean off E(X^2) where the square of the mean belongs"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A probability in lowest terms, strictly between 0 and 1.
+synth value on F
+synth latex on F
+
+# a X + b with a not 1 and b not 0.
+synth scale on L
+synth shift on L
+synth latex on L
+
+# The density c x^n on [0, b]: its degree n, its upper end b, the constant
+# c = (n + 1) / b^(n+1), and x^n as LaTeX.
+synth degree on D
+synth top on D
+synth constant on D
+synth power on D
+
+start Q
+
+F -> integer_between(1, 5) integer_between(2, 6) {
+  require $1.value < $2.value
+  require gcd($1.value, $2.value) = 1
+  value = $1.value / $2.value
+  latex = number_latex($1.value / $2.value)
+}
+
+L -> nonzero_integer_between(-5, 5) nonzero_integer_between(-9, 9) {
+  require $1.value != 1
+  scale = $1.value
+  shift = $2.value
+  latex = cond($1.value = -1, "-", str($1.value)) ++ "X" ++ cond($2.value > 0, " + ", " - ") ++ str(abs($2.value))
+}
+
+D -> integer_between(1, 3) integer_between(2, 4) {
+  degree = $1.value
+  top = $2.value
+  constant = ($1.value + 1) / $2.value ^ ($1.value + 1)
+  power = cond($1.value = 1, "x", "x^{" ++ str($1.value) ++ "}")
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+Q -> "linear_mean" nonzero_integer_between(-9, 9) L when cost = 1 {
+  cost = -1
+  kind = "linear_mean"
+  text = "A random variable [`X`] has [`E(X) = " ++ str($2.value) ++ "`]. Find [`E(" ++ $3.latex ++ ")`]."
+  answer_value = $3.scale * $2.value + $3.shift
+}
+
+Q -> "binomial_mean" integer_between(4, 20) F when cost = 1 {
+  cost = -1
+  kind = "binomial_mean"
+  text = "An experiment succeeds with probability [`" ++ $3.latex ++ "`] each time it is tried, independently of the other times. It is tried [`"
+         ++ str($2.value) ++ "`] times, and [`X`] is the number of successes. Find [`E(X)`]."
+  answer_value = $2.value * $3.value
+}
+
+# The interval is cut in three: before, inside and after the part asked
+# for. The part asked for is not the whole interval.
+Q -> "uniform_probability" integer_between(-5, 5) integer_between(0, 4) integer_between(1, 5) integer_between(0, 4) when cost = 1 {
+  cost = -1
+  kind = "uniform_probability"
+  require $3.value + $5.value > 0
+  let from = $2.value + $3.value
+  let upto = $2.value + $3.value + $4.value
+  text = "A random variable [`X`] is uniformly distributed on the interval from [`" ++ str($2.value) ++ "`] to [`"
+         ++ str($2.value + $3.value + $4.value + $5.value) ++ "`]. Find [`P(" ++ str(from) ++ " \le X \le " ++ str(upto) ++ ")`]."
+  answer_value = $4.value / ($3.value + $4.value + $5.value)
+}
+
+Q -> "geometric_mean" F when cost = 1 {
+  cost = -1
+  kind = "geometric_mean"
+  text = "An experiment succeeds with probability [`" ++ $2.latex
+         ++ "`] each time it is tried, independently of the other times. It is tried until it succeeds for the first time. Find the expected number of attempts, the successful one included."
+  answer_value = 1 / $2.value
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# Var(aX + b) = a^2 Var(X). The factor is neither 0 nor 1, so its square is
+# another number.
+Q -> "linear_variance" integer_between(1, 9) L when cost = 2 weight 2 {
+  cost = -2
+  kind = "linear_variance"
+  text = "A random variable [`X`] has [`\mathrm{Var}(X) = " ++ str($2.value) ++ "`]. Find [`\mathrm{Var}(" ++ $3.latex ++ ")`]."
+  answer_value = $3.scale ^ 2 * $2.value
+  mistake not_squared answer_value = $3.scale * $2.value
+}
+
+# The variance is chosen, and E(X^2) is the variance and the square of the
+# mean together. The mean is neither 0 nor 1, so it is not its own square.
+Q -> "variance_from_moments" nonzero_integer_between(-6, 6) integer_between(1, 9) when cost = 2 weight 2 {
+  cost = -2
+  kind = "variance_from_moments"
+  require $2.value != 1
+  text = "A random variable [`X`] has [`E(X) = " ++ str($2.value) ++ "`] and [`E(X^{2}) = " ++ str($3.value + $2.value ^ 2)
+         ++ "`]. Find [`\mathrm{Var}(X)`]."
+  answer_value = $3.value
+  mistake mean_not_squared answer_value = $3.value + $2.value ^ 2 - $2.value
+}
+
+Q -> "binomial_variance" integer_between(4, 20) F when cost = 2 weight 2 {
+  cost = -2
+  kind = "binomial_variance"
+  text = "An experiment succeeds with probability [`" ++ $3.latex ++ "`] each time it is tried, independently of the other times. It is tried [`"
+         ++ str($2.value) ++ "`] times, and [`X`] is the number of successes. Find [`\mathrm{Var}(X)`]."
+  answer_value = $2.value * $3.value * (1 - $3.value)
+}
+
+# Var(aX + bY) = Var(aX - bY) = a^2 Var(X) + b^2 Var(Y) for independent X
+# and Y. The last child says whether a sum or a difference is asked. One
+# of the two factors is not 1, so that the squares matter.
+Q -> "independent_combination" integer_between(1, 9) integer_between(1, 9) integer_between(1, 4) integer_between(1, 4) integer_between(0, 1) when cost = 2 weight 3 {
+  cost = -2
+  kind = "independent_combination"
+  require $4.value + $5.value > 2
+  let difference = $6.value = 1
+  text = "The random variables [`X`] and [`Y`] are independent, with [`\mathrm{Var}(X) = " ++ str($2.value)
+         ++ "`] and [`\mathrm{Var}(Y) = " ++ str($3.value) ++ "`]. Find [`\mathrm{Var}(" ++ cond($4.value = 1, "", str($4.value)) ++ "X"
+         ++ cond(difference, " - ", " + ") ++ cond($5.value = 1, "", str($5.value)) ++ "Y)`]."
+  answer_value = $4.value ^ 2 * $2.value + $5.value ^ 2 * $3.value
+  mistake not_squared answer_value = $4.value * $2.value + $5.value * $3.value
+  mistake variances_subtracted answer_value = cond(difference, $4.value ^ 2 * $2.value - $5.value ^ 2 * $3.value,
+                                                   $4.value ^ 2 * $2.value + $5.value ^ 2 * $3.value)
+}
+
+Q -> "geometric_first" F integer_between(2, 4) when cost = 2 weight 2 {
+  cost = -2
+  kind = "geometric_first"
+  text = "An experiment succeeds with probability [`" ++ $2.latex
+         ++ "`] each time it is tried, independently of the other times. Find the probability that it succeeds for the first time at attempt [`"
+         ++ str($3.value) ++ "`]."
+  answer_value = (1 - $2.value) ^ ($3.value - 1) * $2.value
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# The integral of c x^n from 0 to b is c b^(n+1) / (n + 1), which is to be 1.
+Q -> "density_constant" D when cost = 3 {
+  cost = -3
+  kind = "density_constant"
+  text = "The function [`f(x) = c \, " ++ $2.power ++ "`] for [`0 \le x \le " ++ str($2.top)
+         ++ "`], and [`f(x) = 0`] elsewhere, is the probability density of a random variable. Find the constant [`c`]."
+  answer_value = $2.constant
+}
+
+# P(X <= m) = (m / b)^(n+1) for m between 0 and b. The second child says
+# which side of m is asked for.
+Q -> "density_probability" D integer_between(1, 3) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = "density_probability"
+  require $3.value < $2.top
+  let below = ($3.value / $2.top) ^ ($2.degree + 1)
+  text = "A random variable [`X`] has the probability density [`f(x) = " ++ number_latex($2.constant) ++ " " ++ $2.power
+         ++ "`] for [`0 \le x \le " ++ str($2.top) ++ "`], and [`f(x) = 0`] elsewhere. Find [`P(X "
+         ++ cond($4.value = 0, "\le ", "> ") ++ str($3.value) ++ ")`]."
+  answer_value = cond($4.value = 0, below, 1 - below)
+}
+
+# E(X) = (n + 1) b / (n + 2).
+Q -> "density_mean" D when cost = 3 {
+  cost = -3
+  kind = "density_mean"
+  text = "A random variable [`X`] has the probability density [`f(x) = " ++ number_latex($2.constant) ++ " " ++ $2.power
+         ++ "`] for [`0 \le x \le " ++ str($2.top) ++ "`], and [`f(x) = 0`] elsewhere. Find [`E(X)`]."
+  answer_value = ($2.degree + 1) * $2.top / ($2.degree + 2)
+}
+
+# E(X^2) = (n + 1) b^2 / (n + 3), and the square of the mean is taken off.
+Q -> "density_variance" D when cost = 3 {
+  cost = -3
+  kind = "density_variance"
+  let mean = ($2.degree + 1) * $2.top / ($2.degree + 2)
+  let second_moment = ($2.degree + 1) * $2.top ^ 2 / ($2.degree + 3)
+  text = "A random variable [`X`] has the probability density [`f(x) = " ++ number_latex($2.constant) ++ " " ++ $2.power
+         ++ "`] for [`0 \le x \le " ++ str($2.top) ++ "`], and [`f(x) = 0`] elsewhere. Find [`\mathrm{Var}(X)`]."
+  answer_value = second_moment - mean ^ 2
+  mistake mean_not_squared answer_value = second_moment - mean
+}
+
+# The four children are the weights of the outcomes (0, 0), (0, 1), (1, 0)
+# and (1, 1). X Y is 1 in the last alone, so E(XY) is its probability, and
+# the covariance is E(XY) - E(X) E(Y).
+Q -> "covariance" integer_between(1, 4) integer_between(1, 4) integer_between(1, 4) integer_between(1, 4) when cost = 3 {
+  cost = -3
+  kind = "covariance"
+  let total = $2.value + $3.value + $4.value + $5.value
+  text = "The random variables [`X`] and [`Y`] each take the values [`0`] and [`1`], with [`P(X = 0, Y = 0) = "
+         ++ number_latex($2.value / total) ++ "`], [`P(X = 0, Y = 1) = " ++ number_latex($3.value / total) ++ "`], [`P(X = 1, Y = 0) = "
+         ++ number_latex($4.value / total) ++ "`] and [`P(X = 1, Y = 1) = " ++ number_latex($5.value / total)
+         ++ "`]. Find the covariance [`\mathrm{Cov}(X, Y) = E(XY) - E(X) E(Y)`]."
+  answer_value = $5.value / total - (($4.value + $5.value) / total) * (($3.value + $5.value) / total)
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

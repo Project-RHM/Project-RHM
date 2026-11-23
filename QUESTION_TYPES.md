@@ -83,6 +83,12 @@ attribute, or by the budget.
 | `graph_algorithms.rhm` | 1 a minimum spanning tree of a weighted cycle, the edges an Euler circuit still needs from a list of degrees; 2 a shortest path and a minimum spanning tree in a weighted graph on four vertices with every edge; 3 a shortest path in a weighted graph on five vertices with seven edges, the number of spanning trees of a graph on four vertices | 2 | Numeric |
 | `orthogonality.rhm` | 1 the component of one vector along another, the entry that makes two vectors orthogonal; 2 the projection of one vector onto another, the part of a vector orthogonal to another; 3 the second vector of a Gram-Schmidt process, the projection of a vector onto a plane, the matrix of the projection onto a line | 2 | Numeric / Vector / Matrix |
 | `counting_principles.rhm` | 1 the size of a union of two sets, the pigeonhole principle; 2 the numbers up to `N` divisible by one of two numbers, the size of a union of three sets, the solutions of `x_1 + ... + x_k = n` in non-negative whole numbers; 3 the numbers up to `N` divisible by none of three primes, the solutions of `x_1 + x_2 + x_3 = n` with an upper limit on each, letters in envelopes with none, exactly one or at least one in its own | 2 | Numeric |
+| `random_variables.rhm` | 1 `E(aX + b)` from `E(X)`, the mean of a binomial variable, a probability of a uniform variable, the expected number of attempts up to the first success; 2 `Var(aX + b)` from `Var(X)`, a variance from `E(X)` and `E(X^2)`, the variance of a binomial variable, the variance of `aX + bY` or `aX - bY` for independent `X` and `Y`, the probability that the first success comes at a given attempt; 3 a density `c x^n` on `[0, b]`: its constant, a probability, its mean and its variance; the covariance of two variables that take the values 0 and 1 | 2 | Numeric |
+| `laplace_transform.rhm` | 1 the transform of `k t^n`, of `k e^(at)`; 2 the transform of `k sin(bt)` or `k cos(bt)`, of `p + q t + k e^(at)`, the inverse of `c / s^n` and of `k / (s - a)`; 3 the transform of `k t^n e^(at)`, of `e^(at) sin(bt)` or `e^(at) cos(bt)`, the inverse of `(p s + q) / ((s - a)(s - b))`, shown multiplied out, and of `(p s + q) / (s^2 + b^2)` | 2 | Numeric (answers in `s` and `t`) |
+| `automata.rhm` | 1 the state a three-state automaton reaches on a word of four letters, the number of words of a length (or up to a length) over an alphabet; 2 the number of words of length 3 an automaton accepts, the words with no two `a`s next to each other, the least number of states for counting `a`s and `b`s modulo two numbers, and for the words that contain a given word; 3 the number of words of length 4 or 5 an automaton accepts, the words with two `a`s next to each other somewhere, the least number of states for the words with a given letter in a given place from the end | 2 | Numeric |
+| `power_series.rhm` | 1 the radius of convergence of a geometric series in `p (x - c) / q`, the interval of convergence of a geometric series; 2 the radius of a series in `(p x + q)^n / r^n` with a power of `n` in front, the radius of a series in even powers, the interval of convergence of the series of `(x - c)^n / (n r^n)`; 3 an interval of convergence with `(-1)^n`, with `n^2` or `sqrt(n)` below the line or `n` above it, the radius of a series with `(2n)!` and `(n!)^2`, the sum of `n p^n / q^n` | 2 | Numeric / Interval |
+| `optimization.rhm` | 1 `D = f_xx f_yy - f_xy^2` of a quadratic, the least or greatest value of a quadratic with no term in `x y`; 2 the least or greatest value of a quadratic with a term in `x y`, the greatest value of `x y` under `p x + q y = c`, the least value of `x^2 + y^2` on a line; 3 the greatest or least value of `a x + b y` on a circle, the local extreme value of `x^3 + y^3 - 3k x y + c`, the greatest value of `x y z` under `p x + q y + r z = c` | 2 | Numeric |
+| `linear_transformations.rhm` | 1 the image of a vector, the matrix from the images of `(1, 0)` and `(0, 1)`; 2 the matrix of one transformation after another, the area of the image of a region, the dimension of the kernel or of the image of a transformation of space, the vector sent to a given one; 3 the matrix from the images of two other vectors, the matrix in another basis, the matrix of a reflection in a line | 2 | Numeric / Vector / Matrix |
 <!-- --8<-- [end:tables] -->
 
 ## The five general types added on this branch
@@ -622,9 +628,123 @@ different derangement questions; an example point, `(3, 2)`, that was
 sometimes the answer, and a quarter of the points to enter with awkward
 fractions; and a multiple of pi in which `atan` was accepted.
 
+## The ninth batch: random variables, Laplace transforms, finite automata, power series, optimisation, linear transformations
+
+Six more fixed-form grammars with a default budget of 2, built answer first
+wherever there is something to find. None needed a change to the engine,
+and all six declare mistakes.
+
+- **Random variables** (`random_variables.rhm`) goes on from
+  `statistics.rhm`, which reads a mean and a variance off a table of
+  probabilities. It asks for the rules: the mean and the variance of
+  `aX + b`, a variance from `E(X)` and `E(X^2)`, the variance of
+  `aX + bY` and of `aX - bY` for independent variables; for the mean and
+  the variance of a binomial variable, the expected number of attempts up
+  to a first success and the chance that it comes at a given attempt, and
+  a probability of a uniform variable. A density is `c x^n` on the
+  interval from 0 to `b`, with the constant that makes its integral 1, so
+  its probabilities, its mean and its variance are fractions. A covariance
+  is asked of two variables that take the values 0 and 1, from the four
+  probabilities of their outcomes.
+- **Laplace transforms** (`laplace_transform.rhm`) asks for the transform
+  of a power of `t`, of an exponential, of a sine and a cosine, of a sum
+  of such functions and of a function multiplied by an exponential (the
+  shift), and for the way back. An inverse is built from its answer: the
+  constants and the rates of `A e^(at) + B e^(bt)` are chosen first, and
+  the fraction shown is what `A / (s - a) + B / (s - b)` adds up to, with
+  its denominator multiplied out. A transform is a formula in `s` and an
+  inverse a formula in `t`; the file says `let pg_variables = "s t"`, so
+  every blank knows both.
+- **Finite automata** (`automata.rhm`) shows a deterministic automaton
+  with three states over the letters `a` and `b` as a transition table.
+  The table is kept when the two letters do different things, neither
+  sends every state to the same one, and every state can be reached from
+  the first. The moves of a letter are a matrix of 0s and 1s, so the state
+  after a word is read off a product of matrices, and the words of a
+  length that the automaton accepts are counted by a power of the sum of
+  the two; some word is accepted and some is not. The words with no two
+  `a`s next to each other are counted the same way, by an automaton with
+  two states that is not shown. The least number of states is asked for
+  three families of languages in which it is known: the numbers of `a`s
+  and `b`s divisible by two numbers, the words that contain a given word,
+  and the words with a given letter in place `k` from the end, which need
+  `2^k` states.
+- **Power series** (`power_series.rhm`) goes on from `series.rhm` and
+  `taylor.rhm` with the radius and the interval of convergence. A series
+  is made from its radius, so the ratio test ends in a fraction: a
+  geometric series in `p (x - c) / q`, a series in `(p x + q)^n / r^n`
+  with a power of `n` beside it, a series in even powers whose radius is a
+  square root, and a series with `(2n)!` and `(n!)^2`, whose ratio tends
+  to 4. Where an interval is asked for, its ends are known from the kind
+  of series: with `1/n` or `1/sqrt(n)` one end belongs to it and the other
+  does not, and `(-1)^n` changes which; with `1/n^2` both belong, and with
+  `n` neither. An interval is an answer in the Interval context, entered
+  with round and square brackets.
+- **Optimisation** (`optimization.rhm`) goes on from
+  `partial_derivatives.rhm`, which asks for a critical point; here the
+  value there is asked for. A quadratic is built from its critical point
+  and has a second-degree part that is positive or negative definite, so
+  that value is the least or the greatest of all. The cubic
+  `x^3 + y^3 - 3k x y + c` has a saddle at the origin and one local
+  extreme at `(k, k)`. The constrained questions are those a Lagrange
+  multiplier solves in closed form: `x y` under `p x + q y = c`,
+  `x^2 + y^2` on a line, `a x + b y` on a circle, where `a` and `b` are the
+  legs of a right triangle with whole sides, and `x y z` under
+  `p x + q y + r z = c`.
+- **Linear transformations** (`linear_transformations.rhm`) goes on from
+  `matrix_expr.rhm` and `row_reduction.rhm` with what a matrix does: the
+  image of a vector, the matrix from the images of the standard basis and
+  from the images of two other vectors, the matrix of one transformation
+  after another, the area of an image, the dimensions of the kernel and
+  the image of a transformation of space, the vector that is sent to a
+  given one, the matrix in another basis and the matrix of a reflection.
+  What is to be found is chosen first, and the two vectors of a question,
+  or of a new basis, are the columns of a matrix of determinant 1, so that
+  nothing found has a fraction in it; only a reflection has fractions.
+
+```
+cost 3   the density 3/8 x^2 on [0, 2]: Var(X)                                               3/20
+cost 3   the function whose Laplace transform is (7s + 3) / (s^2 - 1)                        2e^{-t} + 5e^{t}
+cost 3   the least number of states for the words with a in place 5 from the end             32
+cost 3   the interval of convergence of the sum of (x - 1)^n / (sqrt(n) 3^n)                 [-2, 4)
+cost 3   the local minimum value of x^3 + y^3 - 6xy + 7                                      -1
+cost 3   the matrix of the reflection in the line along (3, -4)                              [[-7/25, -24/25], [-24/25, 7/25]]
+```
+
+Each grammar has a test, written apart from it, that reads the numbers
+back from the printed question and finds the answer again in its own way:
+a rule for means and variances on tables of outcomes built to have the
+printed mean or variance and transformed outcome by outcome, a binomial
+variable trial by trial with no binomial coefficient, a first success by
+writing out every sequence of draws, and a density by integrating its own
+polynomial; a transform by the integral that defines it, taken numerically
+at several values of `s`, and an inverse by putting the answer through the
+same integral, which must give the printed fraction back; an automaton by
+running the printed table letter by letter on every word, a count of words
+by writing them all out, and a least number of states by building a
+wasteful automaton, minimising it, and counting the classes of words that
+no continuation tells apart; a radius from the growth of the terms read
+off the printed series, with each end of an interval decided by how the
+terms behave there (not tending to 0, alternating and decreasing, or like
+a power of `n`); an extreme value by solving for the critical points and
+classifying them, with a grid of points round it that must do worse, and
+a constrained one by a search along the line, the circle or the plane,
+with the Lagrange condition checked exactly where the search ends; and a
+matrix by the property that defines it: it sends the printed vectors to
+their printed images, `A b_j` is the combination of the new basis that
+its column says, a reflection keeps its line and turns the normal over.
+The mistaken answers are found again from what each mistake says.
+
+These tests found no wrong answer and no mistake that gives the right
+answer. They found one weak form, put right in the grammar: the rows of a
+kernel or image question were drawn apart from one another, so the rank
+was 1 in fewer than one question in a hundred and the dimension could be
+given without looking; one time in three the second row is now a multiple
+of the first.
+
 ## Mistakes the library looks for
 
-Fifteen grammars say what common mistakes lead to. `rhema run` lists them
+Twenty-one grammars say what common mistakes lead to. `rhema run` lists them
 under each answer, and none of these grammars asks a question in which a
 mistake changes the working and still gives the right answer (section 9 of
 `RHEMA_LANGUAGE_EXTENSIONS.md`).
@@ -658,6 +778,23 @@ mistake changes the working and still gives the right answer (section 9 of
 | | `length_not_squared` | divides a projection by the length where the square of the length belongs |
 | `counting_principles.rhm` | `overlap_counted_twice` | adds the sizes of sets and does not take off what they share |
 | | `triple_left_out` | corrects for what each two of three sets share and leaves out what all three share |
+| `random_variables.rhm` | `not_squared` | multiplies a variance by the factor in front of the variable where the square of the factor belongs |
+| | `variances_subtracted` | subtracts the variances of a difference of independent variables where they are added |
+| | `mean_not_squared` | takes the mean off `E(X^2)` where the square of the mean belongs |
+| `laplace_transform.rhm` | `factorial_forgotten` | writes `1 / s^(n+1)` for the transform of `t^n` and leaves out the factorial |
+| | `shift_sign` | shifts the wrong way: `s + a` where `s - a` belongs, or `e^(-at)` where `e^(at)` belongs |
+| | `sine_cosine_swapped` | gives the transform of the cosine for the sine, or the other way round |
+| `automata.rhm` | `read_backwards` | reads the word from its last letter to its first |
+| | `one_state_per_letter` | counts one state for each letter to remember, where every combination of those letters needs its own |
+| `power_series.rhm` | `reciprocal_taken` | gives the limit found by the ratio test, which is the reciprocal of the radius |
+| | `inner_factor_ignored` | ignores the number in front of `x` inside the bracket |
+| | `root_not_taken` | leaves the radius squared: with only even powers the ratio test gives the square of the radius |
+| | `ends_not_tested` | gives the open interval and does not test its two ends |
+| `optimization.rhm` | `coefficients_for_derivatives` | takes the coefficients of `x^2` and `y^2` for the second derivatives, which are twice as large |
+| | `saddle_taken` | takes the value at the saddle point for the local extreme value |
+| `linear_transformations.rhm` | `images_as_rows` | writes the images of the basis vectors as the rows of the matrix, where they are its columns |
+| | `order_swapped` | multiplies the two matrices in the order the transformations are applied, the first on the left |
+| | `basis_wrong_way` | changes basis the wrong way round: `P A P^(-1)` where `P^(-1) A P` belongs |
 
 An integral question of `calculus.rhm`, a modulus question of `complex.rhm`
 and a factoring question list none: their answers are not computed from the

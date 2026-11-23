@@ -20,7 +20,7 @@ make `x + 2x \cdot \sin x` cost at least 4.
 
 ## Mistakes
 
-Fifteen grammars say what common mistakes lead to (chapter 9 of the tutorial).
+Twenty-one grammars say what common mistakes lead to (chapter 9 of the tutorial).
 `rhema run` lists them under each answer, and none of these grammars asks a
 question in which a mistake changes the working and still gives the right
 answer.
@@ -54,6 +54,23 @@ answer.
 | | `length_not_squared` | divides a projection by the length where the square of the length belongs |
 | `counting_principles.rhm` | `overlap_counted_twice` | adds the sizes of sets and does not take off what they share |
 | | `triple_left_out` | corrects for what each two of three sets share and leaves out what all three share |
+| `random_variables.rhm` | `not_squared` | multiplies a variance by the factor in front of the variable where the square of the factor belongs |
+| | `variances_subtracted` | subtracts the variances of a difference of independent variables where they are added |
+| | `mean_not_squared` | takes the mean off `E(X^2)` where the square of the mean belongs |
+| `laplace_transform.rhm` | `factorial_forgotten` | writes `1 / s^(n+1)` for the transform of `t^n` and leaves out the factorial |
+| | `shift_sign` | shifts the wrong way: `s + a` where `s - a` belongs, or `e^(-at)` where `e^(at)` belongs |
+| | `sine_cosine_swapped` | gives the transform of the cosine for the sine, or the other way round |
+| `automata.rhm` | `read_backwards` | reads the word from its last letter to its first |
+| | `one_state_per_letter` | counts one state for each letter to remember, where every combination of those letters needs its own |
+| `power_series.rhm` | `reciprocal_taken` | gives the limit found by the ratio test, which is the reciprocal of the radius |
+| | `inner_factor_ignored` | ignores the number in front of `x` inside the bracket |
+| | `root_not_taken` | leaves the radius squared: with only even powers the ratio test gives the square of the radius |
+| | `ends_not_tested` | gives the open interval and does not test its two ends |
+| `optimization.rhm` | `coefficients_for_derivatives` | takes the coefficients of `x^2` and `y^2` for the second derivatives, which are twice as large |
+| | `saddle_taken` | takes the value at the saddle point for the local extreme value |
+| `linear_transformations.rhm` | `images_as_rows` | writes the images of the basis vectors as the rows of the matrix, where they are its columns |
+| | `order_swapped` | multiplies the two matrices in the order the transformations are applied, the first on the left |
+| | `basis_wrong_way` | changes basis the wrong way round: `P A P^(-1)` where `P^(-1) A P` belongs |
 
 The mistakes of `calculus.rhm` concern its derivative questions; an
 integral question lists none. `power_term_by_term` is declared in

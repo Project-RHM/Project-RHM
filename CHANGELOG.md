@@ -156,6 +156,26 @@ is announced one version before the removal.
   existing builtins only, and has a test that recomputes its answers from
   the printed question. Five of the six declare mistakes, eight in all.
   The library now has 64 files.
+- **Six more question types (a ninth batch).** `random_variables.rhm`
+  (the mean and the variance of `aX + b` and of sums of independent
+  variables, binomial, geometric and uniform variables, a density
+  `c x^n`, a covariance), `laplace_transform.rhm` (the transform of
+  powers, exponentials, sines and cosines, the shift, and inverse
+  transforms, one by partial fractions; answers in `s` and in `t`),
+  `automata.rhm` (the state a three-state automaton reaches on a word, the
+  words of a length it accepts, the words with no two `a`s together, the
+  least number of states for three families of languages),
+  `power_series.rhm` (the radius and the interval of convergence, with the
+  ends of the interval tested), `optimization.rhm` (the second-derivative
+  test, the least or greatest value of a quadratic in two variables, a
+  local extreme of a cubic, extremes on a line, a circle and a plane) and
+  `linear_transformations.rhm` (images, the matrix from images, one
+  transformation after another, areas, the dimensions of kernel and image,
+  the matrix in another basis, a reflection). Each has fixed forms at
+  prices 1 to 3 and a default budget of 2, uses the existing builtins
+  only, and has a test that recomputes its answers from the printed
+  question. All six declare mistakes, seventeen in all. The library now
+  has 70 files.
 - **Changed.** `--count` with a negative number is an error of the command
   line (status 2); it was `rhema: error: List.init`. The "not run through
   WeBWorK" line of the summary is said only where PG was written. In the
