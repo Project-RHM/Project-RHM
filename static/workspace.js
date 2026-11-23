@@ -17,18 +17,22 @@ document.addEventListener('DOMContentLoaded', () => {
         numerical_methods:'Calculus and sequences',
         double_integral:'Calculus and sequences', implicit_differentiation:'Calculus and sequences',
         vector_calculus:'Calculus and sequences', improper_integral:'Calculus and sequences',
+        laplace_transform:'Calculus and sequences', power_series:'Calculus and sequences',
+        optimization:'Calculus and sequences',
         complex:'Vectors and linear algebra', vector:'Vectors and linear algebra', vector_expr:'Vectors and linear algebra',
         determinant:'Vectors and linear algebra', eigen:'Vectors and linear algebra', linear_system:'Vectors and linear algebra',
         matrix_expr:'Vectors and linear algebra', matrix_inverse:'Vectors and linear algebra',
         row_reduction:'Vectors and linear algebra', lines_planes:'Vectors and linear algebra',
         complex_polar:'Vectors and linear algebra', orthogonality:'Vectors and linear algebra',
+        linear_transformations:'Vectors and linear algebra',
         counting:'Other topics', number_theory:'Other topics', inequality:'Other topics',
         analytic_geometry:'Other topics', statistics:'Other topics',
         base_conversion:'Other topics', trigonometry:'Other topics',
         probability:'Other topics', modular_arithmetic:'Other topics', graph_theory:'Other topics',
         binomial_theorem:'Arithmetic and algebra',
         markov_chain:'Other topics', regression:'Other topics', relations:'Logic and sets',
-        linear_programming:'Other topics', graph_algorithms:'Other topics', counting_principles:'Other topics'
+        linear_programming:'Other topics', graph_algorithms:'Other topics', counting_principles:'Other topics',
+        random_variables:'Other topics', automata:'Other topics'
     };
     const translated = value => window.RhemaI18n?.t(value) || value;
     function updateSelection() {

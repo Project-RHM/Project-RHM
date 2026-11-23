@@ -52,6 +52,9 @@ TITLES = {
     "vector_calculus": "Vector calculus", "improper_integral": "Improper integrals",
     "linear_programming": "Linear programming", "graph_algorithms": "Graph algorithms",
     "orthogonality": "Orthogonality and projections", "counting_principles": "Counting principles",
+    "random_variables": "Random variables", "laplace_transform": "Laplace transforms",
+    "automata": "Finite automata", "power_series": "Power series",
+    "optimization": "Optimisation in several variables", "linear_transformations": "Linear transformations",
 }
 
 

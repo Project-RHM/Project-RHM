@@ -1,0 +1,241 @@
+# ==========================================================================
+#  Finite automata
+#
+#  A deterministic finite automaton with three states over the letters a
+#  and b, given by its transition table: the state it reaches on a word,
+#  and the number of words of a length that it accepts. Then words counted
+#  without an automaton in sight, though one does the counting: the words
+#  with no two a's next to each other. And the least number of states an
+#  automaton needs for a few languages whose answer is known.
+#
+#  The table is drawn letter by letter, and kept when the two letters do
+#  different things, neither sends every state to the same one, and the
+#  states 2 and 3 can both be reached from state 1. The moves of a letter
+#  are a matrix of 0s and 1s, so the state after a word is read off a
+#  product of matrices, and the words of length n that lead from one state
+#  to another are counted by the n-th power of the sum of the two.
+#
+#  Two mistakes are looked for: reading a word from its last letter to its
+#  first, and counting one state for each letter an automaton has to
+#  remember where every combination of them needs a state of its own. A
+#  question is asked only where the mistake gives another number.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the state after a word of four letters, the number of words of a
+#       length (or up to a length) over an alphabet
+#    2  the number of words of length 3 an automaton accepts, the words
+#       with no two a's next to each other, the least number of states for
+#       counting a's and b's modulo two numbers, and for the words that
+#       contain a given word
+#    3  the number of words of length 4 or 5 an automaton accepts, the
+#       words in which two a's are next to each other somewhere, the least
+#       number of states for the words with an a in a given place from the
+#       end
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake read_backwards "reads the word from its last letter to its first"
+mistake one_state_per_letter "counts one state for each letter to remember, where every combination of those letters needs its own"
+
+# Where each letter leads from each of the states 1, 2 and 3.
+random a1 = integer_between(1, 3)
+random a2 = integer_between(1, 3)
+random a3 = integer_between(1, 3)
+random b1 = integer_between(1, 3)
+random b2 = integer_between(1, 3)
+random b3 = integer_between(1, 3)
+
+# The moves of a letter as a matrix: a 1 in row i and column j when the
+# letter leads from state i to state j.
+let on_a = matrix3(cond(a1 = 1, 1, 0), cond(a1 = 2, 1, 0), cond(a1 = 3, 1, 0),
+                   cond(a2 = 1, 1, 0), cond(a2 = 2, 1, 0), cond(a2 = 3, 1, 0),
+                   cond(a3 = 1, 1, 0), cond(a3 = 2, 1, 0), cond(a3 = 3, 1, 0))
+let on_b = matrix3(cond(b1 = 1, 1, 0), cond(b1 = 2, 1, 0), cond(b1 = 3, 1, 0),
+                   cond(b2 = 1, 1, 0), cond(b2 = 2, 1, 0), cond(b2 = 3, 1, 0),
+                   cond(b3 = 1, 1, 0), cond(b3 = 2, 1, 0), cond(b3 = 3, 1, 0))
+let on_either = matrix_add(on_a, on_b)
+
+# The automaton starts in state 1.
+let start_row = matrix_row(vector3(1, 0, 0))
+
+let reaches_2 = a1 = 2 or b1 = 2 or ((a1 = 3 or b1 = 3) and (a3 = 2 or b3 = 2))
+let reaches_3 = a1 = 3 or b1 = 3 or ((a1 = 2 or b1 = 2) and (a2 = 3 or b2 = 3))
+let sound = on_a != on_b and not (a1 = a2 and a2 = a3) and not (b1 = b2 and b2 = b3) and reaches_2 and reaches_3
+
+let machine = "A finite automaton has the states [`1`], [`2`] and [`3`] and reads words over the letters [`a`] and [`b`]. It starts in state [`1`]. Its transition table is [`\begin{array}{c|cc} & a & b \\\\ \hline 1 & "
+              ++ str(a1) ++ " & " ++ str(b1) ++ " \\\\ 2 & " ++ str(a2) ++ " & " ++ str(b2) ++ " \\\\ 3 & " ++ str(a3) ++ " & " ++ str(b3)
+              ++ " \end{array}`], in which the row of a state gives the state that each letter leads to."
+
+let least_states = "A deterministic finite automaton over the letters [`a`] and [`b`] is to accept exactly the words "
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A letter: its name and its moves.
+synth letter on L
+synth step on L
+
+# The states that accept, one or two of the three: whether each does, and
+# the words that say so.
+synth first on E
+synth second on E
+synth third on E
+synth words on E
+
+start Q
+
+L -> integer_between(0, 1) {
+  letter = cond($1.value = 0, "a", "b")
+  step = cond($1.value = 0, on_a, on_b)
+}
+
+E -> integer_between(1, 6) {
+  first = bit_and($1.value, 1) / 1
+  second = bit_and($1.value, 2) / 2
+  third = bit_and($1.value, 4) / 4
+  words = cond($1.value = 1, "in state [`1`]",
+          cond($1.value = 2, "in state [`2`]",
+          cond($1.value = 4, "in state [`3`]",
+          cond($1.value = 3, "in state [`1`] or in state [`2`]",
+          cond($1.value = 5, "in state [`1`] or in state [`3`]", "in state [`2`] or in state [`3`]")))))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The row of state 1 in the product of the letters' matrices, taken in the
+# order of the word, has its 1 in the column of the state reached.
+Q -> "final_state" L L L L when cost = 1 weight 9 {
+  cost = -1
+  kind = "final_state"
+  require sound
+  let forward = matrix_multiply(matrix_multiply(matrix_multiply(matrix_multiply(start_row, $2.step), $3.step), $4.step), $5.step)
+  let backward = matrix_multiply(matrix_multiply(matrix_multiply(matrix_multiply(start_row, $5.step), $4.step), $3.step), $2.step)
+  let reached = matrix_entry(forward, 1, 1) + 2 * matrix_entry(forward, 1, 2) + 3 * matrix_entry(forward, 1, 3)
+  let reversed = matrix_entry(backward, 1, 1) + 2 * matrix_entry(backward, 1, 2) + 3 * matrix_entry(backward, 1, 3)
+  require reached != reversed
+  text = machine ++ " In which state is it after reading the word [`" ++ $2.letter ++ $3.letter ++ $4.letter ++ $5.letter ++ "`]?"
+  answer_value = reached
+  mistake read_backwards answer_value = reversed
+}
+
+# k^n words of length n, and (k^(n+1) - 1) / (k - 1) of length at most n.
+Q -> "word_count" integer_between(2, 5) integer_between(2, 5) integer_between(0, 1) when cost = 1 {
+  cost = -1
+  kind = cond($4.value = 0, "word_count", "words_up_to")
+  text = "How many words of length " ++ cond($4.value = 0, "exactly", "at most") ++ " [`" ++ str($3.value)
+         ++ "`] are there over an alphabet of [`" ++ str($2.value) ++ "`] letters?"
+         ++ cond($4.value = 0, "", " The empty word, of length [`0`], is one of them.")
+  answer_value = cond($4.value = 0, $2.value ^ $3.value, ($2.value ^ ($3.value + 1) - 1) / ($2.value - 1))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The row of state 1 in the cube of the sum of the two matrices counts the
+# words of length 3 by the state they lead to. Some word is accepted and
+# some is not.
+Q -> "accepted_count" E when cost = 2 weight 6 {
+  cost = -2
+  kind = "accepted_count"
+  require sound
+  let counts = matrix_multiply(matrix_multiply(matrix_multiply(start_row, on_either), on_either), on_either)
+  let accepted = matrix_entry(counts, 1, 1) * $2.first + matrix_entry(counts, 1, 2) * $2.second + matrix_entry(counts, 1, 3) * $2.third
+  require accepted > 0 and accepted < 8
+  text = machine ++ " It accepts a word when it ends " ++ $2.words ++ ". How many of the [`8`] words of length [`3`] does it accept?"
+  answer_value = accepted
+}
+
+# An automaton with two states does the counting: N after a letter other
+# than a (and at the start), A after an a. From N any of the k letters may
+# follow, k - 1 of them leading to N and one to A; from A only the k - 1
+# that lead to N. The words of length n are the first row of the n-th
+# power of ((k - 1, 1), (k - 1, 0)), added up. With three letters the
+# length stops at 6, which keeps the answer below 1000.
+Q -> "no_two_together" integer_between(2, 3) integer_between(4, 8) when cost = 2 weight 2 {
+  cost = -2
+  kind = "no_two_together"
+  require $2.value = 2 or $3.value <= 6
+  let once = matrix2($2.value - 1, 1, $2.value - 1, 0)
+  let twice = matrix_multiply(once, once)
+  let four = matrix_multiply(twice, twice)
+  let all = cond($3.value = 4, four,
+            cond($3.value = 5, matrix_multiply(four, once),
+            cond($3.value = 6, matrix_multiply(four, twice),
+            cond($3.value = 7, matrix_multiply(matrix_multiply(four, twice), once), matrix_multiply(four, four)))))
+  text = "How many words of length [`" ++ str($3.value) ++ "`] over the letters " ++ cond($2.value = 2, "[`a`] and [`b`]", "[`a`], [`b`] and [`c`]")
+         ++ " have no two [`a`]s next to each other?"
+  answer_value = matrix_entry(all, 1, 1) + matrix_entry(all, 1, 2)
+}
+
+# The automaton has to know both remainders, and every pair of remainders
+# is told from every other by some word that follows.
+Q -> "remainders" integer_between(2, 5) integer_between(2, 5) when cost = 2 {
+  cost = -2
+  kind = "remainders"
+  text = least_states ++ "in which the number of [`a`]s is divisible by [`" ++ str($2.value) ++ "`] and the number of [`b`]s is divisible by [`"
+         ++ str($3.value) ++ "`]. What is the least number of states it can have?"
+  answer_value = $2.value * $3.value
+}
+
+# One state for each number of letters of the word matched so far, from
+# none to all of them. The word has three or four letters: the last child
+# says whether the fourth is there.
+Q -> "contains_word" L L L L integer_between(0, 1) when cost = 2 {
+  cost = -2
+  kind = "contains_word"
+  text = least_states ++ "that contain [`" ++ $2.letter ++ $3.letter ++ $4.letter ++ cond($6.value = 1, $5.letter, "")
+         ++ "`] somewhere, as letters next to each other. What is the least number of states it can have?"
+  answer_value = 4 + $6.value
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# As at price 2, with words of length 4 or 5.
+Q -> "accepted_count_long" E integer_between(4, 5) when cost = 3 weight 6 {
+  cost = -3
+  kind = "accepted_count_long"
+  require sound
+  let four = matrix_multiply(matrix_multiply(matrix_multiply(matrix_multiply(start_row, on_either), on_either), on_either), on_either)
+  let counts = cond($3.value = 4, four, matrix_multiply(four, on_either))
+  let accepted = matrix_entry(counts, 1, 1) * $2.first + matrix_entry(counts, 1, 2) * $2.second + matrix_entry(counts, 1, 3) * $2.third
+  require accepted > 0 and accepted < 2 ^ $3.value
+  text = machine ++ " It accepts a word when it ends " ++ $2.words ++ ". How many of the [`" ++ str(2 ^ $3.value) ++ "`] words of length [`"
+         ++ str($3.value) ++ "`] does it accept?"
+  answer_value = accepted
+}
+
+# All the words of the length, less those with no two a's together, which
+# are counted as at price 2.
+Q -> "two_together" integer_between(2, 3) integer_between(4, 8) when cost = 3 weight 2 {
+  cost = -3
+  kind = "two_together"
+  require $2.value = 2 or $3.value <= 6
+  let once = matrix2($2.value - 1, 1, $2.value - 1, 0)
+  let twice = matrix_multiply(once, once)
+  let four = matrix_multiply(twice, twice)
+  let all = cond($3.value = 4, four,
+            cond($3.value = 5, matrix_multiply(four, once),
+            cond($3.value = 6, matrix_multiply(four, twice),
+            cond($3.value = 7, matrix_multiply(matrix_multiply(four, twice), once), matrix_multiply(four, four)))))
+  text = "How many words of length [`" ++ str($3.value) ++ "`] over the letters " ++ cond($2.value = 2, "[`a`] and [`b`]", "[`a`], [`b`] and [`c`]")
+         ++ " have two [`a`]s next to each other somewhere?"
+  answer_value = $2.value ^ $3.value - (matrix_entry(all, 1, 1) + matrix_entry(all, 1, 2))
+}
+
+# The automaton has to remember the last k letters, and every one of the
+# 2^k combinations is told from every other by some word that follows. The
+# letter asked for is a or b.
+Q -> "from_the_end" integer_between(2, 6) L when cost = 3 {
+  cost = -3
+  kind = "from_the_end"
+  text = least_states ++ "of at least [`" ++ str($2.value) ++ "`] letters whose letter in place [`" ++ str($2.value)
+         ++ "`] counted from the end is [`" ++ $3.letter ++ "`]. (In place [`1`] from the end is the last letter.) What is the least number of states it can have?"
+  answer_value = 2 ^ $2.value
+  mistake one_state_per_letter answer_value = $2.value + 1
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
