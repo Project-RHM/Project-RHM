@@ -173,23 +173,23 @@ has the details.
 
 ## The question library
 
-The package installs 70 grammar files, the ones in `generator/stdlib/`.
+The package installs 76 grammar files, the ones in `generator/stdlib/`.
 [`QUESTION_TYPES.md`](QUESTION_TYPES.md) gives each grammar's questions,
 prices and WeBWorK context.
 
 | Area | Grammars |
 | --- | --- |
 | Arithmetic | `arithmetic` |
-| Algebra | `polynomial_expand`, `factoring`, `polynomial_forms`, `linear_equation`, `inequality`, `exponential_log`, `partial_fractions`, `binomial_theorem`, `linear_programming`, `library_linear`, `library_quadratic`, `library_polynomial` |
+| Algebra | `polynomial_expand`, `factoring`, `polynomial_forms`, `linear_equation`, `inequality`, `exponential_log`, `partial_fractions`, `binomial_theorem`, `linear_programming`, `library_linear`, `library_quadratic`, `library_polynomial`, `group_theory` |
 | Sequences and series | `sequence`, `sequence_parts`, `series`, `recurrence` |
-| Calculus | `calculus`, `limits`, `definite_integral`, `derivative_applications`, `differential_equation`, `taylor`, `partial_derivatives`, `numerical_methods`, `double_integral`, `implicit_differentiation`, `improper_integral`, `vector_calculus`, `power_series`, `laplace_transform`, `optimization`, `library_formula` |
+| Calculus | `calculus`, `limits`, `definite_integral`, `derivative_applications`, `differential_equation`, `taylor`, `partial_derivatives`, `numerical_methods`, `double_integral`, `implicit_differentiation`, `improper_integral`, `vector_calculus`, `power_series`, `laplace_transform`, `optimization`, `fourier_series`, `integral_applications`, `parametric_polar`, `library_formula` |
 | Logic | `boolean`, `boolean_equiv`, `logic_forms` |
 | Sets and relations | `set`, `relations` |
 | Vectors and space | `vector`, `vector_expr`, `lines_planes`, `orthogonality` |
 | Complex numbers | `complex`, `complex_polar` |
 | Linear algebra | `matrix_expr`, `determinant`, `matrix_inverse`, `linear_system`, `eigen`, `row_reduction`, `linear_transformations` |
 | Counting, number theory and graphs | `counting`, `counting_principles`, `number_theory`, `modular_arithmetic`, `base_conversion`, `graph_theory`, `graph_algorithms`, `automata` |
-| Geometry, trigonometry, probability and statistics | `analytic_geometry`, `trigonometry`, `probability`, `markov_chain`, `statistics`, `random_variables`, `regression` |
+| Geometry, trigonometry, probability and statistics | `analytic_geometry`, `conic_sections`, `trigonometry`, `probability`, `markov_chain`, `statistics`, `random_variables`, `regression`, `hypothesis_testing` |
 | Combined | `derivative_or_boolean` (one question, two imported grammars), `homework_set` (a whole assignment) |
 | Shared rules, no questions of their own | `polynomial_core`, `matrix_core` |
 

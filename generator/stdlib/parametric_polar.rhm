@@ -1,0 +1,214 @@
+# ==========================================================================
+#  Parametric and polar curves
+#
+#  The slope of a curve given by x(t) and y(t), its tangent line, its
+#  second derivative and its length; a point in polar coordinates written
+#  in Cartesian ones; and areas bounded by polar curves: a petal of a rose,
+#  a cardioid, a circle through the pole, and the region inside one circle
+#  and outside another.
+#
+#  The coordinates x(t) and y(t) are polynomials with whole coefficients,
+#  so a slope and a second derivative at a whole t are fractions. A curve
+#  whose length is asked for is k (t^3 - 3t), 3k t^2 (moved), whose speed is
+#  3k (t^2 + 1), so its length is a whole number. An angle is a multiple of
+#  pi / 6 or pi / 4 off the axes, and areas are fractions times pi, or pi
+#  and sqrt(3) together; such answers are `plain`.
+#
+#  Four mistakes are looked for: taking dx/dt over dy/dt for the slope,
+#  taking the sine for x and the cosine for y, leaving out the 1/2 of the
+#  area in polar coordinates, and taking y'' / x'' for the second
+#  derivative.
+#
+#  Every form places its own blanks in its text: the polar point has two.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the slope of a parametric curve at a point, a point in polar
+#       coordinates in Cartesian ones
+#    2  the tangent line to a parametric curve, the area of a petal of a
+#       rose, the area inside a cardioid or a circle through the pole
+#    3  the second derivative of a parametric curve, the length of a
+#       parametric curve, the area inside r = 2b cos(theta) and outside
+#       r = b
+# ==========================================================================
+
+attribute cost = 2 split
+
+let pi = formula_pi()
+let exact = " Give the exact value, with [`\pi`] written as pi where it is needed."
+
+mistake inverted_slope "takes dx/dt over dy/dt for the slope, where dy/dt over dx/dt belongs"
+mistake sine_cosine_swapped "takes r sin(theta) for x and r cos(theta) for y"
+mistake half_forgotten "leaves out the 1/2 of the area in polar coordinates, the integral of r^2 / 2"
+mistake second_over_second "takes y''(t) over x''(t) for the second derivative"
+
+synth kind on Q
+synth text on Q
+
+# A t^2 + B t + C with A not 0: the three coefficients and the LaTeX.
+synth first on T
+synth second on T
+synth third on T
+synth latex on T
+
+start Q
+
+T -> nonzero_integer_between(-3, 3) integer_between(-5, 5) integer_between(-5, 5) {
+  first = $1.value
+  second = $2.value
+  third = $3.value
+  latex = cond($1.value = 1, "", cond($1.value = -1, "-", str($1.value))) ++ "t^{2}"
+          ++ cond($2.value = 0, "", cond($2.value > 0, " + ", " - ") ++ cond(abs($2.value) = 1, "", str(abs($2.value))) ++ "t")
+          ++ cond($3.value = 0, "", cond($3.value > 0, " + ", " - ") ++ str(abs($3.value)))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# dy/dx = y'(t) / x'(t). Neither is 0 there, and the two quotients differ.
+# The curve is not part of a straight line, whose slope is the same at
+# every t: the t^2 and t terms of x and y are not in proportion.
+Q -> "slope" T T integer_between(-3, 3) when cost = 1 weight 2 {
+  cost = -1
+  kind = "slope"
+  let along_x = 2 * $2.first * $4.value + $2.second
+  let along_y = 2 * $3.first * $4.value + $3.second
+  require along_x != 0 and along_y != 0 and abs(along_x) != abs(along_y)
+  require $2.first * $3.second != $2.second * $3.first
+  let body = "A curve is given by [`x = " ++ $2.latex ++ "`], [`y = " ++ $3.latex ++ "`]. Find the slope [`\frac{dy}{dx}`] of the curve at the point where [`t = "
+         ++ str($4.value) ++ "`]."
+  let answer_value = along_y / along_x
+  mistake inverted_slope answer_value = along_x / along_y
+  text = body ++ " " ++ blank(answer_value)
+}
+
+# x = r cos(theta), y = r sin(theta), with theta a number of twelfths of
+# pi that is not on an axis. The second child picks it.
+Q -> "polar_point" integer_between(1, 6) integer_between(1, 12) when cost = 1 {
+  cost = -1
+  kind = "polar_point"
+  let twelfths = cond($3.value <= 3, $3.value + 1, cond($3.value <= 6, $3.value + 4, cond($3.value <= 9, $3.value + 7, $3.value + 10)))
+  let shared = gcd(twelfths, 12)
+  let angle = "\frac{" ++ cond(twelfths / shared = 1, "", str(twelfths / shared)) ++ "\pi}{" ++ str(12 / shared) ++ "}"
+  let across = plain(formula_multiply(formula_constant($2.value), exact_cos(twelfths, 12)))
+  let up = plain(formula_multiply(formula_constant($2.value), exact_sin(twelfths, 12)))
+  mistake sine_cosine_swapped across = plain(formula_multiply(formula_constant($2.value), exact_sin(twelfths, 12)))
+  mistake sine_cosine_swapped up = plain(formula_multiply(formula_constant($2.value), exact_cos(twelfths, 12)))
+  text = "A point has the polar coordinates [`r = " ++ str($2.value) ++ "`], [`\theta = " ++ angle
+         ++ "`]. Find its Cartesian coordinates, exactly, with a square root written as sqrt. [`x = `] " ++ blank(across) ++ " [`y = `] "
+         ++ blank(up)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The line through (x(t), y(t)) with slope y'(t) / x'(t), as y = m x + c.
+# As for the slope, the curve is not part of a straight line, which would
+# be its own tangent.
+Q -> "tangent" T T integer_between(-3, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "tangent"
+  let t = $4.value
+  let along_x = 2 * $2.first * t + $2.second
+  let along_y = 2 * $3.first * t + $3.second
+  require along_x != 0 and along_y != 0 and abs(along_x) != abs(along_y)
+  require $2.first * $3.second != $2.second * $3.first
+  let at_x = $2.first * t ^ 2 + $2.second * t + $2.third
+  let at_y = $3.first * t ^ 2 + $3.second * t + $3.third
+  let body = "A curve is given by [`x = " ++ $2.latex ++ "`], [`y = " ++ $3.latex ++ "`]. Find the tangent line to the curve at the point where [`t = "
+         ++ str(t) ++ "`], as [`y = mx + c`]. Enter the right-hand side."
+  let answer_value = polynomial_linear(along_y / along_x, at_y - at_x * along_y / along_x, "x")
+  mistake inverted_slope answer_value = polynomial_linear(along_x / along_y, at_y - at_x * along_x / along_y, "x")
+  text = body ++ " " ++ blank(answer_value)
+}
+
+# One petal of r = a cos(k theta) or r = a sin(k theta) lies between two
+# zeros pi / k apart, and its area is the integral of r^2 / 2 there:
+# pi a^2 / (4k).
+Q -> "petal" integer_between(1, 6) integer_between(2, 5) integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = "petal"
+  let body = "Find the area of one petal of the rose [`r = " ++ cond($2.value = 1, "", str($2.value)) ++ cond($4.value = 0, "\cos(", "\sin(")
+         ++ str($3.value) ++ "\theta)`]." ++ exact
+  let answer_value = plain(formula_multiply(formula_constant($2.value ^ 2 / (4 * $3.value)), pi))
+  mistake half_forgotten answer_value = plain(formula_multiply(formula_constant($2.value ^ 2 / (2 * $3.value)), pi))
+  text = body ++ " " ++ blank(answer_value)
+}
+
+# The cardioid r = a(1 + cos theta), or with minus or with sin, encloses
+# 3 pi a^2 / 2; the circle r = 2a cos(theta) or 2a sin(theta) encloses
+# pi a^2, traced once as theta goes through pi. The second child says
+# which curve, the third which of the four.
+Q -> "enclosed" integer_between(1, 6) integer_between(0, 1) integer_between(1, 4) when cost = 2 weight 2 {
+  cost = -2
+  kind = cond($3.value = 0, "cardioid", "circle")
+  let trig = cond($4.value <= 2, "\cos\theta", "\sin\theta")
+  # 1 + cos(theta) alone, 3(1 + cos(theta)) with a number in front
+  let around = "1 " ++ cond($4.value % 2 = 1, "+", "-") ++ " " ++ trig
+  let curve = cond($3.value = 0,
+                   cond($2.value = 1, around, str($2.value) ++ "(" ++ around ++ ")"),
+                   cond($4.value % 2 = 1, "", "-") ++ str(2 * $2.value) ++ trig)
+  let body = "Find the area of the region enclosed by the curve [`r = " ++ curve ++ "`]." ++ exact
+  let answer_value = plain(formula_multiply(formula_constant(cond($3.value = 0, 3 * $2.value ^ 2 / 2, $2.value ^ 2)), pi))
+  mistake half_forgotten answer_value = plain(formula_multiply(formula_constant(cond($3.value = 0, 3 * $2.value ^ 2, 2 * $2.value ^ 2)), pi))
+  text = body ++ " " ++ blank(answer_value)
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# x = a t^2 + b t, y = p t^3 + q t: the second derivative is
+# (y'' x' - y' x'') / x'^3. It is not 0, and it is not y'' / x''.
+Q -> "second_derivative" nonzero_integer_between(-3, 3) integer_between(-5, 5) nonzero_integer_between(-3, 3) integer_between(-5, 5) integer_between(-2, 2) when cost = 3 weight 3 {
+  cost = -3
+  kind = "second_derivative"
+  let t = $6.value
+  let along_x = 2 * $2.value * t + $3.value
+  let along_y = 3 * $4.value * t ^ 2 + $5.value
+  # x'(t) is kept small, so that its cube below the line stays readable.
+  require along_x != 0 and abs(along_x) <= 6
+  let curvature = (6 * $4.value * t * along_x - along_y * 2 * $2.value) / along_x ^ 3
+  require curvature != 0 and curvature != 3 * $4.value * t / $2.value
+  let body = "A curve is given by [`x = " ++ cond($2.value = 1, "", cond($2.value = -1, "-", str($2.value))) ++ "t^{2}"
+         ++ cond($3.value = 0, "", cond($3.value > 0, " + ", " - ") ++ cond(abs($3.value) = 1, "", str(abs($3.value))) ++ "t")
+         ++ "`], [`y = " ++ cond($4.value = 1, "", cond($4.value = -1, "-", str($4.value))) ++ "t^{3}"
+         ++ cond($5.value = 0, "", cond($5.value > 0, " + ", " - ") ++ cond(abs($5.value) = 1, "", str(abs($5.value))) ++ "t")
+         ++ "`]. Find [`\frac{d^{2}y}{dx^{2}}`] at the point where [`t = " ++ str(t) ++ "`]."
+  let answer_value = curvature
+  mistake second_over_second answer_value = 3 * $4.value * t / $2.value
+  text = body ++ " " ++ blank(answer_value)
+}
+
+# x = k (t^3 - 3t) + h, y = 3k t^2 + v has speed 3k (t^2 + 1), so its length
+# from t = a to t = b is k ((b^3 + 3b) - (a^3 + 3a)).
+Q -> "length" integer_between(1, 3) integer_between(0, 2) integer_between(1, 3) integer_between(-5, 5) integer_between(-5, 5) when cost = 3 weight 2 {
+  cost = -3
+  kind = "length"
+  let k = $2.value
+  let from = $3.value
+  let upto = $3.value + $4.value
+  require upto <= 3
+  let body = "Find the length of the curve [`x = " ++ cond(k = 1, "", str(k)) ++ "t^{3} - " ++ str(3 * k) ++ "t"
+         ++ cond($5.value = 0, "", cond($5.value > 0, " + ", " - ") ++ str(abs($5.value))) ++ "`], [`y = " ++ str(3 * k) ++ "t^{2}"
+         ++ cond($6.value = 0, "", cond($6.value > 0, " + ", " - ") ++ str(abs($6.value))) ++ "`] from [`t = " ++ str(from) ++ "`] to [`t = "
+         ++ str(upto) ++ "`]."
+  let answer_value = k * ((upto ^ 3 + 3 * upto) - (from ^ 3 + 3 * from))
+  text = body ++ " " ++ blank(answer_value)
+}
+
+# r = 2b cos(theta) meets r = b where cos(theta) = 1/2. The area between
+# them is the integral of (4b^2 cos^2(theta) - b^2) / 2 from -pi/3 to pi/3,
+# which is b^2 (pi / 3 + sqrt(3) / 2); with sin in place of cos it is the
+# same.
+Q -> "lune" integer_between(1, 5) integer_between(0, 1) when cost = 3 {
+  cost = -3
+  kind = "lune"
+  let b = $2.value
+  let body = "Find the area of the region inside the circle [`r = " ++ str(2 * b) ++ cond($3.value = 0, "\cos\theta", "\sin\theta")
+         ++ "`] and outside the circle [`r = " ++ str(b) ++ "`]. Give the exact value, with [`\pi`] written as pi and a square root as sqrt."
+  let answer_value = plain(formula_add(formula_multiply(formula_constant(b ^ 2 / 3), pi),
+                                   formula_multiply(formula_constant(b ^ 2 / 2), formula_sqrt(formula_constant(3)))))
+  mistake half_forgotten answer_value = plain(formula_add(formula_multiply(formula_constant(2 * b ^ 2 / 3), pi),
+                                                          formula_multiply(formula_constant(b ^ 2), formula_sqrt(formula_constant(3)))))
+  text = body ++ " " ++ blank(answer_value)
+}
+
+prompt "{Q.text}"

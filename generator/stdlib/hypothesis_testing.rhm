@@ -1,0 +1,199 @@
+# ==========================================================================
+#  Hypothesis tests and confidence intervals
+#
+#  The statistic of a z test and of a t test for a mean, of a z test for a
+#  proportion and for the difference of two means, a confidence interval
+#  for a mean, the chi-square statistic of a goodness-of-fit test and of a
+#  two-by-two table, and the degrees of freedom of a test. It goes on from
+#  statistics.rhm and regression.rhm, which describe data.
+#
+#  A test statistic is asked for and not a decision, since a decision
+#  would be read off a table of the normal distribution. The numbers are
+#  chosen so that the statistic is a fraction: a sample size is a square,
+#  so its square root is whole, and the two standard errors of a
+#  difference are the legs of a right triangle with whole sides, so the
+#  standard error of the difference is its third side. A confidence
+#  interval uses 1.96, which is 49/25.
+#
+#  Four mistakes are looked for: dividing by the standard deviation where
+#  the standard error, which is divided by sqrt(n), belongs; dividing a
+#  chi-square term by the observed count where the expected count belongs;
+#  adding the two standard errors of a difference where their squares are
+#  added; and taking one less than the number of cells of a table for its
+#  degrees of freedom.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the z statistic for a mean, the degrees of freedom of a test
+#    2  the t statistic for a mean, a 95% confidence interval for a mean
+#       (two blanks), the z statistic for a proportion
+#    3  the chi-square statistic for a die, the chi-square statistic of a
+#       two-by-two table, the z statistic for the difference of two means
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake not_scaled "divides by the standard deviation itself, where the standard error, the standard deviation over sqrt(n), belongs"
+mistake divided_by_observed "divides each squared difference by the observed count, where the expected count belongs"
+mistake standard_errors_added "adds the two standard errors, where their squares are added and the square root taken"
+mistake cells_minus_one "takes one less than the number of cells of the table, where (rows - 1)(columns - 1) belongs"
+
+synth kind on Q
+synth text on Q
+
+start Q
+
+# ---- Price 1 --------------------------------------------------------------
+
+# z = (sample mean - mu_0) / (sigma / sqrt(n)), with n = k^2.
+Q -> "z_mean" integer_between(4, 24) integer_between(2, 20) integer_between(3, 10) nonzero_integer_between(-12, 12) when cost = 1 weight 2 {
+  cost = -1
+  kind = "z_mean"
+  let claimed = 5 * $2.value
+  let statistic = $5.value * $4.value / $3.value
+  require abs(statistic) <= 4
+  let value = statistic
+  mistake not_scaled value = $5.value / $3.value
+  text = "A population has standard deviation [`\sigma = " ++ str($3.value) ++ "`]. To test [`H_0: \mu = " ++ str(claimed)
+         ++ "`], a sample of [`" ++ str($4.value ^ 2) ++ "`] values is taken, and its mean is [`" ++ str(claimed + $5.value)
+         ++ "`]. Find the value of the [`z`] statistic. " ++ blank(value)
+}
+
+# A t test on n values has n - 1 degrees of freedom; a goodness-of-fit test
+# with k categories, k - 1; a table of r rows and c columns,
+# (r - 1)(c - 1). The first child says which.
+Q -> "degrees" integer_between(0, 2) integer_between(5, 40) integer_between(2, 5) integer_between(2, 5) when cost = 1 {
+  cost = -1
+  kind = cond($2.value = 0, "degrees_t", cond($2.value = 1, "degrees_fit", "degrees_table"))
+  let categories = $4.value + $5.value
+  let value = cond($2.value = 0, $3.value - 1, cond($2.value = 1, categories - 1, ($4.value - 1) * ($5.value - 1)))
+  mistake cells_minus_one value = cond($2.value = 2, $4.value * $5.value - 1, value)
+  text = cond($2.value = 0, "A [`t`] test for a mean is made on a sample of [`" ++ str($3.value) ++ "`] values.",
+         cond($2.value = 1, "A chi-square goodness-of-fit test is made with [`" ++ str(categories) ++ "`] categories, and no parameter is estimated from the data.",
+              "A chi-square test of independence is made on a table of counts with [`" ++ str($4.value) ++ "`] rows and [`" ++ str($5.value)
+              ++ "`] columns."))
+         ++ " How many degrees of freedom does the test have? " ++ blank(value)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# t = (sample mean - mu_0) / (s / sqrt(n)), with n = k^2.
+Q -> "t_mean" integer_between(4, 24) integer_between(2, 20) integer_between(2, 8) nonzero_integer_between(-12, 12) when cost = 2 weight 2 {
+  cost = -2
+  kind = "t_mean"
+  let claimed = 5 * $2.value
+  let statistic = $5.value * $4.value / $3.value
+  require abs(statistic) <= 5
+  let value = statistic
+  mistake not_scaled value = $5.value / $3.value
+  text = "To test [`H_0: \mu = " ++ str(claimed) ++ "`], a sample of [`" ++ str($4.value ^ 2) ++ "`] values is taken. Its mean is [`"
+         ++ str(claimed + $5.value) ++ "`] and its standard deviation is [`s = " ++ str($3.value)
+         ++ "`]. Find the value of the [`t`] statistic. " ++ blank(value)
+}
+
+# The sample mean, less and plus 1.96 sigma / sqrt(n).
+Q -> "interval" integer_between(4, 24) integer_between(2, 20) integer_between(3, 10) integer_between(-9, 9) when cost = 2 weight 2 {
+  cost = -2
+  kind = "interval"
+  let centre = 5 * $2.value + $5.value
+  let margin = 49 * $3.value / (25 * $4.value)
+  let low = centre - margin
+  let high = centre + margin
+  mistake not_scaled low = centre - 49 * $3.value / 25
+  mistake not_scaled high = centre + 49 * $3.value / 25
+  text = "A population has standard deviation [`\sigma = " ++ str($3.value) ++ "`]. A sample of [`" ++ str($4.value ^ 2)
+         ++ "`] values has mean [`" ++ str(centre) ++ "`]. Find the 95% confidence interval for the mean of the population, using [`z = 1.96`]. From "
+         ++ blank(low) ++ " to " ++ blank(high)
+}
+
+# H_0: p = 1/2. z = (x / n - 1/2) / sqrt((1/2)(1/2) / n), which is
+# (2x - n) / k for n = k^2. The count is near n / 2: up to eight steps of
+# one from it, or of two from a sample of 100 or more.
+Q -> "proportion" integer_between(4, 20) nonzero_integer_between(-8, 8) when cost = 2 weight 2 {
+  cost = -2
+  kind = "proportion"
+  let n = $2.value ^ 2
+  let count = (n - n % 2) / 2 + $3.value * cond($2.value >= 10, 2, 1)
+  let value = (2 * count - n) / $2.value
+  text = "A coin is tossed [`" ++ str(n) ++ "`] times and comes up heads [`" ++ str(count)
+         ++ "`] times. To test whether it is fair, [`H_0: p = \frac{1}{2}`], find the value of the [`z`] statistic for the proportion of heads. "
+         ++ blank(value)
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# A die thrown 6m times: each face is expected m times, and the counts are
+# m plus deviations that add up to 0. The statistic is the sum of
+# (observed - expected)^2 / expected.
+Q -> "die" integer_between(10, 30) integer_between(-6, 6) integer_between(-6, 6) integer_between(-6, 6) integer_between(-6, 6) integer_between(-6, 6) when cost = 3 weight 3 {
+  cost = -3
+  kind = "die"
+  let m = $2.value
+  let sixth = 0 - ($3.value + $4.value + $5.value + $6.value + $7.value)
+  require abs(sixth) <= 8
+  let squares = $3.value ^ 2 + $4.value ^ 2 + $5.value ^ 2 + $6.value ^ 2 + $7.value ^ 2 + sixth ^ 2
+  require squares > 0
+  let value = squares / m
+  let by_observed = $3.value ^ 2 / (m + $3.value) + $4.value ^ 2 / (m + $4.value) + $5.value ^ 2 / (m + $5.value)
+                    + $6.value ^ 2 / (m + $6.value) + $7.value ^ 2 / (m + $7.value) + sixth ^ 2 / (m + sixth)
+  # The mistake must stay more than 1% away from the answer, well beyond
+  # WeBWorK's tolerance of one part in a thousand, or it would be marked
+  # right; this also turns away a mistake that comes to the answer itself.
+  require abs(by_observed - value) > value / 100
+  mistake divided_by_observed value = by_observed
+  text = "A die is thrown [`" ++ str(6 * m) ++ "`] times, and the faces [`1`] to [`6`] come up [`" ++ str(m + $3.value) ++ "`], [`"
+         ++ str(m + $4.value) ++ "`], [`" ++ str(m + $5.value) ++ "`], [`" ++ str(m + $6.value) ++ "`], [`" ++ str(m + $7.value)
+         ++ "`] and [`" ++ str(m + sixth)
+         ++ "`] times. To test whether the die is fair, find the value of the chi-square statistic. " ++ blank(value)
+}
+
+# The expected count of a cell is its row total times its column total
+# over the whole; the statistic is the sum of (observed - expected)^2 /
+# expected over the four cells. The two rows are not in proportion. The
+# weight is 3, as for the die, since about a quarter of the tables are
+# turned away for a mistake too near the answer.
+Q -> "table" integer_between(5, 40) integer_between(5, 40) integer_between(5, 40) integer_between(5, 40) when cost = 3 weight 3 {
+  cost = -3
+  kind = "table"
+  let a = $2.value
+  let b = $3.value
+  let c = $4.value
+  let d = $5.value
+  require a * d != b * c
+  let whole = a + b + c + d
+  let ea = (a + b) * (a + c) / whole
+  let eb = (a + b) * (b + d) / whole
+  let ec = (c + d) * (a + c) / whole
+  let ed = (c + d) * (b + d) / whole
+  let value = (a - ea) ^ 2 / ea + (b - eb) ^ 2 / eb + (c - ec) ^ 2 / ec + (d - ed) ^ 2 / ed
+  let by_observed = (a - ea) ^ 2 / a + (b - eb) ^ 2 / b + (c - ec) ^ 2 / c + (d - ed) ^ 2 / d
+  # As for the die: the mistake stays more than 1% away from the answer.
+  require abs(by_observed - value) > value / 100
+  mistake divided_by_observed value = by_observed
+  text = "A survey counts people by two characteristics: [`\begin{array}{c|cc} & \text{yes} & \text{no} \\\\ \hline \text{group 1} & " ++ str(a)
+         ++ " & " ++ str(b) ++ " \\\\ \text{group 2} & " ++ str(c) ++ " & " ++ str(d)
+         ++ " \end{array}`]. To test whether the answer is independent of the group, find the value of the chi-square statistic. "
+         ++ blank(value)
+}
+
+# Two means with known standard deviations. sigma_1^2 / n_1 = u^2 and
+# sigma_2^2 / n_2 = v^2, with u, v and w a right triangle with whole
+# sides, so the standard error of the difference is w and z = D / w.
+Q -> "two_means" integer_between(1, 6) integer_between(2, 6) integer_between(2, 6) integer_between(4, 24) nonzero_integer_between(-30, 30) when cost = 3 weight 2 {
+  cost = -3
+  kind = "two_means"
+  let u = cond($2.value = 1, 3, cond($2.value = 2, 4, cond($2.value = 3, 6, cond($2.value = 4, 8, cond($2.value = 5, 5, 12)))))
+  let v = cond($2.value = 1, 4, cond($2.value = 2, 3, cond($2.value = 3, 8, cond($2.value = 4, 6, cond($2.value = 5, 12, 5)))))
+  let w = cond($2.value <= 2, 5, cond($2.value <= 4, 10, 13))
+  let statistic = $6.value / w
+  require abs(statistic) <= 4
+  let value = statistic
+  mistake standard_errors_added value = $6.value / (u + v)
+  text = "Two populations have standard deviations [`\sigma_1 = " ++ str(u * $3.value) ++ "`] and [`\sigma_2 = " ++ str(v * $4.value)
+         ++ "`]. A sample of [`" ++ str($3.value ^ 2) ++ "`] values from the first has mean [`" ++ str(5 * $5.value + $6.value)
+         ++ "`], and a sample of [`" ++ str($4.value ^ 2) ++ "`] values from the second has mean [`" ++ str(5 * $5.value)
+         ++ "`]. To test [`H_0: \mu_1 = \mu_2`], find the value of the [`z`] statistic. " ++ blank(value)
+}
+
+prompt "{Q.text}"

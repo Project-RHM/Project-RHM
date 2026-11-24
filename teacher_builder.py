@@ -55,6 +55,9 @@ TITLES = {
     "random_variables": "Random variables", "laplace_transform": "Laplace transforms",
     "automata": "Finite automata", "power_series": "Power series",
     "optimization": "Optimisation in several variables", "linear_transformations": "Linear transformations",
+    "fourier_series": "Fourier series", "integral_applications": "Applications of integration",
+    "parametric_polar": "Parametric and polar curves", "hypothesis_testing": "Hypothesis tests",
+    "group_theory": "Groups", "conic_sections": "Conic sections",
 }
 
 
