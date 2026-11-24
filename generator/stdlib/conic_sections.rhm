@@ -1,0 +1,213 @@
+# ==========================================================================
+#  Conic sections
+#
+#  Ellipses, hyperbolas and parabolas: an eccentricity, a focus, an
+#  asymptote, the centre and the major axis of an ellipse given expanded,
+#  the parabola with a given focus and directrix, and the length of a
+#  latus rectum. It goes on from analytic_geometry.rhm, which asks about
+#  lines and circles.
+#
+#  An ellipse whose foci are asked for has semi-axes a and b and focal
+#  distance c with a^2 = b^2 + c^2, and a hyperbola whose eccentricity is
+#  asked for has c^2 = a^2 + b^2: three sides of a right triangle with
+#  whole sides, such as 5, 3 and 4, so every focus has whole coordinates.
+#  A conic may open along either axis, and the question does not say
+#  which: it is read off the equation. A focus is entered as a point.
+#
+#  Seven mistakes are looked for: dividing the semi-minor axis by the
+#  semi-major one for an eccentricity, confusing p with 4p in a parabola,
+#  putting the foci of an ellipse on its minor axis, turning the slope of
+#  an asymptote over, taking c^2 = a^2 - b^2 for a hyperbola, giving a
+#  semi-axis where the whole axis is asked for, and giving half a latus
+#  rectum.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the eccentricity of an ellipse, the focus of a parabola
+#    2  a focus of an ellipse, the slope of an asymptote of a hyperbola, the
+#       eccentricity of a hyperbola
+#    3  the centre and the length of the major axis of an ellipse given
+#       expanded (two blanks), the parabola with a given focus and
+#       directrix, the length of the latus rectum of an ellipse or a
+#       hyperbola
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake minor_axis_used "divides the semi-minor axis by the semi-major one, where the focal distance c belongs above the line"
+mistake four_p_confused "confuses p, the distance from the vertex to the focus, with 4p, the number in the equation"
+mistake axes_swapped "puts the foci on the minor axis of the ellipse, where they lie on its major axis"
+mistake ratio_inverted "turns the slope of the asymptote over: a / b where b / a belongs, or the other way round"
+mistake ellipse_rule "takes c^2 = a^2 - b^2 for a hyperbola, the rule of an ellipse, where c^2 = a^2 + b^2"
+mistake semi_axis_given "gives the semi-major axis, where the whole major axis is asked for"
+mistake not_doubled "gives half the latus rectum, b^2 / a, where its whole length 2 b^2 / a belongs"
+
+synth kind on Q
+synth text on Q
+
+# Three sides of a right triangle with whole sides: the longest and the
+# other two, in either order.
+synth longest on R
+synth one on R
+synth other on R
+
+# (x - h)^2 and (y - k)^2 as LaTeX, for a centre (h, k).
+synth across on C
+synth up on C
+synth x_square on C
+synth y_square on C
+
+start Q
+
+R -> integer_between(1, 4) integer_between(0, 1) {
+  let small = cond($1.value = 1, 3, cond($1.value = 2, 6, cond($1.value = 3, 5, 8)))
+  let large = cond($1.value = 1, 4, cond($1.value = 2, 8, cond($1.value = 3, 12, 15)))
+  longest = cond($1.value = 1, 5, cond($1.value = 2, 10, cond($1.value = 3, 13, 17)))
+  one = cond($2.value = 0, small, large)
+  other = cond($2.value = 0, large, small)
+}
+
+C -> integer_between(-4, 4) integer_between(-4, 4) {
+  require $1.value != 0 or $2.value != 0
+  across = $1.value
+  up = $2.value
+  x_square = cond($1.value = 0, "x^{2}", "(x " ++ cond($1.value > 0, "- ", "+ ") ++ str(abs($1.value)) ++ ")^{2}")
+  y_square = cond($2.value = 0, "y^{2}", "(y " ++ cond($2.value > 0, "- ", "+ ") ++ str(abs($2.value)) ++ ")^{2}")
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# Semi-major axis the longest side, semi-minor axis one of the others, and
+# c the third. The last child puts the major axis along x or along y.
+Q -> "ellipse_eccentricity" R integer_between(0, 1) when cost = 1 {
+  cost = -1
+  kind = "ellipse_eccentricity"
+  let under_x = cond($3.value = 0, $2.longest, $2.one)
+  let under_y = cond($3.value = 0, $2.one, $2.longest)
+  let value = $2.other / $2.longest
+  mistake minor_axis_used value = $2.one / $2.longest
+  text = "Find the eccentricity of the ellipse [`\frac{x^{2}}{" ++ str(under_x ^ 2) ++ "} + \frac{y^{2}}{" ++ str(under_y ^ 2)
+         ++ "} = 1`]. " ++ blank(value)
+}
+
+# y^2 = 4p x has its focus at (p, 0); x^2 = 4p y at (0, p).
+Q -> "parabola_focus" nonzero_integer_between(-4, 4) integer_between(0, 1) when cost = 1 {
+  cost = -1
+  kind = "parabola_focus"
+  let p = $2.value
+  let value = cond($3.value = 0, point2(p, 0), point2(0, p))
+  mistake four_p_confused value = cond($3.value = 0, point2(4 * p, 0), point2(0, 4 * p))
+  text = "Find the focus of the parabola [`" ++ cond($3.value = 0, "y^{2} = " ++ str(4 * p) ++ "x", "x^{2} = " ++ str(4 * p) ++ "y")
+         ++ "`]. Enter it as a point, such as [`(7, -9)`]. " ++ blank(value)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The foci are c from the centre along the major axis. The one asked for is
+# the one whose coordinates add up to more: (h + c, k) or (h, k + c).
+Q -> "ellipse_focus" R C integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = "ellipse_focus"
+  let c = $2.other
+  let under_x = cond($4.value = 0, $2.longest, $2.one)
+  let under_y = cond($4.value = 0, $2.one, $2.longest)
+  let value = cond($4.value = 0, point2($3.across + c, $3.up), point2($3.across, $3.up + c))
+  mistake axes_swapped value = cond($4.value = 0, point2($3.across, $3.up + c), point2($3.across + c, $3.up))
+  text = "The ellipse [`\frac{" ++ $3.x_square ++ "}{" ++ str(under_x ^ 2) ++ "} + \frac{" ++ $3.y_square ++ "}{" ++ str(under_y ^ 2)
+         ++ "} = 1`] has two foci. Find the one whose two coordinates add up to more, as a point such as [`(7, -9)`]. " ++ blank(value)
+}
+
+# x^2 / a^2 - y^2 / b^2 = 1 has the asymptotes y = (b / a) x and
+# y = -(b / a) x; y^2 / a^2 - x^2 / b^2 = 1 has y = (a / b) x and its
+# opposite. The two numbers differ.
+Q -> "asymptote" integer_between(1, 6) integer_between(1, 6) integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = "asymptote"
+  require $2.value != $3.value
+  let a = $2.value
+  let b = $3.value
+  let value = cond($4.value = 0, b / a, a / b)
+  mistake ratio_inverted value = cond($4.value = 0, a / b, b / a)
+  let first = cond(a = 1, "", "\frac{") ++ cond($4.value = 0, "x^{2}", "y^{2}") ++ cond(a = 1, "", "}{" ++ str(a ^ 2) ++ "}")
+  let second = cond(b = 1, "", "\frac{") ++ cond($4.value = 0, "y^{2}", "x^{2}") ++ cond(b = 1, "", "}{" ++ str(b ^ 2) ++ "}")
+  text = "Find the slope of the asymptote with positive slope of the hyperbola [`" ++ first ++ " - " ++ second ++ " = 1`]. "
+         ++ blank(value)
+}
+
+# c^2 = a^2 + b^2, with a, b, c three sides of a right triangle, so c is
+# the longest; the eccentricity is c / a. Where a > b, the rule of an
+# ellipse gives sqrt(a^2 - b^2) / a, a number of its own.
+Q -> "hyperbola_eccentricity" R integer_between(0, 1) when cost = 2 {
+  cost = -2
+  kind = "hyperbola_eccentricity"
+  let a = $2.one
+  let b = $2.other
+  let value = plain($2.longest / a)
+  mistake ellipse_rule value = cond(a > b, plain(formula_divide(formula_sqrt(formula_constant(a ^ 2 - b ^ 2)), formula_constant(a))),
+                                    value)
+  text = "Find the eccentricity of the hyperbola [`"
+         ++ cond($3.value = 0, "\frac{x^{2}}{" ++ str(a ^ 2) ++ "} - \frac{y^{2}}{" ++ str(b ^ 2) ++ "}",
+                 "\frac{y^{2}}{" ++ str(a ^ 2) ++ "} - \frac{x^{2}}{" ++ str(b ^ 2) ++ "}")
+         ++ " = 1`]. " ++ blank(value)
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# B^2 (x - h)^2 + A^2 (y - k)^2 = A^2 B^2, multiplied out, with A and B
+# the semi-axes along x and y. The major axis is twice the larger.
+Q -> "ellipse_expanded" integer_between(2, 5) integer_between(2, 5) C when cost = 3 weight 2 {
+  cost = -3
+  kind = "ellipse_expanded"
+  require $2.value != $3.value
+  let along_x = $2.value ^ 2
+  let along_y = $3.value ^ 2
+  let in_x = -2 * along_y * $4.across
+  let in_y = -2 * along_x * $4.up
+  let constant = along_y * $4.across ^ 2 + along_x * $4.up ^ 2 - along_x * along_y
+  let axis = 2 * max($2.value, $3.value)
+  mistake semi_axis_given axis = max($2.value, $3.value)
+  text = "The equation [`" ++ str(along_y) ++ "x^{2} + " ++ str(along_x) ++ "y^{2}"
+         ++ cond(in_x = 0, "", cond(in_x > 0, " + ", " - ") ++ str(abs(in_x)) ++ "x")
+         ++ cond(in_y = 0, "", cond(in_y > 0, " + ", " - ") ++ str(abs(in_y)) ++ "y")
+         ++ cond(constant = 0, "", cond(constant > 0, " + ", " - ") ++ str(abs(constant)))
+         ++ " = 0`] is an ellipse. Its centre, as a point such as [`(7, -9)`]: " ++ blank(point2($4.across, $4.up))
+         ++ " The length of its major axis: " ++ blank(axis)
+}
+
+# The points as far from (h, k + p) as from the line y = k - p:
+# y = (x - h)^2 / (4p) + k.
+Q -> "parabola_equation" nonzero_integer_between(-3, 3) integer_between(-5, 5) integer_between(-5, 5) when cost = 3 weight 2 {
+  cost = -3
+  kind = "parabola_equation"
+  let p = $2.value
+  let h = $3.value
+  let k = $4.value
+  let value = polynomial_quadratic(1 / (4 * p), -h / (2 * p), h ^ 2 / (4 * p) + k, "x")
+  mistake four_p_confused value = polynomial_quadratic(1 / p, -2 * h / p, h ^ 2 / p + k, "x")
+  text = "Find the parabola whose focus is [`(" ++ str(h) ++ ", " ++ str(k + p) ++ ")`] and whose directrix is the line [`y = " ++ str(k - p)
+         ++ "`], as [`y = f(x)`]. Enter [`f(x)`]. " ++ blank(value)
+}
+
+# The chord through a focus at right angles to the major axis of an
+# ellipse with semi-axes A > B, or to the axis of a hyperbola
+# x^2 / a^2 - y^2 / b^2 = 1, is 2 B^2 / A, or 2 b^2 / a, long.
+Q -> "latus_rectum" integer_between(2, 6) integer_between(1, 6) integer_between(0, 2) when cost = 3 weight 3 {
+  cost = -3
+  kind = cond($4.value = 2, "latus_rectum_hyperbola", "latus_rectum_ellipse")
+  require $4.value = 2 or $3.value < $2.value
+  require $4.value != 2 or $3.value != $2.value
+  let major = $2.value
+  let minor = $3.value
+  let over_minor = cond(minor = 1, "", "}{" ++ str(minor ^ 2) ++ "}")
+  let minor_open = cond(minor = 1, "", "\frac{")
+  let shown = cond($4.value = 0, "\frac{x^{2}}{" ++ str(major ^ 2) ++ "} + " ++ minor_open ++ "y^{2}" ++ over_minor,
+              cond($4.value = 1, minor_open ++ "x^{2}" ++ over_minor ++ " + \frac{y^{2}}{" ++ str(major ^ 2) ++ "}",
+                   "\frac{x^{2}}{" ++ str(major ^ 2) ++ "} - " ++ minor_open ++ "y^{2}" ++ over_minor))
+  let value = 2 * minor ^ 2 / major
+  mistake not_doubled value = minor ^ 2 / major
+  text = "Find the length of a latus rectum of the " ++ cond($4.value = 2, "hyperbola", "ellipse") ++ " [`" ++ shown
+         ++ " = 1`], the chord through a focus at right angles to the axis on which the foci lie. " ++ blank(value)
+}
+
+prompt "{Q.text}"

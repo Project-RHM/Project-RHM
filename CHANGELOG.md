@@ -176,6 +176,25 @@ is announced one version before the removal.
   only, and has a test that recomputes its answers from the printed
   question. All six declare mistakes, seventeen in all. The library now
   has 70 files.
+- **Six more question types (a tenth batch).** `fourier_series.rhm`
+  (Fourier coefficients of a line, a step, a square wave, a parabola, an
+  absolute value and a line on half the interval, on `(-pi, pi)` and on
+  `(-L, L)`, and the value of a series at a jump),
+  `integral_applications.rhm` (volumes by discs, washers and shells, the
+  length of a curve, the area of a surface of revolution, the work done on
+  a spring and in pumping a tank, a centroid), `parametric_polar.rhm` (the
+  slope, tangent line, second derivative and length of a parametric curve,
+  a polar point in Cartesian coordinates, areas bounded by polar curves),
+  `hypothesis_testing.rhm` (`z`, `t` and chi-square statistics, a
+  confidence interval, degrees of freedom), `group_theory.rhm` (orders of
+  elements of cyclic groups, of pairs, of units and of permutations,
+  generators, an index, primitive roots) and `conic_sections.rhm`
+  (eccentricities, foci, asymptotes, an ellipse given expanded, a parabola
+  from its focus and directrix, a latus rectum). Each has fixed forms at
+  prices 1 to 3 and a default budget of 2, uses the existing builtins
+  only, and has a test that recomputes its answers from the printed
+  question. All six declare mistakes, twenty-nine in all. The library now
+  has 76 files.
 - **Changed.** `--count` with a negative number is an error of the command
   line (status 2); it was `rhema: error: List.init`. The "not run through
   WeBWorK" line of the summary is said only where PG was written. In the

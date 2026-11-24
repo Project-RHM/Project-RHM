@@ -20,7 +20,7 @@ make `x + 2x \cdot \sin x` cost at least 4.
 
 ## Mistakes
 
-Twenty-one grammars say what common mistakes lead to (chapter 9 of the tutorial).
+Twenty-seven grammars say what common mistakes lead to (chapter 9 of the tutorial).
 `rhema run` lists them under each answer, and none of these grammars asks a
 question in which a mistake changes the working and still gives the right
 answer.
@@ -71,6 +71,35 @@ answer.
 | `linear_transformations.rhm` | `images_as_rows` | writes the images of the basis vectors as the rows of the matrix, where they are its columns |
 | | `order_swapped` | multiplies the two matrices in the order the transformations are applied, the first on the left |
 | | `basis_wrong_way` | changes basis the wrong way round: `P A P^(-1)` where `P^(-1) A P` belongs |
+| `fourier_series.rhm` | `half_factor` | puts `1 / (2 pi)` in front of the integral where `1 / pi` belongs |
+| | `constant_term_given` | gives the constant term `a_0 / 2` of the series where `a_0` is asked for |
+| | `one_sided` | takes the value of the function on one side of a jump, where the series takes the average of the two sides |
+| | `pi_for_length` | uses the coefficients of the interval from `-pi` to `pi` for an interval from `-L` to `L` |
+| `integral_applications.rhm` | `radius_not_squared` | takes the area of a disc to be `pi` times its radius, where the radius is squared |
+| | `radii_subtracted_first` | squares the difference of the outer and inner radius, where the difference of their squares belongs |
+| | `shell_radius_forgotten` | leaves out the radius `x` of a shell: `2 pi` times the integral of the height alone |
+| | `constant_force` | takes the force given for one stretch to act all the way, where the force grows with the stretch |
+| | `lift_full_height` | lifts all the water through the whole height of the tank, where a layer only rises from where it is |
+| `parametric_polar.rhm` | `inverted_slope` | takes `dx/dt` over `dy/dt` for the slope |
+| | `sine_cosine_swapped` | takes `r sin(theta)` for `x` and `r cos(theta)` for `y` |
+| | `half_forgotten` | leaves out the `1/2` of the area in polar coordinates, the integral of `r^2 / 2` |
+| | `second_over_second` | takes `y''(t) / x''(t)` for the second derivative |
+| `hypothesis_testing.rhm` | `not_scaled` | divides by the standard deviation itself, where the standard error, divided by `sqrt(n)`, belongs |
+| | `divided_by_observed` | divides each squared difference by the observed count, where the expected count belongs |
+| | `standard_errors_added` | adds the two standard errors, where their squares are added and the square root taken |
+| | `cells_minus_one` | takes one less than the number of cells of a table, where `(rows - 1)(columns - 1)` belongs |
+| `group_theory.rhm` | `gcd_ignored` | takes `n` for the order of `k` in `Z_n`, where `n / gcd(n, k)` belongs |
+| | `lengths_added` | adds the lengths of the cycles, where their least common multiple belongs |
+| | `orders_multiplied` | multiplies the orders of the two parts of a pair, where their least common multiple belongs |
+| | `all_nonzero` | counts every element other than the identity, where only the generators count |
+| | `fermat_bound` | takes `p - 1` for the order of every unit modulo `p` |
+| `conic_sections.rhm` | `minor_axis_used` | divides the semi-minor axis by the semi-major one for an eccentricity |
+| | `four_p_confused` | confuses `p`, the distance from the vertex to the focus, with `4p`, the number in the equation |
+| | `axes_swapped` | puts the foci of an ellipse on its minor axis |
+| | `ratio_inverted` | turns the slope of an asymptote over |
+| | `ellipse_rule` | takes `c^2 = a^2 - b^2` for a hyperbola, the rule of an ellipse |
+| | `semi_axis_given` | gives the semi-major axis, where the whole major axis is asked for |
+| | `not_doubled` | gives half the latus rectum, `b^2 / a`, where `2 b^2 / a` belongs |
 
 The mistakes of `calculus.rhm` concern its derivative questions; an
 integral question lists none. `power_term_by_term` is declared in

@@ -1,0 +1,190 @@
+# ==========================================================================
+#  Fourier series
+#
+#  The Fourier coefficients of a function on the interval from -pi to pi,
+#  extended with period 2 pi: a straight line, a step, a square wave, a
+#  parabola, an absolute value, a line on half the interval, and a line on
+#  an interval from -L to L. And the value the series takes at a jump.
+#
+#  Every function is one whose coefficients are known in closed form, so
+#  every answer is a whole number, a fraction, a fraction times pi or pi^2
+#  or over pi, or (at a jump at pi) a fraction plus a fraction times pi.
+#  Where a coefficient is 0 for every even n (a square wave, an absolute
+#  value), only an odd n is asked for. The answers are `plain`: an
+#  integral or a trigonometric function is not accepted in them.
+#
+#  Four mistakes are looked for: putting 1 / (2 pi) in front of the
+#  integral where 1 / pi belongs, giving the constant term a_0 / 2 where
+#  a_0 is asked for, taking the value on one side of a jump where the
+#  series takes the average of the two sides, and using the coefficients
+#  of the interval from -pi to pi for an interval from -L to L. For a_0
+#  the first two come to the same number, and only the second is listed.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  b_n of k x, a_0 of a step
+#    2  b_n of a square wave, a_0 or a_n of k x^2, the value of the series
+#       at a jump
+#    3  a_n of k |x|, a_0, a_n or b_n of k x on (0, pi) and 0 on (-pi, 0),
+#       b_n of k x on an interval from -L to L
+# ==========================================================================
+
+attribute cost = 2 split
+
+let pi = formula_pi()
+
+let series = " The function is extended with period [`2\pi`], and its Fourier series is [`\frac{a_0}{2} + \sum_{n=1}^{\infty} (a_n \cos nx + b_n \sin nx)`], with [`a_n = \frac{1}{\pi} \int_{-\pi}^{\pi} f(x) \cos nx \, dx`] and [`b_n = \frac{1}{\pi} \int_{-\pi}^{\pi} f(x) \sin nx \, dx`]."
+let exact = " Give the exact value, with [`\pi`] written as pi where it is needed."
+
+mistake half_factor "puts 1 / (2 pi) in front of the integral where 1 / pi belongs"
+mistake constant_term_given "gives the constant term a_0 / 2 of the series where a_0 is asked for"
+mistake one_sided "takes the value of the function on one side of the jump, where the series takes the average of the two sides"
+mistake pi_for_length "uses the coefficients of the interval from -pi to pi for an interval from -L to L"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A coefficient in front of x, not 0: its value, and its LaTeX with no 1.
+synth value on K
+synth latex on K
+
+# An odd n, from 1 to 7.
+synth value on N
+
+start Q
+
+K -> nonzero_integer_between(-5, 5) {
+  value = $1.value
+  latex = cond($1.value = 1, "", cond($1.value = -1, "-", str($1.value)))
+}
+
+N -> integer_between(0, 3) {
+  value = 2 * $1.value + 1
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# b_n = (2k / pi) times the integral of x sin nx from 0 to pi, which is
+# pi (-1)^(n+1) / n: b_n = 2k (-1)^(n+1) / n.
+Q -> "line" K integer_between(1, 6) when cost = 1 {
+  cost = -1
+  kind = "line"
+  let sign = cond($3.value % 2 = 1, 1, -1)
+  text = "Let [`f(x) = " ++ $2.latex ++ "x`] for [`-\pi < x < \pi`]." ++ series ++ " Find [`b_{" ++ str($3.value) ++ "}`]."
+  answer_value = plain(2 * $2.value * sign / $3.value)
+  mistake half_factor answer_value = plain($2.value * sign / $3.value)
+}
+
+# a_0 = (1 / pi)(A pi + B pi) = A + B. The two values differ, so there is a
+# jump, and their sum is not 0.
+Q -> "step_mean" nonzero_integer_between(-6, 6) nonzero_integer_between(-6, 6) when cost = 1 {
+  cost = -1
+  kind = "step_mean"
+  require $2.value != $3.value and $2.value + $3.value != 0
+  text = "Let [`f(x) = \begin{cases} " ++ str($2.value) ++ " & -\pi < x < 0 \\\\ " ++ str($3.value)
+         ++ " & 0 < x < \pi \end{cases}`]." ++ series ++ " Find [`a_0`]."
+  answer_value = plain($2.value + $3.value)
+  mistake constant_term_given answer_value = plain(($2.value + $3.value) / 2)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# -c on the left, c on the right: b_n = 2c (1 - (-1)^n) / (n pi), which is
+# 4c / (n pi) for an odd n.
+Q -> "square_wave" integer_between(1, 6) N when cost = 2 weight 2 {
+  cost = -2
+  kind = "square_wave"
+  text = "Let [`f(x) = \begin{cases} " ++ str(-$2.value) ++ " & -\pi < x < 0 \\\\ " ++ str($2.value)
+         ++ " & 0 < x < \pi \end{cases}`]." ++ series ++ " Find [`b_{" ++ str($3.value) ++ "}`]." ++ exact
+  answer_value = plain(formula_divide(formula_constant(4 * $2.value / $3.value), pi))
+  mistake half_factor answer_value = plain(formula_divide(formula_constant(2 * $2.value / $3.value), pi))
+}
+
+# a_0 = (1 / pi) times 2k pi^3 / 3 = 2k pi^2 / 3, and
+# a_n = (2k / pi) times 2 pi (-1)^n / n^2 = 4k (-1)^n / n^2. The last child
+# says which is asked.
+Q -> "parabola" K integer_between(1, 5) integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = cond($4.value = 0, "parabola_mean", "parabola_cosine")
+  let sign = cond($3.value % 2 = 0, 1, -1)
+  text = "Let [`f(x) = " ++ $2.latex ++ "x^{2}`] for [`-\pi < x < \pi`]." ++ series ++ " Find "
+         ++ cond($4.value = 0, "[`a_0`].", "[`a_{" ++ str($3.value) ++ "}`].") ++ exact
+  answer_value = cond($4.value = 0, plain(formula_multiply(formula_constant(2 * $2.value / 3), formula_power(pi, 2))),
+                      plain(4 * $2.value * sign / $3.value ^ 2))
+  mistake half_factor answer_value = cond($4.value = 0, answer_value, plain(2 * $2.value * sign / $3.value ^ 2))
+  mistake constant_term_given answer_value = cond($4.value = 0,
+                                                  plain(formula_multiply(formula_constant($2.value / 3), formula_power(pi, 2))),
+                                                  plain(4 * $2.value * sign / $3.value ^ 2))
+}
+
+# r on the left and p + q x on the right. At 0 the series takes (r + p) / 2;
+# at pi it takes the average of f just below pi and f just above -pi, which
+# is (p + q pi + r) / 2. The last child says where it is asked.
+Q -> "jump" integer_between(-6, 6) integer_between(-6, 6) K integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = cond($5.value = 0, "jump_at_zero", "jump_at_pi")
+  require $5.value = 1 or $2.value != $3.value
+  let shown = cond($3.value = 0, $4.latex ++ "x",
+                   str($3.value) ++ cond($4.value > 0, " + ", " - ") ++ cond(abs($4.value) = 1, "", str(abs($4.value))) ++ "x")
+  let right_end = formula_add(formula_constant($3.value), formula_multiply(formula_constant($4.value), pi))
+  text = "Let [`f(x) = \begin{cases} " ++ str($2.value) ++ " & -\pi < x < 0 \\\\ " ++ shown
+         ++ " & 0 < x < \pi \end{cases}`], extended with period [`2\pi`]. To what value does its Fourier series converge at [`x = "
+         ++ cond($5.value = 0, "0", "\pi") ++ "`]?" ++ exact
+  answer_value = cond($5.value = 0, plain(($2.value + $3.value) / 2),
+                      plain(formula_divide(formula_add(right_end, formula_constant($2.value)), formula_constant(2))))
+  mistake one_sided answer_value = cond($5.value = 0, plain($3.value), plain(right_end))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# a_n = (2k / pi) times the integral of x cos nx from 0 to pi, which is
+# ((-1)^n - 1) / n^2: a_n = -4k / (pi n^2) for an odd n.
+Q -> "absolute_value" integer_between(1, 5) N when cost = 3 {
+  cost = -3
+  kind = "absolute_value"
+  text = "Let [`f(x) = " ++ cond($2.value = 1, "", str($2.value)) ++ "|x|`] for [`-\pi < x < \pi`]." ++ series ++ " Find [`a_{"
+         ++ str($3.value) ++ "}`]." ++ exact
+  answer_value = plain(formula_divide(formula_constant(-4 * $2.value / $3.value ^ 2), pi))
+  mistake half_factor answer_value = plain(formula_divide(formula_constant(-2 * $2.value / $3.value ^ 2), pi))
+}
+
+# k x on (0, pi) and 0 on (-pi, 0): a_0 = k pi / 2, a_n = -2k / (pi n^2)
+# for an odd n, and b_n = k (-1)^(n+1) / n. The second child says which is
+# asked.
+Q -> "half_line" K integer_between(0, 2) N integer_between(2, 6) when cost = 3 weight 3 {
+  cost = -3
+  kind = cond($3.value = 0, "half_line_mean", cond($3.value = 1, "half_line_cosine", "half_line_sine"))
+  let n = cond($3.value = 1, $4.value, $5.value)
+  let sign = cond(n % 2 = 1, 1, -1)
+  text = "Let [`f(x) = \begin{cases} 0 & -\pi < x < 0 \\\\ " ++ $2.latex ++ "x & 0 < x < \pi \end{cases}`]." ++ series ++ " Find "
+         ++ cond($3.value = 0, "[`a_0`].", cond($3.value = 1, "[`a_{" ++ str(n) ++ "}`].", "[`b_{" ++ str(n) ++ "}`].")) ++ exact
+  answer_value = cond($3.value = 0, plain(formula_multiply(formula_constant($2.value / 2), pi)),
+                 cond($3.value = 1, plain(formula_divide(formula_constant(-2 * $2.value / n ^ 2), pi)),
+                      plain($2.value * sign / n)))
+  mistake half_factor answer_value = cond($3.value = 0, answer_value,
+                                     cond($3.value = 1, plain(formula_divide(formula_constant(-$2.value / n ^ 2), pi)),
+                                          plain($2.value * sign / (2 * n))))
+  mistake constant_term_given answer_value = cond($3.value = 0, plain(formula_multiply(formula_constant($2.value / 4), pi)),
+                                             cond($3.value = 1, plain(formula_divide(formula_constant(-2 * $2.value / n ^ 2), pi)),
+                                                  plain($2.value * sign / n)))
+}
+
+# On (-L, L), b_n = (1 / L) times the integral of k x sin(n pi x / L), which
+# is 2 k L (-1)^(n+1) / (n pi).
+Q -> "other_interval" K integer_between(1, 4) integer_between(1, 5) when cost = 3 weight 2 {
+  cost = -3
+  kind = "other_interval"
+  let sign = cond($4.value % 2 = 1, 1, -1)
+  text = "Let [`f(x) = " ++ $2.latex ++ "x`] for [`-" ++ str($3.value) ++ " < x < " ++ str($3.value) ++ "`], extended with period [`"
+         ++ str(2 * $3.value) ++ "`]. Its Fourier series is [`\frac{a_0}{2} + \sum_{n=1}^{\infty} \left(a_n \cos \frac{n \pi x}{"
+         ++ str($3.value) ++ "} + b_n \sin \frac{n \pi x}{" ++ str($3.value) ++ "}\right)`], with [`b_n = \frac{1}{" ++ str($3.value)
+         ++ "} \int_{-" ++ str($3.value) ++ "}^{" ++ str($3.value) ++ "} f(x) \sin \frac{n \pi x}{" ++ str($3.value)
+         ++ "} \, dx`]. Find [`b_{" ++ str($4.value) ++ "}`]." ++ exact
+  answer_value = plain(formula_divide(formula_constant(2 * $2.value * $3.value * sign / $4.value), pi))
+  mistake pi_for_length answer_value = plain(2 * $2.value * sign / $4.value)
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

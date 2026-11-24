@@ -1,0 +1,229 @@
+# ==========================================================================
+#  Applications of integration
+#
+#  Volumes of solids of revolution by discs, washers and shells, the
+#  length of a curve, the area of a surface of revolution, the work done
+#  in stretching a spring and in pumping a tank empty, and the centroid of
+#  a region. It goes on from definite_integral.rhm, which asks for areas.
+#
+#  Every question has an answer in closed form: a whole number, a fraction,
+#  or a fraction times pi. A curve whose length is asked for is one whose
+#  square root comes out, such as y = x^3 / 6 + 1 / (2x), and a surface is
+#  one whose integrand does: the parabola y = sqrt(x) between points where
+#  4x + 1 is a square, or a cone whose slope is the ratio of two sides of
+#  a right triangle with whole sides. Answers with pi are `plain`.
+#
+#  Five mistakes are looked for: leaving out the square of the radius of a
+#  disc, squaring the difference of the two radii of a washer where the
+#  difference of their squares belongs, leaving out the radius of a shell,
+#  taking the force given for a spring to act all the way, where it grows
+#  with the stretch, and lifting all the water
+#  of a tank through its whole height.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the volume of a solid of revolution by discs, the work done in
+#       stretching a spring
+#    2  a volume by washers, a volume by shells, the length of a curve
+#    3  the area of a surface of revolution, the centroid of the region
+#       under c x^n, the work done in pumping a cylindrical tank empty
+# ==========================================================================
+
+attribute cost = 2 split
+
+let pi = formula_pi()
+let exact = " Give the exact value, with [`\pi`] written as pi where it is needed."
+
+mistake radius_not_squared "takes the area of a disc to be pi times its radius, where the radius is squared"
+mistake radii_subtracted_first "squares the difference of the outer and inner radius, where the difference of their squares belongs"
+mistake shell_radius_forgotten "leaves out the radius x of a shell: 2 pi times the integral of the height alone"
+mistake constant_force "takes the force given for one stretch to act all the way, where the force grows with the stretch"
+mistake lift_full_height "lifts all the water through the whole height of the tank, where a layer only rises from where it is"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A curve y = c x^m: its coefficient c, its power m and its LaTeX.
+synth scale on P
+synth power on P
+synth latex on P
+
+start Q
+
+P -> integer_between(1, 3) integer_between(1, 3) {
+  scale = $1.value
+  power = $2.value
+  latex = cond($1.value = 1, "", str($1.value)) ++ cond($2.value = 1, "x", "x^{" ++ str($2.value) ++ "}")
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# pi times the integral of (c x^m)^2 from 0 to b: pi c^2 b^(2m+1) / (2m+1).
+Q -> "disc" P integer_between(1, 3) when cost = 1 weight 2 {
+  cost = -1
+  kind = "disc"
+  let m = $2.power
+  # A formula answer is graded to one part in a thousand, which is more
+  # than 1 of an answer worth more than 1000: pi times at most 300 stays below.
+  require $2.scale ^ 2 * $3.value ^ (2 * m + 1) / (2 * m + 1) <= 300
+  text = "The region under [`y = " ++ $2.latex ++ "`] from [`x = 0`] to [`x = " ++ str($3.value)
+         ++ "`] is turned about the [`x`]-axis. Find the volume of the solid it sweeps out." ++ exact
+  answer_value = plain(formula_multiply(formula_constant($2.scale ^ 2 * $3.value ^ (2 * m + 1) / (2 * m + 1)), pi))
+  mistake radius_not_squared answer_value = plain(formula_multiply(formula_constant($2.scale * $3.value ^ (m + 1) / (m + 1)), pi))
+}
+
+# A force F holds the spring d centimetres beyond its natural length, so
+# its constant is 100 F / d newtons per metre. From a to b centimetres
+# beyond its natural length the work is (100 F / d)((b / 100)^2 - (a / 100)^2) / 2
+# joules, which is F (b^2 - a^2) / (200 d).
+Q -> "spring" integer_between(2, 12) integer_between(2, 10) integer_between(0, 10) integer_between(1, 10) when cost = 1 {
+  cost = -1
+  kind = "spring"
+  let upto = $4.value + $5.value
+  # The constant force gives F (b - a), the same where a + b = 2d.
+  require $4.value + upto != 2 * $3.value
+  text = "A force of [`" ++ str(5 * $2.value) ++ "`] newtons holds a spring stretched [`" ++ str($3.value)
+         ++ "`] centimetres beyond its natural length. Find the work, in joules, done in stretching it from [`" ++ str($4.value)
+         ++ "`] to [`" ++ str(upto) ++ "`] centimetres beyond its natural length."
+  answer_value = 5 * $2.value * (upto ^ 2 - $4.value ^ 2) / (200 * $3.value)
+  mistake constant_force answer_value = 5 * $2.value * ($5.value / 100)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# Between y = k x and y = c x^2, which meet at x = 0 and x = k / c, turned
+# about the x-axis: pi times the integral of k^2 x^2 - c^2 x^4 from 0 to
+# k / c, which is 2 pi k^5 / (15 c^3).
+Q -> "washer_line" integer_between(1, 4) integer_between(1, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "washer_line"
+  let k = $2.value
+  let c = $3.value
+  # The coefficient of pi is at most 300, as for discs.
+  require 2 * k ^ 5 / (15 * c ^ 3) <= 300
+  text = "The region between [`y = " ++ cond(k = 1, "", str(k)) ++ "x`] and [`y = " ++ cond(c = 1, "", str(c)) ++ "x^{2}`]"
+         ++ " is turned about the [`x`]-axis. Find the volume of the solid it sweeps out." ++ exact
+  answer_value = plain(formula_multiply(formula_constant(2 * k ^ 5 / (15 * c ^ 3)), pi))
+  mistake radii_subtracted_first answer_value = plain(formula_multiply(formula_constant(k ^ 5 / (30 * c ^ 3)), pi))
+}
+
+# Between y = c x^2 and y = c s^2, which meet at x = -s and x = s: pi times
+# the integral of c^2 s^4 - c^2 x^4 from -s to s, which is 8 pi c^2 s^5 / 5.
+# The cap turns away four draws in nine, hence the weight.
+Q -> "washer_level" integer_between(1, 3) integer_between(1, 3) when cost = 2 weight 4 {
+  cost = -2
+  kind = "washer_level"
+  let c = $2.value
+  let s = $3.value
+  # The coefficient of pi is at most 300, as for discs.
+  require 8 * c ^ 2 * s ^ 5 / 5 <= 300
+  text = "The region between [`y = " ++ cond(c = 1, "", str(c)) ++ "x^{2}`] and [`y = " ++ str(c * s ^ 2) ++ "`]"
+         ++ " is turned about the [`x`]-axis. Find the volume of the solid it sweeps out." ++ exact
+  answer_value = plain(formula_multiply(formula_constant(8 * c ^ 2 * s ^ 5 / 5), pi))
+  mistake radii_subtracted_first answer_value = plain(formula_multiply(formula_constant(16 * c ^ 2 * s ^ 5 / 15), pi))
+}
+
+# The region under y = c (k x - x^2), turned about the y-axis: 2 pi times
+# the integral of c x (k x - x^2) from 0 to k, which is pi c k^4 / 6.
+Q -> "shell" integer_between(3, 6) integer_between(1, 3) when cost = 2 weight 3 {
+  cost = -2
+  kind = "shell"
+  let k = $2.value
+  let c = $3.value
+  # The coefficient of pi is at most 300, as for discs.
+  require c * k ^ 4 / 6 <= 300
+  text = "The region between [`y = " ++ cond(c = 1, str(k) ++ "x - x^{2}", str(c) ++ "(" ++ str(k) ++ "x - x^{2})")
+         ++ "`] and the [`x`]-axis is turned about the [`y`]-axis. Find the volume of the solid it sweeps out."
+         ++ exact
+  answer_value = plain(formula_multiply(formula_constant(c * k ^ 4 / 6), pi))
+  mistake shell_radius_forgotten answer_value = plain(formula_multiply(formula_constant(c * k ^ 3 / 3), pi))
+}
+
+# y = x^3 / 6 + 1 / (2x) has 1 + y'^2 = (x^2 / 2 + 1 / (2 x^2))^2, so its
+# length from a to b is (b^3 - a^3) / 6 + (1 / a - 1 / b) / 2.
+Q -> "arc_length_cubic" integer_between(1, 3) integer_between(2, 4) when cost = 2 weight 3 {
+  cost = -2
+  kind = "arc_length_cubic"
+  let a = $2.value
+  let b = $3.value
+  require a < b
+  text = "Find the length of the curve [`y = \frac{x^{3}}{6} + \frac{1}{2x}`] from [`x = " ++ str(a) ++ "`] to [`x = " ++ str(b) ++ "`]."
+  answer_value = (b ^ 3 - a ^ 3) / 6 + (1 / a - 1 / b) / 2
+}
+
+# y = (2/3) x^(3/2) has 1 + y'^2 = 1 + x, so its length from j^2 - 1 to
+# m^2 - 1 is (2/3)(m^3 - j^3).
+Q -> "arc_length_power" integer_between(1, 4) integer_between(2, 5) when cost = 2 weight 3 {
+  cost = -2
+  kind = "arc_length_power"
+  let j = $2.value
+  let m = $3.value
+  require j < m
+  text = "Find the length of the curve [`y = \frac{2}{3} x^{3/2}`] from [`x = " ++ str(j ^ 2 - 1) ++ "`] to [`x = " ++ str(m ^ 2 - 1) ++ "`]."
+  answer_value = 2 * (m ^ 3 - j ^ 3) / 3
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# y = sqrt(x) from a to b, turned about the x-axis: 2 pi times the
+# integral of sqrt(x) sqrt(1 + 1 / (4x)), which is
+# (pi / 6)((4b + 1)^(3/2) - (4a + 1)^(3/2)), with 4a + 1 = j^2 and
+# 4b + 1 = m^2 for odd j < m; j = 1 starts at 0.
+Q -> "surface_parabola" integer_between(0, 3) integer_between(1, 4) when cost = 3 weight 2 {
+  cost = -3
+  kind = "surface_parabola"
+  require $2.value < $3.value
+  let j = 2 * $2.value + 1
+  let m = 2 * $3.value + 1
+  text = "The curve [`y = \sqrt{x}`] from [`x = " ++ str((j ^ 2 - 1) / 4) ++ "`] to [`x = " ++ str((m ^ 2 - 1) / 4) ++ "`]"
+         ++ " is turned about the [`x`]-axis. Find the area of the surface it sweeps out." ++ exact
+  answer_value = plain(formula_multiply(formula_constant((m ^ 3 - j ^ 3) / 6), pi))
+}
+
+# The cone y = (p / q) x from 0 to b, with p and q two sides of a right
+# triangle and h its third: pi (p / q) b^2 (h / q).
+Q -> "surface_cone" integer_between(1, 4) integer_between(1, 3) when cost = 3 {
+  cost = -3
+  kind = "surface_cone"
+  let rise = cond($2.value = 1, 3, cond($2.value = 2, 4, cond($2.value = 3, 5, 12)))
+  let run = cond($2.value = 1, 4, cond($2.value = 2, 3, cond($2.value = 3, 12, 5)))
+  let slant = cond($2.value <= 2, 5, 13)
+  text = "The curve [`y = \frac{" ++ str(rise) ++ "}{" ++ str(run) ++ "} x`] from [`x = 0`] to [`x = " ++ str($3.value) ++ "`]"
+         ++ " is turned about the [`x`]-axis. Find the area of the surface it sweeps out." ++ exact
+  answer_value = plain(formula_multiply(formula_constant(rise * $3.value ^ 2 * slant / run ^ 2), pi))
+}
+
+# The region under c x^n from 0 to b has area c b^(n+1) / (n + 1), moment
+# about the y-axis c b^(n+2) / (n + 2) and moment about the x-axis
+# c^2 b^(2n+1) / (2 (2n + 1)). The centroid is the two moments over the
+# area: ((n + 1) b / (n + 2), c (n + 1) b^n / (2 (2n + 1))).
+Q -> "centroid" P integer_between(1, 3) when cost = 3 weight 2 {
+  cost = -3
+  kind = "centroid"
+  let n = $2.power
+  let c = $2.scale
+  let b = $3.value
+  text = "Find the centroid of the region between [`y = " ++ $2.latex ++ "`] and the [`x`]-axis from [`x = 0`] to [`x = " ++ str(b)
+         ++ "`]. Enter it as a point, such as [`(3/4, 5/2)`]."
+  answer_value = point2((n + 1) * b / (n + 2), c * (n + 1) * b ^ n / (2 * (2 * n + 1)))
+}
+
+# Water weighs 9800 newtons per cubic metre. The layer at height y of a
+# full tank of radius r and height h rises h - y to the top, so the work is
+# 9800 pi r^2 times the integral of (h - y) from 0 to h, 4900 pi r^2 h^2
+# joules, which is (49/10) pi r^2 h^2 kilojoules. The answer is asked in
+# kilojoules and the tank kept small so that it stays below 1000, as for discs.
+Q -> "pumping" integer_between(1, 2) integer_between(1, 4) when cost = 3 {
+  cost = -3
+  kind = "pumping"
+  text = "A tank in the shape of an upright cylinder of radius [`" ++ str($2.value) ++ "`] metres and height [`" ++ str($3.value)
+         ++ "`] metres is full of water, which weighs [`9800`] newtons per cubic metre. Find the work, in kilojoules, done in pumping all the water out over the top of the tank."
+         ++ exact
+  answer_value = plain(formula_multiply(formula_constant(49 * $2.value ^ 2 * $3.value ^ 2 / 10), pi))
+  mistake lift_full_height answer_value = plain(formula_multiply(formula_constant(49 * $2.value ^ 2 * $3.value ^ 2 / 5), pi))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

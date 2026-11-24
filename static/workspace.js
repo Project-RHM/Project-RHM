@@ -18,7 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
         double_integral:'Calculus and sequences', implicit_differentiation:'Calculus and sequences',
         vector_calculus:'Calculus and sequences', improper_integral:'Calculus and sequences',
         laplace_transform:'Calculus and sequences', power_series:'Calculus and sequences',
-        optimization:'Calculus and sequences',
+        optimization:'Calculus and sequences', fourier_series:'Calculus and sequences',
+        integral_applications:'Calculus and sequences', parametric_polar:'Calculus and sequences',
         complex:'Vectors and linear algebra', vector:'Vectors and linear algebra', vector_expr:'Vectors and linear algebra',
         determinant:'Vectors and linear algebra', eigen:'Vectors and linear algebra', linear_system:'Vectors and linear algebra',
         matrix_expr:'Vectors and linear algebra', matrix_inverse:'Vectors and linear algebra',
@@ -32,7 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
         binomial_theorem:'Arithmetic and algebra',
         markov_chain:'Other topics', regression:'Other topics', relations:'Logic and sets',
         linear_programming:'Other topics', graph_algorithms:'Other topics', counting_principles:'Other topics',
-        random_variables:'Other topics', automata:'Other topics'
+        random_variables:'Other topics', automata:'Other topics',
+        hypothesis_testing:'Other topics', group_theory:'Arithmetic and algebra', conic_sections:'Other topics'
     };
     const translated = value => window.RhemaI18n?.t(value) || value;
     function updateSelection() {
