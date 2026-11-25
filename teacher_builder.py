@@ -58,6 +58,9 @@ TITLES = {
     "fourier_series": "Fourier series", "integral_applications": "Applications of integration",
     "parametric_polar": "Parametric and polar curves", "hypothesis_testing": "Hypothesis tests",
     "group_theory": "Groups", "conic_sections": "Conic sections",
+    "normal_distribution": "The normal distribution", "graph_coloring": "Graph colouring",
+    "vector_spaces": "Vector spaces", "integral_coordinates": "Integrals in polar and spherical coordinates",
+    "integration_techniques": "Techniques of integration", "nonhomogeneous_ode": "Non-homogeneous differential equations",
 }
 
 

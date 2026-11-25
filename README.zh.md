@@ -161,7 +161,7 @@ stderr。`--plain` 关闭交互样式；`--no-color` 或 `NO_COLOR=1` 关闭颜�
 
 ## 文法库
 
-软件包安装 76 个文法文件，即 `generator/stdlib/` 中的全部文件。每个文法的题目、
+软件包安装 82 个文法文件，即 `generator/stdlib/` 中的全部文件。每个文法的题目、
 价格和 WeBWorK 上下文见 [`QUESTION_TYPES.zh.md`](QUESTION_TYPES.zh.md)。
 
 | 领域 | 文法 |
@@ -169,14 +169,14 @@ stderr。`--plain` 关闭交互样式；`--no-color` 或 `NO_COLOR=1` 关闭颜�
 | 四则运算 | `arithmetic` |
 | 代数 | `polynomial_expand`、`factoring`、`polynomial_forms`、`linear_equation`、`inequality`、`exponential_log`、`partial_fractions`、`binomial_theorem`、`linear_programming`、`library_linear`、`library_quadratic`、`library_polynomial`、`group_theory` |
 | 数列与级数 | `sequence`、`sequence_parts`、`series`、`recurrence` |
-| 微积分 | `calculus`、`limits`、`definite_integral`、`derivative_applications`、`differential_equation`、`taylor`、`partial_derivatives`、`numerical_methods`、`double_integral`、`implicit_differentiation`、`improper_integral`、`vector_calculus`、`power_series`、`laplace_transform`、`optimization`、`fourier_series`、`integral_applications`、`parametric_polar`、`library_formula` |
+| 微积分 | `calculus`、`limits`、`definite_integral`、`derivative_applications`、`differential_equation`、`taylor`、`partial_derivatives`、`numerical_methods`、`double_integral`、`implicit_differentiation`、`improper_integral`、`vector_calculus`、`power_series`、`laplace_transform`、`optimization`、`fourier_series`、`integral_applications`、`parametric_polar`、`integral_coordinates`、`integration_techniques`、`nonhomogeneous_ode`、`library_formula` |
 | 逻辑 | `boolean`、`boolean_equiv`、`logic_forms` |
 | 集合与关系 | `set`、`relations` |
 | 向量与空间几何 | `vector`、`vector_expr`、`lines_planes`、`orthogonality` |
 | 复数 | `complex`、`complex_polar` |
-| 线性代数 | `matrix_expr`、`determinant`、`matrix_inverse`、`linear_system`、`eigen`、`row_reduction`、`linear_transformations` |
-| 计数、数论与图论 | `counting`、`counting_principles`、`number_theory`、`modular_arithmetic`、`base_conversion`、`graph_theory`、`graph_algorithms`、`automata` |
-| 几何、三角、概率与统计 | `analytic_geometry`、`conic_sections`、`trigonometry`、`probability`、`markov_chain`、`statistics`、`random_variables`、`regression`、`hypothesis_testing` |
+| 线性代数 | `matrix_expr`、`determinant`、`matrix_inverse`、`linear_system`、`eigen`、`row_reduction`、`linear_transformations`、`vector_spaces` |
+| 计数、数论与图论 | `counting`、`counting_principles`、`number_theory`、`modular_arithmetic`、`base_conversion`、`graph_theory`、`graph_algorithms`、`graph_coloring`、`automata` |
+| 几何、三角、概率与统计 | `analytic_geometry`、`conic_sections`、`trigonometry`、`probability`、`markov_chain`、`statistics`、`random_variables`、`normal_distribution`、`regression`、`hypothesis_testing` |
 | 组合 | `derivative_or_boolean`（一道题，来自两个被导入的文法）、`homework_set`（一整份作业） |
 | 共享规则，本身不出题 | `polynomial_core`、`matrix_core` |
 

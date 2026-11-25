@@ -1,0 +1,203 @@
+# ==========================================================================
+#  The normal distribution
+#
+#  Probabilities of a normal variable, of the mean of a sample and of the
+#  difference of two independent normal variables, and the value below
+#  which a given share of a distribution lies. It goes on from
+#  random_variables.rhm and comes before hypothesis_testing.rhm, which
+#  asks for test statistics.
+#
+#  No table is needed: a question gives the values of the standard normal
+#  distribution function Phi that it uses, to four decimal places, and
+#  leaves the standardising, the symmetry and the complement to be done.
+#  The values of z are 0.5, 1, 1.5, 2 and 2.5, and the standard deviation
+#  is an even number, so that every value of the variable is whole. An
+#  answer is a decimal with four places, kept exact.
+#
+#  Four mistakes are looked for: giving Phi(z) where the tail above is
+#  asked for, giving the area between the mean and one side where the
+#  area between both sides is asked for, placing a value below the mean
+#  above it, and using the standard deviation of one value for the mean
+#  of a sample.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the z score of a value, the probability of a value above x
+#    2  the probability within z standard deviations of the mean, between
+#       two values on one side of the mean, and the value with a given
+#       share of the distribution below it
+#    3  the probability between two values on opposite sides of the mean,
+#       the probability that the mean of a sample is above a value, the
+#       probability that one normal variable is below another
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake complement_forgotten "gives Phi(z), the probability below the value, where the probability above it is asked for"
+mistake one_side_only "gives the area between the mean and one of the two values, where the area between both is asked for"
+mistake sign_lost "places a value that lies below the mean as far above it"
+mistake not_scaled "uses the standard deviation of one value for the mean of a sample, where it is divided by sqrt(n)"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A value of z, one of 0.5, 1, 1.5, 2 and 2.5: twice z as a whole number,
+# Phi(z) as a number, and both as they are written.
+synth doubled on Z
+synth phi on Z
+synth z_text on Z
+synth phi_text on Z
+
+# A mean and an even standard deviation: half the deviation is kept. The
+# mean is at least 50 and no value asked about is more than 40 from it,
+# so that every value of the variable that is printed is positive.
+synth mean on N
+synth half on N
+
+start Q
+
+Z -> integer_between(1, 5) {
+  doubled = $1.value
+  phi = cond($1.value = 1, 6915, cond($1.value = 2, 8413, cond($1.value = 3, 9332, cond($1.value = 4, 9772, 9938)))) / 10000
+  z_text = cond($1.value = 1, "0.5", cond($1.value = 2, "1", cond($1.value = 3, "1.5", cond($1.value = 4, "2", "2.5"))))
+  phi_text = cond($1.value = 1, "0.6915", cond($1.value = 2, "0.8413", cond($1.value = 3, "0.9332", cond($1.value = 4, "0.9772", "0.9938"))))
+}
+
+N -> integer_between(10, 40) integer_between(1, 8) {
+  mean = 5 * $1.value
+  half = $2.value
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# z = (x - mu) / sigma, for a whole x that is not the mean and at most
+# four standard deviations from it.
+Q -> "z_score" N nonzero_integer_between(-20, 20) when cost = 1 weight 2 {
+  cost = -1
+  kind = "z_score"
+  require abs($3.value) <= 8 * $2.half
+  text = "A random variable [`X`] is normally distributed with mean [`" ++ str($2.mean) ++ "`] and standard deviation [`"
+         ++ str(2 * $2.half) ++ "`]. Find the [`z`] score of the value [`" ++ str($2.mean + $3.value) ++ "`]."
+  answer_value = $3.value / (2 * $2.half)
+}
+
+# P(X > mu + z sigma) = 1 - Phi(z).
+Q -> "above" N Z when cost = 1 {
+  cost = -1
+  kind = "above"
+  text = "A random variable [`X`] is normally distributed with mean [`" ++ str($2.mean) ++ "`] and standard deviation [`"
+         ++ str(2 * $2.half) ++ "`]. Find [`P(X > " ++ str($2.mean + $3.doubled * $2.half) ++ ")`], using [`\Phi(" ++ $3.z_text ++ ") = "
+         ++ $3.phi_text ++ "`] for the standard normal distribution function."
+  answer_value = 1 - $3.phi
+  mistake complement_forgotten answer_value = $3.phi
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# P(mu - z sigma < X < mu + z sigma) = 2 Phi(z) - 1.
+Q -> "within" N Z when cost = 2 {
+  cost = -2
+  kind = "within"
+  text = "A random variable [`X`] is normally distributed with mean [`" ++ str($2.mean) ++ "`] and standard deviation [`"
+         ++ str(2 * $2.half) ++ "`]. Find [`P(" ++ str($2.mean - $3.doubled * $2.half) ++ " < X < " ++ str($2.mean + $3.doubled * $2.half)
+         ++ ")`], using [`\Phi(" ++ $3.z_text ++ ") = " ++ $3.phi_text ++ "`] for the standard normal distribution function."
+  answer_value = 2 * $3.phi - 1
+  mistake one_side_only answer_value = $3.phi - 1 / 2
+}
+
+# Two values on one side of the mean, at z_1 < z_2 standard deviations
+# from it: Phi(z_2) - Phi(z_1), above the mean or, by symmetry, below it.
+# The last child says on which side.
+Q -> "between" N Z Z integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = "between"
+  require $3.doubled < $4.doubled
+  let near = cond($5.value = 0, $2.mean + $3.doubled * $2.half, $2.mean - $3.doubled * $2.half)
+  let far = cond($5.value = 0, $2.mean + $4.doubled * $2.half, $2.mean - $4.doubled * $2.half)
+  text = "A random variable [`X`] is normally distributed with mean [`" ++ str($2.mean) ++ "`] and standard deviation [`"
+         ++ str(2 * $2.half) ++ "`]. Find [`P(" ++ str(min(near, far)) ++ " < X < " ++ str(max(near, far)) ++ ")`], using [`\Phi("
+         ++ $3.z_text ++ ") = " ++ $3.phi_text ++ "`] and [`\Phi(" ++ $4.z_text ++ ") = " ++ $4.phi_text
+         ++ "`] for the standard normal distribution function."
+  answer_value = $4.phi - $3.phi
+}
+
+# The value with the share Phi(z) of the distribution below it is
+# mu + z sigma; with the share 1 - Phi(z) below it, mu - z sigma. The last
+# child says which share is given.
+Q -> "percentile" N Z integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = cond($4.value = 0, "percentile_above", "percentile_below")
+  let share = cond($4.value = 0, $3.phi_text,
+                   cond($3.doubled = 1, "0.3085", cond($3.doubled = 2, "0.1587", cond($3.doubled = 3, "0.0668", cond($3.doubled = 4, "0.0228", "0.0062")))))
+  text = "A random variable [`X`] is normally distributed with mean [`" ++ str($2.mean) ++ "`] and standard deviation [`"
+         ++ str(2 * $2.half) ++ "`]. Find the value [`x`] with [`P(X < x) = " ++ share ++ "`], using [`\Phi(" ++ $3.z_text ++ ") = "
+         ++ $3.phi_text ++ "`] for the standard normal distribution function."
+  answer_value = cond($4.value = 0, $2.mean + $3.doubled * $2.half, $2.mean - $3.doubled * $2.half)
+  mistake sign_lost answer_value = $2.mean + $3.doubled * $2.half
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# One value z_1 standard deviations below the mean and one z_2 above it,
+# with z_1 and z_2 different: Phi(z_2) - (1 - Phi(z_1)).
+Q -> "across" N Z Z when cost = 3 weight 2 {
+  cost = -3
+  kind = "across"
+  require $3.doubled != $4.doubled
+  text = "A random variable [`X`] is normally distributed with mean [`" ++ str($2.mean) ++ "`] and standard deviation [`"
+         ++ str(2 * $2.half) ++ "`]. Find [`P(" ++ str($2.mean - $3.doubled * $2.half) ++ " < X < " ++ str($2.mean + $4.doubled * $2.half)
+         ++ ")`], using [`\Phi(" ++ $3.z_text ++ ") = " ++ $3.phi_text ++ "`] and [`\Phi(" ++ $4.z_text ++ ") = " ++ $4.phi_text
+         ++ "`] for the standard normal distribution function."
+  answer_value = $4.phi + $3.phi - 1
+  mistake one_side_only answer_value = $4.phi - 1 / 2
+}
+
+# The mean of n = k^2 values has standard deviation sigma / k. The pairs
+# (k, z) are those for which z / k is in the list too, so that whoever
+# does not divide by k has a value of Phi to use: (2, 1), (2, 2), (3, 1.5),
+# (4, 2) and (5, 2.5). With sigma = 2 k u the value asked about is
+# mu + (2z) u.
+Q -> "sample_mean" integer_between(10, 40) integer_between(1, 5) integer_between(1, 6) when cost = 3 weight 2 {
+  cost = -3
+  kind = "sample_mean"
+  let k = cond($3.value <= 2, 2, $3.value)
+  let twice_z = cond($3.value = 1, 2, cond($3.value = 2, 4, $3.value))
+  let centre = 5 * $2.value
+  let phi_z = cond(twice_z = 2, 8413, cond(twice_z = 3, 9332, cond(twice_z = 4, 9772, 9938))) / 10000
+  let phi_small = cond($3.value = 2, 8413, 6915) / 10000
+  let z_shown = cond(twice_z = 2, "1", cond(twice_z = 3, "1.5", cond(twice_z = 4, "2", "2.5")))
+  let phi_shown = cond(twice_z = 2, "0.8413", cond(twice_z = 3, "0.9332", cond(twice_z = 4, "0.9772", "0.9938")))
+  let small_text = cond($3.value = 2, "1", "0.5")
+  let small_phi_text = cond($3.value = 2, "0.8413", "0.6915")
+  text = "A population is normally distributed with mean [`" ++ str(centre) ++ "`] and standard deviation [`" ++ str(2 * k * $4.value)
+         ++ "`]. A sample of [`" ++ str(k ^ 2) ++ "`] values is taken. Find the probability that the mean of the sample is above [`"
+         ++ str(centre + twice_z * $4.value) ++ "`], using what is needed of [`\Phi(" ++ small_text ++ ") = " ++ small_phi_text
+         ++ "`] and [`\Phi(" ++ z_shown ++ ") = " ++ phi_shown ++ "`] for the standard normal distribution function."
+  answer_value = 1 - phi_z
+  mistake not_scaled answer_value = 1 - phi_small
+}
+
+# X - Y is normal with mean mu_1 - mu_2 and standard deviation
+# sqrt(sigma_1^2 + sigma_2^2), which is whole: the two deviations are the
+# legs 6 and 8 of a right triangle, in either order, times u. The means
+# differ by z times that deviation, so P(X > Y) = Phi(z), and the
+# probability asked for, that the variable with the smaller mean is the
+# larger, is 1 - Phi(z).
+Q -> "difference" integer_between(10, 40) Z integer_between(1, 3) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = "difference"
+  let first = cond($5.value = 0, 6, 8) * $4.value
+  let second = cond($5.value = 0, 8, 6) * $4.value
+  let lower = 5 * $2.value
+  text = "The random variables [`X`] and [`Y`] are independent and normally distributed: [`X`] with mean [`"
+         ++ str(lower + 5 * $3.doubled * $4.value) ++ "`] and standard deviation [`" ++ str(first) ++ "`], [`Y`] with mean [`" ++ str(lower)
+         ++ "`] and standard deviation [`" ++ str(second) ++ "`]. Find [`P(Y > X)`], using [`\Phi(" ++ $3.z_text ++ ") = " ++ $3.phi_text
+         ++ "`] for the standard normal distribution function."
+  answer_value = 1 - $3.phi
+  mistake complement_forgotten answer_value = $3.phi
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

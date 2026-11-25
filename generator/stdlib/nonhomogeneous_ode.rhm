@@ -1,0 +1,249 @@
+# ==========================================================================
+#  Non-homogeneous linear differential equations
+#
+#  A particular solution by undetermined coefficients, for a right-hand
+#  side that is an exponential, a sine or cosine, or a linear function,
+#  with and without resonance; and initial value problems whose solution
+#  is a particular solution and a solution of the homogeneous equation
+#  together. It goes on from differential_equation.rhm, which solves the
+#  homogeneous equation.
+#
+#  Every question is built from its answer: the coefficients of the
+#  particular solution are chosen, and the right-hand side is what the
+#  left side makes of it. A question names the form of the solution asked
+#  for, such as y = A e^(2x), so that there is one answer, and an initial
+#  value problem has one solution. An answer is a formula in x.
+#
+#  Four mistakes are looked for: differentiating e^(kx) without the factor
+#  k, taking the second derivative of a sine or cosine with a plus sign,
+#  leaving the y' term out of the constant of a linear trial solution, and
+#  fitting the constants of the homogeneous solution to the initial values
+#  before the particular solution is added.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  y'' + p y' + q y = c e^(kx), y'' + q y = c sin(kx) or c cos(kx)
+#    2  y'' + p y' + q y = m x + n, the same with c e^(rx) where r is a
+#       root of the characteristic equation, and y' + a y = c e^(kx) with
+#       an initial value
+#    3  y'' + p y' + q y = alpha cos(kx) + beta sin(kx), and initial value
+#       problems of the second order with a constant or an exponential on
+#       the right
+# ==========================================================================
+
+attribute cost = 2 split
+
+let x = formula_variable("x")
+
+mistake chain_factor_forgotten "differentiates e^(kx) without the factor k, so every derivative of the trial solution is the solution itself"
+mistake second_derivative_sign "takes the second derivative of sin(kx) or cos(kx) with a plus sign: k^2 where -k^2 belongs"
+mistake first_derivative_forgotten "leaves the y' term out when the constant of the trial solution A x + B is found"
+mistake constants_before_particular "fits the constants of the homogeneous solution to the initial values first and adds the particular solution afterwards"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A rate k, not 0: its value, k x as LaTeX and e^(kx) as a formula.
+synth value on R
+synth latex on R
+synth power on R
+
+# The left side y'' + p y' + q y: its two coefficients and its LaTeX.
+synth damping on L
+synth stiffness on L
+synth latex on L
+
+start Q
+
+R -> nonzero_integer_between(-3, 3) {
+  value = $1.value
+  latex = cond($1.value = 1, "", cond($1.value = -1, "-", str($1.value))) ++ "x"
+  power = formula_exp(formula_multiply(formula_constant($1.value), x))
+}
+
+L -> integer_between(-5, 5) integer_between(-5, 5) {
+  damping = $1.value
+  stiffness = $2.value
+  latex = "y''" ++ cond($1.value = 0, "", cond($1.value > 0, " + ", " - ") ++ cond(abs($1.value) = 1, "", str(abs($1.value))) ++ "y'")
+          ++ cond($2.value = 0, "", cond($2.value > 0, " + ", " - ") ++ cond(abs($2.value) = 1, "", str(abs($2.value))) ++ "y")
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# A e^(kx) put into the left side gives A (k^2 + p k + q) e^(kx); k is not
+# a root, so that is not 0. Without the factor k each derivative is the
+# function itself, and the left side gives A (1 + p + q) e^(kx).
+Q -> "exponential" L R nonzero_integer_between(-4, 4) when cost = 1 weight 2 {
+  cost = -1
+  kind = "exponential"
+  let k = $3.value
+  let through = k ^ 2 + $2.damping * k + $2.stiffness
+  let flat = 1 + $2.damping + $2.stiffness
+  require through != 0 and flat != 0 and through != flat
+  let forcing = $4.value * through
+  text = "Find the particular solution of the form [`y = A e^{" ++ $3.latex ++ "}`] of the differential equation [`" ++ $2.latex ++ " = "
+         ++ cond(forcing = 1, "", cond(forcing = -1, "-", str(forcing))) ++ "e^{" ++ $3.latex ++ "}`]."
+  answer_value = formula_multiply(formula_constant($4.value), $3.power)
+  mistake chain_factor_forgotten answer_value = formula_multiply(formula_constant(forcing / flat), $3.power)
+}
+
+# A sin(kx) put into y'' + q y gives A (q - k^2) sin(kx), and the same
+# with the cosine; q is not k^2, and not -k^2, where the sign mistake has
+# nothing to divide by. The last child says sine or cosine.
+Q -> "undamped" nonzero_integer_between(-9, 9) integer_between(1, 4) nonzero_integer_between(-4, 4) integer_between(0, 1) when cost = 1 weight 2 {
+  cost = -1
+  kind = "undamped"
+  let q = $2.value
+  let k = $3.value
+  require q != k ^ 2 and q != -(k ^ 2)
+  let forcing = $4.value * (q - k ^ 2)
+  let name = cond($5.value = 0, "\sin(", "\cos(") ++ cond(k = 1, "", str(k)) ++ "x)"
+  let wave = cond($5.value = 0, formula_sin(formula_multiply(formula_constant(k), x)), formula_cos(formula_multiply(formula_constant(k), x)))
+  text = "Find the particular solution of the form [`y = A " ++ name ++ "`] of the differential equation [`y''"
+         ++ cond(q > 0, " + ", " - ") ++ cond(abs(q) = 1, "", str(abs(q))) ++ "y = "
+         ++ cond(forcing = 1, "", cond(forcing = -1, "-", str(forcing))) ++ name ++ "`]."
+  answer_value = formula_multiply(formula_constant($4.value), wave)
+  mistake second_derivative_sign answer_value = formula_multiply(formula_constant(forcing / (q + k ^ 2)), wave)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# A x + B put into the left side gives q A x + (p A + q B); q is not 0, and
+# neither is p, so that the y' term matters.
+Q -> "linear" L nonzero_integer_between(-4, 4) integer_between(-5, 5) when cost = 2 weight 2 {
+  cost = -2
+  kind = "linear"
+  require $2.damping != 0 and $2.stiffness != 0
+  let in_x = $2.stiffness * $3.value
+  let alone = $2.damping * $3.value + $2.stiffness * $4.value
+  text = "Find the particular solution of the form [`y = Ax + B`] of the differential equation [`" ++ $2.latex ++ " = "
+         ++ cond(in_x = 1, "", cond(in_x = -1, "-", str(in_x))) ++ "x"
+         ++ cond(alone = 0, "", cond(alone > 0, " + ", " - ") ++ str(abs(alone))) ++ "`]."
+  answer_value = polynomial_linear($3.value, $4.value, "x")
+  mistake first_derivative_forgotten answer_value = polynomial_linear($3.value, alone / $2.stiffness, "x")
+}
+
+# The characteristic equation has the roots r and s, different, and the
+# right-hand side is c e^(rx): A e^(rx) gives 0, and A x e^(rx) gives
+# A (r - s) e^(rx).
+Q -> "resonance" R R nonzero_integer_between(-4, 4) when cost = 2 weight 2 {
+  cost = -2
+  kind = "resonance"
+  require $2.value != $3.value
+  let p = -($2.value + $3.value)
+  let q = $2.value * $3.value
+  let forcing = $4.value * ($2.value - $3.value)
+  text = "The differential equation [`y''" ++ cond(p = 0, "", cond(p > 0, " + ", " - ") ++ cond(abs(p) = 1, "", str(abs(p))) ++ "y'")
+         ++ cond(q > 0, " + ", " - ") ++ cond(abs(q) = 1, "", str(abs(q))) ++ "y = "
+         ++ cond(forcing = 1, "", cond(forcing = -1, "-", str(forcing))) ++ "e^{" ++ $2.latex
+         ++ "}`] has no solution of the form [`A e^{" ++ $2.latex ++ "}`]. Find its particular solution of the form [`y = A x e^{" ++ $2.latex
+         ++ "}`]."
+  answer_value = formula_multiply(formula_multiply(formula_constant($4.value), x), $2.power)
+}
+
+# y = A e^(kx) + C e^(-ax) solves y' + a y = A (k + a) e^(kx) with
+# y(0) = A + C; k is not -a.
+Q -> "first_order" R R nonzero_integer_between(-4, 4) nonzero_integer_between(-4, 4) when cost = 2 weight 2 {
+  cost = -2
+  kind = "first_order"
+  let a = -$3.value
+  let k = $2.value
+  require k != $3.value
+  let forcing = $4.value * (k + a)
+  let flat = 1 + a
+  require flat != 0 and flat != k + a
+  text = "Solve the initial value problem [`y'" ++ cond(a > 0, " + ", " - ") ++ cond(abs(a) = 1, "", str(abs(a))) ++ "y = "
+         ++ cond(forcing = 1, "", cond(forcing = -1, "-", str(forcing))) ++ "e^{" ++ $2.latex ++ "}`], [`y(0) = " ++ str($4.value + $5.value)
+         ++ "`]. Give [`y`] as a function of [`x`]."
+  answer_value = formula_add(formula_multiply(formula_constant($4.value), $2.power), formula_multiply(formula_constant($5.value), $3.power))
+  mistake chain_factor_forgotten answer_value = formula_add(formula_multiply(formula_constant(forcing / flat), $2.power),
+                                                            formula_multiply(formula_constant($4.value + $5.value - forcing / flat), $3.power))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# A cos(kx) + B sin(kx) put into the left side gives
+# ((q - k^2) A + p k B) cos(kx) + ((q - k^2) B - p k A) sin(kx). The damping
+# p is not 0, so both functions are needed. With k^2 for -k^2 the system
+# has q + k^2 where q - k^2 belongs.
+Q -> "damped" L integer_between(1, 3) nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) when cost = 3 weight 2 {
+  cost = -3
+  kind = "damped"
+  let p = $2.damping
+  let q = $2.stiffness
+  let k = $3.value
+  require p != 0
+  let stiff = q - k ^ 2
+  let with_cos = stiff * $4.value + p * k * $5.value
+  let with_sin = stiff * $5.value - p * k * $4.value
+  require with_cos != 0 and with_sin != 0
+  let angle = cond(k = 1, "", str(k)) ++ "x"
+  let cosine = formula_cos(formula_multiply(formula_constant(k), x))
+  let sine = formula_sin(formula_multiply(formula_constant(k), x))
+  let wrong = q + k ^ 2
+  let below = wrong ^ 2 + (p * k) ^ 2
+  text = "Find the particular solution of the form [`y = A \cos(" ++ angle ++ ") + B \sin(" ++ angle ++ ")`] of the differential equation [`"
+         ++ $2.latex ++ " = " ++ cond(with_cos = 1, "", cond(with_cos = -1, "-", str(with_cos))) ++ "\cos(" ++ angle ++ ")"
+         ++ cond(with_sin > 0, " + ", " - ") ++ cond(abs(with_sin) = 1, "", str(abs(with_sin))) ++ "\sin(" ++ angle ++ ")`]."
+  answer_value = formula_add(formula_multiply(formula_constant($4.value), cosine), formula_multiply(formula_constant($5.value), sine))
+  mistake second_derivative_sign answer_value = formula_add(formula_multiply(formula_constant((wrong * with_cos - p * k * with_sin) / below), cosine),
+                                                            formula_multiply(formula_constant((wrong * with_sin + p * k * with_cos) / below), sine))
+}
+
+# y = C_1 e^(rx) + C_2 e^(sx) + K solves y'' - (r + s) y' + r s y = K r s,
+# with y(0) = C_1 + C_2 + K and y'(0) = r C_1 + s C_2. Whoever fits the
+# constants before adding K solves C_1 + C_2 = y(0) instead.
+Q -> "initial_constant" R R nonzero_integer_between(-4, 4) nonzero_integer_between(-4, 4) nonzero_integer_between(-5, 5) when cost = 3 weight 4 {
+  cost = -3
+  kind = "initial_constant"
+  let r = $2.value
+  let s = $3.value
+  require r < s
+  let p = -(r + s)
+  let q = r * s
+  let initial = $4.value + $5.value + $6.value
+  let slope = r * $4.value + s * $5.value
+  let early1 = (slope - s * initial) / (r - s)
+  let early2 = (r * initial - slope) / (r - s)
+  text = "Solve the initial value problem [`y''" ++ cond(p = 0, "", cond(p > 0, " + ", " - ") ++ cond(abs(p) = 1, "", str(abs(p))) ++ "y'")
+         ++ cond(q > 0, " + ", " - ") ++ cond(abs(q) = 1, "", str(abs(q))) ++ "y = " ++ str($6.value * q) ++ "`], [`y(0) = " ++ str(initial)
+         ++ "`], [`y'(0) = " ++ str(slope) ++ "`]. Give [`y`] as a function of [`x`]."
+  answer_value = formula_add(formula_add(formula_multiply(formula_constant($4.value), $2.power), formula_multiply(formula_constant($5.value), $3.power)),
+                             formula_constant($6.value))
+  mistake constants_before_particular answer_value = formula_add(formula_add(formula_multiply(formula_constant(early1), $2.power),
+                                                                             formula_multiply(formula_constant(early2), $3.power)),
+                                                                 formula_constant($6.value))
+}
+
+# The same with A e^(kx) for the particular solution, k not a root:
+# y'' - (r + s) y' + r s y = A (k - r)(k - s) e^(kx), y(0) = C_1 + C_2 + A
+# and y'(0) = r C_1 + s C_2 + k A.
+Q -> "initial_exponential" R R R nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) when cost = 3 weight 6 {
+  cost = -3
+  kind = "initial_exponential"
+  let r = $2.value
+  let s = $3.value
+  let k = $4.value
+  require r < s and k != r and k != s
+  let p = -(r + s)
+  let q = r * s
+  let forcing = $7.value * (k - r) * (k - s)
+  let initial = $5.value + $6.value + $7.value
+  let slope = r * $5.value + s * $6.value + k * $7.value
+  let early1 = (slope - s * initial) / (r - s)
+  let early2 = (r * initial - slope) / (r - s)
+  text = "Solve the initial value problem [`y''" ++ cond(p = 0, "", cond(p > 0, " + ", " - ") ++ cond(abs(p) = 1, "", str(abs(p))) ++ "y'")
+         ++ cond(q > 0, " + ", " - ") ++ cond(abs(q) = 1, "", str(abs(q))) ++ "y = "
+         ++ cond(forcing = 1, "", cond(forcing = -1, "-", str(forcing))) ++ "e^{" ++ $4.latex ++ "}`], [`y(0) = " ++ str(initial)
+         ++ "`], [`y'(0) = " ++ str(slope) ++ "`]. Give [`y`] as a function of [`x`]."
+  answer_value = formula_add(formula_add(formula_multiply(formula_constant($5.value), $2.power), formula_multiply(formula_constant($6.value), $3.power)),
+                             formula_multiply(formula_constant($7.value), $4.power))
+  mistake constants_before_particular answer_value = formula_add(formula_add(formula_multiply(formula_constant(early1), $2.power),
+                                                                             formula_multiply(formula_constant(early2), $3.power)),
+                                                                 formula_multiply(formula_constant($7.value), $4.power))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

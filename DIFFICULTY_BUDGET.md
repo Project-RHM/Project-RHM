@@ -29,6 +29,7 @@ this document is in `DIFFICULTY_BUDGET.zh.md`.
 | `vector_calculus.rhm`, `improper_integral.rhm`, `linear_programming.rhm`, `graph_algorithms.rhm`, `orthogonality.rhm`, `counting_principles.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
 | `random_variables.rhm`, `laplace_transform.rhm`, `automata.rhm`, `power_series.rhm`, `optimization.rhm`, `linear_transformations.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
 | `fourier_series.rhm`, `integral_applications.rhm`, `parametric_polar.rhm`, `hypothesis_testing.rhm`, `group_theory.rhm`, `conic_sections.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
+| `normal_distribution.rhm`, `graph_coloring.rhm`, `vector_spaces.rhm`, `integral_coordinates.rhm`, `integration_techniques.rhm`, `nonhomogeneous_ode.rhm` | fixed forms at prices 1 to 3 | 2 | QUESTION_TYPES.md |
 | `partial_fractions.rhm`, `taylor.rhm`, `inequality.rhm`, `partial_derivatives.rhm`, `row_reduction.rhm`, `base_conversion.rhm`, `definite_integral.rhm` | fixed forms at prices 1 to 3, questions built from priced parts at 4 to 8 | 2 | 12 |
 
 > **Sets in the language.** Since the `set` declaration

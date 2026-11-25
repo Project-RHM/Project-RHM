@@ -1,0 +1,243 @@
+# ==========================================================================
+#  Vector spaces
+#
+#  Coordinates relative to a basis, in the plane, in space and for
+#  polynomials; the dimension of some standard spaces, of a sum and of an
+#  intersection of subspaces; the entry that makes three vectors dependent;
+#  and the matrix that changes coordinates from one basis to another. It
+#  goes on from row_reduction.rhm and linear_transformations.rhm.
+#
+#  Coordinates are chosen first, and the vector shown is the combination
+#  of the basis they give. A basis of the plane or of space is the columns
+#  of a matrix of determinant 1, so nothing asked for has a fraction in it.
+#  Two subspaces of R^4 are each spanned by two vectors; the second is
+#  built from the first in one of three ways, so that the intersection
+#  has dimension 0, 1 or 2, and the answer is counted by ranks.
+#
+#  Five mistakes are looked for: using the entries of a vector as the
+#  coefficients of the basis, where its coordinates are asked for; taking
+#  the degree of a polynomial for the dimension of its space; adding the
+#  dimensions of two subspaces without taking off what they share; giving
+#  the coefficients of a polynomial as they stand, where another basis is
+#  asked about; and changing basis in the wrong direction.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the coordinates of a vector of the plane relative to a basis, the
+#       dimension of a standard space, the dimension of a sum of subspaces
+#    2  the entry that makes three vectors dependent, the coordinates of a
+#       polynomial relative to 1, x - r, (x - r)^2
+#    3  the coordinates of a vector of space relative to a basis, the
+#       matrix that changes coordinates from one basis to another, the
+#       dimension of the intersection of two subspaces of R^4
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake basis_applied "uses the entries of the vector as the coefficients of the basis vectors, where its coordinates are asked for"
+mistake degree_for_dimension "takes the degree n for the dimension of the polynomials of degree at most n, which is n + 1"
+mistake intersection_not_removed "adds the dimensions of the two subspaces and does not take off the dimension of what they share"
+mistake standard_coordinates "gives the coefficients of the polynomial as they stand, its coordinates relative to 1, x, x^2"
+mistake direction_reversed "changes basis the wrong way: the matrix from the second basis to the first"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+synth pg_context on Q
+
+# A basis of the plane: the columns (1, p) and (q, p q + 1) of a matrix of
+# determinant 1, with no 0 among its entries.
+synth map on U
+synth latex1 on U
+synth latex2 on U
+
+# A vector of R^4 with small whole entries, not all 0.
+synth arrow on W
+
+start Q
+
+U -> nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) {
+  require $1.value * $2.value != -1
+  map = matrix2(1, $2.value, $1.value, $1.value * $2.value + 1)
+  latex1 = vector_latex(vector2(1, $1.value))
+  latex2 = vector_latex(vector2($2.value, $1.value * $2.value + 1))
+}
+
+W -> integer_between(-2, 2) integer_between(-2, 2) integer_between(-2, 2) integer_between(-2, 2) {
+  require $1.value != 0 or $2.value != 0 or $3.value != 0 or $4.value != 0
+  arrow = vector4($1.value, $2.value, $3.value, $4.value)
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The coordinates are chosen, and the vector shown is the combination of
+# the basis they give. It is not the vector the same numbers give when
+# they are used the other way round.
+Q -> "coordinates" U nonzero_integer_between(-5, 5) nonzero_integer_between(-5, 5) when cost = 1 {
+  cost = -1
+  kind = "coordinates"
+  let chosen = vector2($3.value, $4.value)
+  let shown = matrix_vector($2.map, chosen)
+  require matrix_vector($2.map, shown) != chosen
+  text = "The vectors [`b_1 = " ++ $2.latex1 ++ "`] and [`b_2 = " ++ $2.latex2 ++ "`] are a basis of the plane. Find the coordinates of [`v = "
+         ++ vector_latex(shown) ++ "`] relative to this basis: the vector [`\langle c_1, c_2 \rangle`] with [`v = c_1 b_1 + c_2 b_2`]."
+  answer_value = chosen
+  mistake basis_applied answer_value = matrix_vector($2.map, shown)
+  pg_context = "Vector"
+}
+
+# The first child says which space; n is the second, and the third is the
+# number of columns of a matrix that need not be square.
+#
+#   0  polynomials of degree at most n                 n + 1
+#   1  polynomials of degree at most n with p(0) = 0   n
+#   2  symmetric n by n matrices                       n (n + 1) / 2
+#   3  n by n matrices with A^T = -A                   n (n - 1) / 2
+#   4  n by n matrices of trace 0                      n^2 - 1
+#   5  upper triangular n by n matrices                n (n + 1) / 2
+#   6  n by m matrices                                 n m
+Q -> "standard_dimension" integer_between(0, 6) integer_between(2, 5) integer_between(2, 5) when cost = 1 {
+  cost = -1
+  kind = cond($2.value <= 1, "dimension_polynomials", "dimension_matrices")
+  let n = $3.value
+  let by = "[`" ++ str(n) ++ "`] by [`" ++ str(n) ++ "`]"
+  text = "Find the dimension of the vector space of all "
+         ++ cond($2.value = 0, "polynomials of degree at most [`" ++ str(n) ++ "`].",
+            cond($2.value = 1, "polynomials [`p`] of degree at most [`" ++ str(n) ++ "`] with [`p(0) = 0`].",
+            cond($2.value = 2, "symmetric " ++ by ++ " matrices.",
+            cond($2.value = 3, by ++ " matrices [`A`] with [`A^{T} = -A`].",
+            cond($2.value = 4, by ++ " matrices whose trace is [`0`].",
+            cond($2.value = 5, "upper triangular " ++ by ++ " matrices.",
+                 "[`" ++ str(n) ++ "`] by [`" ++ str($4.value) ++ "`] matrices."))))))
+  answer_value = cond($2.value = 0, n + 1, cond($2.value = 1, n, cond($2.value = 2, n * (n + 1) / 2, cond($2.value = 3, n * (n - 1) / 2,
+                 cond($2.value = 4, n ^ 2 - 1, cond($2.value = 5, n * (n + 1) / 2, n * $4.value))))))
+  mistake degree_for_dimension answer_value = cond($2.value = 0, n, cond($2.value = 1, n - 1, answer_value))
+  pg_context = "Numeric"
+}
+
+# dim(U + W) = dim U + dim W - dim(U n W). The intersection has dimension
+# c, at least 1, each subspace reaches beyond it, and the whole space has
+# room for the sum. The last child says which of the two is asked for,
+# the sum or the intersection.
+Q -> "sum_dimension" integer_between(1, 3) integer_between(1, 3) integer_between(1, 3) integer_between(0, 2) integer_between(0, 1) when cost = 1 {
+  cost = -1
+  kind = cond($6.value = 0, "sum_dimension", "intersection_from_sum")
+  let shared = $2.value
+  let first = $2.value + $3.value
+  let second = $2.value + $4.value
+  let whole = first + second - shared
+  text = "[`U`] and [`W`] are subspaces of [`\mathbb{R}^{" ++ str(whole + $5.value) ++ "}`] with [`\dim U = " ++ str(first) ++ "`], [`\dim W = "
+         ++ str(second) ++ "`] and "
+         ++ cond($6.value = 0, "[`\dim(U \cap W) = " ++ str(shared) ++ "`]. Find [`\dim(U + W)`].",
+                 "[`\dim(U + W) = " ++ str(whole) ++ "`]. Find [`\dim(U \cap W)`].")
+  answer_value = cond($6.value = 0, whole, shared)
+  mistake intersection_not_removed answer_value = cond($6.value = 0, first + second, answer_value)
+  pg_context = "Numeric"
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The third vector is a combination of the first two, with its last entry
+# hidden behind t. The first two entries of the first two vectors are not
+# in proportion, so only that combination has those first two entries, and
+# one value of t makes the three dependent.
+Q -> "dependence" integer_between(-3, 3) integer_between(-3, 3) integer_between(-3, 3) integer_between(-3, 3) integer_between(-3, 3) integer_between(-3, 3) nonzero_integer_between(-2, 2) nonzero_integer_between(-2, 2) when cost = 2 weight 2 {
+  cost = -2
+  kind = "dependence"
+  require $2.value * $6.value != $3.value * $5.value
+  let across = $8.value * $2.value + $9.value * $5.value
+  let along = $8.value * $3.value + $9.value * $6.value
+  text = "For which value of [`t`] are the vectors [`" ++ vector_latex(vector3($2.value, $3.value, $4.value)) ++ "`], [`"
+         ++ vector_latex(vector3($5.value, $6.value, $7.value)) ++ "`] and [`\langle " ++ str(across) ++ ", " ++ str(along)
+         ++ ", t \rangle`] linearly dependent?"
+  answer_value = $8.value * $4.value + $9.value * $7.value
+  pg_context = "Numeric"
+}
+
+# The coordinates c_0, c_1, c_2 are chosen, and
+# c_0 + c_1 (x - r) + c_2 (x - r)^2 is multiplied out:
+# c_2 x^2 + (c_1 - 2 c_2 r) x + (c_0 - c_1 r + c_2 r^2).
+Q -> "polynomial_coordinates" integer_between(-5, 5) integer_between(-5, 5) nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "polynomial_coordinates"
+  let r = $5.value
+  let in_x = $3.value - 2 * $4.value * r
+  let alone = $2.value - $3.value * r + $4.value * r ^ 2
+  let bracket = "(x " ++ cond(r > 0, "- ", "+ ") ++ str(abs(r)) ++ ")"
+  text = "The polynomials [`1`], [`" ++ bracket ++ "`] and [`" ++ bracket ++ "^{2}`] are a basis of the polynomials of degree at most [`2`]. Find the coordinates of [`p(x) = "
+         ++ cond($4.value = 1, "", cond($4.value = -1, "-", str($4.value))) ++ "x^{2}"
+         ++ cond(in_x = 0, "", cond(in_x > 0, " + ", " - ") ++ cond(abs(in_x) = 1, "", str(abs(in_x))) ++ "x")
+         ++ cond(alone = 0, "", cond(alone > 0, " + ", " - ") ++ str(abs(alone)))
+         ++ "`] relative to this basis: the vector [`\langle c_0, c_1, c_2 \rangle`] with [`p(x) = c_0 + c_1 " ++ bracket ++ " + c_2 " ++ bracket
+         ++ "^{2}`]."
+  answer_value = vector3($2.value, $3.value, $4.value)
+  mistake standard_coordinates answer_value = vector3(alone, in_x, $4.value)
+  pg_context = "Vector"
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# A basis of space: the columns of a lower triangular matrix times an upper
+# triangular one, both with 1s on the diagonal, so the determinant is 1.
+# As in the plane, the vector shown is not the one the same numbers give
+# when they are used the other way round.
+Q -> "coordinates_space" nonzero_integer_between(-2, 2) nonzero_integer_between(-2, 2) nonzero_integer_between(-2, 2) nonzero_integer_between(-2, 2) nonzero_integer_between(-2, 2) nonzero_integer_between(-2, 2) nonzero_integer_between(-4, 4) nonzero_integer_between(-4, 4) nonzero_integer_between(-4, 4) when cost = 3 weight 2 {
+  cost = -3
+  kind = "coordinates_space"
+  let basis = matrix_multiply(matrix3(1, 0, 0, $2.value, 1, 0, $3.value, $4.value, 1), matrix3(1, $5.value, $6.value, 0, 1, $7.value, 0, 0, 1))
+  let chosen = vector3($8.value, $9.value, $10.value)
+  let shown = matrix_vector(basis, chosen)
+  require matrix_vector(basis, shown) != chosen
+  text = "The vectors [`b_1 = " ++ vector_latex(matrix_vector(basis, vector3(1, 0, 0))) ++ "`], [`b_2 = "
+         ++ vector_latex(matrix_vector(basis, vector3(0, 1, 0))) ++ "`] and [`b_3 = " ++ vector_latex(matrix_vector(basis, vector3(0, 0, 1)))
+         ++ "`] are a basis of space. Find the coordinates of [`v = " ++ vector_latex(shown)
+         ++ "`] relative to this basis: the vector [`\langle c_1, c_2, c_3 \rangle`] with [`v = c_1 b_1 + c_2 b_2 + c_3 b_3`]."
+  answer_value = chosen
+  mistake basis_applied answer_value = matrix_vector(basis, shown)
+  pg_context = "Vector"
+}
+
+# With the vectors of each basis as the columns of B and of C, a vector
+# with coordinates x relative to the first basis is B x, and its
+# coordinates relative to the second are C^(-1) B x. The two bases differ,
+# the matrix is not its own inverse, and its entries stay within 30.
+Q -> "transition" U U when cost = 3 weight 3 {
+  cost = -3
+  kind = "transition"
+  let there = matrix_multiply(matrix_inverse($3.map), $2.map)
+  let back = matrix_multiply(matrix_inverse($2.map), $3.map)
+  require there != back
+  require abs(matrix_entry(there, 1, 1)) <= 30 and abs(matrix_entry(there, 1, 2)) <= 30
+  require abs(matrix_entry(there, 2, 1)) <= 30 and abs(matrix_entry(there, 2, 2)) <= 30
+  text = "The plane has the basis [`b_1 = " ++ $2.latex1 ++ "`], [`b_2 = " ++ $2.latex2 ++ "`] and the basis [`c_1 = " ++ $3.latex1
+         ++ "`], [`c_2 = " ++ $3.latex2 ++ "`]. Find the matrix [`M`] that changes coordinates relative to [`b_1, b_2`] into coordinates relative to [`c_1, c_2`]: if [`v = x_1 b_1 + x_2 b_2 = y_1 c_1 + y_2 c_2`], then [`\langle y_1, y_2 \rangle = M \langle x_1, x_2 \rangle`]."
+  answer_value = there
+  mistake direction_reversed answer_value = back
+  pg_context = "Matrix"
+}
+
+# U is spanned by two vectors, and so is W. The second child says how W is
+# made: 0, one of its vectors is a combination of those of U and the other
+# is drawn; 1, both are drawn; 2, both are combinations of those of U.
+# Each pair is independent, and the dimension of the intersection is
+# 2 + 2 less the rank of all four.
+Q -> "intersection" W W integer_between(0, 2) W W nonzero_integer_between(-2, 2) nonzero_integer_between(-2, 2) nonzero_integer_between(-2, 2) integer_between(-2, 2) when cost = 3 weight 3 {
+  cost = -3
+  kind = "intersection"
+  let inside1 = vector_add(vector_scale($7.value, $2.arrow), vector_scale($8.value, $3.arrow))
+  let inside2 = vector_add(vector_scale($9.value, $2.arrow), vector_scale($10.value, $3.arrow))
+  let w1 = cond($4.value = 1, $5.arrow, inside1)
+  let w2 = cond($4.value = 2, inside2, $6.arrow)
+  let of_u = matrix_stack(matrix_row($2.arrow), matrix_row($3.arrow))
+  let of_w = matrix_stack(matrix_row(w1), matrix_row(w2))
+  require matrix_rank(of_u) = 2 and matrix_rank(of_w) = 2
+  text = "In [`\mathbb{R}^{4}`], the subspace [`U`] is spanned by [`" ++ vector_latex($2.arrow) ++ "`] and [`" ++ vector_latex($3.arrow)
+         ++ "`], and the subspace [`W`] by [`" ++ vector_latex(w1) ++ "`] and [`" ++ vector_latex(w2)
+         ++ "`]. Find the dimension of [`U \cap W`]."
+  answer_value = 4 - matrix_rank(matrix_stack(of_u, of_w))
+  pg_context = "Numeric"
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

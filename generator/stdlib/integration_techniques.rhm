@@ -1,0 +1,220 @@
+# ==========================================================================
+#  Techniques of integration
+#
+#  Definite integrals that need a method: a half-angle formula, an inverse
+#  tangent or sine, integration by parts once and twice, powers of sine
+#  and cosine, a reduction formula, a trigonometric substitution, and
+#  partial fractions with a logarithm at the end. It goes on from
+#  definite_integral.rhm, whose integrands are polynomials, and from
+#  partial_fractions.rhm, which stops at the constants.
+#
+#  Every integral is definite, so no constant of integration has to be
+#  graded, and has its value in closed form: a fraction, a fraction times
+#  pi, or an expression with e or a logarithm, which may be entered as it
+#  stands, such as 2e^3 + 1 or ln(3/2) / 2. Answers that are fractions or
+#  hold pi alone are `plain`.
+#
+#  Four mistakes are looked for: taking the integral of sin^2 or cos^2 to
+#  be the length of the interval, leaving out the 1 / a in front of an
+#  inverse tangent, adding the second integral of an integration by parts
+#  where it is subtracted, and adding the two logarithms of a pair of
+#  partial fractions where they are subtracted.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  k sin^2(mx) or k cos^2(mx) over a multiple of a quarter period,
+#       k / (x^2 + a^2) from 0 to a, k / sqrt(a^2 - x^2) from 0 to a / 2
+#    2  by parts: k x e^(ax) from 0 to 1, k x^n ln x from 1 to e,
+#       k x sin(mx) or k x cos(mx) from 0 to pi; k sin^a(x) cos^b(x) with
+#       an odd power, from 0 to pi / 2
+#    3  k sin^n(x) or k cos^n(x) from 0 to pi / 2 by the reduction formula,
+#       k sqrt(a^2 - x^2) and k x^2 sqrt(a^2 - x^2) by a trigonometric
+#       substitution, k x^2 e^(ax) by parts twice, k / ((x + a)(x + b)) by
+#       partial fractions
+# ==========================================================================
+
+attribute cost = 2 split
+
+let pi = formula_pi()
+let exact = " Give the exact value."
+
+mistake half_forgotten "takes the integral of sin^2 or cos^2 to be the length of the interval, where it is half of it"
+mistake scale_forgotten "leaves out the 1 / a in front of the inverse tangent of x / a"
+mistake plus_for_minus "adds the second integral of an integration by parts, where it is subtracted"
+mistake logs_added "adds the logarithms of the two partial fractions, where one is subtracted from the other"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A positive coefficient in front of an integrand, written without a 1.
+synth value on K
+synth latex on K
+
+# A rate a in e^(ax), not 0: its value and a x as LaTeX.
+synth value on A
+synth latex on A
+
+start Q
+
+K -> integer_between(1, 6) {
+  value = $1.value
+  latex = cond($1.value = 1, "", str($1.value))
+}
+
+A -> nonzero_integer_between(-3, 3) {
+  value = $1.value
+  latex = cond($1.value = 1, "", cond($1.value = -1, "-", str($1.value))) ++ "x"
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# sin^2 and cos^2 of m x average 1/2 over a whole number of quarter
+# periods: from 0 to pi or to pi / 2 the integral is half the length. The
+# fourth child says which function, the fifth which interval.
+Q -> "half_angle" K integer_between(1, 4) integer_between(0, 1) integer_between(1, 2) when cost = 1 {
+  cost = -1
+  kind = "half_angle"
+  text = "Evaluate [`\int_{0}^{" ++ cond($5.value = 1, "\pi", "\pi/2") ++ "} " ++ $2.latex ++ cond($4.value = 0, "\sin", "\cos") ++ "^{2}("
+         ++ cond($3.value = 1, "", str($3.value)) ++ "x) \, dx`]." ++ exact ++ " Write [`\pi`] as pi."
+  answer_value = plain(formula_multiply(formula_constant($2.value / (2 * $5.value)), pi))
+  mistake half_forgotten answer_value = plain(formula_multiply(formula_constant($2.value / $5.value), pi))
+}
+
+# The integral of 1 / (x^2 + a^2) is arctan(x / a) / a, which is
+# pi / (4a) at x = a. The integral of 1 / sqrt(a^2 - x^2) is
+# arcsin(x / a), which is pi / 6 at x = a / 2; a is even there. The last
+# child says which.
+Q -> "inverse" K integer_between(1, 5) integer_between(0, 1) when cost = 1 {
+  cost = -1
+  kind = cond($4.value = 0, "inverse_tangent", "inverse_sine")
+  let a = cond($4.value = 0, $3.value, 2 * $3.value)
+  text = "Evaluate [`\int_{0}^{" ++ cond($4.value = 0, str(a), str($3.value)) ++ "} "
+         ++ cond($4.value = 0, "\frac{" ++ str($2.value) ++ "}{x^{2} + " ++ str(a ^ 2) ++ "}",
+                 "\frac{" ++ str($2.value) ++ "}{\sqrt{" ++ str(a ^ 2) ++ " - x^{2}}}")
+         ++ " \, dx`]." ++ exact ++ " Write [`\pi`] as pi."
+  answer_value = plain(formula_multiply(formula_constant(cond($4.value = 0, $2.value / (4 * a), $2.value / 6)), pi))
+  mistake scale_forgotten answer_value = cond($4.value = 0, plain(formula_multiply(formula_constant($2.value / 4), pi)), answer_value)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# With u = x and dv = e^(ax) dx: [x e^(ax) / a] less the integral of
+# e^(ax) / a, from 0 to 1: (1/a - 1/a^2) e^a + 1/a^2. For a = 1 nothing is
+# left in front of e and the value is k, a whole number, which is `plain`.
+Q -> "parts_exponential" K A when cost = 2 weight 2 {
+  cost = -2
+  kind = "parts_exponential"
+  let a = $3.value
+  let power = formula_exp(formula_constant(a))
+  text = "Evaluate [`\int_{0}^{1} " ++ $2.latex ++ "x e^{" ++ $3.latex ++ "} \, dx`]." ++ exact
+  answer_value = cond(a = 1, plain($2.value),
+                      formula_add(formula_multiply(formula_constant($2.value * (1 / a - 1 / a ^ 2)), power), formula_constant($2.value / a ^ 2)))
+  mistake plus_for_minus answer_value = formula_subtract(formula_multiply(formula_constant($2.value * (1 / a + 1 / a ^ 2)), power),
+                                                         formula_constant($2.value / a ^ 2))
+}
+
+# With u = ln x and dv = x^n dx: [x^(n+1) ln x / (n + 1)] less the integral
+# of x^n / (n + 1), from 1 to e: (n e^(n+1) + 1) / (n + 1)^2.
+Q -> "parts_logarithm" K integer_between(1, 4) when cost = 2 weight 2 {
+  cost = -2
+  kind = "parts_logarithm"
+  let n = $3.value
+  let power = formula_exp(formula_constant(n + 1))
+  text = "Evaluate [`\int_{1}^{e} " ++ $2.latex ++ cond(n = 1, "x", "x^{" ++ str(n) ++ "}") ++ " \ln x \, dx`]." ++ exact
+  answer_value = formula_add(formula_multiply(formula_constant($2.value * n / (n + 1) ^ 2), power), formula_constant($2.value / (n + 1) ^ 2))
+  mistake plus_for_minus answer_value = formula_subtract(formula_multiply(formula_constant($2.value * (n + 2) / (n + 1) ^ 2), power),
+                                                         formula_constant($2.value / (n + 1) ^ 2))
+}
+
+# From 0 to pi. With sin(mx): the boundary term is pi (-1)^(m+1) / m and
+# the second integral is 0. With cos(mx), for an odd m: the boundary term
+# is 0 and the second integral is 2 / m^2, taken off. The last child says
+# which. The third is one of twelve numbers, so that m is as likely to be
+# each of 1 to 4 with the sine and each of 1, 3 and 5 with the cosine.
+Q -> "parts_trigonometric" K integer_between(0, 11) integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = cond($4.value = 0, "parts_sine", "parts_cosine")
+  let m = cond($4.value = 0, $3.value % 4 + 1, 2 * ($3.value % 3) + 1)
+  let sign = cond(m % 2 = 1, 1, -1)
+  text = "Evaluate [`\int_{0}^{\pi} " ++ $2.latex ++ "x " ++ cond($4.value = 0, "\sin(", "\cos(") ++ cond(m = 1, "", str(m)) ++ "x) \, dx`]."
+         ++ exact ++ cond($4.value = 0, " Write [`\pi`] as pi.", "")
+  answer_value = cond($4.value = 0, plain(formula_multiply(formula_constant($2.value * sign / m), pi)), plain(-2 * $2.value / m ^ 2))
+  mistake plus_for_minus answer_value = cond($4.value = 0, answer_value, plain(2 * $2.value / m ^ 2))
+}
+
+# With an odd power of the cosine, u = sin x: the integral of
+# u^a (1 - u^2)^((b-1)/2) from 0 to 1, which is 1 / (a + 1) for b = 1 and
+# 2 / ((a + 1)(a + 3)) for b = 3. The last child exchanges sine and
+# cosine, which changes nothing but the letters.
+Q -> "trig_powers" K integer_between(1, 5) integer_between(0, 1) integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = "trig_powers"
+  let a = $3.value
+  let odd = cond($4.value = 0, 1, 3)
+  let even_part = cond($5.value = 0, "\sin", "\cos") ++ cond(a = 1, "", "^{" ++ str(a) ++ "}") ++ " x"
+  let odd_part = cond($5.value = 0, "\cos", "\sin") ++ cond(odd = 1, "", "^{3}") ++ " x"
+  text = "Evaluate [`\int_{0}^{\pi/2} " ++ $2.latex ++ even_part ++ " \, " ++ odd_part ++ " \, dx`]." ++ exact
+  answer_value = plain(cond(odd = 1, $2.value / (a + 1), 2 * $2.value / ((a + 1) * (a + 3))))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# The reduction formula gives, for n from 3 to 8: 2/3, 3 pi/16, 8/15,
+# 5 pi/32, 16/35, 35 pi/256. The power 2 is left to the half-angle formula
+# at price 1. The last child says sine or cosine.
+Q -> "reduction" integer_between(1, 4) integer_between(3, 8) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = "reduction"
+  let n = $3.value
+  let fraction = cond(n = 3, 2 / 3, cond(n = 4, 3 / 16, cond(n = 5, 8 / 15, cond(n = 6, 5 / 32, cond(n = 7, 16 / 35, 35 / 256)))))
+  text = "Evaluate [`\int_{0}^{\pi/2} " ++ cond($2.value = 1, "", str($2.value)) ++ cond($4.value = 0, "\sin", "\cos") ++ "^{" ++ str(n)
+         ++ "} x \, dx`]." ++ exact ++ cond(n % 2 = 0, " Write [`\pi`] as pi.", "")
+  answer_value = cond(n % 2 = 0, plain(formula_multiply(formula_constant($2.value * fraction), pi)), plain($2.value * fraction))
+}
+
+# With x = a sin(theta): the integral of sqrt(a^2 - x^2) from 0 to a is
+# pi a^2 / 4, a quarter of a disc, and that of x^2 sqrt(a^2 - x^2) is
+# pi a^4 / 16. The last child says which.
+Q -> "substitution" integer_between(1, 5) integer_between(1, 4) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = cond($4.value = 0, "substitution_root", "substitution_square")
+  let a = $3.value
+  text = "Evaluate [`\int_{0}^{" ++ str(a) ++ "} " ++ cond($2.value = 1, "", str($2.value)) ++ cond($4.value = 0, "", "x^{2}") ++ "\sqrt{"
+         ++ str(a ^ 2) ++ " - x^{2}} \, dx`]." ++ exact ++ " Write [`\pi`] as pi."
+  answer_value = plain(formula_multiply(formula_constant(cond($4.value = 0, $2.value * a ^ 2 / 4, $2.value * a ^ 4 / 16)), pi))
+}
+
+# By parts twice, from 0 to 1: (1/a - 2/a^2 + 2/a^3) e^a - 2/a^3. Whoever
+# adds in the second step has (1/a - 2/a^2 - 2/a^3) e^a + 2/a^3.
+Q -> "parts_twice" integer_between(1, 6) nonzero_integer_between(-2, 2) when cost = 3 weight 2 {
+  cost = -3
+  kind = "parts_twice"
+  let a = $3.value
+  let power = formula_exp(formula_constant(a))
+  text = "Evaluate [`\int_{0}^{1} " ++ cond($2.value = 1, "", str($2.value)) ++ "x^{2} e^{"
+         ++ cond(a = 1, "", cond(a = -1, "-", str(a))) ++ "x} \, dx`]." ++ exact
+  answer_value = formula_subtract(formula_multiply(formula_constant($2.value * (1 / a - 2 / a ^ 2 + 2 / a ^ 3)), power),
+                                  formula_constant(2 * $2.value / a ^ 3))
+  mistake plus_for_minus answer_value = formula_add(formula_multiply(formula_constant($2.value * (1 / a - 2 / a ^ 2 - 2 / a ^ 3)), power),
+                                                    formula_constant(2 * $2.value / a ^ 3))
+}
+
+# 1 / ((x + a)(x + b)) = (1 / (b - a)) (1 / (x + a) - 1 / (x + b)) for
+# a < b, so the integral from 0 to 1 is
+# (1 / (b - a)) ln((1 + a) b / (a (1 + b))).
+Q -> "log_fractions" K integer_between(1, 4) integer_between(1, 4) when cost = 3 weight 3 {
+  cost = -3
+  kind = "log_fractions"
+  let a = $3.value
+  let b = $3.value + $4.value
+  require b <= 5
+  text = "Evaluate [`\int_{0}^{1} \frac{" ++ str($2.value) ++ "}{(x + " ++ str(a) ++ ")(x + " ++ str(b) ++ ")} \, dx`]." ++ exact
+  answer_value = formula_multiply(formula_constant($2.value / (b - a)), formula_ln(formula_constant((1 + a) * b / (a * (1 + b)))))
+  mistake logs_added answer_value = formula_multiply(formula_constant($2.value / (b - a)),
+                                                     formula_ln(formula_constant((1 + a) * (1 + b) / (a * b))))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
