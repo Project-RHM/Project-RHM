@@ -195,6 +195,24 @@ is announced one version before the removal.
   only, and has a test that recomputes its answers from the printed
   question. All six declare mistakes, twenty-nine in all. The library now
   has 76 files.
+- **Six more question types (an eleventh batch).**
+  `normal_distribution.rhm` (probabilities of a normal variable, of a
+  sample mean and of a difference, from values of the distribution
+  function given in the question), `graph_coloring.rhm` (the colourings
+  with `k` colours of trees, complete graphs, cycles, wheels and joined
+  cycles, and chromatic numbers), `vector_spaces.rhm` (coordinates
+  relative to a basis, dimensions of standard spaces, of sums and of
+  intersections, a change of basis), `integral_coordinates.rhm` (a triple
+  integral over a box, and integrals in polar, cylindrical and spherical
+  coordinates), `integration_techniques.rhm` (half-angle formulas, inverse
+  trigonometric integrals, integration by parts, powers of sine and
+  cosine, a trigonometric substitution, partial fractions) and
+  `nonhomogeneous_ode.rhm` (particular solutions by undetermined
+  coefficients, with and without resonance, and initial value problems).
+  Each has fixed forms at prices 1 to 3 and a default budget of 2, uses
+  the existing builtins only, and has a test that recomputes its answers
+  from the printed question. All six declare mistakes, twenty-two in all.
+  The library now has 82 files.
 - **Changed.** `--count` with a negative number is an error of the command
   line (status 2); it was `rhema: error: List.init`. The "not run through
   WeBWorK" line of the summary is said only where PG was written. In the

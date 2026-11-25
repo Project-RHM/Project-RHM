@@ -607,6 +607,54 @@
  (deps (glob_files %{project_root}/stdlib/*.rhm))
  (action (chdir %{project_root}/stdlib (run %{test}))))
 
+(test
+ (name rhema_normal_distribution_test)
+ (modules rhema_normal_distribution_test)
+ (package rhema)
+ (libraries rhema str)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_graph_coloring_test)
+ (modules rhema_graph_coloring_test)
+ (package rhema)
+ (libraries rhema str)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_vector_spaces_test)
+ (modules rhema_vector_spaces_test)
+ (package rhema)
+ (libraries rhema str)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_integral_coordinates_test)
+ (modules rhema_integral_coordinates_test)
+ (package rhema)
+ (libraries rhema str)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_integration_techniques_test)
+ (modules rhema_integration_techniques_test)
+ (package rhema)
+ (libraries rhema str)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
+(test
+ (name rhema_nonhomogeneous_ode_test)
+ (modules rhema_nonhomogeneous_ode_test)
+ (package rhema)
+ (libraries rhema str)
+ (deps (glob_files %{project_root}/stdlib/*.rhm))
+ (action (chdir %{project_root}/stdlib (run %{test}))))
+
 ; The library's files are given by name. The test must not list the
 ; directory: the suites run side by side in it, and another one's temporary
 ; grammar may be there one moment and gone the next.

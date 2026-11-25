@@ -1,0 +1,156 @@
+# ==========================================================================
+#  Graph colouring
+#
+#  The number of ways to colour the vertices of a graph with k colours so
+#  that the two ends of every edge differ, and the least number of colours
+#  that will do. It goes on from graph_theory.rhm and graph_algorithms.rhm.
+#
+#  The graphs are families whose count is known in closed form: a tree, a
+#  complete graph, a cycle, a complete bipartite graph with two vertices on
+#  one side, a wheel, and two cycles that share a vertex or an edge. A
+#  colouring counts as different when some vertex has another colour; the
+#  vertices are told apart, and not every colour has to be used.
+#
+#  Three mistakes are looked for: making each vertex differ only from the
+#  one before it, so that an edge which closes a cycle is forgotten;
+#  taking the two vertices on one side of a bipartite graph to have
+#  different colours always; and multiplying the counts of two joined
+#  cycles without dividing by the ways to colour what they share.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the colourings of a tree, of a complete graph
+#    2  the colourings of a cycle, of a complete bipartite graph K_{2,n},
+#       the chromatic number of a cycle, a wheel, a complete graph with
+#       some edges removed, or two cycles that share a vertex
+#    3  the colourings of a wheel, of two cycles that share a vertex, of
+#       two cycles that share an edge
+# ==========================================================================
+
+attribute cost = 2 split
+
+let proper = " A colouring gives every vertex one of the colours so that the two ends of every edge have different colours; the vertices are told apart, and not every colour has to be used."
+
+mistake only_previous_vertex "makes each vertex differ from the one before it only, so an edge that closes a cycle is forgotten"
+mistake sides_always_differ "takes the two vertices on the small side of the bipartite graph to have different colours always"
+mistake shared_part_counted_twice "multiplies the counts of the two cycles and does not divide by the ways to colour what they share"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+start Q
+
+# ---- Price 1 --------------------------------------------------------------
+
+# A tree is coloured vertex by vertex from a leaf's neighbour outwards:
+# k for the first and k - 1 for each of the others. The first child says
+# how the tree is described; the count is the same for all three.
+Q -> "tree" integer_between(0, 2) integer_between(3, 6) integer_between(2, 5) when cost = 1 {
+  cost = -1
+  kind = "tree"
+  text = "In how many ways can the vertices of "
+         ++ cond($2.value = 0, "a path with [`" ++ str($3.value) ++ "`] vertices",
+            cond($2.value = 1, "a star with one centre and [`" ++ str($3.value - 1) ++ "`] leaves",
+                 "a tree with [`" ++ str($3.value) ++ "`] vertices"))
+         ++ " be coloured with [`" ++ str($4.value) ++ "`] colours?" ++ proper
+  answer_value = $4.value * ($4.value - 1) ^ ($3.value - 1)
+}
+
+# All vertices must differ: k (k - 1) ... (k - n + 1). There are at least
+# as many colours as vertices.
+Q -> "complete" integer_between(3, 5) integer_between(0, 2) when cost = 1 {
+  cost = -1
+  kind = "complete"
+  let colours = $2.value + $3.value
+  text = "In how many ways can the vertices of the complete graph [`K_{" ++ str($2.value) ++ "}`] be coloured with [`" ++ str(colours)
+         ++ "`] colours?" ++ proper
+  answer_value = permutations(colours, $2.value)
+  mistake only_previous_vertex answer_value = colours * (colours - 1) ^ ($2.value - 1)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# (k - 1)^n + (-1)^n (k - 1). With two colours an odd cycle has none.
+Q -> "cycle" integer_between(3, 7) integer_between(2, 5) when cost = 2 weight 2 {
+  cost = -2
+  kind = "cycle"
+  let sign = cond($2.value % 2 = 0, 1, -1)
+  text = "In how many ways can the vertices of a cycle with [`" ++ str($2.value) ++ "`] vertices be coloured with [`" ++ str($3.value)
+         ++ "`] colours?" ++ proper
+  answer_value = ($3.value - 1) ^ $2.value + sign * ($3.value - 1)
+  mistake only_previous_vertex answer_value = $3.value * ($3.value - 1) ^ ($2.value - 1)
+}
+
+# The two vertices on the small side have one colour, which leaves k - 1
+# for each of the n others, or two colours, which leaves k - 2.
+Q -> "bipartite" integer_between(2, 5) integer_between(3, 5) when cost = 2 weight 2 {
+  cost = -2
+  kind = "bipartite"
+  let k = $3.value
+  text = "In how many ways can the vertices of the complete bipartite graph [`K_{2," ++ str($2.value) ++ "}`] be coloured with [`" ++ str(k)
+         ++ "`] colours?" ++ proper
+  answer_value = k * (k - 1) ^ $2.value + k * (k - 1) * (k - 2) ^ $2.value
+  mistake sides_always_differ answer_value = k * (k - 1) * (k - 2) ^ $2.value
+}
+
+# An even cycle needs 2 colours and an odd one 3; a wheel, one more than
+# its rim. A complete graph with m edges removed, no two of them at one
+# vertex, needs n - m: the two ends of a removed edge can share a colour,
+# and no other two vertices can. Two cycles with one vertex in common need
+# 3 when either is odd, and 2 otherwise. The first child says which graph.
+# The requirement is asked of all four graphs, whichever is drawn, so that
+# they stay equally likely; the weight makes up for the draws it turns away.
+Q -> "chromatic_number" integer_between(0, 3) integer_between(3, 9) integer_between(4, 8) integer_between(1, 4) integer_between(3, 8) integer_between(3, 8) when cost = 2 weight 3 {
+  cost = -2
+  kind = cond($2.value = 0, "chromatic_cycle", cond($2.value = 1, "chromatic_wheel", cond($2.value = 2, "chromatic_complete_less", "chromatic_joined")))
+  require 2 * $5.value <= $4.value
+  let rim = cond($3.value % 2 = 0, 2, 3)
+  text = "What is the least number of colours with which the vertices of "
+         ++ cond($2.value = 0, "a cycle with [`" ++ str($3.value) ++ "`] vertices",
+            cond($2.value = 1, "a wheel, a cycle with [`" ++ str($3.value) ++ "`] vertices and one more vertex joined to all of them,",
+            cond($2.value = 2, "the complete graph [`K_{" ++ str($4.value) ++ "}`] with "
+                               ++ cond($5.value = 1, "one of its edges removed",
+                                       "[`" ++ str($5.value) ++ "`] of its edges removed, no two of which share a vertex,"),
+                 "a graph made of a cycle with [`" ++ str($6.value) ++ "`] vertices and a cycle with [`" ++ str($7.value)
+                 ++ "`] vertices that have exactly one vertex in common")))
+         ++ " can be coloured so that the two ends of every edge have different colours?"
+  answer_value = cond($2.value = 0, rim, cond($2.value = 1, rim + 1, cond($2.value = 2, $4.value - $5.value,
+                      cond($6.value % 2 = 0 and $7.value % 2 = 0, 2, 3))))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# The hub takes one of k colours, and the rim is a cycle coloured with the
+# k - 1 others: k ((k - 2)^n + (-1)^n (k - 2)).
+Q -> "wheel" integer_between(3, 6) integer_between(3, 5) when cost = 3 {
+  cost = -3
+  kind = "wheel"
+  let k = $3.value
+  let sign = cond($2.value % 2 = 0, 1, -1)
+  text = "A wheel is a cycle with [`" ++ str($2.value) ++ "`] vertices and one more vertex, the hub, joined to all of them. In how many ways can its [`"
+         ++ str($2.value + 1) ++ "`] vertices be coloured with [`" ++ str(k) ++ "`] colours?" ++ proper
+  answer_value = k * ((k - 2) ^ $2.value + sign * (k - 2))
+  mistake only_previous_vertex answer_value = k * (k - 1) * (k - 2) ^ ($2.value - 1)
+}
+
+# Two cycles with a vertex in common: the product of their counts over k,
+# the ways to colour the vertex they share. With an edge in common: over
+# k (k - 1), the ways to colour its two ends. The last child says which.
+Q -> "joined" integer_between(3, 5) integer_between(3, 5) integer_between(3, 4) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = cond($5.value = 0, "joined_at_vertex", "joined_at_edge")
+  let k = $4.value
+  let first = (k - 1) ^ $2.value + cond($2.value % 2 = 0, 1, -1) * (k - 1)
+  let second = (k - 1) ^ $3.value + cond($3.value % 2 = 0, 1, -1) * (k - 1)
+  text = "A graph is made of a cycle with [`" ++ str($2.value) ++ "`] vertices and a cycle with [`" ++ str($3.value) ++ "`] vertices that have exactly "
+         ++ cond($5.value = 0, "one vertex in common, so that it has [`" ++ str($2.value + $3.value - 1) ++ "`] vertices.",
+                 "one edge and its two ends in common, so that it has [`" ++ str($2.value + $3.value - 2) ++ "`] vertices.")
+         ++ " In how many ways can its vertices be coloured with [`" ++ str(k) ++ "`] colours?" ++ proper
+  answer_value = cond($5.value = 0, first * second / k, first * second / (k * (k - 1)))
+  mistake shared_part_counted_twice answer_value = first * second
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

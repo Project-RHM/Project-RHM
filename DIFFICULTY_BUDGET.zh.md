@@ -28,6 +28,7 @@
 | `vector_calculus.rhm`、`improper_integral.rhm`、`linear_programming.rhm`、`graph_algorithms.rhm`、`orthogonality.rhm`、`counting_principles.rhm` | 固定形式，价格 1 到 3 | 2 | QUESTION_TYPES.md |
 | `random_variables.rhm`、`laplace_transform.rhm`、`automata.rhm`、`power_series.rhm`、`optimization.rhm`、`linear_transformations.rhm` | 固定形式，价格 1 到 3 | 2 | QUESTION_TYPES.md |
 | `fourier_series.rhm`、`integral_applications.rhm`、`parametric_polar.rhm`、`hypothesis_testing.rhm`、`group_theory.rhm`、`conic_sections.rhm` | 固定形式，价格 1 到 3 | 2 | QUESTION_TYPES.md |
+| `normal_distribution.rhm`、`graph_coloring.rhm`、`vector_spaces.rhm`、`integral_coordinates.rhm`、`integration_techniques.rhm`、`nonhomogeneous_ode.rhm` | 固定形式，价格 1 到 3 | 2 | QUESTION_TYPES.md |
 | `partial_fractions.rhm`、`taylor.rhm`、`inequality.rhm`、`partial_derivatives.rhm`、`row_reduction.rhm`、`base_conversion.rhm`、`definite_integral.rhm` | 价格 1 到 3 是固定形式，4 到 8 的题目由带价格的部件构造 | 2 | 12 |
 
 > **套题进了语言。** 有了 `set` 声明（`RHEMA_LANGUAGE_EXTENSIONS.zh.md` 第 6 节），文件里可以写 `3 of calc.derivative(cost ~ 6 spread 2)`，`rhema --run` 围绕均值抽预算并把均值调到精确值，这正是 `tools/rhema_difficulty.py set` 原来在外部做的事。工具的 `report` 和 `levels` 仍用于测量一个文法；它的 `set` 子命令为 `--targets` 形式保留，其余功能已被取代。

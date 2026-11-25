@@ -20,7 +20,7 @@ make `x + 2x \cdot \sin x` cost at least 4.
 
 ## Mistakes
 
-Twenty-seven grammars say what common mistakes lead to (chapter 9 of the tutorial).
+Thirty-three grammars say what common mistakes lead to (chapter 9 of the tutorial).
 `rhema run` lists them under each answer, and none of these grammars asks a
 question in which a mistake changes the working and still gives the right
 answer.
@@ -100,6 +100,28 @@ answer.
 | | `ellipse_rule` | takes `c^2 = a^2 - b^2` for a hyperbola, the rule of an ellipse |
 | | `semi_axis_given` | gives the semi-major axis, where the whole major axis is asked for |
 | | `not_doubled` | gives half the latus rectum, `b^2 / a`, where `2 b^2 / a` belongs |
+| `normal_distribution.rhm` | `complement_forgotten` | gives the probability below a value, where the probability above it is asked for |
+| | `one_side_only` | gives the area between the mean and one of the two values, where the area between both is asked for |
+| | `sign_lost` | places a value that lies below the mean as far above it |
+| | `not_scaled` | uses the standard deviation of one value for the mean of a sample, where it is divided by `sqrt(n)` |
+| `graph_coloring.rhm` | `only_previous_vertex` | makes each vertex differ from the one before it only, so an edge that closes a cycle is forgotten |
+| | `sides_always_differ` | takes the two vertices on the small side of a bipartite graph to have different colours always |
+| | `shared_part_counted_twice` | multiplies the counts of two joined cycles and does not divide by the ways to colour what they share |
+| `vector_spaces.rhm` | `basis_applied` | uses the entries of a vector as the coefficients of the basis vectors, where its coordinates are asked for |
+| | `degree_for_dimension` | takes the degree `n` for the dimension of the polynomials of degree at most `n` |
+| | `intersection_not_removed` | adds the dimensions of two subspaces and does not take off what they share |
+| | `standard_coordinates` | gives the coefficients of a polynomial as they stand, where another basis is asked about |
+| | `direction_reversed` | changes basis the wrong way: the matrix from the second basis to the first |
+| `integral_coordinates.rhm` | `jacobian_forgotten` | leaves out the factor `r` of the area element `r dr d(theta)` |
+| | `sine_forgotten` | leaves out the `sin(phi)` of the volume element in spherical coordinates |
+| `integration_techniques.rhm` | `half_forgotten` | takes the integral of `sin^2` or `cos^2` to be the length of the interval, where it is half of it |
+| | `scale_forgotten` | leaves out the `1 / a` in front of the inverse tangent of `x / a` |
+| | `plus_for_minus` | adds the second integral of an integration by parts, where it is subtracted |
+| | `logs_added` | adds the logarithms of two partial fractions, where one is subtracted from the other |
+| `nonhomogeneous_ode.rhm` | `chain_factor_forgotten` | differentiates `e^(kx)` without the factor `k` |
+| | `second_derivative_sign` | takes the second derivative of `sin(kx)` or `cos(kx)` with a plus sign |
+| | `first_derivative_forgotten` | leaves the `y'` term out when the constant of the trial solution `A x + B` is found |
+| | `constants_before_particular` | fits the constants of the homogeneous solution to the initial values before the particular solution is added |
 
 The mistakes of `calculus.rhm` concern its derivative questions; an
 integral question lists none. `power_term_by_term` is declared in

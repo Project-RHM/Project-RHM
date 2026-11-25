@@ -1,0 +1,221 @@
+# ==========================================================================
+#  Multiple integrals in other coordinates
+#
+#  A triple integral over a box, and double and triple integrals that ask
+#  for polar, cylindrical or spherical coordinates: over a disc, a ring, a
+#  quarter of a disc, under a paraboloid or a cone, over a ball, a shell
+#  between two spheres, half a ball and a cylinder. It goes on from
+#  double_integral.rhm, which integrates in x and y.
+#
+#  An integrand is a power of the distance from the origin or from the
+#  axis, or a coordinate, so every integral separates and comes to a
+#  fraction or a fraction times pi. An answer with pi is `plain`, and is
+#  kept below 300 pi: WeBWorK compares with a tolerance of one part in a
+#  thousand, and beyond 1000 that is more than 1.
+#
+#  Two mistakes are looked for: leaving out the factor r of the area
+#  element r dr d(theta) in polar and cylindrical coordinates, and
+#  leaving out the sin(phi) of the volume element in spherical
+#  coordinates.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  a triple integral of a monomial over a box, the integral of a
+#       power of the distance from the origin over a disc
+#    2  the same over a ring, the integral of x, y, x y or x^2 over a
+#       quarter of a disc, the volume under a paraboloid or a cone
+#    3  the integral of a power of the distance from the origin over a
+#       ball or between two spheres, of z over half a ball, and of
+#       x^2 + y^2, z or their product over a cylinder
+# ==========================================================================
+
+attribute cost = 2 split
+
+let pi = formula_pi()
+let exact = " Give the exact value, with [`\pi`] written as pi."
+
+mistake jacobian_forgotten "leaves out the factor r of the area element r dr d(theta)"
+mistake sine_forgotten "leaves out the sin(phi) of the volume element rho^2 sin(phi) d(rho) d(phi) d(theta)"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# k times a power of the distance: the coefficient, the power (1, 2 or
+# 4), and the LaTeX in two variables and in three.
+synth scale on F
+synth power on F
+synth planar on F
+synth spatial on F
+
+# A power of a variable from 0 to 2 as LaTeX: nothing, the variable, or
+# its square. The productions differ in the variable.
+synth exponent on E
+synth of_x on E
+synth of_y on E
+synth of_z on E
+
+start Q
+
+F -> integer_between(1, 5) integer_between(1, 3) {
+  scale = $1.value
+  power = cond($2.value = 1, 1, cond($2.value = 2, 2, 4))
+  planar = cond($1.value = 1, "", str($1.value))
+           ++ cond($2.value = 1, "\sqrt{x^{2} + y^{2}}",
+              cond($2.value = 2, cond($1.value = 1, "x^{2} + y^{2}", "(x^{2} + y^{2})"), "(x^{2} + y^{2})^{2}"))
+  spatial = cond($1.value = 1, "", str($1.value))
+            ++ cond($2.value = 1, "\sqrt{x^{2} + y^{2} + z^{2}}",
+               cond($2.value = 2, cond($1.value = 1, "x^{2} + y^{2} + z^{2}", "(x^{2} + y^{2} + z^{2})"), "(x^{2} + y^{2} + z^{2})^{2}"))
+}
+
+E -> integer_between(0, 2) {
+  exponent = $1.value
+  of_x = cond($1.value = 0, "", cond($1.value = 1, "x", "x^{2}"))
+  of_y = cond($1.value = 0, "", cond($1.value = 1, "y", "y^{2}"))
+  of_z = cond($1.value = 0, "", cond($1.value = 1, "z", "z^{2}"))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The integral of k x^i y^j z^l over the box is the product of three
+# integrals in one variable. Some variable is there, and the answer is at
+# most 500.
+Q -> "box" integer_between(1, 6) E E E integer_between(1, 3) integer_between(1, 3) integer_between(1, 3) when cost = 1 {
+  cost = -1
+  kind = "box"
+  require $3.exponent + $4.exponent + $5.exponent > 0
+  let value = $2.value * $6.value ^ ($3.exponent + 1) * $7.value ^ ($4.exponent + 1) * $8.value ^ ($5.exponent + 1)
+              / (($3.exponent + 1) * ($4.exponent + 1) * ($5.exponent + 1))
+  require value <= 500
+  text = "Evaluate [`\int_{0}^{" ++ str($6.value) ++ "} \int_{0}^{" ++ str($7.value) ++ "} \int_{0}^{" ++ str($8.value) ++ "} "
+         ++ cond($2.value = 1, "", str($2.value)) ++ $3.of_x ++ $4.of_y ++ $5.of_z ++ " \, dz \, dy \, dx`]."
+  answer_value = plain(value)
+}
+
+# In polar coordinates the integrand is k r^p and the area element
+# r dr d(theta): 2 pi k a^(p+2) / (p + 2).
+Q -> "disc" F integer_between(1, 3) when cost = 1 {
+  cost = -1
+  kind = "disc"
+  let coefficient = 2 * $2.scale * $3.value ^ ($2.power + 2) / ($2.power + 2)
+  require coefficient <= 300
+  text = "Evaluate the double integral of [`" ++ $2.planar ++ "`] over the disc [`x^{2} + y^{2} \le " ++ str($3.value ^ 2) ++ "`]." ++ exact
+  answer_value = plain(formula_multiply(formula_constant(coefficient), pi))
+  mistake jacobian_forgotten answer_value = plain(formula_multiply(formula_constant(2 * $2.scale * $3.value ^ ($2.power + 1) / ($2.power + 1)), pi))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# Between two circles of radius a < b: 2 pi k (b^(p+2) - a^(p+2)) / (p + 2).
+Q -> "ring" F integer_between(1, 3) integer_between(1, 3) when cost = 2 weight 3 {
+  cost = -2
+  kind = "ring"
+  let inner = $3.value
+  let outer = $3.value + $4.value
+  require outer <= 4
+  let coefficient = 2 * $2.scale * (outer ^ ($2.power + 2) - inner ^ ($2.power + 2)) / ($2.power + 2)
+  require coefficient <= 300
+  text = "Evaluate the double integral of [`" ++ $2.planar ++ "`] over the ring [`" ++ str(inner ^ 2) ++ " \le x^{2} + y^{2} \le "
+         ++ str(outer ^ 2) ++ "`]." ++ exact
+  answer_value = plain(formula_multiply(formula_constant(coefficient), pi))
+  mistake jacobian_forgotten answer_value = plain(formula_multiply(formula_constant(2 * $2.scale * (outer ^ ($2.power + 1) - inner ^ ($2.power + 1)) / ($2.power + 1)), pi))
+}
+
+# The quarter of the disc of radius a in the first quadrant. The second
+# child says what is integrated: k x y comes to k a^4 / 8, k x and k y to
+# k a^3 / 3, and k x^2 to k pi a^4 / 16.
+Q -> "quarter" integer_between(1, 6) integer_between(0, 3) integer_between(1, 4) when cost = 2 weight 2 {
+  cost = -2
+  kind = cond($3.value = 0, "quarter_product", cond($3.value = 3, "quarter_square", "quarter_coordinate"))
+  let k = $2.value
+  let a = $4.value
+  text = "Evaluate the double integral of [`" ++ cond(k = 1, "", str(k))
+         ++ cond($3.value = 0, "xy", cond($3.value = 1, "x", cond($3.value = 2, "y", "x^{2}")))
+         ++ "`] over the quarter of the disc [`x^{2} + y^{2} \le " ++ str(a ^ 2) ++ "`] that lies in the first quadrant, [`x \ge 0`], [`y \ge 0`]."
+         ++ exact
+  answer_value = cond($3.value = 0, plain(k * a ^ 4 / 8),
+                 cond($3.value = 3, plain(formula_multiply(formula_constant(k * a ^ 4 / 16), pi)), plain(k * a ^ 3 / 3)))
+  mistake jacobian_forgotten answer_value = cond($3.value = 0, plain(k * a ^ 3 / 6),
+                                            cond($3.value = 3, plain(formula_multiply(formula_constant(k * a ^ 3 / 12), pi)), plain(k * a ^ 2 / 2)))
+}
+
+# Under z = c (a^2 - x^2 - y^2) and above the plane z = 0: pi c a^4 / 2.
+# Under the cone z = h - (h / a) sqrt(x^2 + y^2), with h = m a:
+# pi a^2 h / 3. The last child says which.
+Q -> "solid" integer_between(1, 4) integer_between(1, 3) integer_between(0, 1) when cost = 2 weight 2 {
+  cost = -2
+  kind = cond($4.value = 0, "paraboloid", "cone")
+  let a = $2.value
+  let c = $3.value
+  # For a cone of radius 3 the integral without the factor r is the same.
+  require $4.value = 0 or a != 3
+  let coefficient = cond($4.value = 0, c * a ^ 4 / 2, c * a ^ 3 / 3)
+  require coefficient <= 300
+  text = "Find the volume of the solid that lies above the plane [`z = 0`] and below the surface [`z = "
+         ++ cond($4.value = 0, cond(c = 1, "", str(c) ++ "(") ++ str(a ^ 2) ++ " - x^{2} - y^{2}" ++ cond(c = 1, "", ")"),
+                 str(c * a) ++ " - " ++ cond(c = 1, "", str(c)) ++ "\sqrt{x^{2} + y^{2}}")
+         ++ "`]." ++ exact
+  answer_value = plain(formula_multiply(formula_constant(coefficient), pi))
+  mistake jacobian_forgotten answer_value = plain(formula_multiply(formula_constant(cond($4.value = 0, 4 * c * a ^ 3 / 3, c * a ^ 2)), pi))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# In spherical coordinates the integrand is k rho^p and the volume element
+# rho^2 sin(phi): 4 pi k (b^(p+3) - a^(p+3)) / (p + 3) between the radii a
+# and b, with a = 0 for a whole ball. Without sin(phi) the angle phi gives
+# pi where it gave 2.
+Q -> "ball" F integer_between(0, 2) integer_between(1, 3) when cost = 3 weight 3 {
+  cost = -3
+  kind = cond($3.value = 0, "ball", "shell")
+  let inner = $3.value
+  let outer = $3.value + $4.value
+  require outer <= 3
+  let radial = $2.scale * (outer ^ ($2.power + 3) - inner ^ ($2.power + 3)) / ($2.power + 3)
+  require 4 * radial <= 300
+  text = "Evaluate the triple integral of [`" ++ $2.spatial ++ "`] over the "
+         ++ cond(inner = 0, "ball [`x^{2} + y^{2} + z^{2} \le " ++ str(outer ^ 2) ++ "`].",
+                 "region [`" ++ str(inner ^ 2) ++ " \le x^{2} + y^{2} + z^{2} \le " ++ str(outer ^ 2) ++ "`] between two spheres.")
+         ++ exact
+  answer_value = plain(formula_multiply(formula_constant(4 * radial), pi))
+  mistake sine_forgotten answer_value = plain(formula_multiply(formula_constant(2 * radial), formula_power(pi, 2)))
+}
+
+# z = rho cos(phi) over the upper half of a ball of radius a:
+# pi k a^4 / 4. Without sin(phi) the integral of cos(phi) is 1 where that
+# of cos(phi) sin(phi) is 1/2.
+Q -> "half_ball" integer_between(1, 6) integer_between(1, 4) when cost = 3 {
+  cost = -3
+  kind = "half_ball"
+  require $2.value * $3.value ^ 4 / 4 <= 300
+  text = "Evaluate the triple integral of [`" ++ cond($2.value = 1, "", str($2.value)) ++ "z`] over the half of the ball [`x^{2} + y^{2} + z^{2} \le "
+         ++ str($3.value ^ 2) ++ "`] that lies above the plane [`z = 0`]." ++ exact
+  answer_value = plain(formula_multiply(formula_constant($2.value * $3.value ^ 4 / 4), pi))
+  mistake sine_forgotten answer_value = plain(formula_multiply(formula_constant($2.value * $3.value ^ 4 / 2), pi))
+}
+
+# The cylinder x^2 + y^2 <= a^2, 0 <= z <= h. The second child says what is
+# integrated: k (x^2 + y^2) comes to pi k a^4 h / 2, k z to
+# pi k a^2 h^2 / 2, and k z (x^2 + y^2) to pi k a^4 h^2 / 4.
+Q -> "cylinder" integer_between(1, 4) integer_between(0, 2) integer_between(1, 3) integer_between(1, 4) when cost = 3 weight 3 {
+  cost = -3
+  kind = cond($3.value = 0, "cylinder_distance", cond($3.value = 1, "cylinder_height", "cylinder_both"))
+  let k = $2.value
+  let a = $4.value
+  let h = $5.value
+  let coefficient = cond($3.value = 0, k * a ^ 4 * h / 2, cond($3.value = 1, k * a ^ 2 * h ^ 2 / 2, k * a ^ 4 * h ^ 2 / 4))
+  require coefficient <= 300
+  # The integral of z over a cylinder of radius 2 is the same without the
+  # factor r.
+  require $3.value != 1 or a != 2
+  text = "Evaluate the triple integral of [`" ++ cond(k = 1, "", str(k))
+         ++ cond($3.value = 0, cond(k = 1, "x^{2} + y^{2}", "(x^{2} + y^{2})"), cond($3.value = 1, "z", "z(x^{2} + y^{2})"))
+         ++ "`] over the cylinder [`x^{2} + y^{2} \le " ++ str(a ^ 2) ++ "`], [`0 \le z \le " ++ str(h) ++ "`]." ++ exact
+  answer_value = plain(formula_multiply(formula_constant(coefficient), pi))
+  mistake jacobian_forgotten answer_value = plain(formula_multiply(formula_constant(cond($3.value = 0, 2 * k * a ^ 3 * h / 3,
+                                                                                      cond($3.value = 1, k * a * h ^ 2, k * a ^ 3 * h ^ 2 / 3))), pi))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
