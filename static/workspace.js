@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
         optimization:'Calculus and sequences', fourier_series:'Calculus and sequences',
         integral_applications:'Calculus and sequences', parametric_polar:'Calculus and sequences',
         integral_coordinates:'Calculus and sequences', integration_techniques:'Calculus and sequences',
-        nonhomogeneous_ode:'Calculus and sequences',
+        nonhomogeneous_ode:'Calculus and sequences', indeterminate_limits:'Calculus and sequences',
+        related_rates:'Calculus and sequences',
         complex:'Vectors and linear algebra', vector:'Vectors and linear algebra', vector_expr:'Vectors and linear algebra',
         determinant:'Vectors and linear algebra', eigen:'Vectors and linear algebra', linear_system:'Vectors and linear algebra',
         matrix_expr:'Vectors and linear algebra', matrix_inverse:'Vectors and linear algebra',
@@ -37,7 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
         linear_programming:'Other topics', graph_algorithms:'Other topics', counting_principles:'Other topics',
         random_variables:'Other topics', automata:'Other topics',
         hypothesis_testing:'Other topics', group_theory:'Arithmetic and algebra', conic_sections:'Other topics',
-        normal_distribution:'Other topics', graph_coloring:'Other topics', vector_spaces:'Vectors and linear algebra'
+        normal_distribution:'Other topics', graph_coloring:'Other topics', vector_spaces:'Vectors and linear algebra',
+        financial_maths:'Arithmetic and algebra', diophantine:'Other topics', matrix_powers:'Vectors and linear algebra',
+        triangles:'Other topics'
     };
     const translated = value => window.RhemaI18n?.t(value) || value;
     function updateSelection() {

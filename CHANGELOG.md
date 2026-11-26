@@ -213,6 +213,24 @@ is announced one version before the removal.
   the existing builtins only, and has a test that recomputes its answers
   from the printed question. All six declare mistakes, twenty-two in all.
   The library now has 82 files.
+- **Six more question types (a twelfth batch).**
+  `indeterminate_limits.rhm` (limits by l'Hopital's rule, a Taylor
+  expansion or a conjugate: 0/0, 0 times infinity, 1 to the power
+  infinity, infinity minus infinity), `financial_maths.rhm` (simple and
+  compound interest, present value, an effective rate, depreciation,
+  series of payments, the payment that repays a loan), `diophantine.rhm`
+  (the equation `a x + b y = c` in whole numbers, the amounts two stamps
+  cannot make, continued fractions, Pell's equation),
+  `related_rates.rhm` (rates of areas and volumes, a ladder, a balloon,
+  two travellers, a cone, a shadow, and tangent-line estimates of roots),
+  `matrix_powers.rhm` (eigenvalues of powers, a power of a matrix that
+  can be diagonalised, the Cayley-Hamilton theorem, a power applied to
+  eigenvectors) and `triangles.rhm` (the laws of sines and cosines,
+  areas, Heron's formula, the circles round and inside a triangle, the
+  ambiguous case). Each has fixed forms at prices 1 to 3 and a default
+  budget of 2, uses the existing builtins only, and has a test that
+  recomputes its answers from the printed question. All six declare
+  mistakes, twenty-six in all. The library now has 88 files.
 - **Changed.** `--count` with a negative number is an error of the command
   line (status 2); it was `rhema: error: List.init`. The "not run through
   WeBWorK" line of the summary is said only where PG was written. In the
