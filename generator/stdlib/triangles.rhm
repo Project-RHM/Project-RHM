@@ -1,0 +1,213 @@
+# ==========================================================================
+#  Triangles
+#
+#  Solving triangles: the area from two sides and the angle between them,
+#  the cosine of an angle from the three sides, a third side by the law of
+#  cosines, a side by the law of sines, the area by Heron's formula, the
+#  radius of the circle round a triangle and of the circle inside it, an
+#  altitude, and the number of triangles two sides and an angle allow. It
+#  goes on from trigonometry.rhm, which asks for exact values.
+#
+#  The angles are 30, 45, 60, 90, 120, 135 and 150 degrees, whose sines
+#  and cosines are exact, so an answer is a fraction or a fraction times
+#  sqrt(2), sqrt(3) or sqrt(6), a `plain` answer in which a sine or a
+#  cosine is not accepted. A third side is whole: the triangles with an
+#  angle of 60 or 120 degrees come from a list, such as 3, 8 and 7. The
+#  triangles for Heron's formula have whole sides and a whole area, such
+#  as 13, 14, 15 with area 84.
+#
+#  Five mistakes are looked for: leaving out the 1/2 of an area, giving
+#  the cosine term of the law of cosines the wrong sign, using Pythagoras'
+#  theorem in a triangle with no right angle, turning the ratio of the
+#  sines over, and using the whole perimeter where half of it belongs.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the area from two sides and the angle between them, the cosine of
+#       an angle from the three sides
+#    2  a third side by the law of cosines, a side by the law of sines,
+#       the area by Heron's formula
+#    3  the circumradius, the inradius or an altitude of a triangle with
+#       whole sides, the number of triangles with two given sides and an
+#       angle of 30 degrees
+# ==========================================================================
+
+attribute cost = 2 split
+
+let exact = " Give the exact value, with a square root written as sqrt."
+
+mistake half_forgotten "gives the product of the two sides and the sine, without the 1/2 of the area of a triangle"
+mistake cosine_term_sign "gives the cosine term of the law of cosines the wrong sign"
+mistake pythagoras_used "uses Pythagoras' theorem, as if the angle between the two sides were a right angle"
+mistake sines_inverted "turns the ratio of the two sines over"
+mistake perimeter_for_semiperimeter "uses the whole perimeter where half the perimeter belongs"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# An angle with an exact sine, sqrt(n) / 2: its degrees and n.
+synth degrees on G
+synth under on G
+
+# Two sides, the angle between them (60 or 120 degrees) and the third
+# side, all whole.
+synth one on S
+synth other on S
+synth third on S
+synth degrees on S
+
+# A triangle with whole sides and a whole area.
+synth a on H
+synth b on H
+synth c on H
+synth area on H
+
+start Q
+
+G -> integer_between(1, 7) {
+  degrees = cond($1.value = 1, 30, cond($1.value = 2, 45, cond($1.value = 3, 60, cond($1.value = 4, 90, cond($1.value = 5, 120, cond($1.value = 6, 135, 150))))))
+  under = cond($1.value = 1 or $1.value = 7, 1, cond($1.value = 2 or $1.value = 6, 2, cond($1.value = 4, 4, 3)))
+}
+
+S -> integer_between(1, 9) integer_between(0, 1) {
+  let short = cond($1.value = 1, 3, cond($1.value = 2, 5, cond($1.value = 3, 7, cond($1.value = 4, 8, cond($1.value = 5, 5, cond($1.value = 6, 16,
+              cond($1.value = 7, 3, cond($1.value = 8, 7, 5))))))))
+  let long = cond($1.value <= 2, 8, cond($1.value <= 4, 15, cond($1.value <= 6, 21, cond($1.value = 7, 5, cond($1.value = 8, 8, 16)))))
+  one = cond($2.value = 0, short, long)
+  other = cond($2.value = 0, long, short)
+  third = cond($1.value <= 2 or $1.value = 7, 7, cond($1.value <= 4 or $1.value = 8, 13, 19))
+  degrees = cond($1.value <= 6, 60, 120)
+}
+
+H -> integer_between(1, 12) {
+  a = cond($1.value = 1, 5, cond($1.value = 2, 5, cond($1.value = 3, 13, cond($1.value = 4, 9, cond($1.value = 5, 7, cond($1.value = 6, 10,
+      cond($1.value = 7, 11, cond($1.value = 8, 4, cond($1.value = 9, 12, cond($1.value = 10, 13, cond($1.value = 11, 17, 13)))))))))))
+  b = cond($1.value = 1, 5, cond($1.value = 2, 5, cond($1.value = 3, 14, cond($1.value = 4, 10, cond($1.value = 5, 15, cond($1.value = 6, 13,
+      cond($1.value = 7, 13, cond($1.value = 8, 13, cond($1.value = 9, 17, cond($1.value = 10, 20, cond($1.value = 11, 25, 13)))))))))))
+  c = cond($1.value = 1, 6, cond($1.value = 2, 8, cond($1.value = 3, 15, cond($1.value = 4, 17, cond($1.value = 5, 20, cond($1.value = 6, 13,
+      cond($1.value = 7, 20, cond($1.value = 8, 15, cond($1.value = 9, 25, cond($1.value = 10, 21, cond($1.value = 11, 28, 24)))))))))))
+  area = cond($1.value = 1, 12, cond($1.value = 2, 12, cond($1.value = 3, 84, cond($1.value = 4, 36, cond($1.value = 5, 42, cond($1.value = 6, 60,
+         cond($1.value = 7, 66, cond($1.value = 8, 24, cond($1.value = 9, 90, cond($1.value = 10, 126, cond($1.value = 11, 210, 60)))))))))))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The area is p q sin(C) / 2, with sin(C) = sqrt(n) / 2: p q sqrt(n) / 4,
+# which is a fraction for n = 1 and n = 4.
+Q -> "area_two_sides" integer_between(2, 12) integer_between(2, 12) G when cost = 1 {
+  cost = -1
+  kind = "area_two_sides"
+  let product = $2.value * $3.value
+  let n = $4.under
+  text = "Two sides of a triangle are [`" ++ str($2.value) ++ "`] and [`" ++ str($3.value) ++ "`] long, and the angle between them is [`"
+         ++ str($4.degrees) ++ "^{\circ}`]. Find the area of the triangle." ++ exact
+  answer_value = cond(n = 1, plain(product / 4), cond(n = 4, plain(product / 2),
+                      plain(formula_multiply(formula_constant(product / 4), formula_sqrt(formula_constant(n))))))
+  mistake half_forgotten answer_value = cond(n = 1, plain(product / 2), cond(n = 4, plain(product),
+                                             plain(formula_multiply(formula_constant(product / 2), formula_sqrt(formula_constant(n))))))
+}
+
+# cos(C) = (p^2 + q^2 - r^2) / (2 p q), for three whole sides that make a
+# triangle: the third is more than the difference of the other two and
+# less than their sum. It is not a right angle, where the sign of the
+# cosine would not show.
+Q -> "cosine" integer_between(2, 9) integer_between(2, 9) integer_between(2, 15) when cost = 1 weight 2 {
+  cost = -1
+  kind = "cosine"
+  require $4.value > abs($2.value - $3.value) and $4.value < $2.value + $3.value
+  require $2.value ^ 2 + $3.value ^ 2 != $4.value ^ 2
+  text = "A triangle has the sides [`a = " ++ str($2.value) ++ "`], [`b = " ++ str($3.value) ++ "`] and [`c = " ++ str($4.value)
+         ++ "`]. Find the cosine of the angle opposite the side [`c`], the angle between the sides [`a`] and [`b`]."
+  answer_value = plain(($2.value ^ 2 + $3.value ^ 2 - $4.value ^ 2) / (2 * $2.value * $3.value))
+  mistake cosine_term_sign answer_value = plain(($4.value ^ 2 - $2.value ^ 2 - $3.value ^ 2) / (2 * $2.value * $3.value))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# r^2 = p^2 + q^2 - 2 p q cos(C) with C of 60 or 120 degrees, so
+# r^2 = p^2 + q^2 - p q or + p q, a square for the triangles of S. The
+# second child makes all three sides larger.
+Q -> "third_side" S integer_between(1, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "third_side"
+  let p = $2.one * $3.value
+  let q = $2.other * $3.value
+  text = "Two sides of a triangle are [`" ++ str(p) ++ "`] and [`" ++ str(q) ++ "`] long, and the angle between them is [`" ++ str($2.degrees)
+         ++ "^{\circ}`]. Find the length of the third side." ++ exact
+  answer_value = plain($2.third * $3.value)
+  mistake cosine_term_sign answer_value = plain(formula_sqrt(formula_constant(p ^ 2 + q ^ 2 + cond($2.degrees = 60, p * q, -(p * q)))))
+  mistake pythagoras_used answer_value = plain(formula_sqrt(formula_constant(p ^ 2 + q ^ 2)))
+}
+
+# q / sin(B) = p / sin(A), with sin = sqrt(n) / 2 for both: q is p times
+# sqrt(n_B / n_A), written with a whole number under the root. The two
+# angles have different sines and leave room for a third angle.
+Q -> "sine_rule" integer_between(2, 12) G G when cost = 2 weight 5 {
+  cost = -2
+  kind = "sine_rule"
+  require $3.degrees + $4.degrees < 180 and $3.under != $4.under
+  let across = $3.under * $4.under
+  let whole = cond(across = 4 or across = 8 or across = 12, 2, 1)
+  let root = cond(across = 2 or across = 8, 2, cond(across = 3 or across = 12, 3, cond(across = 6, 6, 1)))
+  text = "In a triangle, the angle [`A`] is [`" ++ str($3.degrees) ++ "^{\circ}`] and the angle [`B`] is [`" ++ str($4.degrees)
+         ++ "^{\circ}`]. The side opposite [`A`] is [`" ++ str($2.value) ++ "`] long. Find the length of the side opposite [`B`]." ++ exact
+  answer_value = cond(root = 1, plain($2.value * whole / $3.under),
+                      plain(formula_multiply(formula_constant($2.value * whole / $3.under), formula_sqrt(formula_constant(root)))))
+  mistake sines_inverted answer_value = cond(root = 1, plain($2.value * whole / $4.under),
+                                             plain(formula_multiply(formula_constant($2.value * whole / $4.under), formula_sqrt(formula_constant(root)))))
+}
+
+# The area of a triangle of H, with all sides made k times as long, is
+# k^2 times its area. With the whole perimeter P for s the formula gives
+# sqrt(P (P - a)(P - b)(P - c)).
+Q -> "heron" H integer_between(1, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "heron"
+  let k = $3.value
+  let around = k * ($2.a + $2.b + $2.c)
+  text = "A triangle has sides [`" ++ str(k * $2.a) ++ "`], [`" ++ str(k * $2.b) ++ "`] and [`" ++ str(k * $2.c) ++ "`]. Find its area."
+  answer_value = plain(k ^ 2 * $2.area)
+  mistake perimeter_for_semiperimeter answer_value = plain(formula_sqrt(formula_constant(around * (around - k * $2.a) * (around - k * $2.b) * (around - k * $2.c))))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# With K the area and s half the perimeter: the circle round the triangle
+# has radius a b c / (4K), the circle inside it K / s, and the altitude to
+# a side is 2K over that side. The second child says which is asked; the
+# altitude is the one to the longest side, the last of the three.
+Q -> "measures" H integer_between(0, 2) integer_between(1, 2) when cost = 3 weight 4 {
+  cost = -3
+  kind = cond($3.value = 0, "circumradius", cond($3.value = 1, "inradius", "altitude"))
+  let k = $4.value
+  let half = k * ($2.a + $2.b + $2.c) / 2
+  let surface = k ^ 2 * $2.area
+  text = "A triangle has sides [`" ++ str(k * $2.a) ++ "`], [`" ++ str(k * $2.b) ++ "`] and [`" ++ str(k * $2.c) ++ "`]. Find "
+         ++ cond($3.value = 0, "the radius of the circle through its three corners.",
+            cond($3.value = 1, "the radius of the circle inside it that touches its three sides.",
+                 "its altitude to the side [`" ++ str(k * $2.c) ++ "`]."))
+  answer_value = cond($3.value = 0, plain(k ^ 3 * $2.a * $2.b * $2.c / (4 * surface)), cond($3.value = 1, plain(surface / half), plain(2 * surface / (k * $2.c))))
+  mistake perimeter_for_semiperimeter answer_value = cond($3.value = 1, plain(surface / (2 * half)), answer_value)
+}
+
+# The side b lies along one arm of the angle of 30 degrees, and the side a
+# is opposite the angle. The other arm is b / 2 from the end of b: with a
+# below that there is no triangle, with a equal to it one, with a between
+# it and b two, and with a at least b one. The second child says which
+# case, and b is even.
+Q -> "ambiguous" integer_between(3, 10) integer_between(0, 3) integer_between(1, 4) when cost = 3 weight 2 {
+  cost = -3
+  kind = "ambiguous"
+  let adjacent = 2 * $2.value
+  let height = $2.value
+  let opposite = cond($3.value = 0, height - min($4.value, height - 1), cond($3.value = 1, height, cond($3.value = 2, height + min($4.value, height - 1),
+                      adjacent + $4.value - 1)))
+  text = "How many triangles, different in shape, have an angle [`A`] of [`30^{\circ}`], the side opposite [`A`] [`" ++ str(opposite)
+         ++ "`] long and another side [`" ++ str(adjacent) ++ "`] long?"
+  answer_value = plain(cond($3.value = 0, 0, cond($3.value = 2, 2, 1)))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

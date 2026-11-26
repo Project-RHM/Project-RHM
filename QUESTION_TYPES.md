@@ -101,6 +101,12 @@ attribute, or by the budget.
 | `integral_coordinates.rhm` | 1 a triple integral of a monomial over a box, the integral of a power of the distance from the origin over a disc; 2 the same over a ring, the integral of `x`, `y`, `x y` or `x^2` over a quarter of a disc, the volume under a paraboloid or a cone; 3 the integral of a power of the distance from the origin over a ball or between two spheres, of `z` over half a ball, and of `x^2 + y^2`, `z` or their product over a cylinder | 2 | Numeric (plain answers) |
 | `integration_techniques.rhm` | 1 `k sin^2(mx)` or `k cos^2(mx)` over a multiple of a quarter period, `k / (x^2 + a^2)` from 0 to `a`, `k / sqrt(a^2 - x^2)` from 0 to `a / 2`; 2 by parts: `k x e^(ax)`, `k x^n ln x`, `k x sin(mx)` or `k x cos(mx)`, and `k sin^a(x) cos^b(x)` with an odd power; 3 `k sin^n(x)` or `k cos^n(x)` by the reduction formula, a trigonometric substitution, `k x^2 e^(ax)` by parts twice, `k / ((x + a)(x + b))` by partial fractions | 2 | Numeric (fractions and multiples of pi are plain answers) |
 | `nonhomogeneous_ode.rhm` | 1 a particular solution of `y'' + p y' + q y = c e^(kx)`, of `y'' + q y = c sin(kx)` or `c cos(kx)`; 2 of `y'' + p y' + q y = m x + n`, of the same with `c e^(rx)` in resonance, and `y' + a y = c e^(kx)` with an initial value; 3 of `y'' + p y' + q y = alpha cos(kx) + beta sin(kx)`, and initial value problems of the second order with a constant or an exponential on the right | 2 | Numeric |
+| `indeterminate_limits.rhm` | 1 `(x^m - 1) / (x^n - 1)` at 1, `ln(1 + a x) / (b x)` at 0; 2 `(a^x - b^x) / x` at 0, a quotient over `x^2` at 0 from `e^(ax)`, `cos(ax)` or `ln(1 + ax)`, `x f(a / x)` at infinity; 3 `(1 + a / x)^(b x)` at infinity and `(1 + a x)^(b / x)` at 0, a difference of square roots at infinity, a quotient over `x^3` at 0 from `sin(ax)` and `tan(ax)` | 2 | Numeric |
+| `financial_maths.rhm` | 1 simple interest, the amount under compound interest; 2 the present value of a later amount, the effective rate of a nominal rate compounded twice a year, the value after depreciation; 3 the future value of yearly deposits, the present value of yearly payments, the yearly payment that repays a loan | 2 | Numeric |
+| `diophantine.rhm` | 1 how many `c` up to `N` make `a x + b y = c` solvable, the value of a continued fraction; 2 the next solution after a given one, the `x` between 0 and `b` of a solution, the largest amount two stamps cannot make and the number of such amounts, a partial quotient of a fraction; 3 the number of ways to make an amount from two stamps, the smallest and the second smallest solution of a Pell equation | 2 | Numeric (a solution carries the Point context) |
+| `related_rates.rhm` | 1 the rate of an area or a volume from the rate of a radius or a side, the tangent-line estimate of a square root or a cube root; 2 a ladder sliding down a wall, the radius of a balloon filled at a given rate, the distance between two travellers; 3 the depth of water poured into a cone, the shadow of a walker under a lamp: its length and its tip | 2 | Numeric (plain answers) |
+| `matrix_powers.rhm` | 1 the eigenvalues of a power, an inverse or a shift of a matrix, the determinant or the trace of a matrix or of its square from its eigenvalues; 2 a power of a matrix that can be diagonalised, the trace of a power; 3 a power or the inverse as a combination of the matrix and the identity, a power of a matrix with one eigenvalue, a power applied to a combination of eigenvectors | 2 | Interval / Numeric / Matrix / Vector |
+| `triangles.rhm` | 1 the area from two sides and the angle between them, the cosine of an angle from the three sides; 2 a third side by the law of cosines, a side by the law of sines, the area by Heron's formula; 3 the circumradius, the inradius or an altitude of a triangle with whole sides, the number of triangles with two given sides and an angle of 30 degrees | 2 | Numeric (plain answers) |
 <!-- --8<-- [end:tables] -->
 
 ## The five general types added on this branch
@@ -955,9 +961,104 @@ and the reduction formula was asked for the power 2, which the half-angle
 formula does at price 1. Four forms of the integration techniques were
 widened.
 
+## The twelfth batch: indeterminate limits, financial mathematics, Diophantine equations, related rates, powers of matrices, triangles
+
+Six more fixed-form grammars with a default budget of 2, built answer first
+wherever there is something to find. None needed a change to the engine,
+and all six declare mistakes.
+
+- **Limits of indeterminate forms** (`indeterminate_limits.rhm`) goes on
+  from `limits.rhm` with the limits that l'Hopital's rule, a Taylor
+  expansion or a conjugate settles: 0/0 once, twice and three times over,
+  0 times infinity, 1 to the power infinity, and infinity minus infinity.
+  Every limit is known from the constants in it: the expansions of `e^x`,
+  `ln(1 + x)`, `sin x`, `cos x` and `tan x` give the quotients,
+  `(1 + a / x)^(b x)` tends to `e^(ab)`, and a difference of square roots
+  is multiplied by its conjugate. An answer with `e` or a logarithm may be
+  entered as it stands.
+- **Financial mathematics** (`financial_maths.rhm`) asks for simple and
+  compound interest, a present value, an effective rate, depreciation,
+  the future and the present value of a series of equal payments, and the
+  yearly payment that repays a loan. A sum of money is always a whole
+  number of dollars: where interest is compounded yearly the rates are 5,
+  10, 20 and 25 per cent and the terms 2 and 3 years, and every sum starts
+  from a multiple of the power of the denominator that the compounding
+  divides by, so nothing is rounded.
+- **Diophantine equations** (`diophantine.rhm`) goes on from
+  `number_theory.rhm`: the equation `a x + b y = c` in whole numbers (for
+  which `c` it can be solved, the next solution after a given one, the
+  solution with `x` in a range, the number of solutions with neither
+  unknown negative, and the amounts two stamps cannot make), the value and
+  the partial quotients of a continued fraction, and the smallest
+  solutions of Pell's equation. An equation is built from a solution, and
+  a fraction from its partial quotients, the last at least 2, so that its
+  expansion is the only one. A solution is entered as a point.
+- **Related rates** (`related_rates.rhm`) goes on from
+  `derivative_applications.rhm` and `implicit_differentiation.rhm`: an
+  area or a volume that grows with a radius or a side, a balloon, a ladder
+  sliding down a wall, two cyclists moving apart, water poured into a
+  cone, and the shadow of a walker under a lamp; and the tangent line used
+  to estimate a square root or a cube root. The lengths of a right
+  triangle are the sides of a triangle with whole sides, so a rate is a
+  fraction, or a fraction times or over pi.
+- **Powers of matrices** (`matrix_powers.rhm`) goes on from `eigen.rhm`
+  with what eigenvalues say about powers: the eigenvalues, the determinant
+  and the trace of a power, an inverse or a shift; a power of a matrix
+  `P D P^(-1)` with `P` of determinant 1, and its trace; a power or the
+  inverse written as `alpha A + beta I` by the Cayley-Hamilton theorem; a
+  power of a matrix with one eigenvalue; and a power applied to a vector
+  given as a combination of eigenvectors. The entries of a matrix or a
+  vector asked for stay within 900.
+- **Triangles** (`triangles.rhm`) goes on from `trigonometry.rhm` with the
+  laws of sines and cosines, the area from two sides and an angle and by
+  Heron's formula, the circles round and inside a triangle, an altitude,
+  and the number of triangles that two sides and an angle of 30 degrees
+  allow. The angles are those with exact sines and cosines; a third side
+  is whole, from a list of triangles with an angle of 60 or 120 degrees
+  such as 3, 8 and 7; and the triangles for Heron's formula have whole
+  sides and a whole area, such as 13, 14, 15 with area 84.
+
+```
+cost 3   the limit of (sin(3x) - 3x cos(3x)) / (2x^3) at 0                                 9/2
+cost 3   a loan of 45500 dollars at 20 per cent, repaid by 3 equal yearly payments         21600
+cost 3   the solution of x^2 - 11y^2 = 1 with the second least x                           (199, 60)
+cost 3   a cone 9 m high, radius 3 m, filled at 9 m^3 a minute: dh/dt at depth 2 m         81/(4 pi)
+cost 3   A^5 v for v = -2u_1 + 3u_2, eigenvalues -2 and -1, u_1 = (1, 2), u_2 = (2, 5)     (58, 113)
+cost 3   the circumradius of the triangle with sides 12, 17, 25                            85/6
+```
+
+Each grammar has a test, written apart from it, that reads the numbers
+back from the printed question and finds the answer again in its own way:
+a limit twice, by expanding the printed expression in a series with exact
+fractions and by evaluating it at points that close in on the limit, with
+l'Hopital's rule done literally and counted; a sum of money by running
+the account a year at a time, with a loan carried down to exactly nothing
+by an amortisation schedule; a Diophantine equation by trying every pair
+in a box, the amounts two stamps make by marking them, a continued
+fraction by the test's own whole-part-and-reciprocal loop, and a Pell
+equation by searching upwards; a rate by writing the quantity as a
+function of time from the geometry and differencing it; a power of a
+matrix by multiplying it out, eigenvalues on a matrix built to have them
+that is not diagonal, and a combination of the matrix and the identity
+entry by entry; and a triangle by drawing it in coordinates and measuring
+the side, the area, the circles and the altitude. The mistaken answers
+are found again from what each mistake says, and each must be far enough
+from the right answer for WeBWorK to tell them apart.
+
+What these tests and the grading in the renderer found was put right in
+the grammars: a vector with an entry beyond 1000 was accepted with that
+entry one off, so the entries of a vector or a matrix asked for now stay
+within 900; in a sixth of the questions on the trace of a power the trace
+of the matrix was 1, and so was the mistake of raising it to the power;
+the estimate of a root with the 1/2 or the 1/3 lost came within 1% of the
+right estimate in about one question in 25, and one question asked for
+an estimate of the square root of 1; and a nominal rate of 2 or 4 per
+cent was within 1% of its effective rate, so the rates now run from 6 to
+30 per cent.
+
 ## Mistakes the library looks for
 
-Thirty-three grammars say what common mistakes lead to. `rhema run` lists them
+Thirty-nine grammars say what common mistakes lead to. `rhema run` lists them
 under each answer, and none of these grammars asks a question in which a
 mistake changes the working and still gives the right answer (section 9 of
 `RHEMA_LANGUAGE_EXTENSIONS.md`).
@@ -1059,6 +1160,32 @@ mistake changes the working and still gives the right answer (section 9 of
 | | `second_derivative_sign` | takes the second derivative of `sin(kx)` or `cos(kx)` with a plus sign |
 | | `first_derivative_forgotten` | leaves the `y'` term out when the constant of the trial solution `A x + B` is found |
 | | `constants_before_particular` | fits the constants of the homogeneous solution to the initial values before the particular solution is added |
+| `indeterminate_limits.rhm` | `power_not_brought_down` | differentiates `x^n` below the line as `x^(n-1)`, without the factor `n` |
+| | `zero_times_infinity` | takes a factor that tends to 0 times one that tends to infinity to be 0 |
+| | `one_to_infinity` | takes a base that tends to 1 raised to a power that tends to infinity to be 1 |
+| | `infinities_cancelled` | takes the difference of two terms that both tend to infinity to be 0 |
+| `financial_maths.rhm` | `simple_for_compound` | uses simple interest, the rate times the number of years, where the interest is compounded |
+| | `nominal_taken` | gives the nominal rate itself for the effective rate |
+| | `interest_ignored` | leaves interest out and only adds up, or shares out, the payments |
+| `diophantine.rhm` | `gcd_condition_missed` | takes `a x + b y = c` to have a solution for every `c` |
+| | `step_not_reduced` | steps from one solution to the next by `b` in `x`, where `b / gcd(a, b)` belongs |
+| | `added_straight` | adds the reciprocals of the partial quotients one after the other |
+| | `product_taken` | takes the product `a b` for the largest amount two stamps cannot make |
+| `related_rates.rhm` | `chain_rule_forgotten` | differentiates with respect to the radius or the side and does not multiply by its rate of change |
+| | `derivative_factor_lost` | loses the `1/2` in the derivative of a square root, or the `1/3` in that of a cube root |
+| | `sides_swapped` | exchanges the two sides of the right triangle a ladder makes |
+| | `full_radius_used` | treats the water in a cone as a cylinder of the cone's full radius |
+| | `tip_for_length` | gives the speed of the tip of a shadow for the rate at which it lengthens, or the other way round |
+| `matrix_powers.rhm` | `multiplied_by_power` | multiplies each eigenvalue by the power, where it is raised to the power |
+| | `negative_for_inverse` | changes the sign of each eigenvalue for the inverse, where its reciprocal belongs |
+| | `power_outside` | raises the trace to the power, where the trace of the power is asked for |
+| | `entries_raised` | raises each entry of the matrix to the power |
+| | `power_dropped` | applies the matrix once, where a power of it is asked for |
+| `triangles.rhm` | `half_forgotten` | gives the product of two sides and the sine, without the `1/2` of the area |
+| | `cosine_term_sign` | gives the cosine term of the law of cosines the wrong sign |
+| | `pythagoras_used` | uses Pythagoras' theorem in a triangle with no right angle |
+| | `sines_inverted` | turns the ratio of the two sines over |
+| | `perimeter_for_semiperimeter` | uses the whole perimeter where half the perimeter belongs |
 
 An integral question of `calculus.rhm`, a modulus question of `complex.rhm`
 and a factoring question list none: their answers are not computed from the

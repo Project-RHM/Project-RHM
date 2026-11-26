@@ -61,6 +61,9 @@ TITLES = {
     "normal_distribution": "The normal distribution", "graph_coloring": "Graph colouring",
     "vector_spaces": "Vector spaces", "integral_coordinates": "Integrals in polar and spherical coordinates",
     "integration_techniques": "Techniques of integration", "nonhomogeneous_ode": "Non-homogeneous differential equations",
+    "indeterminate_limits": "Limits of indeterminate forms", "financial_maths": "Financial mathematics",
+    "diophantine": "Diophantine equations", "related_rates": "Related rates",
+    "matrix_powers": "Powers of matrices", "triangles": "Triangles",
 }
 
 

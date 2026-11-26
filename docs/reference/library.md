@@ -20,7 +20,7 @@ make `x + 2x \cdot \sin x` cost at least 4.
 
 ## Mistakes
 
-Thirty-three grammars say what common mistakes lead to (chapter 9 of the tutorial).
+Thirty-nine grammars say what common mistakes lead to (chapter 9 of the tutorial).
 `rhema run` lists them under each answer, and none of these grammars asks a
 question in which a mistake changes the working and still gives the right
 answer.
@@ -122,6 +122,32 @@ answer.
 | | `second_derivative_sign` | takes the second derivative of `sin(kx)` or `cos(kx)` with a plus sign |
 | | `first_derivative_forgotten` | leaves the `y'` term out when the constant of the trial solution `A x + B` is found |
 | | `constants_before_particular` | fits the constants of the homogeneous solution to the initial values before the particular solution is added |
+| `indeterminate_limits.rhm` | `power_not_brought_down` | differentiates `x^n` below the line as `x^(n-1)`, without the factor `n` |
+| | `zero_times_infinity` | takes a factor that tends to 0 times one that tends to infinity to be 0 |
+| | `one_to_infinity` | takes a base that tends to 1 raised to a power that tends to infinity to be 1 |
+| | `infinities_cancelled` | takes the difference of two terms that both tend to infinity to be 0 |
+| `financial_maths.rhm` | `simple_for_compound` | uses simple interest, the rate times the number of years, where the interest is compounded |
+| | `nominal_taken` | gives the nominal rate itself for the effective rate |
+| | `interest_ignored` | leaves interest out and only adds up, or shares out, the payments |
+| `diophantine.rhm` | `gcd_condition_missed` | takes `a x + b y = c` to have a solution for every `c` |
+| | `step_not_reduced` | steps from one solution to the next by `b` in `x`, where `b / gcd(a, b)` belongs |
+| | `added_straight` | adds the reciprocals of the partial quotients one after the other |
+| | `product_taken` | takes the product `a b` for the largest amount two stamps cannot make |
+| `related_rates.rhm` | `chain_rule_forgotten` | differentiates with respect to the radius or the side and does not multiply by its rate of change |
+| | `derivative_factor_lost` | loses the `1/2` in the derivative of a square root, or the `1/3` in that of a cube root |
+| | `sides_swapped` | exchanges the two sides of the right triangle a ladder makes |
+| | `full_radius_used` | treats the water in a cone as a cylinder of the cone's full radius |
+| | `tip_for_length` | gives the speed of the tip of a shadow for the rate at which it lengthens, or the other way round |
+| `matrix_powers.rhm` | `multiplied_by_power` | multiplies each eigenvalue by the power, where it is raised to the power |
+| | `negative_for_inverse` | changes the sign of each eigenvalue for the inverse, where its reciprocal belongs |
+| | `power_outside` | raises the trace to the power, where the trace of the power is asked for |
+| | `entries_raised` | raises each entry of the matrix to the power |
+| | `power_dropped` | applies the matrix once, where a power of it is asked for |
+| `triangles.rhm` | `half_forgotten` | gives the product of two sides and the sine, without the `1/2` of the area |
+| | `cosine_term_sign` | gives the cosine term of the law of cosines the wrong sign |
+| | `pythagoras_used` | uses Pythagoras' theorem in a triangle with no right angle |
+| | `sines_inverted` | turns the ratio of the two sines over |
+| | `perimeter_for_semiperimeter` | uses the whole perimeter where half the perimeter belongs |
 
 The mistakes of `calculus.rhm` concern its derivative questions; an
 integral question lists none. `power_term_by_term` is declared in

@@ -1,0 +1,210 @@
+# ==========================================================================
+#  Powers of matrices
+#
+#  What eigenvalues say about powers: the eigenvalues, the determinant and
+#  the trace of a power, an inverse or a shift of a matrix; a power of a
+#  matrix that can be diagonalised, and its trace; a power written as a
+#  combination of the matrix and the identity by the Cayley-Hamilton
+#  theorem; a power of a matrix with one eigenvalue; and a power applied
+#  to a vector given as a combination of eigenvectors. It goes on from
+#  eigen.rhm, which finds the eigenvalues.
+#
+#  A matrix that is shown for its power is P D P^(-1) with D diagonal and
+#  P of determinant 1, so it has whole entries and its powers are
+#  P D^n P^(-1). The entries of a matrix or a vector asked for stay
+#  within 900: WeBWorK compares an entry with a tolerance of one part in a
+#  thousand, which from 1000 on is more than 1.
+#  Eigenvalues are entered as a set, in braces.
+#
+#  Five mistakes are looked for: multiplying the eigenvalues by the power
+#  where they are raised to it, changing the sign of the eigenvalues for
+#  an inverse where their reciprocals belong, raising a trace to the
+#  power where the trace of the power is asked for, raising each entry of
+#  a matrix to the power, and applying the matrix once where a power of
+#  it is asked for.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the eigenvalues of a power, an inverse or a shift of a matrix; the
+#       determinant or the trace of a matrix or of its square from its
+#       eigenvalues
+#    2  a power of a matrix that can be diagonalised, and the trace of a
+#       power
+#    3  a power or the inverse as a combination of the matrix and the
+#       identity, a power of a matrix with one eigenvalue, a power
+#       applied to a combination of eigenvectors
+# ==========================================================================
+
+attribute cost = 2 split
+
+let as_set = " Enter them as a set: in braces, with a comma between them."
+
+mistake multiplied_by_power "multiplies each eigenvalue by the power, where it is raised to the power"
+mistake negative_for_inverse "changes the sign of each eigenvalue for the inverse, where its reciprocal belongs"
+mistake power_outside "raises the trace to the power, where the trace of the power is asked for"
+mistake entries_raised "raises each entry of the matrix to the power"
+mistake power_dropped "applies the matrix once, where a power of it is asked for"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+synth pg_context on Q
+
+# A matrix of determinant 1 with no 0 in it: (1, q; p, p q + 1).
+synth map on U
+
+# Two eigenvalues, different and different in size, neither 0.
+synth first on E
+synth second on E
+
+start Q
+
+U -> nonzero_integer_between(-2, 2) nonzero_integer_between(-2, 2) {
+  require $1.value * $2.value != -1
+  map = matrix2(1, $2.value, $1.value, $1.value * $2.value + 1)
+}
+
+E -> nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) {
+  require abs($1.value) != abs($2.value)
+  first = $1.value
+  second = $2.value
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The second child says what is done to the matrix: 0, a power k; 1, the
+# inverse; 2, c times the identity added.
+Q -> "eigenvalues_of" integer_between(0, 2) E integer_between(2, 4) nonzero_integer_between(-5, 5) when cost = 1 weight 3 {
+  cost = -1
+  kind = cond($2.value = 0, "eigenvalues_of_power", cond($2.value = 1, "eigenvalues_of_inverse", "eigenvalues_of_shift"))
+  let k = $4.value
+  let c = $5.value
+  let one = cond($2.value = 0, $3.first ^ k, cond($2.value = 1, 1 / $3.first, $3.first + c))
+  let other = cond($2.value = 0, $3.second ^ k, cond($2.value = 1, 1 / $3.second, $3.second + c))
+  text = "A [`2`] by [`2`] matrix [`A`] has the eigenvalues [`" ++ str($3.first) ++ "`] and [`" ++ str($3.second) ++ "`]. Find the eigenvalues of [`"
+         ++ cond($2.value = 0, "A^{" ++ str(k) ++ "}", cond($2.value = 1, "A^{-1}", "A " ++ cond(c > 0, "+ ", "- ") ++ cond(abs(c) = 1, "", str(abs(c))) ++ "I"))
+         ++ "`]." ++ as_set
+  answer_value = set_insert(set_insert(set_empty(), one), other)
+  mistake multiplied_by_power answer_value = cond($2.value = 0, set_insert(set_insert(set_empty(), k * $3.first), k * $3.second), answer_value)
+  mistake negative_for_inverse answer_value = cond($2.value = 1, set_insert(set_insert(set_empty(), -$3.first), -$3.second), answer_value)
+  pg_context = "Interval"
+}
+
+# Three eigenvalues, none 0. The determinant is their product and the
+# trace their sum; for the square, the squares take their place. The
+# second child says which of the four is asked.
+Q -> "from_eigenvalues" integer_between(0, 3) nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) when cost = 1 weight 2 {
+  cost = -1
+  kind = cond($2.value = 0, "determinant", cond($2.value = 1, "trace", cond($2.value = 2, "determinant_of_square", "trace_of_square")))
+  let sum = $3.value + $4.value + $5.value
+  let product = $3.value * $4.value * $5.value
+  let squares = $3.value ^ 2 + $4.value ^ 2 + $5.value ^ 2
+  require $2.value != 3 or squares != sum ^ 2
+  text = "A [`3`] by [`3`] matrix [`A`] has the eigenvalues [`" ++ str($3.value) ++ "`], [`" ++ str($4.value) ++ "`] and [`" ++ str($5.value)
+         ++ "`], counted as often as they occur. Find "
+         ++ cond($2.value = 0, "[`\det A`].", cond($2.value = 1, "the trace of [`A`].", cond($2.value = 2, "[`\det(A^{2})`].", "the trace of [`A^{2}`].")))
+  answer_value = cond($2.value = 0, product, cond($2.value = 1, sum, cond($2.value = 2, product ^ 2, squares)))
+  mistake power_outside answer_value = cond($2.value = 3, sum ^ 2, answer_value)
+  pg_context = "Numeric"
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# A = P D P^(-1) and A^n = P D^n P^(-1). Neither is triangular, and the
+# entries of the power stay within 900.
+Q -> "power" U E integer_between(3, 5) when cost = 2 weight 3 {
+  cost = -2
+  kind = "power"
+  let n = $4.value
+  let shown = matrix_multiply(matrix_multiply($2.map, matrix2($3.first, 0, 0, $3.second)), matrix_inverse($2.map))
+  let raised = matrix_multiply(matrix_multiply($2.map, matrix2($3.first ^ n, 0, 0, $3.second ^ n)), matrix_inverse($2.map))
+  require matrix_entry(shown, 1, 2) != 0 and matrix_entry(shown, 2, 1) != 0
+  require abs(matrix_entry(raised, 1, 1)) <= 900 and abs(matrix_entry(raised, 1, 2)) <= 900
+  require abs(matrix_entry(raised, 2, 1)) <= 900 and abs(matrix_entry(raised, 2, 2)) <= 900
+  text = "Find [`A^{" ++ str(n) ++ "}`] for [`A = " ++ matrix_latex(shown) ++ "`]."
+  answer_value = raised
+  mistake entries_raised answer_value = matrix2(matrix_entry(shown, 1, 1) ^ n, matrix_entry(shown, 1, 2) ^ n, matrix_entry(shown, 2, 1) ^ n,
+                                                matrix_entry(shown, 2, 2) ^ n)
+  pg_context = "Matrix"
+}
+
+# The trace of A^n is the sum of the n-th powers of the eigenvalues. The
+# trace of A is not 0 or 1, and its power is another number.
+Q -> "power_trace" U E integer_between(3, 6) when cost = 2 weight 2 {
+  cost = -2
+  kind = "power_trace"
+  let n = $4.value
+  let shown = matrix_multiply(matrix_multiply($2.map, matrix2($3.first, 0, 0, $3.second)), matrix_inverse($2.map))
+  require matrix_entry(shown, 1, 2) != 0 and matrix_entry(shown, 2, 1) != 0
+  let trace = $3.first + $3.second
+  require trace != 1
+  require trace ^ n != $3.first ^ n + $3.second ^ n
+  text = "Find the trace of [`A^{" ++ str(n) ++ "}`] for [`A = " ++ matrix_latex(shown) ++ "`]."
+  answer_value = $3.first ^ n + $3.second ^ n
+  mistake power_outside answer_value = trace ^ n
+  pg_context = "Numeric"
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# With t the trace and d the determinant, A^2 = t A - d I. So
+# A^3 = (t^2 - d) A - t d I and A^4 = (t^3 - 2 t d) A - (t^2 - d) d I, and
+# for d not 0, A^(-1) = -(1 / d) A + (t / d) I. The last child says which
+# is asked. The matrix is not a multiple of the identity, so the two
+# numbers are the only ones.
+Q -> "combination" integer_between(-4, 4) nonzero_integer_between(-4, 4) nonzero_integer_between(-4, 4) integer_between(-4, 4) integer_between(0, 2) when cost = 3 weight 2 {
+  cost = -3
+  kind = cond($6.value = 0, "combination_cube", cond($6.value = 1, "combination_fourth", "combination_inverse"))
+  let t = $2.value + $5.value
+  let d = $2.value * $5.value - $3.value * $4.value
+  require $6.value != 2 or d != 0
+  let alpha = cond($6.value = 0, t ^ 2 - d, cond($6.value = 1, t ^ 3 - 2 * t * d, 0))
+  let beta = cond($6.value = 0, -t * d, cond($6.value = 1, -(t ^ 2 - d) * d, 0))
+  require abs(alpha) <= 900 and abs(beta) <= 900
+  text = "By the Cayley-Hamilton theorem, every power of [`A = " ++ matrix_latex(matrix2($2.value, $3.value, $4.value, $5.value))
+         ++ "`] is a combination of [`A`] and the identity [`I`]"
+         ++ cond($6.value = 2, ", and so is its inverse. Find the numbers with [`A^{-1} = \alpha A + \beta I`].",
+                 ". Find the numbers with [`A^{" ++ cond($6.value = 0, "3", "4") ++ "} = \alpha A + \beta I`].")
+         ++ " Enter them as the vector [`\langle \alpha, \beta \rangle`]."
+  answer_value = cond($6.value = 2, vector2(-1 / d, t / d), vector2(alpha, beta))
+  pg_context = "Vector"
+}
+
+# (a, b; 0, a)^n = (a^n, n b a^(n-1); 0, a^n), or the same below the
+# diagonal. The last child says which side.
+Q -> "one_eigenvalue" nonzero_integer_between(-3, 3) nonzero_integer_between(-4, 4) integer_between(3, 6) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = "one_eigenvalue"
+  let a = $2.value
+  let b = $3.value
+  let n = $4.value
+  let beside = n * b * a ^ (n - 1)
+  require abs(a ^ n) <= 900 and abs(beside) <= 900 and beside != b ^ n
+  text = "Find [`A^{" ++ str(n) ++ "}`] for [`A = " ++ matrix_latex(cond($5.value = 0, matrix2(a, b, 0, a), matrix2(a, 0, b, a))) ++ "`]."
+  answer_value = cond($5.value = 0, matrix2(a ^ n, beside, 0, a ^ n), matrix2(a ^ n, 0, beside, a ^ n))
+  mistake entries_raised answer_value = cond($5.value = 0, matrix2(a ^ n, b ^ n, 0, a ^ n), matrix2(a ^ n, 0, b ^ n, a ^ n))
+  pg_context = "Matrix"
+}
+
+# A^n (c_1 u_1 + c_2 u_2) = c_1 l_1^n u_1 + c_2 l_2^n u_2. The eigenvectors
+# are the columns of U; the matrix itself is not shown.
+Q -> "on_eigenvectors" U E nonzero_integer_between(-3, 3) nonzero_integer_between(-3, 3) integer_between(2, 5) when cost = 3 weight 2 {
+  cost = -3
+  kind = "on_eigenvectors"
+  let n = $6.value
+  let u1 = matrix_vector($2.map, vector2(1, 0))
+  let u2 = matrix_vector($2.map, vector2(0, 1))
+  let image = vector_add(vector_scale($4.value * $3.first ^ n, u1), vector_scale($5.value * $3.second ^ n, u2))
+  require abs(vector_entry(image, 1)) <= 900 and abs(vector_entry(image, 2)) <= 900
+  text = "A matrix [`A`] has the eigenvector [`u_1 = " ++ vector_latex(u1) ++ "`] for the eigenvalue [`" ++ str($3.first)
+         ++ "`] and the eigenvector [`u_2 = " ++ vector_latex(u2) ++ "`] for the eigenvalue [`" ++ str($3.second) ++ "`]. Find [`A^{" ++ str(n)
+         ++ "} v`] for [`v = " ++ cond($4.value = 1, "", cond($4.value = -1, "-", str($4.value))) ++ "u_1 " ++ cond($5.value > 0, "+ ", "- ")
+         ++ cond(abs($5.value) = 1, "", str(abs($5.value))) ++ "u_2`]."
+  answer_value = image
+  mistake power_dropped answer_value = vector_add(vector_scale($4.value * $3.first, u1), vector_scale($5.value * $3.second, u2))
+  pg_context = "Vector"
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

@@ -1,0 +1,201 @@
+# ==========================================================================
+#  Related rates and linear approximation
+#
+#  Rates of change tied together by a relation between the quantities: an
+#  area or a volume that grows with a radius or a side, a balloon filled
+#  at a given rate, a ladder sliding down a wall, two travellers moving
+#  apart, water poured into a cone, and a shadow cast by a lamp. And the
+#  tangent line used to estimate a square root or a cube root. It goes on
+#  from derivative_applications.rhm and implicit_differentiation.rhm.
+#
+#  The lengths in a right triangle are three sides of a triangle with
+#  whole sides, such as 6, 8 and 10, so a rate is a fraction; a rate tied
+#  to a circle or a sphere is a fraction times pi or over pi, a `plain`
+#  answer kept below 300 pi.
+#
+#  Five mistakes are looked for: differentiating with respect to the
+#  radius or the side and forgetting to multiply by its own rate, losing
+#  the 1/2 or the 1/3 of the derivative of a root, exchanging the two
+#  sides of the triangle a ladder makes, treating a cone as a cylinder of
+#  its full radius, and giving the speed of the tip of a shadow for the
+#  rate at which it lengthens, or the other way round.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  the rate of an area or a volume from the rate of a radius or a
+#       side, the tangent-line estimate of a square root or a cube root
+#    2  a ladder sliding down a wall, the radius of a balloon filled at a
+#       given rate, the distance between two travellers
+#    3  the depth of water poured into a cone, the shadow of a walker under
+#       a lamp: its length and its tip
+# ==========================================================================
+
+attribute cost = 2 split
+
+let pi = formula_pi()
+let exact = " Give the exact value, with [`\pi`] written as pi."
+
+mistake chain_rule_forgotten "differentiates with respect to the radius or the side and does not multiply by its rate of change"
+mistake derivative_factor_lost "loses the 1/2 in the derivative of a square root, or the 1/3 in that of a cube root"
+mistake sides_swapped "exchanges the two sides of the right triangle: the height over the distance from the wall where the distance over the height belongs"
+mistake full_radius_used "treats the water in the cone as a cylinder of the cone's full radius"
+mistake tip_for_length "gives the speed of the tip of the shadow for the rate at which the shadow lengthens, or the other way round"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# Three sides of a right triangle with whole sides: the longest and the
+# other two, in either order.
+synth longest on T
+synth one on T
+synth other on T
+
+start Q
+
+T -> integer_between(1, 4) integer_between(0, 1) {
+  let short = cond($1.value = 1, 3, cond($1.value = 2, 6, cond($1.value = 3, 5, 8)))
+  let long = cond($1.value = 1, 4, cond($1.value = 2, 8, cond($1.value = 3, 12, 15)))
+  longest = cond($1.value = 1, 5, cond($1.value = 2, 10, cond($1.value = 3, 13, 17)))
+  one = cond($2.value = 0, short, long)
+  other = cond($2.value = 0, long, short)
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The second child says which quantity, with radius or side s growing at
+# the rate v:
+#
+#   0  the area of a circle             2 pi s v
+#   1  the area of a square             2 s v
+#   2  the volume of a cube             3 s^2 v
+#   3  the volume of a sphere           4 pi s^2 v
+#   4  the surface of a sphere          8 pi s v
+#
+# The rate v is not 1, so that it matters.
+Q -> "growth" integer_between(0, 4) integer_between(2, 6) integer_between(2, 5) when cost = 1 weight 2 {
+  cost = -1
+  kind = cond($2.value = 0, "circle_area", cond($2.value = 1, "square_area", cond($2.value = 2, "cube_volume", cond($2.value = 3, "sphere_volume", "sphere_surface"))))
+  let s = $3.value
+  let v = $4.value
+  let slope = cond($2.value = 0, 2 * s, cond($2.value = 1, 2 * s, cond($2.value = 2, 3 * s ^ 2, cond($2.value = 3, 4 * s ^ 2, 8 * s))))
+  let round = $2.value = 0 or $2.value >= 3
+  require slope * v <= 300
+  text = cond($2.value = 0, "The radius of a circle", cond($2.value = 1, "The side of a square", cond($2.value = 2, "The side of a cube", "The radius of a sphere")))
+         ++ " grows at [`" ++ str(v) ++ "`] centimetres per second. How fast, in "
+         ++ cond($2.value = 2 or $2.value = 3, "cubic", "square") ++ " centimetres per second, is its "
+         ++ cond($2.value <= 1, "area", cond($2.value <= 3, "volume", "surface area")) ++ " growing when the "
+         ++ cond($2.value = 1 or $2.value = 2, "side", "radius") ++ " is [`" ++ str(s) ++ "`] centimetres?" ++ cond(round, exact, "")
+  answer_value = cond(round, plain(formula_multiply(formula_constant(slope * v), pi)), plain(slope * v))
+  mistake chain_rule_forgotten answer_value = cond(round, plain(formula_multiply(formula_constant(slope), pi)), plain(slope))
+}
+
+# The tangent line to the square root at n^2 gives n + d / (2n) for the
+# root of n^2 + d; the one to the cube root at n^3 gives n + d / (3 n^2).
+# The last child says which root.
+Q -> "estimate" integer_between(2, 9) nonzero_integer_between(-3, 3) integer_between(0, 1) when cost = 1 weight 2 {
+  cost = -1
+  kind = cond($4.value = 0, "square_root_estimate", "cube_root_estimate")
+  require $4.value = 0 or $2.value <= 5
+  let n = $2.value
+  let d = $3.value
+  # The root of 1 needs no estimate.
+  require $4.value = 1 or n ^ 2 + d > 1
+  let value = cond($4.value = 0, n + d / (2 * n), n + d / (3 * n ^ 2))
+  let slip = cond($4.value = 0, n + d / n, n + d / n ^ 2)
+  # The mistake must stay more than 1% away from the estimate, well beyond
+  # WeBWorK's tolerance of one part in a thousand, or it would be marked
+  # right: one step away from 64, 81 or 125 it would not.
+  require abs(slip - value) > value / 100
+  text = "Use the tangent line to [`y = " ++ cond($4.value = 0, "\sqrt{x}", "\sqrt[3]{x}") ++ "`] at [`x = "
+         ++ cond($4.value = 0, str(n ^ 2), str(n ^ 3)) ++ "`] to estimate [`" ++ cond($4.value = 0, "\sqrt{" ++ str(n ^ 2 + d) ++ "}", "\sqrt[3]{" ++ str(n ^ 3 + d) ++ "}")
+         ++ "`]. Give the estimate as a fraction."
+  answer_value = plain(value)
+  mistake derivative_factor_lost answer_value = plain(slip)
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# x^2 + y^2 = L^2 gives x x' + y y' = 0: the top comes down at x v / y,
+# with x the distance of the foot from the wall and y the height of the
+# top. The triangle is the one of T, times a factor, and the ladder is at
+# most 20 metres long.
+Q -> "ladder" T integer_between(1, 2) integer_between(2, 4) when cost = 2 weight 3 {
+  cost = -2
+  kind = "ladder"
+  require $2.longest * $3.value <= 20
+  let away = $2.one * $3.value
+  let up = $2.other * $3.value
+  text = "A ladder [`" ++ str($2.longest * $3.value) ++ "`] metres long leans against a wall. Its foot is pulled away from the wall at [`"
+         ++ str($4.value) ++ "`] metres per second. How fast, in metres per second, is the top of the ladder sliding down the wall when the foot is [`"
+         ++ str(away) ++ "`] metres from the wall?"
+  answer_value = plain(away * $4.value / up)
+  mistake sides_swapped answer_value = plain(up * $4.value / away)
+}
+
+# V = 4 pi r^3 / 3 gives V' = 4 pi r^2 r'. Air goes in at c pi cubic
+# centimetres per second, so r' = c / (4 r^2).
+Q -> "balloon" integer_between(1, 24) integer_between(2, 5) when cost = 2 weight 2 {
+  cost = -2
+  kind = "balloon"
+  let rate = 4 * $2.value
+  text = "Air is pumped into a spherical balloon at [`" ++ str(rate) ++ "\pi`] cubic centimetres per second. How fast, in centimetres per second, is its radius growing when the radius is [`"
+         ++ str($3.value) ++ "`] centimetres?"
+  answer_value = plain($2.value / $3.value ^ 2)
+}
+
+# One is a kilometres east of a crossing and goes east at u; the other is b
+# kilometres north of it and goes north at v. D^2 = x^2 + y^2 gives
+# D' = (a u + b v) / c, with a, b and c the triangle of T.
+Q -> "apart" T integer_between(2, 9) integer_between(2, 9) when cost = 2 weight 2 {
+  cost = -2
+  kind = "apart"
+  text = "A cyclist is [`" ++ str($2.one) ++ "`] kilometres east of a crossing and rides east at [`" ++ str(10 * $3.value)
+         ++ "`] kilometres per hour. A second cyclist is [`" ++ str($2.other) ++ "`] kilometres north of the crossing and rides north at [`"
+         ++ str(10 * $4.value) ++ "`] kilometres per hour. How fast, in kilometres per hour, is the distance between them growing?"
+  answer_value = plain(10 * ($2.one * $3.value + $2.other * $4.value) / $2.longest)
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# A cone with its point down, of radius R at the top and height H = m R.
+# At depth h the surface of the water has radius h / m, so
+# V = pi h^3 / (3 m^2) and h' = q m^2 / (pi h^2), where q is the rate at
+# which water goes in. As a cylinder of radius R it would be q / (pi R^2).
+# The depth is not the full height.
+Q -> "cone" integer_between(2, 4) integer_between(1, 3) integer_between(2, 9) integer_between(2, 9) when cost = 3 weight 2 {
+  cost = -3
+  kind = "cone"
+  let top = $2.value
+  let m = $3.value
+  let depth = $5.value
+  require depth < m * top
+  text = "A tank has the shape of a cone with its point down. It is [`" ++ str(m * top) ++ "`] metres high, and its radius at the top is [`"
+         ++ str(top) ++ "`] metres. Water is poured in at [`" ++ str($4.value) ++ "`] cubic metres per minute. How fast, in metres per minute, is the water rising when it is [`"
+         ++ str(depth) ++ "`] metres deep?" ++ exact
+  answer_value = plain(formula_divide(formula_constant($4.value * m ^ 2 / depth ^ 2), pi))
+  mistake full_radius_used answer_value = plain(formula_divide(formula_constant($4.value / top ^ 2), pi))
+}
+
+# A lamp at height H and a walker of height p, at distance x from the
+# lamp post, with a shadow of length s: s / p = (x + s) / H. So
+# s' = p v / (H - p), and the tip of the shadow moves at H v / (H - p).
+# The heights are in decimetres and the speed in kilometres per hour; the
+# last child says which is asked.
+Q -> "shadow" integer_between(40, 60) integer_between(15, 19) integer_between(3, 6) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = cond($5.value = 0, "shadow_length", "shadow_tip")
+  let lamp = $2.value
+  let walker = $3.value
+  let lengthening = walker * $4.value / (lamp - walker)
+  let tip = lamp * $4.value / (lamp - walker)
+  text = "A lamp hangs [`" ++ str(lamp) ++ "`] decimetres above the ground. A walker [`" ++ str(walker)
+         ++ "`] decimetres tall walks away from the lamp post at [`" ++ str($4.value) ++ "`] kilometres per hour. How fast, in kilometres per hour, is "
+         ++ cond($5.value = 0, "the shadow of the walker lengthening?", "the tip of the walker's shadow moving along the ground?")
+  answer_value = cond($5.value = 0, plain(lengthening), plain(tip))
+  mistake tip_for_length answer_value = cond($5.value = 0, plain(tip), plain(lengthening))
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

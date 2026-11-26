@@ -1,0 +1,169 @@
+# ==========================================================================
+#  Financial mathematics
+#
+#  Simple and compound interest, the present value of a later amount, an
+#  effective annual rate, depreciation, the future and the present value
+#  of a series of equal payments, and the yearly payment that repays a
+#  loan. It goes on from sequence.rhm and series.rhm, whose geometric sums
+#  these are.
+#
+#  A sum of money here is always a whole number of dollars. Where interest
+#  is compounded yearly the rates are 5, 10, 20 and 25 per cent a year,
+#  whose growth factors are 21/20, 11/10, 6/5 and 5/4, the terms are 2 and
+#  3 years, and every amount asked about starts from a multiple of the
+#  power of the denominator that the compounding divides by, so nothing has
+#  to be rounded. Simple interest is on whole hundreds of dollars, at 2 to
+#  12 per cent a year for 2 to 6 years. WeBWorK compares a whole number of
+#  1000 or more to within half a unit.
+#
+#  Three mistakes are looked for: using simple interest where interest is
+#  compounded, giving the nominal rate for the effective one, and leaving
+#  interest out of a series of payments altogether.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  simple interest, the amount under compound interest
+#    2  the present value of a later amount, the effective rate of a
+#       nominal rate compounded twice a year, the value after depreciation
+#    3  the future value of yearly deposits, the present value of yearly
+#       payments, the yearly payment that repays a loan
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake simple_for_compound "uses simple interest, the rate times the number of years, where the interest is compounded"
+mistake nominal_taken "gives the nominal rate itself for the effective rate"
+mistake interest_ignored "leaves interest out and only adds up, or shares out, the payments"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A yearly rate: the per cent, the growth factor as a fraction
+# above / below in lowest terms, and a unit of money: 25 dollars for the
+# two rates whose denominators are small, so that no sum is a handful of
+# dollars.
+synth percent on G
+synth above on G
+synth below on G
+synth unit on G
+
+start Q
+
+G -> integer_between(1, 4) {
+  percent = cond($1.value = 1, 5, cond($1.value = 2, 10, cond($1.value = 3, 20, 25)))
+  above = cond($1.value = 1, 21, cond($1.value = 2, 11, cond($1.value = 3, 6, 5)))
+  below = cond($1.value = 1, 20, cond($1.value = 2, 10, cond($1.value = 3, 5, 4)))
+  unit = cond($1.value >= 3, 25, 1)
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# The interest is the principal times the rate times the years.
+Q -> "simple_interest" integer_between(2, 50) integer_between(2, 12) integer_between(2, 6) when cost = 1 {
+  cost = -1
+  kind = "simple_interest"
+  text = "A sum of [`" ++ str(100 * $2.value) ++ "`] dollars earns simple interest at [`" ++ str($3.value) ++ "`] per cent a year. Find the interest, in dollars, earned in [`"
+         ++ str($4.value) ++ "`] years."
+  answer_value = $2.value * $3.value * $4.value
+}
+
+# m d^n dollars grow to m (above)^n. With simple interest they would grow
+# to m d^(n-1) (d + n (above - d)).
+Q -> "compound_amount" integer_between(1, 6) G integer_between(2, 3) when cost = 1 weight 2 {
+  cost = -1
+  kind = "compound_amount"
+  let n = $4.value
+  text = "A sum of [`" ++ str($2.value * $3.unit * $3.below ^ n) ++ "`] dollars is invested at [`" ++ str($3.percent)
+         ++ "`] per cent a year, compounded yearly. Find its value, in dollars, after [`" ++ str(n) ++ "`] years."
+  answer_value = $2.value * $3.unit * $3.above ^ n
+  mistake simple_for_compound answer_value = $2.value * $3.unit * $3.below ^ (n - 1) * ($3.below + n * ($3.above - $3.below))
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The sum that grows to m (above)^n in n years is m d^n.
+Q -> "present_value" integer_between(1, 6) G integer_between(2, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "present_value"
+  let n = $4.value
+  text = "What sum, in dollars, invested now at [`" ++ str($3.percent) ++ "`] per cent a year, compounded yearly, grows to [`"
+         ++ str($2.value * $3.unit * $3.above ^ n) ++ "`] dollars in [`" ++ str(n) ++ "`] years?"
+  answer_value = $2.value * $3.unit * $3.below ^ n
+  mistake simple_for_compound answer_value = $2.value * $3.unit * $3.above ^ n * $3.below / ($3.below + n * ($3.above - $3.below))
+}
+
+# A nominal rate of 2j per cent compounded twice a year is j per cent each
+# half year: (1 + j / 100)^2 - 1, which is 2j + j^2 / 100 per cent. j is
+# 3 to 15: the nominal rates are 6 to 30 per cent.
+Q -> "effective_rate" integer_between(3, 15) when cost = 2 {
+  cost = -2
+  kind = "effective_rate"
+  text = "A nominal rate of [`" ++ str(2 * $2.value)
+         ++ "`] per cent a year is compounded twice a year. Find the effective rate per year, in per cent."
+  answer_value = 2 * $2.value + $2.value ^ 2 / 100
+  # The nominal rate, which is the mistake, must stay more than 1% away
+  # from the answer, well beyond WeBWorK's tolerance of one part in a
+  # thousand. That is why j starts at 3: 2 against 2.01 and 4 against
+  # 4.04 would be too near. From 3 on the requirement always holds; it
+  # keeps the rule should the range be changed.
+  require answer_value - 2 * $2.value > answer_value / 100
+  mistake nominal_taken answer_value = 2 * $2.value
+}
+
+# A value of m d^n dollars that loses the rate each year is worth
+# m (2d - above)^n after n years: the factor is 1 less the rate.
+Q -> "depreciation" integer_between(1, 6) G integer_between(2, 3) when cost = 2 weight 2 {
+  cost = -2
+  kind = "depreciation"
+  let n = $4.value
+  let kept = 2 * $3.below - $3.above
+  text = "A machine bought for [`" ++ str($2.value * $3.unit * $3.below ^ n) ++ "`] dollars loses [`" ++ str($3.percent)
+         ++ "`] per cent of its value each year. Find its value, in dollars, after [`" ++ str(n) ++ "`] years."
+  answer_value = $2.value * $3.unit * kept ^ n
+  mistake simple_for_compound answer_value = $2.value * $3.unit * $3.below ^ (n - 1) * ($3.below - n * ($3.above - $3.below))
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# n deposits of m d^(n-1) dollars, each at the end of a year: the first
+# grows for n - 1 years and the last not at all, so the total is
+# m (d^(n-1) + d^(n-2) above + ... + above^(n-1)).
+Q -> "annuity_future" integer_between(1, 6) G integer_between(2, 3) when cost = 3 weight 2 {
+  cost = -3
+  kind = "annuity_future"
+  let n = $4.value
+  let d = $3.below
+  let u = $3.above
+  let deposit = $2.value * $3.unit * d ^ (n - 1)
+  text = "[`" ++ str(deposit) ++ "`] dollars are paid into an account at the end of each year for [`" ++ str(n)
+         ++ "`] years. The account pays [`" ++ str($3.percent)
+         ++ "`] per cent a year, compounded yearly. Find the amount, in dollars, in the account just after the last payment."
+  answer_value = $2.value * $3.unit * cond(n = 2, d + u, d ^ 2 + d * u + u ^ 2)
+  mistake interest_ignored answer_value = n * deposit
+}
+
+# n payments of m above^n dollars, each at the end of a year, are worth
+# m (d above^(n-1) + d^2 above^(n-2) + ... + d^n) now. The last child says
+# which way round it is asked: the present value of the payments, or the
+# payment that repays a loan of that value.
+Q -> "annuity_present" integer_between(1, 6) G integer_between(2, 3) integer_between(0, 1) when cost = 3 weight 4 {
+  cost = -3
+  kind = cond($5.value = 0, "annuity_present", "loan_payment")
+  let n = $4.value
+  let d = $3.below
+  let u = $3.above
+  let payment = $2.value * $3.unit * u ^ n
+  let worth = $2.value * $3.unit * cond(n = 2, d * u + d ^ 2, d * u ^ 2 + d ^ 2 * u + d ^ 3)
+  text = cond($5.value = 0,
+              "Find the present value, in dollars, of [`" ++ str(n) ++ "`] payments of [`" ++ str(payment)
+              ++ "`] dollars, one at the end of each year, at [`" ++ str($3.percent) ++ "`] per cent a year, compounded yearly.",
+              "A loan of [`" ++ str(worth) ++ "`] dollars at [`" ++ str($3.percent) ++ "`] per cent a year, compounded yearly, is repaid by [`"
+              ++ str(n) ++ "`] equal payments, one at the end of each year. Find the payment, in dollars.")
+  answer_value = cond($5.value = 0, worth, payment)
+  mistake interest_ignored answer_value = cond($5.value = 0, n * payment, worth / n)
+}
+
+prompt "{Q.text}"
+answer Q.answer_value

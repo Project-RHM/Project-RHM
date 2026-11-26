@@ -1,0 +1,187 @@
+# ==========================================================================
+#  Limits of indeterminate forms
+#
+#  Limits that l'Hopital's rule, a Taylor expansion or a conjugate settles:
+#  0/0 once, twice and three times over, 0 times infinity, 1 to the power
+#  infinity, and infinity minus infinity. It goes on from limits.rhm, which
+#  asks the limits that algebra and the standard limits give.
+#
+#  Every limit is one whose value is known from the constants in it: the
+#  expansions of e^x, ln(1 + x), sin x, cos x and tan x give the quotients,
+#  x f(a / x) is f(a u) / u with u = 1 / x, (1 + a / x)^(b x) tends to
+#  e^(a b), and a difference of square roots is multiplied by its
+#  conjugate. An answer is a fraction, or an expression with e or a
+#  logarithm that may be entered as it stands, such as e^6 or ln(3/2).
+#
+#  Four mistakes are looked for: differentiating a power of x below the
+#  line without bringing the power down, taking 0 times infinity to be 0,
+#  taking 1 to the power infinity to be 1, and taking infinity minus
+#  infinity to be 0.
+#
+#  Difficulty is the budget `cost`. Every form is fixed, so each is offered
+#  at its price alone:
+#
+#    1  (x^m - 1) / (x^n - 1) at 1, ln(1 + a x) / (b x) at 0
+#    2  (a^x - b^x) / x at 0; a quotient over x^2 at 0, from e^(ax),
+#       cos(ax) or ln(1 + ax); x f(a / x) at infinity for f from
+#       e^u - 1, ln(1 + u), sin u, and x^2 (1 - cos(a / x))
+#    3  (1 + a / x)^(b x) at infinity and (1 + a x)^(b / x) at 0; a
+#       difference of square roots at infinity; a quotient over x^3 at 0,
+#       from sin(ax) and tan(ax)
+# ==========================================================================
+
+attribute cost = 2 split
+
+mistake power_not_brought_down "differentiates x^n below the line as x^(n-1), without the factor n, each time the rule is used"
+mistake zero_times_infinity "takes a factor that tends to 0 times one that tends to infinity to be 0"
+mistake one_to_infinity "takes a base that tends to 1 raised to a power that tends to infinity to be 1"
+mistake infinities_cancelled "takes the difference of two terms that both tend to infinity to be 0"
+
+synth kind on Q
+synth text on Q
+synth answer_value on Q
+
+# A positive constant a in a x: its value, and its LaTeX with no 1.
+synth value on A
+synth latex on A
+
+start Q
+
+A -> integer_between(1, 5) {
+  value = $1.value
+  latex = cond($1.value = 1, "", str($1.value))
+}
+
+# ---- Price 1 --------------------------------------------------------------
+
+# Both derivatives at 1 are the powers: m / n. The powers differ.
+Q -> "power_ratio" integer_between(1, 9) integer_between(1, 9) when cost = 1 weight 2 {
+  cost = -1
+  kind = "power_ratio"
+  require $2.value != $3.value
+  text = "Find [`\displaystyle\lim_{x \to 1} \frac{" ++ cond($2.value = 1, "x", "x^{" ++ str($2.value) ++ "}") ++ " - 1}{"
+         ++ cond($3.value = 1, "x", "x^{" ++ str($3.value) ++ "}") ++ " - 1}`]."
+  answer_value = $2.value / $3.value
+}
+
+# ln(1 + a x) is a x to the first order: a / b.
+Q -> "log_linear" nonzero_integer_between(-5, 5) nonzero_integer_between(-6, 6) when cost = 1 weight 2 {
+  cost = -1
+  kind = "log_linear"
+  require $2.value != $3.value
+  text = "Find [`\displaystyle\lim_{x \to 0} \frac{\ln(1 " ++ cond($2.value > 0, "+ ", "- ") ++ cond(abs($2.value) = 1, "", str(abs($2.value)))
+         ++ "x)}{" ++ cond($3.value = 1, "", cond($3.value = -1, "-", str($3.value))) ++ "x}`]."
+  answer_value = $2.value / $3.value
+}
+
+# ---- Price 2 --------------------------------------------------------------
+
+# The derivative of a^x at 0 is ln a, so the limit is ln a - ln b.
+Q -> "exponential_bases" integer_between(2, 9) integer_between(2, 9) when cost = 2 weight 2 {
+  cost = -2
+  kind = "exponential_bases"
+  require $2.value != $3.value
+  text = "Find [`\displaystyle\lim_{x \to 0} \frac{" ++ str($2.value) ++ "^{x} - " ++ str($3.value) ++ "^{x}}{x}`]. Give the exact value."
+  answer_value = formula_ln(formula_constant($2.value / $3.value))
+}
+
+# The rule is used twice. The second child says which quotient:
+#
+#   0  (e^(ax) - 1 - a x) / (b x^2)          a^2 / (2b)
+#   1  (cos(ax) - cos(cx)) / (b x^2)         (c^2 - a^2) / (2b)
+#   2  (ln(1 + a x) - a x) / (b x^2)         -a^2 / (2b)
+#
+# Without the 2 that x^2 brings down, the answer is twice as large.
+Q -> "second_order" integer_between(0, 2) A A integer_between(1, 6) when cost = 2 weight 3 {
+  cost = -2
+  kind = cond($2.value = 0, "second_order_exponential", cond($2.value = 1, "second_order_cosine", "second_order_logarithm"))
+  require $2.value != 1 or $3.value != $4.value
+  let a = $3.value
+  let above = cond($2.value = 0, "e^{" ++ $3.latex ++ "x} - 1 - " ++ $3.latex ++ "x",
+              cond($2.value = 1, "\cos(" ++ $3.latex ++ "x) - \cos(" ++ $4.latex ++ "x)", "\ln(1 + " ++ $3.latex ++ "x) - " ++ $3.latex ++ "x"))
+  let twice = cond($2.value = 0, a ^ 2, cond($2.value = 1, $4.value ^ 2 - a ^ 2, -(a ^ 2)))
+  text = "Find [`\displaystyle\lim_{x \to 0} \frac{" ++ above ++ "}{" ++ cond($5.value = 1, "", str($5.value)) ++ "x^{2}}`]."
+  answer_value = twice / (2 * $5.value)
+  mistake power_not_brought_down answer_value = twice / $5.value
+}
+
+# With u = 1 / x these are f(a u) / u at 0. The second child says which:
+#
+#   0  k x (e^(a/x) - 1)          k a
+#   1  k x ln(1 + a/x)            k a
+#   2  k x sin(a/x)               k a
+#   3  k x^2 (1 - cos(a/x))       k a^2 / 2
+Q -> "infinity_product" integer_between(0, 3) integer_between(1, 5) integer_between(1, 6) when cost = 2 weight 3 {
+  cost = -2
+  kind = cond($2.value = 0, "product_exponential", cond($2.value = 1, "product_logarithm", cond($2.value = 2, "product_sine", "product_cosine")))
+  let k = $3.value
+  let a = $4.value
+  let inside = "\frac{" ++ str(a) ++ "}{x}"
+  text = "Find [`\displaystyle\lim_{x \to \infty} " ++ cond(k = 1, "", str(k))
+         ++ cond($2.value = 0, "x\left(e^{" ++ str(a) ++ "/x} - 1\right)",
+            cond($2.value = 1, "x \ln\left(1 + " ++ inside ++ "\right)",
+            cond($2.value = 2, "x \sin\left(" ++ inside ++ "\right)", "x^{2}\left(1 - \cos\left(" ++ inside ++ "\right)\right)")))
+         ++ "`]."
+  answer_value = cond($2.value = 3, k * a ^ 2 / 2, k * a)
+  mistake zero_times_infinity answer_value = 0
+}
+
+# ---- Price 3 --------------------------------------------------------------
+
+# The logarithm is b x ln(1 + a / x), which tends to a b, and the same for
+# (1 + a x)^(b / x) at 0. The product a b is kept within 6 either way.
+Q -> "power_form" nonzero_integer_between(-4, 4) integer_between(1, 4) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = cond($4.value = 0, "power_at_infinity", "power_at_zero")
+  require abs($2.value * $3.value) <= 6
+  let a = $2.value
+  let b = $3.value
+  text = "Find [`\displaystyle\lim_{x \to " ++ cond($4.value = 0, "\infty", "0") ++ "} \left(1 " ++ cond(a > 0, "+ ", "- ")
+         ++ cond($4.value = 0, "\frac{" ++ str(abs(a)) ++ "}{x}", cond(abs(a) = 1, "", str(abs(a))) ++ "x") ++ "\right)^{"
+         ++ cond($4.value = 0, cond(b = 1, "", str(b)) ++ "x", str(b) ++ "/x") ++ "}`]. Give the exact value."
+  answer_value = formula_exp(formula_constant(a * b))
+  mistake one_to_infinity answer_value = 1
+}
+
+# sqrt(a^2 x^2 + b x) - a x, times its conjugate over its conjugate, is
+# b x over a sum that grows like 2 a x: b / (2a). And
+# sqrt(x^2 + a x) - sqrt(x^2 + b x) tends to (a - b) / 2. The last child
+# says which.
+Q -> "root_difference" integer_between(1, 5) nonzero_integer_between(-9, 9) nonzero_integer_between(-9, 9) integer_between(0, 1) when cost = 3 weight 2 {
+  cost = -3
+  kind = cond($5.value = 0, "root_and_line", "two_roots")
+  require $5.value = 0 or $3.value != $4.value
+  let a = $2.value
+  let first = "x^{2} " ++ cond($3.value > 0, "+ ", "- ") ++ cond(abs($3.value) = 1, "", str(abs($3.value))) ++ "x"
+  let second = "x^{2} " ++ cond($4.value > 0, "+ ", "- ") ++ cond(abs($4.value) = 1, "", str(abs($4.value))) ++ "x"
+  text = "Find [`\displaystyle\lim_{x \to \infty} \left("
+         ++ cond($5.value = 0, "\sqrt{" ++ cond(a = 1, "", str(a ^ 2)) ++ first ++ "} - " ++ cond(a = 1, "", str(a)) ++ "x",
+                 "\sqrt{" ++ first ++ "} - \sqrt{" ++ second ++ "}")
+         ++ "\right)`]."
+  answer_value = cond($5.value = 0, $3.value / (2 * a), ($3.value - $4.value) / 2)
+  mistake infinities_cancelled answer_value = 0
+}
+
+# The rule is used three times. The second child says which quotient:
+#
+#   0  (a x - sin(ax)) / (b x^3)             a^3 / (6b)
+#   1  (tan(ax) - a x) / (b x^3)             a^3 / (3b)
+#   2  (sin(ax) - a x cos(ax)) / (b x^3)     a^3 / (3b)
+#
+# Without the 3 and the 2 that x^3 and x^2 bring down, the answer is six
+# times as large.
+Q -> "third_order" integer_between(0, 2) integer_between(1, 4) integer_between(1, 6) when cost = 3 weight 3 {
+  cost = -3
+  kind = cond($2.value = 0, "third_order_sine", cond($2.value = 1, "third_order_tangent", "third_order_mixed"))
+  let a = $3.value
+  let ax = cond(a = 1, "", str(a)) ++ "x"
+  let above = cond($2.value = 0, ax ++ " - \sin(" ++ ax ++ ")",
+              cond($2.value = 1, "\tan(" ++ ax ++ ") - " ++ ax, "\sin(" ++ ax ++ ") - " ++ ax ++ " \cos(" ++ ax ++ ")"))
+  let limit = cond($2.value = 0, a ^ 3 / (6 * $4.value), a ^ 3 / (3 * $4.value))
+  text = "Find [`\displaystyle\lim_{x \to 0} \frac{" ++ above ++ "}{" ++ cond($4.value = 1, "", str($4.value)) ++ "x^{3}}`]."
+  answer_value = limit
+  mistake power_not_brought_down answer_value = 6 * limit
+}
+
+prompt "{Q.text}"
+answer Q.answer_value
