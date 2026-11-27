@@ -342,6 +342,5 @@ inside RHM and names what a grammar does: it says a question.
 
 ## Authors and licence
 
-Jingming Zhang, Jiaming Lei, Xiaobo Huang, Jiesen Long and Zhiyuan Li, at
-[Beijing Normal-Hong Kong Baptist University](https://www.bnbu.edu.cn/en/).
+Jingming Zhang, Jiaming Lei, Xiaobo Huang, Jiesen Long and Zhiyuan Li, at Beijing Normal-Hong Kong Baptist University.
 Released under the [MIT licence](LICENSE).
