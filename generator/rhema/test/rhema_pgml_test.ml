@@ -354,6 +354,33 @@ let () =
       (-5000, 3, half_step (-5000) 3); (1289, 2530, half_step 1289 2530);
       (* reduced first: 2000/4 is the whole number 500, and 3000/4 is 750 *)
       (2000, 4, "500"); (6002, 4, half_step 3001 2) ];
+  (* 8. a plain number is a formula in a context of its own, where the
+     functions are off. From 1000 up that context compares with the same
+     absolute tolerance, half a unit or half a step of the denominator;
+     below, and for a plain formula, it is written as it always was. *)
+  let plain_context tolerance text =
+    "do { my $c = Parser::Context->getCopy(\"Numeric\"); $c->functions->disable(\"Trig\",\"Hyperbolic\",\"Numeric\"); \
+     $c->functions->enable(\"sqrt\",\"abs\"); "
+    ^ (match tolerance with
+       | None -> ""
+       | Some tolerance -> "$c->flags->set(tolType=>\"absolute\",tolerance=>" ^ tolerance ^ "); ")
+    ^ "Formula($c,\"" ^ text ^ "\") }"
+  in
+  List.iter
+    (fun (p, q, tolerance, text) ->
+      let written = Rhema_pgml.answer_of_value (Rhema_engine.Plain (Rhema_engine.Num (Rhema_number.make p q))) in
+      let expected = plain_context tolerance text in
+      if written <> expected then fail (Printf.sprintf "a plain %d/%d is written %s, not %s" p q written expected))
+    [ (0, 1, None, "0"); (7, 1, None, "7"); (999, 1, None, "999"); (-999, 1, None, "-999");
+      (1000, 1, Some "0.5", "1000"); (-1000, 1, Some "0.5", "-1000"); (1134, 1, Some "0.5", "1134");
+      (-1890, 1, Some "0.5", "-1890"); (1, 2, None, "1/2"); (999, 2, None, "999/2"); (1, 1000, None, "1/1000");
+      (2048, 27, Some "1/54", "2048/27"); (-1060, 13, Some "1/26", "-1060/13");
+      (* reduced first *)
+      (2000, 4, None, "500"); (6002, 4, Some "1/4", "3001/2") ];
+  (let root = Rhema_engine.Plain (Rhema_engine.Formula (Rhema_formula.Sqrt (Rhema_formula.constant (Rhema_number.of_int 1285957)))) in
+   let written = Rhema_pgml.answer_of_value root in
+   if written <> plain_context None "sqrt(1285957)" then
+     fail ("a plain formula is written " ^ written ^ ", with a tolerance it should not have"));
   (* in a document: every answer of four digits or more, and no other *)
   let spec = load "ascii.rhm" ascii_grammar in
   let large = ref 0 and small = ref 0 in

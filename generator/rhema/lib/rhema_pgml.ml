@@ -7,7 +7,9 @@
    proposition or a formula with a context of its own, and a whole number or
    a fraction with its own tolerance (exact_whole and exact_fraction below).
    The read-back test puts the last two back to the plain number before it
-   reads the document.
+   reads the document. A plain number with its own tolerance keeps the
+   written form of every plain answer: the tolerance is set on the context
+   the answer carries.
 
    Three habits of the existing printer are deliberately not copied, because
    the project's parser rejects all three (its own generated files do not read
@@ -69,9 +71,11 @@ let beyond_x variables = List.exists (fun name -> name <> "x") variables
 (* A formula written with a context of its own: a copy of Numeric that
    declares the formula's variables, and for an answer that must be worked
    out has the functions switched off (sqrt and abs stay). The answer
-   carries this context, so the question may be in any context. *)
-let own_context ?(plain = false) variables text =
-  Printf.sprintf "do { my $c = Parser::Context->getCopy(\"Numeric\"); %s%sFormula($c,\"%s\") }"
+   carries this context, so the question may be in any context. With
+   [tolerance] the context compares with that absolute tolerance, where
+   WeBWorK's own is relative. *)
+let own_context ?(plain = false) ?tolerance variables text =
+  Printf.sprintf "do { my $c = Parser::Context->getCopy(\"Numeric\"); %s%s%sFormula($c,\"%s\") }"
     (if variables = [] then ""
      else
        Printf.sprintf "$c->variables->are(%s); "
@@ -80,6 +84,10 @@ let own_context ?(plain = false) variables text =
        "$c->functions->disable(\"Trig\",\"Hyperbolic\",\"Numeric\"); \
         $c->functions->enable(\"sqrt\",\"abs\"); "
      else "")
+    (match tolerance with
+     | None -> ""
+     | Some tolerance ->
+         Printf.sprintf "$c->flags->set(tolType=>\"absolute\",tolerance=>%s); " tolerance)
     (perl_string text)
 
 let is_proposition = function Rhema_engine.Boolean _ -> true | _ -> false
@@ -120,6 +128,13 @@ let exact_fraction number =
    (p + 1)/q and (p - 1)/q pass for every |p| > 1000 and for none below. *)
 let tolerance_reaches_neighbours number = abs number.Rhema_number.numerator >= 1000
 
+(* The absolute tolerance that tells such a number from its neighbours:
+   half a unit for a whole number, half a step of the denominator for a
+   fraction. They are the tolerances of exact_whole and exact_fraction. *)
+let neighbour_tolerance number =
+  if Rhema_number.is_integer number then "0.5"
+  else Printf.sprintf "1/%d" (2 * number.Rhema_number.denominator)
+
 (* [variables] are those of every formula answer of the question, so that
    its blanks all accept the same names; [propositional] are those of its
    proposition answers, for the same reason. *)
@@ -153,7 +168,17 @@ let answer_of_value ?(variables = []) ?(propositional = []) = function
         | _ -> invalid_arg "plain() holds a number or a formula"
       in
       let variables = List.sort_uniq String.compare (variables @ variables_of_value value) in
-      own_context ~plain:true (if beyond_x variables then variables else []) text
+      (* A plain number is a formula in a context of its own, so the rule
+         for numbers above does not reach it: measured on the renderer, 1021
+         passed for a plain 1020. It gets the same tolerance, on its
+         context: an expression that comes to the number is still right,
+         and the next whole number or the next fraction is not. *)
+      let tolerance =
+        match value with
+        | Rhema_engine.Num number when tolerance_reaches_neighbours number -> Some (neighbour_tolerance number)
+        | _ -> None
+      in
+      own_context ~plain:true ?tolerance (if beyond_x variables then variables else []) text
   | Rhema_engine.Equation _ ->
       invalid_arg
         "an Equation is not a direct answer; use equation_solution_set or equation_unique_solution"
