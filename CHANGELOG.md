@@ -237,6 +237,16 @@ is announced one version before the removal.
   OCaml library, the record `Rhema_load.failure` has a third field,
   `kind`, which says whether a failure is of the syntax, of the meaning or
   of something else; code that builds such a record must give it.
+- **Fixed**: a `plain` number of 1000 or more accepted its neighbours.
+  Such an answer is a formula in a context of its own, which the rules
+  for large whole numbers and fractions did not reach: 1021 passed for a
+  plain 1020, and 1231/13 for a plain 1230/13. A plain whole number or
+  fraction whose numerator is 1000 or more now has the same absolute
+  tolerance, half a unit or half a step of its denominator, set on its
+  context; smaller plain numbers and plain formulas are written as before.
+  This changes the PG of some answers of `triangles.rhm`,
+  `related_rates.rhm` and `integral_coordinates.rhm`, and of any grammar
+  of your own with such answers.
 
 ## 0.2.0 (2026-11-16)
 

@@ -470,6 +470,19 @@ In the library this reaches `arithmetic.rhm`, `counting.rhm`,
 neighbours. `exactly(N)` asks for the same comparison whatever the size;
 `base_conversion.rhm` uses it for a number written in binary or octal.
 
+**Plain numbers graded as closely.** A `plain` number is written as a
+formula in a context of its own, so the two rules above did not reach it:
+measured on the renderer, 1021 passed for a plain 1020 and `1231/13` for a
+plain `1230/13`. A plain whole number or fraction whose numerator is 1000
+or more (or -1000 or less) now has the same absolute tolerance, half a
+unit or half a step of its denominator, set on that context:
+`$c->flags->set(tolType=>"absolute",tolerance=>0.5)` in front of
+`Formula($c,"1020")`. An expression that comes to the number is still
+right, and the functions stay switched off. A smaller plain number and a
+plain formula are written as they always were. In the library this
+reaches some answers of `triangles.rhm` (Heron areas of 1134 and 1890),
+`related_rates.rhm` and `integral_coordinates.rhm`.
+
 **A correction.** A fraction in a formula is written as a quotient, `2/3`,
 and is now bracketed where a quotient must be: `x/(2/3)` and `(2/3)^2`
 were written `x/2/3` and `2/3^2`. No library grammar produced either.
